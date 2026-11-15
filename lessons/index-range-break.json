@@ -1,0 +1,316 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "index-range-break",
+  "course": "MySQL 索引、事务与锁",
+  "title": "范围查询后面的联合索引列，怎么突然失效了？",
+  "lead": "建了 (a, b, c) 联合索引，查 a=1 AND b>10 AND c=2。明明三列全在条件里，为什么 key_len 显示只用到了 (a, b)？",
+  "minutes": 35,
+  "needs": [
+    "知道最左前缀原则"
+  ],
+  "after": [
+    "画清联合索引中「范围列之后的列局部有序、全局无序」的本质",
+    "通过调整联合索引列序为 (a, c, b) 彻底释放三列索引威力",
+    "区分 >、< 与 >=、<= / IN 在范围截断上的差异"
+  ],
+  "terms": {
+    "范围截断": "联合索引 `(a, b, c)` 中，`b` 用了 `>`/`<` 范围查询后，`c` 在 `b` 的不同取值区间内是无序的，无法再用于 B+ 树二分定位（但仍可走 ICP 过滤）。",
+    "等值列前置": "设计联合索引时，把等值条件（`=`、`IN`）放左边，范围条件（`>`、`<`、`BETWEEN`）放最后。"
+  },
+  "experiments": {
+    "rangebreak": {
+      "runner": "java",
+      "home": "lab.rangebreak",
+      "variants": [
+        {
+          "id": "RangeBeforeEq",
+          "label": "索引(a,b,c) 查 b>10 AND c=2",
+          "note": "b 是范围，c 无法二分，只能把 b>10 的 2 万行全扫一遍！"
+        },
+        {
+          "id": "ReorderIndex",
+          "label": "调整索引为 (a, c, b)",
+          "note": "等值列 a、c 放前面先锁定 200 行，再范围扫 b>10！"
+        },
+        {
+          "id": "InRewrite",
+          "label": "离散小范围改 IN",
+          "note": "如 b IN (11, 12) 保持等值有序，c 依然可用。"
+        },
+        {
+          "id": "SkipScanHint",
+          "label": "等值列全前置规范",
+          "note": "最大化利用 key_len，精准命中 200 行。"
+        }
+      ],
+      "knob": {
+        "label": "b>10 覆盖行数",
+        "values": [
+          "1000",
+          "5000",
+          "20000",
+          "50000"
+        ],
+        "default": "20000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "scanned",
+        "expectKey": "expected",
+        "label": "索引扫描行数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "范围查询后面的联合索引列，怎么突然失效了？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "很多同学背过「最左前缀」，于是放心地建了 `(a, b, c)`。结果业务 SQL 一写成 `a = 1 AND b > 10 AND c = 2`，扫描行数还是飙到了 2 万。",
+          "say": "今天把「范围查询截断后续索引列」的物理原因彻底看透。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "b > 10 有 2 万行，其中 c = 2 只有 200 行",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "建 `(a, b, c)` 要扫 **20,000** 行；仅仅把索引列顺序调成 `(a, c, b)`，扫描行数直接变成 **200**！",
+          "say": "先看 `RangeBeforeEq`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 RangeBeforeEq 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "rangebreak.RangeBeforeEq",
+          "say": "当 `b` 取值 `11, 12, 13...` 时，每个 `b` 下面都各自有一段 `c=1, 2, 3`，导致 `c` 在 `b > 10` 这整段区间里不再全局有序。",
+          "walk": [
+            {
+              "focus": [
+                "for (int i = 0; i < rangeRows; i++)",
+                "if (colC[i] == 2)"
+              ],
+              "say": "无法直接二分定位 `c = 2`，只能把 `b > 10` 的 2 万行全扫一遍（靠 ICP 过滤后再回表）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "表有联合索引 `(a, b, c)`，执行 `WHERE a = 1 AND b > 10 AND c = 2` 时，B+ 树二分定位能用到哪几列？",
+          "options": [
+            "(a, b, c) 三列全部",
+            "只用到 (a, b)，c 无法二分定位",
+            "一列都用不到"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "rangebreak",
+          "show": [
+            "RangeBeforeEq"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "`RangeBeforeEq` 扫描了整整 20,000 行！而 `ReorderIndex` 只扫了 200 行！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "rangebreak.RangeBeforeEq",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "记住这个画面：`a=1` 固定了，接着按 `b` 排；在 `b=11` 里有 `c=2`，在 `b=12` 里也有 `c=2`……`c` 在多个 `b` 值之间来回重复，根本没法一次二分跳到所有 `c=2`。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpne"
+              ],
+              "say": "如果把 `c` 放到 `b` 前面，先锁定 `a=1, c=2`，里面所有的 `b` 都是严格递增的，一刀切出 `b > 10`！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "rangebreak",
+          "show": [
+            "RangeBeforeEq",
+            "ReorderIndex",
+            "InRewrite",
+            "SkipScanHint"
+          ],
+          "select": "ReorderIndex",
+          "say": "调整索引顺序为 `(a, c, b)`，或者当 `b` 只是几个离散整数时改成 `b IN (11, 12)`！"
+        },
+        {
+          "t": "chart",
+          "of": "rangebreak",
+          "say": "只是换了个建索引的列顺序，性能差距直接拉开 100 倍。",
+          "walk": [
+            {
+              "focus": [
+                "RangeBeforeEq",
+                "ReorderIndex"
+              ],
+              "say": "设计联合索引铁律：**等值放左，范围放右**。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "下次评审建表 DDL 时，看到联合索引里有时间列（`created_at`）或状态范围列，第一反应就是检查它是不是被放到了等值列前面。",
+          "options": [
+            {
+              "name": "索引 (a, c, b) 等值前置",
+              "solves": "a、c 全等值定位，b 完美接力范围扫描",
+              "cost": "精准扫描：{ms:rangebreak.ReorderIndex} ms",
+              "when": "所有既有等值条件又有范围条件的查询",
+              "say": "黄金法则：等值放左，范围放右。"
+            },
+            {
+              "name": "离散小集合改 IN",
+              "solves": "让中间列保持等值集合语义，后续列仍可定位",
+              "cost": "精准扫描：{ms:rangebreak.InRewrite} ms",
+              "when": "如 `status > 0` 只有 1、2 两个值时改 `status IN (1, 2)`",
+              "say": "InnoDB 会拆成多组等值前缀分别查。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "业务高频 SQL 是 `SELECT * FROM orders WHERE created_at >= '2026-01-01' AND user_id = 1001 AND status = 1`，哪个联合索引设计最优？",
+          "options": [
+            {
+              "text": "`KEY idx_u_s_t (user_id, status, created_at)`",
+              "ok": true,
+              "why": "两个等值列放最左（且区分度更高的 `user_id` 在最左），范围列 `created_at` 放最后，三列全命中！"
+            },
+            {
+              "text": "`KEY idx_t_u_s (created_at, user_id, status)`",
+              "ok": false,
+              "why": "`created_at` 是范围查询放在最左，直接把后面的 `user_id` 和 `status` 全部截断！"
+            },
+            {
+              "text": "分别建三个单列索引",
+              "ok": false,
+              "why": "MySQL 单表一次查询通常只挑最优的一个索引，远不如联合索引精准。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "联合索引范围截断",
+          "alias": "Range Predicate Cutoff",
+          "oneLine": "联合索引遇到范围查询（`>`、`<`、`BETWEEN`）后，==后续列在范围区间内失去全局有序性==，无法继续二分。",
+          "asked": [
+            "为什么范围查询后面的联合索引列会失效？",
+            "联合索引中 >= 和 > 的区别是什么？",
+            "如何设计高并发业务表的联合索引顺序？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么联合索引 (a, b, c) 遇到 b > 10 后 c 就不能二分了？设计联合索引有什么黄金法则？",
+          "points": [
+            "b > 10 包含多个不同的 b 值，每个 b 下面 c 各自重新排序，整体上看 c 是无序的",
+            "因此 (a, b) 可用于二分，c 最多只能走 ICP 顺便过滤，无法二分定位",
+            "黄金法则：等值查询列放左边（区分度高优先），范围查询列放最后",
+            "离散小范围（如 status > 0 只有 1, 2）可改写成 IN (1, 2) 避免截断"
+          ],
+          "model": "在联合索引 (a, b, c) 里，当 a=1 且 b>10 时，b 会命中 11、12、13 等很多不同值，而每个 b 值下面的 c 都是重新从头排序的，所以站在 b>10 的整体来看，c 是无序的，引擎没法对 c 做二分定位（但能走 ICP 过滤）。解决办法是遵循「等值放左、范围放右」的黄金法则，把索引建为 (a, c, b)，让 a 和 c 先等值锁定，再对 b 做范围扫描；如果范围列只有少数离散值，也可以改写成 IN。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "为什么范围列后面的索引列无法二分？",
+              "a": "范围列取多个值时，后续列在每个取值下局部有序、整体无序。"
+            },
+            {
+              "q": "联合索引列顺序的黄金法则？",
+              "a": "高频等值列放最左（区分度高的优先），范围查询列（如时间）放最右。"
+            },
+            {
+              "q": "范围列后面的列完全没用吗？",
+              "a": "还能在二级索引里配合 ICP（索引下推）做过滤，减少回表次数。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}
