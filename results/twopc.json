@@ -2,14 +2,14 @@
  "id": "twopc",
  "variants": {
   "RedoFirstCrash": {
-   "hash": "06412b5fcb483a52",
+   "hash": "dc0b900d17465e31",
    "repeat": 10,
    "runs": {
     "100": [
      {
       "inconsistentCount": 100,
       "expected": 0,
-      "ms": 0
+      "ms": 1
      },
      {
       "inconsistentCount": 100,
@@ -34,227 +34,12 @@
      {
       "inconsistentCount": 100,
       "expected": 0,
-      "ms": 0
+      "ms": 2
      },
      {
       "inconsistentCount": 100,
       "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 100,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 100,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 100,
-      "expected": 0,
-      "ms": 0
-     }
-    ],
-    "300": [
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
-     }
-    ],
-    "500": [
-     {
-      "inconsistentCount": 500,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 500,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 500,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 500,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 500,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 500,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 500,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 500,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 500,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 500,
-      "expected": 0,
-      "ms": 0
-     }
-    ],
-    "1000": [
-     {
-      "inconsistentCount": 1000,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 1000,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 1000,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 1000,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 1000,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 1000,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 1000,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 1000,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 1000,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 1000,
-      "expected": 0,
-      "ms": 0
-     }
-    ]
-   },
-   "inside": "Compiled from \"RedoFirstCrash.java\"\npublic class lab.twopc.RedoFirstCrash {\n  public lab.twopc.RedoFirstCrash();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     45\n      23: iconst_1\n      24: istore        6\n      26: iconst_0\n      27: istore        7\n      29: iload         6\n      31: iload         7\n      33: if_icmpeq     39\n      36: iinc          4, 1\n      39: iinc          5, 1\n      42: goto          17\n      45: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      48: lload_2\n      49: lsub\n      50: ldc2_w        #19                 // long 1000000l\n      53: ldiv\n      54: lstore        5\n      56: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      59: iload         4\n      61: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      66: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      69: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      72: ldc           #35                 // String expected=0\n      74: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      77: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: lload         5\n      82: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      87: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      90: return\n}"
-  },
-  "BinlogFirstCrash": {
-   "hash": "214974cf791304ba",
-   "repeat": 10,
-   "runs": {
-    "100": [
-     {
-      "inconsistentCount": 100,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 100,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 100,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 100,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 100,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 100,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 100,
-      "expected": 0,
-      "ms": 0
+      "ms": 1
      },
      {
       "inconsistentCount": 100,
@@ -276,7 +61,17 @@
      {
       "inconsistentCount": 300,
       "expected": 0,
-      "ms": 0
+      "ms": 3
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 3
      },
      {
       "inconsistentCount": 300,
@@ -286,7 +81,7 @@
      {
       "inconsistentCount": 300,
       "expected": 0,
-      "ms": 0
+      "ms": 2
      },
      {
       "inconsistentCount": 300,
@@ -296,27 +91,17 @@
      {
       "inconsistentCount": 300,
       "expected": 0,
-      "ms": 0
+      "ms": 2
      },
      {
       "inconsistentCount": 300,
       "expected": 0,
-      "ms": 0
+      "ms": 1
      },
      {
       "inconsistentCount": 300,
       "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 300,
-      "expected": 0,
-      "ms": 0
+      "ms": 2
      },
      {
       "inconsistentCount": 300,
@@ -328,111 +113,326 @@
      {
       "inconsistentCount": 500,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      },
      {
       "inconsistentCount": 500,
       "expected": 0,
-      "ms": 0
+      "ms": 2
      },
      {
       "inconsistentCount": 500,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      },
      {
       "inconsistentCount": 500,
       "expected": 0,
-      "ms": 0
+      "ms": 1
      },
      {
       "inconsistentCount": 500,
       "expected": 0,
-      "ms": 0
+      "ms": 5
      },
      {
       "inconsistentCount": 500,
       "expected": 0,
-      "ms": 0
+      "ms": 3
      },
      {
       "inconsistentCount": 500,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      },
      {
       "inconsistentCount": 500,
       "expected": 0,
-      "ms": 0
+      "ms": 1
      },
      {
       "inconsistentCount": 500,
       "expected": 0,
-      "ms": 0
+      "ms": 5
      },
      {
       "inconsistentCount": 500,
       "expected": 0,
-      "ms": 0
+      "ms": 6
      }
     ],
     "1000": [
      {
       "inconsistentCount": 1000,
       "expected": 0,
-      "ms": 0
+      "ms": 3
      },
      {
       "inconsistentCount": 1000,
       "expected": 0,
-      "ms": 0
+      "ms": 5
      },
      {
       "inconsistentCount": 1000,
       "expected": 0,
-      "ms": 0
+      "ms": 8
      },
      {
       "inconsistentCount": 1000,
       "expected": 0,
-      "ms": 0
+      "ms": 5
      },
      {
       "inconsistentCount": 1000,
       "expected": 0,
-      "ms": 0
+      "ms": 5
      },
      {
       "inconsistentCount": 1000,
       "expected": 0,
-      "ms": 0
+      "ms": 3
      },
      {
       "inconsistentCount": 1000,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      },
      {
       "inconsistentCount": 1000,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      },
      {
       "inconsistentCount": 1000,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      },
      {
       "inconsistentCount": 1000,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      }
     ]
    },
-   "inside": "Compiled from \"BinlogFirstCrash.java\"\npublic class lab.twopc.BinlogFirstCrash {\n  public lab.twopc.BinlogFirstCrash();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     45\n      23: iconst_1\n      24: istore        6\n      26: iconst_0\n      27: istore        7\n      29: iload         7\n      31: iload         6\n      33: if_icmpeq     39\n      36: iinc          4, 1\n      39: iinc          5, 1\n      42: goto          17\n      45: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      48: lload_2\n      49: lsub\n      50: ldc2_w        #19                 // long 1000000l\n      53: ldiv\n      54: lstore        5\n      56: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      59: iload         4\n      61: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      66: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      69: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      72: ldc           #35                 // String expected=0\n      74: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      77: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: lload         5\n      82: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      87: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      90: return\n}"
+   "inside": "Compiled from \"RedoFirstCrash.java\"\npublic class lab.twopc.RedoFirstCrash {\n  public lab.twopc.RedoFirstCrash();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: new           #19                 // class java/util/HashSet\n      14: dup\n      15: invokespecial #21                 // Method java/util/HashSet.\"<init>\":()V\n      18: astore        4\n      20: new           #19                 // class java/util/HashSet\n      23: dup\n      24: invokespecial #21                 // Method java/util/HashSet.\"<init>\":()V\n      27: astore        5\n      29: iconst_0\n      30: istore        6\n      32: iconst_1\n      33: istore        7\n      35: iload         7\n      37: iload_1\n      38: if_icmpgt     111\n      41: aload         4\n      43: iload         7\n      45: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      48: invokeinterface #26,  2           // InterfaceMethod java/util/Set.add:(Ljava/lang/Object;)Z\n      53: pop\n      54: iconst_1\n      55: istore        8\n      57: iload         8\n      59: ifne          75\n      62: aload         5\n      64: iload         7\n      66: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      69: invokeinterface #26,  2           // InterfaceMethod java/util/Set.add:(Ljava/lang/Object;)Z\n      74: pop\n      75: aload         4\n      77: iload         7\n      79: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      82: invokeinterface #32,  2           // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z\n      87: aload         5\n      89: iload         7\n      91: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      94: invokeinterface #32,  2           // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z\n      99: if_icmpeq     105\n     102: iinc          6, 1\n     105: iinc          7, 1\n     108: goto          35\n     111: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     114: lload_2\n     115: lsub\n     116: ldc2_w        #35                 // long 1000000l\n     119: ldiv\n     120: lstore        7\n     122: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     125: iload         6\n     127: invokedynamic #41,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     132: invokevirtual #45                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     135: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     138: ldc           #51                 // String expected=0\n     140: invokevirtual #45                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     143: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     146: lload         7\n     148: invokedynamic #53,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     153: invokevirtual #45                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     156: return\n}"
+  },
+  "BinlogFirstCrash": {
+   "hash": "2c81b50fa289b05c",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "300": [
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 2
+     }
+    ],
+    "500": [
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 2
+     }
+    ],
+    "1000": [
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 3
+     }
+    ]
+   },
+   "inside": "Compiled from \"BinlogFirstCrash.java\"\npublic class lab.twopc.BinlogFirstCrash {\n  public lab.twopc.BinlogFirstCrash();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: new           #19                 // class java/util/HashSet\n      14: dup\n      15: invokespecial #21                 // Method java/util/HashSet.\"<init>\":()V\n      18: astore        4\n      20: new           #19                 // class java/util/HashSet\n      23: dup\n      24: invokespecial #21                 // Method java/util/HashSet.\"<init>\":()V\n      27: astore        5\n      29: iconst_0\n      30: istore        6\n      32: iconst_1\n      33: istore        7\n      35: iload         7\n      37: iload_1\n      38: if_icmpgt     111\n      41: aload         5\n      43: iload         7\n      45: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      48: invokeinterface #26,  2           // InterfaceMethod java/util/Set.add:(Ljava/lang/Object;)Z\n      53: pop\n      54: iconst_1\n      55: istore        8\n      57: iload         8\n      59: ifne          75\n      62: aload         4\n      64: iload         7\n      66: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      69: invokeinterface #26,  2           // InterfaceMethod java/util/Set.add:(Ljava/lang/Object;)Z\n      74: pop\n      75: aload         4\n      77: iload         7\n      79: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      82: invokeinterface #32,  2           // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z\n      87: aload         5\n      89: iload         7\n      91: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      94: invokeinterface #32,  2           // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z\n      99: if_icmpeq     105\n     102: iinc          6, 1\n     105: iinc          7, 1\n     108: goto          35\n     111: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     114: lload_2\n     115: lsub\n     116: ldc2_w        #35                 // long 1000000l\n     119: ldiv\n     120: lstore        7\n     122: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     125: iload         6\n     127: invokedynamic #41,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     132: invokevirtual #45                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     135: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     138: ldc           #51                 // String expected=0\n     140: invokevirtual #45                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     143: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     146: lload         7\n     148: invokedynamic #53,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     153: invokevirtual #45                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     156: return\n}"
   },
   "TwoPhaseCommit": {
-   "hash": "a3a0b5fa206214fa",
+   "hash": "016af3ac28bdccdb",
    "repeat": 10,
    "runs": {
     "100": [
@@ -454,7 +454,22 @@
      {
       "inconsistentCount": 0,
       "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
       "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 3
      },
      {
       "inconsistentCount": 0,
@@ -469,182 +484,167 @@
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 0,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 0,
-      "expected": 0,
-      "ms": 0
-     },
-     {
-      "inconsistentCount": 0,
-      "expected": 0,
-      "ms": 0
+      "ms": 2
      }
     ],
     "300": [
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 7
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 5
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 1
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 3
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 5
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      }
     ],
     "500": [
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 2
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 6
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 5
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 6
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 3
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 4
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 3
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 3
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 8
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 5
      }
     ],
     "1000": [
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 6
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 9
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 5
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 8
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 12
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 7
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 8
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 16
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 10
      },
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 0
+      "ms": 5
      }
     ]
    },
-   "inside": "Compiled from \"TwoPhaseCommit.java\"\npublic class lab.twopc.TwoPhaseCommit {\n  public lab.twopc.TwoPhaseCommit();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     77\n      23: iconst_1\n      24: istore        6\n      26: iload         5\n      28: iconst_2\n      29: irem\n      30: ifne          37\n      33: iconst_1\n      34: goto          38\n      37: iconst_0\n      38: istore        7\n      40: iload         6\n      42: ifeq          54\n      45: iload         7\n      47: ifeq          54\n      50: iconst_1\n      51: goto          55\n      54: iconst_0\n      55: istore        8\n      57: iload         7\n      59: istore        9\n      61: iload         8\n      63: iload         9\n      65: if_icmpeq     71\n      68: iinc          4, 1\n      71: iinc          5, 1\n      74: goto          17\n      77: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      80: lload_2\n      81: lsub\n      82: ldc2_w        #19                 // long 1000000l\n      85: ldiv\n      86: lstore        5\n      88: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      91: iload         4\n      93: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      98: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     101: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     104: ldc           #35                 // String expected=0\n     106: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     109: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     112: lload         5\n     114: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     119: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     122: return\n}"
+   "inside": "Compiled from \"TwoPhaseCommit.java\"\npublic class lab.twopc.TwoPhaseCommit {\n  public lab.twopc.TwoPhaseCommit();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: new           #19                 // class java/util/HashSet\n      14: dup\n      15: invokespecial #21                 // Method java/util/HashSet.\"<init>\":()V\n      18: astore        4\n      20: new           #19                 // class java/util/HashSet\n      23: dup\n      24: invokespecial #21                 // Method java/util/HashSet.\"<init>\":()V\n      27: astore        5\n      29: new           #19                 // class java/util/HashSet\n      32: dup\n      33: invokespecial #21                 // Method java/util/HashSet.\"<init>\":()V\n      36: astore        6\n      38: iconst_0\n      39: istore        7\n      41: iconst_1\n      42: istore        8\n      44: iload         8\n      46: iload_1\n      47: if_icmpgt     178\n      50: aload         4\n      52: iload         8\n      54: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      57: invokeinterface #26,  2           // InterfaceMethod java/util/Set.add:(Ljava/lang/Object;)Z\n      62: pop\n      63: iload         8\n      65: iconst_2\n      66: irem\n      67: ifne          83\n      70: aload         6\n      72: iload         8\n      74: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      77: invokeinterface #26,  2           // InterfaceMethod java/util/Set.add:(Ljava/lang/Object;)Z\n      82: pop\n      83: aload         4\n      85: iload         8\n      87: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      90: invokeinterface #32,  2           // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z\n      95: ifeq          142\n      98: aload         6\n     100: iload         8\n     102: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     105: invokeinterface #32,  2           // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z\n     110: ifeq          129\n     113: aload         5\n     115: iload         8\n     117: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     120: invokeinterface #26,  2           // InterfaceMethod java/util/Set.add:(Ljava/lang/Object;)Z\n     125: pop\n     126: goto          142\n     129: aload         4\n     131: iload         8\n     133: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     136: invokeinterface #35,  2           // InterfaceMethod java/util/Set.remove:(Ljava/lang/Object;)Z\n     141: pop\n     142: aload         5\n     144: iload         8\n     146: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     149: invokeinterface #32,  2           // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z\n     154: aload         6\n     156: iload         8\n     158: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     161: invokeinterface #32,  2           // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z\n     166: if_icmpeq     172\n     169: iinc          7, 1\n     172: iinc          8, 1\n     175: goto          44\n     178: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     181: lload_2\n     182: lsub\n     183: ldc2_w        #38                 // long 1000000l\n     186: ldiv\n     187: lstore        8\n     189: getstatic     #40                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     192: iload         7\n     194: invokedynamic #44,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     199: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     202: getstatic     #40                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     205: ldc           #54                 // String expected=0\n     207: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     210: getstatic     #40                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     213: lload         8\n     215: invokedynamic #56,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     220: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     223: return\n}"
   },
   "SyncBinlogGroupCommit": {
    "hash": "c8bce6c377a10c79",
@@ -664,11 +664,6 @@
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 1
-     },
-     {
-      "inconsistentCount": 0,
-      "expected": 0,
       "ms": 0
      },
      {
@@ -694,7 +689,12 @@
      {
       "inconsistentCount": 0,
       "expected": 0,
-      "ms": 2
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
      },
      {
       "inconsistentCount": 0,
