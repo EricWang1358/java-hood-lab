@@ -1,0 +1,251 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "spring-proxy-kind",
+  "course": "Spring 全家桶与持久层",
+  "title": "JDK 动态代理 vs CGLIB：为什么强转实现类会炸、final 方法不增强？",
+  "lead": "同样是 Spring AOP 代理：有接口用 JDK 代理，强转实现类直接 ClassCastException；换成 CGLIB 子类代理，加个 final 切面就静默失效！",
+  "minutes": 35,
+  "needs": ["知道接口与实现类的继承关系", "知道 final 方法不能被子类重写", "了解 Spring AOP 默认代理机制"],
+  "after": ["讲清 JDK 动态代理基于接口生成 $Proxy0 兄弟类的本质", "讲清 CGLIB 基于继承生成子类并重写方法的限制", "解释 Spring Boot 2+ 默认切换 proxyTargetClass=true 的原因"],
+  "terms": {
+    "JDK 动态代理": "java.lang.reflect.Proxy：在运行期生成实现同一组接口的 $Proxy0 类，和目标实现类是兄弟关系，不是父子关系。",
+    "CGLIB 代理": "通过字节码生成目标类的子类（extends OrderServiceImpl），靠重写父类非 final 方法织入增强逻辑。",
+    "ClassCastException": "类型转换异常：把实现了 OrderService 接口的 $Proxy0 强转成 OrderServiceImpl 时直接抛出。",
+    "proxyTargetClass": "Spring AOP 配置项：false 时有接口优先 JDK 代理；true 时统一用 CGLIB（Spring Boot 2.x+ 默认 true）。",
+    "final": "修饰类时不可被继承，修饰方法时不可被子类重写——CGLIB 遇到 final 直接无法织入切面。"
+  },
+  "experiments": {
+    "proxykind": {
+      "runner": "java",
+      "home": "lab.proxykind",
+      "variants": [
+        { "id": "JdkCastImpl", "label": "JDK代理强转实现类", "note": "用 Proxy.newProxyInstance 生成代理后强转成 OrderServiceImpl，直接炸 ClassCastException。" },
+        { "id": "CglibFinal", "label": "CGLIB 遇上 final 方法", "note": "子类代理无法重写 final 方法，调用直接落到原方法，切面计数为 0。" },
+        { "id": "JdkInterface", "label": "JDK代理按接口注入", "note": "面向接口 OrderService 接收代理并调用，切面 100% 拦截。" },
+        { "id": "CglibOpen", "label": "CGLIB 重写普通方法", "note": "非 final 的 public 方法被子类代理成功重写，切面 100% 拦截。" }
+      ],
+      "knob": { "label": "调用次数(万)", "values": ["1", "2", "4", "8"], "default": "2" },
+      "repeat": 20,
+      "metric": { "key": "intercepted", "expectKey": "expected", "label": "切面成功拦截次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "JDK 动态代理 vs CGLIB：强转就炸、final 就失效",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "Spring AOP 面试必问：**JDK 动态代理和 CGLIB 到底有什么区别？Spring Boot 2.x 以后为什么默认全改用 CGLIB？**",
+          "say": "不背「一个基于接口、一个基于继承」的干瘪结论。我们用纯 JDK 代码把两个经典翻车现场亲手跑出来。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热个身",
+      "bridge": "先确认两个 Java 继承与多态的基本事实。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "两道小题，10 秒钟过完。",
+          "items": [
+            {
+              "have": "兄弟类强转",
+              "q": "`ClassA` 和 `ClassB` 都实现了 `OrderService` 接口，能把 `ClassA` 的实例强转成 `ClassB` 吗？",
+              "options": ["能，因为它们有同一个接口", "不能，运行时抛 ClassCastException"],
+              "answer": 1,
+              "why": "JDK 动态代理生成的 `$Proxy0` 和 `OrderServiceImpl` 就是兄弟关系，互相强转必炸。"
+            },
+            {
+              "have": "final 方法",
+              "q": "父类把 `pay()` 声明为 `final`，子类能 `@Override` 重写 `pay()` 吗？",
+              "options": ["能重写", "编译报错，无法重写"],
+              "answer": 1,
+              "why": "CGLIB 靠生成子类重写方法织入切面，遇到 `final` 方法直接无从下手。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "2 万次调用，切面一次都没触发？",
+      "bridge": "无论是把 JDK 代理强转成实现类，还是给 CGLIB 代理的方法加上 final，结果都会让人大跌眼镜。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "目标调用 20,000 次，预期切面拦截次数 `intercepted = 20000`。",
+          "say": "我们先看 `JdkCastImpl` 强转实现类的代码和实测结果。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看清 JDK 代理的真实类型",
+      "bridge": "`Proxy.newProxyInstance` 返回的不是 `OrderServiceImpl`，而是一个只实现了 `OrderService` 接口的新类。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "proxykind.JdkCastImpl",
+          "say": "注意第 23 行：把 `proxy` 强转成了 `OrderServiceImpl`。",
+          "walk": [
+            { "focus": ["OrderServiceImpl impl = (OrderServiceImpl) proxy;"], "say": "在 Spring 里，如果你在 Controller 里写了 `@Autowired OrderServiceImpl` 而不是 `@Autowired OrderService`，在启用 JDK 代理时启动或强转就会直接报 `BeanNotOfRequiredTypeException` / `ClassCastException`！", "key": "JDK 代理对象是接口的兄弟类，不能强转成实现类" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：拦截到了多少次？",
+      "bridge": "跑之前先猜一下。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "proxy_guess",
+          "q": "运行 `JdkCastImpl`（2 万次），切面拦截次数 `intercepted` 是？",
+          "options": ["20000", "0（全部 ClassCastException）"],
+          "answer": 1,
+          "say": "强转直接失败，方法根本进不去。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测：JDK 强转炸、CGLIB final 静默失效",
+      "bridge": "把四种写法全部放出来对比。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "proxykind",
+          "show": ["JdkCastImpl", "CglibFinal", "JdkInterface", "CglibOpen"],
+          "select": "CglibFinal",
+          "say": "先看 `JdkCastImpl`：0 次拦截。再点 `CglibFinal`：同样是 0 次拦截！而且它连异常都不报，静默就跳过了切面。"
+        },
+        {
+          "t": "reveal",
+          "of": "proxy_guess",
+          "say": "切到 `JdkInterface` 和 `CglibOpen`，两者都是稳稳的 20000 次全拦截。",
+          "key": "JDK 代理怕强转实现类；CGLIB 怕 final/private 方法"
+        },
+        {
+          "t": "try",
+          "say": "把调用次数调到 4 万和 8 万，对比一下 JDK 反射调用和 CGLIB 子类直接调用的耗时差异。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "性能与选型曲线",
+      "bridge": "看看 JDK 动态代理（反射 `method.invoke`）和 CGLIB 子类重写的耗时对比。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "proxykind",
+          "say": "实心点表示 100% 拦截成功。",
+          "walk": [
+            { "focus": "JdkInterface", "say": "JDK 动态代理需要经过 `InvocationHandler` 和反射 `Method.invoke`，调用量越大耗时略高一些，但零字节码生成开销，启动快。" },
+            { "focus": "CglibOpen", "say": "CGLIB 直接生成子类重写方法（FastClass / 直接调用），运行时调用极快，但注意不能拦截 `final`、`private`、`static` 方法。", "key": "Spring Boot 2+ 默认用 CGLIB，是为了避免按实现类注入时强转报错" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "代理方式怎么选",
+      "layout": "split",
+      "bridge": "工程实践中的三条准则。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "面对代理选型与避坑怎么做？",
+          "branches": [
+            { "when": "依赖注入时按接口注入（OrderService）", "pick": "JDK / CGLIB 皆可", "eg": "@Autowired OrderService" },
+            { "when": "没有接口或直接按实现类注入", "pick": "必须用 CGLIB（proxyTargetClass=true）", "eg": "@Autowired OrderServiceImpl" },
+            { "when": "Service 类里的方法要贴 @Transactional / @Async", "pick": "绝不加 final / private", "eg": "public void pay()" }
+          ],
+          "say": "记住：Spring 里带切面的方法老老实实写 `public` 且不加 `final`。"
+        },
+        {
+          "t": "cases",
+          "tools": ["改按接口注入", "开启 CGLIB (proxyTargetClass=true)", "去掉 final 修饰符"],
+          "say": "三个常见报错或失效场景，选最直接的修法。",
+          "items": [
+            { "text": "老项目启用了 JDK 代理，同事在 Controller 里写了 `@Autowired UserServiceImpl`，启动报类型不匹配。", "answer": 1, "why": "开启 `spring.aop.proxy-target-class=true`（或改按接口注入）即可。" },
+            { "text": "Spring Boot 2.7 默认用 CGLIB，但同事习惯在 Service 方法上加 `final` 防重写，结果 `@Transactional` 不生效。", "answer": 2, "why": "CGLIB 无法重写 `final` 方法，必须去掉 `final`。" },
+            { "text": "写基础中间件 SDK，希望减少运行期生成子类的字节码加载开销，且所有服务都有清晰接口。", "answer": 0, "why": "面向接口编程配合 JDK 动态代理最轻量。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "把两个核心原理对上八股提问。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "JDK 动态代理 vs CGLIB",
+          "alias": "Proxy.newProxyInstance · Enhancer 子类代理",
+          "oneLine": "JDK 代理实现==目标接口==（兄弟关系，怕强转实现类）；CGLIB 继承==目标类生成子类==（父子关系，怕 `final`/`private`）。",
+          "asked": ["JDK 动态代理和 CGLIB 的本质区别？", "为什么 Spring Boot 2.x 默认改用 CGLIB？", "final 方法为什么不能被 @Transactional 增强？"],
+          "say": "三道题一次串通。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "快速检验。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "以下哪种方法上贴了 `@Transactional`，即使通过外部代理调用也**绝对不会生效**？",
+          "options": [
+            { "text": "实现接口的 public 方法", "ok": false, "why": "JDK 和 CGLIB 都能拦截。" },
+            { "text": "未实现接口的类的 public 非 final 方法（CGLIB 下）", "ok": false, "why": "CGLIB 可以重写并拦截。" },
+            { "text": "public final 方法（CGLIB 下）", "ok": true, "why": "正确！`final` 方法不能被子类重写，CGLIB 代理无法织入增强。" }
+          ],
+          "say": "选出不会生效的那一项。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿回答。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "JDK 动态代理和 CGLIB 有什么区别？Spring Boot 2.x 为什么默认用 CGLIB？各自有什么限制？",
+          "points": [
+            "JDK 动态代理基于接口生成实现类（$Proxy0），要求目标有接口，不能强转成实现类",
+            "CGLIB 基于 ASM 生成目标类的子类，重写非 final/private 方法",
+            "Spring Boot 2.x 默认 proxyTargetClass=true 用 CGLIB，避免开发者按实现类注入时启动报错",
+            "注意 CGLIB 下 final/private/static 方法无法被重写，切面和事务会静默失效"
+          ],
+          "model": "JDK 动态代理在运行期生成一个实现目标接口的代理类，它和目标实现类是兄弟关系，因此目标必须有接口，且不能把代理强转成实现类。CGLIB 则通过继承目标类生成子类并重写方法来实现增强，所以不要求有接口，但代价是无法拦截 `final`、`private` 和 `static` 方法。Spring Boot 2.x 之后默认把 `proxyTargetClass` 设为 `true` 统一用 CGLIB，主要是为了避免很多业务代码直接按实现类 `@Autowired` 注入时发生类型转换异常。",
+          "say": "点击开始自述。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心要点。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "JDK 动态代理的限制是什么？", "a": "目标必须实现接口；代理对象不能强转为实现类，只能按接口类型注入。" },
+            { "q": "CGLIB 代理的限制是什么？", "a": "基于继承生成子类，无法拦截 `final`、`private`、`static` 方法，且目标类不能是 `final`。" },
+            { "q": "Spring Boot 2.x 为什么默认用 CGLIB？", "a": "防止按实现类注入 Bean 时出现类型不匹配异常，无需强制所有 Service 都抽接口。" }
+          ],
+          "say": "三张卡收好。"
+        }
+      ]
+    }
+  ]
+}

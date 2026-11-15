@@ -1,0 +1,323 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "prefix-index-order",
+  "course": "MySQL 索引、事务与锁",
+  "title": "字符串建前缀索引，ORDER BY 怎么还文件排序？",
+  "lead": "给长邮箱建了前缀索引 idx_email(email(8)) 省了不少空间，可不仅回表变多，ORDER BY email 竟然也用不上索引排序！",
+  "minutes": 35,
+  "needs": [
+    "知道覆盖索引"
+  ],
+  "after": [
+    "算出前缀索引「省空间 vs 降低区分度」的权衡",
+    "明白前缀索引为什么无法做覆盖索引、也无法用于 ORDER BY",
+    "掌握后缀检索（倒序索引）和超长 URL（CRC32 哈希冗余列）的工程技巧"
+  ],
+  "terms": {
+    "前缀索引": "只取字符串前 K 个字符建索引（如 `KEY idx(email(8))`），省空间但可能出现大量前缀碰撞。",
+    "区分度（Selectivity）": "不重复的值占比。前缀太短区分度暴跌，导致回表次数猛增。",
+    "倒序索引": "查后缀（如 `%@gmail.com`）时，把字符串反转存一列再建前缀索引。"
+  },
+  "experiments": {
+    "prefixidx": {
+      "runner": "java",
+      "home": "lab.prefixidx",
+      "variants": [
+        {
+          "id": "PrefixIndex",
+          "label": "前缀索引 email(8)",
+          "note": "同前缀大量碰撞，必须全部回表核对且 ORDER BY 只能 filesort！"
+        },
+        {
+          "id": "FullStringIndex",
+          "label": "完整列索引",
+          "note": "索引包含完整值且有序，直接拿前 10 条无需 filesort。"
+        },
+        {
+          "id": "ReverseIndex",
+          "label": "倒序+前缀索引",
+          "note": "专治后缀匹配（如查某域名邮箱或手机号后四位）。"
+        },
+        {
+          "id": "CrcHashIndex",
+          "label": "CRC32 冗余列索引",
+          "note": "存 4 字节整型哈希值并加索引，兼顾极小体积与高区分度。"
+        }
+      ],
+      "knob": {
+        "label": "表总行数",
+        "values": [
+          "10000",
+          "50000",
+          "100000",
+          "200000"
+        ],
+        "default": "100000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "extraReads",
+        "expectKey": "expected",
+        "label": "碰撞回表与排序代价"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "字符串建前缀索引，ORDER BY 怎么还文件排序？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "遇到 `VARCHAR(255)` 的邮箱或 URL 字段，直接建全列索引太占磁盘，于是大家想到用前缀索引 `email(8)`。但前缀索引有两个隐蔽副作用，面试官一问一个准。",
+          "say": "今天把前缀索引的「空间账」和「回表/排序账」一起算清。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "同样取前 10 条有序记录，前缀索引要额外多干多少活？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "当 400 个用户邮箱前 8 位都长一样时，`email(8)` 不光要回表 400 次核对全串，还得把这 400 行拉出来再排一次序。",
+          "say": "看 `PrefixIndex` 的代码。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 PrefixIndex 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "prefixidx.PrefixIndex",
+          "say": "因为前缀索引叶子上只存了前 8 个字符，引擎根本不知道完整字符串谁大谁小，也不敢直接覆盖返回。",
+          "walk": [
+            {
+              "focus": [
+                "int extraReads = samePrefix;",
+                "Arrays.sort(vals);"
+              ],
+              "say": "前 8 位一样的都要回表核对，且必须触发 `filesort` 排序。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "为什么建了前缀索引 `idx(email(8))` 后，`SELECT email FROM users ORDER BY email LIMIT 10` 既不能覆盖索引也不能消除 `filesort`？",
+          "options": [
+            "前缀索引里没有存完整字符串，既凑不齐结果集也无法按完整字符串排序",
+            "MySQL 不允许对 VARCHAR 排序",
+            "前缀索引只能用于 JOIN"
+          ],
+          "answer": 0,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "prefixidx",
+          "show": [
+            "PrefixIndex"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `PrefixIndex` 随着数据量翻倍，前缀碰撞导致的额外回表和排序代价水涨船高！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "prefixidx.PrefixIndex",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "前缀索引丢失了第 K 个字符之后的信息：1）完整列不在索引里，永远无法触发覆盖索引（`Using index`）；2）超过第 K 位后的顺序信息丢失，`ORDER BY` 和 `GROUP BY` 无法利用索引有序性。",
+          "walk": [
+            {
+              "focus": [
+                "Arrays.sort"
+              ],
+              "say": "索引有序性只保前 8 位，第 9 位起只能靠 `Using filesort` 重排。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "prefixidx",
+          "show": [
+            "PrefixIndex",
+            "FullStringIndex",
+            "ReverseIndex",
+            "CrcHashIndex"
+          ],
+          "select": "FullStringIndex",
+          "say": "长字符串如果前缀区分度不够（比如身份证前 6 位全是一个市的、或 URL 前缀全是 `https://www.xxx.com/`），千万别硬上前缀索引，改用倒序索引或 `CRC32` 哈希冗余列！"
+        },
+        {
+          "t": "chart",
+          "of": "prefixidx",
+          "say": "区分度高的完整索引、倒序索引、CRC32 索引几乎都维持在常量 10 次读写。",
+          "walk": [
+            {
+              "focus": [
+                "PrefixIndex",
+                "FullStringIndex"
+              ],
+              "say": "前缀长度必须先算 `COUNT(DISTINCT LEFT(col, k)) / COUNT(*)`，确保区分度接近全列。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "根据字符串特征选方案：前缀区分度高用前缀索引（牺牲覆盖与排序）；前缀相同后缀不同用倒序；超长 URL 等值查用 CRC32 整型冗余列。",
+          "options": [
+            {
+              "name": "前缀索引 col(k)",
+              "solves": "缩小索引体积，适合前缀差异大的长文本",
+              "cost": "不支持覆盖索引与 ORDER BY：{ms:prefixidx.PrefixIndex} ms",
+              "when": "先测前 k 位区分度是否达标（如 >95% 全列区分度）",
+              "say": "注意牺牲了覆盖索引和排序。"
+            },
+            {
+              "name": "倒序存储 + 前缀索引",
+              "solves": "把后缀变前缀，专治域名/身份证后几位",
+              "cost": "高区分度：{ms:prefixidx.ReverseIndex} ms",
+              "when": "身份证号（前6位同省市、后几位区分度极高）、邮箱域名检索",
+              "say": "写时 `REVERSE()`，查时 `LIKE CONCAT(REVERSE('...'), '%')`。"
+            },
+            {
+              "name": "CRC32 / Hash 冗余列",
+              "solves": "4 字节整型等值精准缩小范围，不惧长前缀",
+              "cost": "极小索引：{ms:prefixidx.CrcHashIndex} ms",
+              "when": "长 URL 精确等值查询",
+              "say": "SQL 必须同时写 `WHERE url_crc = CRC32('...') AND url = '...'` 防哈希冲突！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "有一张千万级网页表，存着 `https://shop.example.com/item/xxxx` 这样的超长 URL，业务只需要按完整 URL 做精确等值查询，哪种索引方案最合适？",
+          "options": [
+            {
+              "text": "建前缀索引 `idx_url(url(20))`",
+              "ok": false,
+              "why": "前 20 位全是 `https://shop.example`，区分度几乎为 0，等于没建！"
+            },
+            {
+              "text": "新增整型字段 `url_crc` 存 `CRC32(url)` 并建索引，查询时写 `WHERE url_crc = CRC32(?) AND url = ?`",
+              "ok": true,
+              "why": "4 字节整型区分度极高、索引极小，加上 `url = ?` 防极少数哈希碰撞，完美！"
+            },
+            {
+              "text": "给 `url` 建一个 500 字节的全文索引",
+              "ok": false,
+              "why": "等值精确查不需要全文索引。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "前缀索引与长字符串优化",
+          "alias": "Prefix Index / Reverse / CRC32",
+          "oneLine": "前缀索引省空间但==失去覆盖索引与 ORDER BY 能力==；长前缀重复多时改用==倒序索引或 CRC32 冗余列==。",
+          "asked": [
+            "前缀索引有什么缺点？",
+            "如何给超长 URL 或身份证号建索引？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "字符串建前缀索引有什么优点和代价？遇到前缀高度重复的字段怎么优化？",
+          "points": [
+            "优点：大幅缩小索引体积，提高单页扇出和缓冲池命中率",
+            "代价：1）区分度可能下降增加回表；2）无法使用覆盖索引；3）无法消除 ORDER BY/GROUP BY 的 filesort",
+            "前缀高度重复但后缀不同（如身份证、邮箱）：用倒序存储 + 前缀索引",
+            "超长 URL 等值查：冗余整型 CRC32 列 + 索引，查询时带上原字段防哈希冲突"
+          ],
+          "model": "给长字符串建前缀索引可以减小索引体积、提升缓存命中率，但它有三个明确代价：一是不支持覆盖索引，因为索引里没存完整字符串；二是无法用于 ORDER BY 排序；三是如果前缀区分度不够会造成大量回表。工程上如果遇到像身份证号这种前缀相同但后缀区别大的列，可以倒序存储再建前缀索引；如果是超长 URL 等值查询，可以新增一个 4 字节整型的 url_crc 字段建索引，查询时用 WHERE url_crc = CRC32(...) AND url = ... 既省空间又防哈希碰撞。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "前缀索引的两大功能限制？",
+              "a": "1）无法触发覆盖索引（Using index）；2）无法用于 ORDER BY / GROUP BY 排序。"
+            },
+            {
+              "q": "前缀相同后缀不同怎么建索引？",
+              "a": "倒序存储（REVERSE）后再建前缀索引。"
+            },
+            {
+              "q": "超长 URL 精确查询怎么建索引？",
+              "a": "加整型冗余列 url_crc 建索引，SQL 写 WHERE url_crc = CRC32(?) AND url = ?。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

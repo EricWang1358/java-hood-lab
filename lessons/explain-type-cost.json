@@ -1,0 +1,327 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "explain-type-cost",
+  "course": "MySQL 索引、事务与锁",
+  "title": "EXPLAIN 里 type=ALL 和 ref，扫描行数差多少？",
+  "lead": "慢 SQL 排查第一件事就是敲 EXPLAIN。type 列里 ALL、index、range、ref 到底差几个数量级？",
+  "minutes": 35,
+  "needs": [
+    "知道 SELECT 查询",
+    "听说过 EXPLAIN"
+  ],
+  "after": [
+    "背出 EXPLAIN type 性能从高到低排序：system > const > eq_ref > ref > range > index > ALL",
+    "看懂 rows、key、key_len、Extra 四个核心列",
+    "一眼判断一条 SQL 是真走索引还是全索引扫描（type=index）"
+  ],
+  "terms": {
+    "type=ALL": "全表扫描：从聚簇索引第一页扫到最后一页。",
+    "type=index": "全索引扫描：虽然比 ALL 小，但依然把整棵二级索引树从头扫到尾！",
+    "type=range": "索引范围扫描：BETWEEN、IN、>、< 等区间定位。",
+    "type=ref": "非唯一索引等值匹配：直接定位到等于目标值的区间。",
+    "type=const": "主键或唯一索引等值匹配：最多 1 行，直接常数级定位。"
+  },
+  "experiments": {
+    "explaintype": {
+      "runner": "java",
+      "home": "lab.explaintype",
+      "variants": [
+        {
+          "id": "TypeAll",
+          "label": "type=ALL (全表扫描)",
+          "note": "从头到尾扫完 10 万行聚簇索引。"
+        },
+        {
+          "id": "TypeIndex",
+          "label": "type=index (全索引扫)",
+          "note": "走二级索引但无起始条件，依然扫完 10 万个索引项。"
+        },
+        {
+          "id": "TypeRange",
+          "label": "type=range (范围扫)",
+          "note": "二分定位区间起点，只扫 10 行。"
+        },
+        {
+          "id": "TypeRef",
+          "label": "type=ref (等值定位)",
+          "note": "非唯一索引等值命中，直接定位 10 行。"
+        }
+      ],
+      "knob": {
+        "label": "表总行数",
+        "values": [
+          "10000",
+          "50000",
+          "100000",
+          "200000"
+        ],
+        "default": "100000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "scanned",
+        "expectKey": "expected",
+        "label": "扫描行数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "EXPLAIN 里 type=ALL 和 ref，扫描行数差多少？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "很多同学看 `EXPLAIN` 只要看到 `key` 列不是 NULL 就以为「走索引成功了」——结果线上还是慢成狗，因为 `type` 是 `index`（全索引扫描），照样扫了 10 万行！",
+          "say": "今天把 EXPLAIN 的核心字段和 `type` 级别一次量透。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "同样找 10 行，type=ALL 和 type=ref 差多少？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "10 万行表里精确找 10 行记录，不同 `type` 对应的扫描行数会是 10 万还是 **10**？",
+          "say": "看 `TypeAll` 的执行逻辑。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 TypeAll 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "explaintype.TypeAll",
+          "say": "`TypeAll` 只能从第 0 行一直遍历到第 N-1 行。",
+          "walk": [
+            {
+              "focus": [
+                "for (int i = 0; i < n; i++)",
+                "scanned++;"
+              ],
+              "say": "哪怕目标就在第 500 行，也得把整张表 10 万行扫完。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "10 万行表查 10 条数据，`EXPLAIN` 显示 `type=index`，大约会扫描多少行？",
+          "options": [
+            "10 行",
+            "100,000 行",
+            "1 行"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "explaintype",
+          "show": [
+            "TypeAll"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "`TypeAll` 和 `TypeIndex` 都扫了整整 10 万行！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "explaintype.TypeAll",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "看到 `type=index` 千万别高兴太早：它只是「扫描整棵二级索引树」，因为二级索引比聚簇索引瘦小所以比 `ALL` 快一点，但复杂度依然是 O(N)！只有 `range`、`ref`、`eq_ref`、`const` 才真正用上了 B+ 树的二分定位。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmplt"
+              ],
+              "say": "O(N) 线性遍历 vs O(log N) 二分定位。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "explaintype",
+          "show": [
+            "TypeAll",
+            "TypeIndex",
+            "TypeRange",
+            "TypeRef"
+          ],
+          "select": "TypeRef",
+          "say": "切到 `TypeRange` 和 `TypeRef`：扫描行数直接从 10 万断崖跌到 10！"
+        },
+        {
+          "t": "chart",
+          "of": "explaintype",
+          "say": "表越大，`ALL`/`index` 和 `range`/`ref` 的差距越是天壤之别。",
+          "walk": [
+            {
+              "focus": [
+                "TypeAll",
+                "TypeRef"
+              ],
+              "say": "调优最低及格线：至少把 `type` 优化到 `range` 及以上。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "背熟 EXPLAIN 五大核心列：`type`（访问类型）、`possible_keys`/`key`（实际索引）、`key_len`（联合索引命中了几列）、`rows`（预估扫描行数）、`Extra`（Using index / Using filesort / Using temporary）。",
+          "options": [
+            {
+              "name": "const / eq_ref",
+              "solves": "主键/唯一索引等值单行定位",
+              "cost": "1 行：{ms:explaintype.TypeRef} ms",
+              "when": "按 PK 或 Unique Key 查询或 JOIN",
+              "say": "性能天花板。"
+            },
+            {
+              "name": "ref / range",
+              "solves": "普通索引等值或范围定位",
+              "cost": "仅扫命中区间：{ms:explaintype.TypeRange} ms",
+              "when": "业务列表、订单筛选的最低及格线",
+              "say": "日常 SQL 优化目标就是至少达到 range/ref。"
+            },
+            {
+              "name": "index / ALL",
+              "solves": "全索引或全表扫描",
+              "cost": "O(N) 全扫：{ms:explaintype.TypeAll} ms",
+              "when": "大表严禁出现，需立刻加索引或改写条件",
+              "say": "看到 ALL 或 index 立刻亮红灯。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "下面哪种 `EXPLAIN` 结果说明 SQL **真正利用了 B+ 树二分定位**，而不是全量扫描？",
+          "options": [
+            {
+              "text": "`type=ref, Extra=Using where`",
+              "ok": true,
+              "why": "`ref` 表示用非唯一索引做了等值定位，只扫描匹配区间。"
+            },
+            {
+              "text": "`type=index, key=idx_name`",
+              "ok": false,
+              "why": "`type=index` 是全索引扫描，照样把整棵索引树扫了一遍。"
+            },
+            {
+              "text": "`type=ALL, rows=100000`",
+              "ok": false,
+              "why": "全表扫描。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "EXPLAIN 执行计划",
+          "alias": "type / key / key_len / rows / Extra",
+          "oneLine": "看懂 `EXPLAIN` 必须盯紧 `type`：==至少要达到 `range` 或 `ref`==，警惕伪走索引的 `type=index`。",
+          "asked": [
+            "EXPLAIN 中最重要的字段有哪些？",
+            "type 字段有哪些常见值，性能怎么排序？",
+            "key_len 怎么用来判断联合索引用了几列？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "拿到一条慢 SQL，你如何用 EXPLAIN 诊断它？重点看哪几列？",
+          "points": [
+            "重点看 type、key、key_len、rows、Extra 五列",
+            "type 排序：system > const > eq_ref > ref > range > index > ALL，至少优化到 range/ref",
+            "key_len 判断联合索引实际命中了前几列",
+            "Extra 警惕 Using filesort 和 Using temporary，追求 Using index"
+          ],
+          "model": "用 EXPLAIN 排查慢 SQL 我主要盯五列：第一看 type，从好到差是 const、eq_ref、ref、range、index、ALL，日常至少要优化到 range 或 ref，注意 type=index 虽然写了 key 但其实是全索引扫描；第二看 key 和 key_len，确认走没走对索引以及联合索引命中了几列；第三看 rows 预估扫描行数；第四看 Extra，有没有出现 Using filesort 文件排序或 Using temporary 临时表，理想状态是 Using index 覆盖索引。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "EXPLAIN type 性能排序？",
+              "a": "system > const > eq_ref > ref > range > index > ALL。"
+            },
+            {
+              "q": "type=index 是走索引加速了吗？",
+              "a": "不是！它是全索引扫描，依然 O(N) 扫完整棵二级索引树。"
+            },
+            {
+              "q": "key_len 有什么用？",
+              "a": "通过字节数反推联合索引实际命中了前几个字段。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

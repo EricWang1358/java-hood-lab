@@ -1,0 +1,1031 @@
+{
+ "id": "pagesplit",
+ "variants": {
+  "RandomUuidInsert": {
+   "hash": "06e525a341669dea",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "splits": 109,
+      "expected": 0,
+      "pages": 110,
+      "ms": 9
+     },
+     {
+      "splits": 109,
+      "expected": 0,
+      "pages": 110,
+      "ms": 3
+     },
+     {
+      "splits": 109,
+      "expected": 0,
+      "pages": 110,
+      "ms": 7
+     },
+     {
+      "splits": 109,
+      "expected": 0,
+      "pages": 110,
+      "ms": 10
+     },
+     {
+      "splits": 109,
+      "expected": 0,
+      "pages": 110,
+      "ms": 8
+     },
+     {
+      "splits": 109,
+      "expected": 0,
+      "pages": 110,
+      "ms": 11
+     },
+     {
+      "splits": 109,
+      "expected": 0,
+      "pages": 110,
+      "ms": 5
+     },
+     {
+      "splits": 109,
+      "expected": 0,
+      "pages": 110,
+      "ms": 8
+     },
+     {
+      "splits": 109,
+      "expected": 0,
+      "pages": 110,
+      "ms": 5
+     },
+     {
+      "splits": 109,
+      "expected": 0,
+      "pages": 110,
+      "ms": 11
+     }
+    ],
+    "15000": [
+     {
+      "splits": 319,
+      "expected": 0,
+      "pages": 320,
+      "ms": 15
+     },
+     {
+      "splits": 319,
+      "expected": 0,
+      "pages": 320,
+      "ms": 14
+     },
+     {
+      "splits": 319,
+      "expected": 0,
+      "pages": 320,
+      "ms": 19
+     },
+     {
+      "splits": 319,
+      "expected": 0,
+      "pages": 320,
+      "ms": 17
+     },
+     {
+      "splits": 319,
+      "expected": 0,
+      "pages": 320,
+      "ms": 13
+     },
+     {
+      "splits": 319,
+      "expected": 0,
+      "pages": 320,
+      "ms": 11
+     },
+     {
+      "splits": 319,
+      "expected": 0,
+      "pages": 320,
+      "ms": 21
+     },
+     {
+      "splits": 319,
+      "expected": 0,
+      "pages": 320,
+      "ms": 16
+     },
+     {
+      "splits": 319,
+      "expected": 0,
+      "pages": 320,
+      "ms": 5
+     },
+     {
+      "splits": 319,
+      "expected": 0,
+      "pages": 320,
+      "ms": 14
+     }
+    ],
+    "30000": [
+     {
+      "splits": 638,
+      "expected": 0,
+      "pages": 639,
+      "ms": 13
+     },
+     {
+      "splits": 638,
+      "expected": 0,
+      "pages": 639,
+      "ms": 22
+     },
+     {
+      "splits": 638,
+      "expected": 0,
+      "pages": 639,
+      "ms": 13
+     },
+     {
+      "splits": 638,
+      "expected": 0,
+      "pages": 639,
+      "ms": 33
+     },
+     {
+      "splits": 638,
+      "expected": 0,
+      "pages": 639,
+      "ms": 31
+     },
+     {
+      "splits": 638,
+      "expected": 0,
+      "pages": 639,
+      "ms": 11
+     },
+     {
+      "splits": 638,
+      "expected": 0,
+      "pages": 639,
+      "ms": 23
+     },
+     {
+      "splits": 638,
+      "expected": 0,
+      "pages": 639,
+      "ms": 19
+     },
+     {
+      "splits": 638,
+      "expected": 0,
+      "pages": 639,
+      "ms": 24
+     },
+     {
+      "splits": 638,
+      "expected": 0,
+      "pages": 639,
+      "ms": 10
+     }
+    ],
+    "60000": [
+     {
+      "splits": 1290,
+      "expected": 0,
+      "pages": 1291,
+      "ms": 42
+     },
+     {
+      "splits": 1290,
+      "expected": 0,
+      "pages": 1291,
+      "ms": 60
+     },
+     {
+      "splits": 1290,
+      "expected": 0,
+      "pages": 1291,
+      "ms": 19
+     },
+     {
+      "splits": 1290,
+      "expected": 0,
+      "pages": 1291,
+      "ms": 49
+     },
+     {
+      "splits": 1290,
+      "expected": 0,
+      "pages": 1291,
+      "ms": 22
+     },
+     {
+      "splits": 1290,
+      "expected": 0,
+      "pages": 1291,
+      "ms": 39
+     },
+     {
+      "splits": 1290,
+      "expected": 0,
+      "pages": 1291,
+      "ms": 46
+     },
+     {
+      "splits": 1290,
+      "expected": 0,
+      "pages": 1291,
+      "ms": 34
+     },
+     {
+      "splits": 1290,
+      "expected": 0,
+      "pages": 1291,
+      "ms": 46
+     },
+     {
+      "splits": 1290,
+      "expected": 0,
+      "pages": 1291,
+      "ms": 23
+     }
+    ]
+   },
+   "inside": "Compiled from \"RandomUuidInsert.java\"\npublic class lab.pagesplit.RandomUuidInsert {\n  static final int PAGE_CAP;\n\n  public lab.pagesplit.RandomUuidInsert();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/Random\n      10: dup\n      11: ldc2_w        #15                 // long 42l\n      14: invokespecial #17                 // Method java/util/Random.\"<init>\":(J)V\n      17: astore_2\n      18: new           #20                 // class java/util/ArrayList\n      21: dup\n      22: invokespecial #22                 // Method java/util/ArrayList.\"<init>\":()V\n      25: astore_3\n      26: aload_3\n      27: iconst_0\n      28: invokestatic  #23                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      31: invokeinterface #27,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      36: pop\n      37: iconst_0\n      38: istore        4\n      40: invokestatic  #33                 // Method java/lang/System.nanoTime:()J\n      43: lstore        5\n      45: iconst_0\n      46: istore        7\n      48: iload         7\n      50: iload_1\n      51: if_icmpge     152\n      54: aload_2\n      55: invokevirtual #39                 // Method java/util/Random.nextInt:()I\n      58: istore        8\n      60: aload_2\n      61: aload_3\n      62: invokeinterface #43,  1           // InterfaceMethod java/util/List.size:()I\n      67: invokevirtual #46                 // Method java/util/Random.nextInt:(I)I\n      70: istore        9\n      72: aload_3\n      73: iload         9\n      75: invokeinterface #49,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;\n      80: checkcast     #8                  // class java/lang/Integer\n      83: invokevirtual #53                 // Method java/lang/Integer.intValue:()I\n      86: iconst_1\n      87: iadd\n      88: istore        10\n      90: iload         10\n      92: bipush        64\n      94: if_icmple     132\n      97: aload_3\n      98: iload         9\n     100: bipush        32\n     102: invokestatic  #23                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     105: invokeinterface #58,  3           // InterfaceMethod java/util/List.set:(ILjava/lang/Object;)Ljava/lang/Object;\n     110: pop\n     111: aload_3\n     112: iload         9\n     114: iconst_1\n     115: iadd\n     116: bipush        33\n     118: invokestatic  #23                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     121: invokeinterface #62,  3           // InterfaceMethod java/util/List.add:(ILjava/lang/Object;)V\n     126: iinc          4, 1\n     129: goto          146\n     132: aload_3\n     133: iload         9\n     135: iload         10\n     137: invokestatic  #23                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     140: invokeinterface #58,  3           // InterfaceMethod java/util/List.set:(ILjava/lang/Object;)Ljava/lang/Object;\n     145: pop\n     146: iinc          7, 1\n     149: goto          48\n     152: invokestatic  #33                 // Method java/lang/System.nanoTime:()J\n     155: lload         5\n     157: lsub\n     158: ldc2_w        #65                 // long 1000000l\n     161: ldiv\n     162: lstore        7\n     164: getstatic     #67                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     167: iload         4\n     169: invokedynamic #71,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     174: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     177: getstatic     #67                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     180: ldc           #81                 // String expected=0\n     182: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     185: getstatic     #67                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     188: aload_3\n     189: invokeinterface #43,  1           // InterfaceMethod java/util/List.size:()I\n     194: invokedynamic #83,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     199: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     202: getstatic     #67                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     205: lload         7\n     207: invokedynamic #84,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     212: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     215: return\n}"
+  },
+  "AutoIncAppend": {
+   "hash": "8dcf61e8af94193a",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 4
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 4
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 1
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 13
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 5
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 5
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 3
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 8
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 2
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 4
+     }
+    ],
+    "15000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 10
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 8
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 8
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 13
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 9
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 16
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 7
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 9
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 9
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 12
+     }
+    ],
+    "30000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 6
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 13
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 12
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 16
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 9
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 23
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 9
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 7
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 6
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 23
+     }
+    ],
+    "60000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 34
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 18
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 23
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 34
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 30
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 20
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 41
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 32
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 25
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 23
+     }
+    ]
+   },
+   "inside": "Compiled from \"AutoIncAppend.java\"\npublic class lab.pagesplit.AutoIncAppend {\n  static final int PAGE_CAP;\n\n  public lab.pagesplit.AutoIncAppend();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/ArrayList\n      10: dup\n      11: invokespecial #15                 // Method java/util/ArrayList.\"<init>\":()V\n      14: astore_2\n      15: aload_2\n      16: iconst_0\n      17: invokestatic  #16                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      20: invokeinterface #20,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      25: pop\n      26: iconst_0\n      27: istore_3\n      28: invokestatic  #26                 // Method java/lang/System.nanoTime:()J\n      31: lstore        4\n      33: iconst_0\n      34: istore        6\n      36: iload         6\n      38: iload_1\n      39: if_icmpge     111\n      42: aload_2\n      43: invokeinterface #32,  1           // InterfaceMethod java/util/List.size:()I\n      48: iconst_1\n      49: isub\n      50: istore        7\n      52: aload_2\n      53: iload         7\n      55: invokeinterface #36,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;\n      60: checkcast     #8                  // class java/lang/Integer\n      63: invokevirtual #40                 // Method java/lang/Integer.intValue:()I\n      66: istore        8\n      68: iload         8\n      70: bipush        64\n      72: if_icmplt     89\n      75: aload_2\n      76: iconst_1\n      77: invokestatic  #16                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      80: invokeinterface #20,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      85: pop\n      86: goto          105\n      89: aload_2\n      90: iload         7\n      92: iload         8\n      94: iconst_1\n      95: iadd\n      96: invokestatic  #16                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      99: invokeinterface #45,  3           // InterfaceMethod java/util/List.set:(ILjava/lang/Object;)Ljava/lang/Object;\n     104: pop\n     105: iinc          6, 1\n     108: goto          36\n     111: invokestatic  #26                 // Method java/lang/System.nanoTime:()J\n     114: lload         4\n     116: lsub\n     117: ldc2_w        #49                 // long 1000000l\n     120: ldiv\n     121: lstore        6\n     123: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     126: iload_3\n     127: invokedynamic #55,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     132: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     135: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     138: ldc           #65                 // String expected=0\n     140: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     143: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     146: aload_2\n     147: invokeinterface #32,  1           // InterfaceMethod java/util/List.size:()I\n     152: invokedynamic #67,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     157: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     160: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     163: lload         6\n     165: invokedynamic #68,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     170: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     173: return\n}"
+  },
+  "SnowflakeTrend": {
+   "hash": "81c756b9080c9b24",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 4
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 2
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 2
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 3
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 2
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 3
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 3
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 3
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 7
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 5
+     }
+    ],
+    "15000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 7
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 12
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 10
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 6
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 5
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 8
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 8
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 12
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 11
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 8
+     }
+    ],
+    "30000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 21
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 19
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 20
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 9
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 5
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 23
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 16
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 15
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 13
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 8
+     }
+    ],
+    "60000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 20
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 13
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 20
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 19
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 14
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 36
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 16
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 15
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 13
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 35
+     }
+    ]
+   },
+   "inside": "Compiled from \"SnowflakeTrend.java\"\npublic class lab.pagesplit.SnowflakeTrend {\n  static final int PAGE_CAP;\n\n  public lab.pagesplit.SnowflakeTrend();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/ArrayList\n      10: dup\n      11: invokespecial #15                 // Method java/util/ArrayList.\"<init>\":()V\n      14: astore_2\n      15: aload_2\n      16: iconst_0\n      17: invokestatic  #16                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      20: invokeinterface #20,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      25: pop\n      26: iconst_0\n      27: istore_3\n      28: invokestatic  #26                 // Method java/lang/System.nanoTime:()J\n      31: lstore        4\n      33: iconst_0\n      34: istore        6\n      36: iload         6\n      38: iload_1\n      39: if_icmpge     111\n      42: aload_2\n      43: invokeinterface #32,  1           // InterfaceMethod java/util/List.size:()I\n      48: iconst_1\n      49: isub\n      50: istore        7\n      52: aload_2\n      53: iload         7\n      55: invokeinterface #36,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;\n      60: checkcast     #8                  // class java/lang/Integer\n      63: invokevirtual #40                 // Method java/lang/Integer.intValue:()I\n      66: istore        8\n      68: iload         8\n      70: bipush        64\n      72: if_icmplt     89\n      75: aload_2\n      76: iconst_1\n      77: invokestatic  #16                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      80: invokeinterface #20,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      85: pop\n      86: goto          105\n      89: aload_2\n      90: iload         7\n      92: iload         8\n      94: iconst_1\n      95: iadd\n      96: invokestatic  #16                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      99: invokeinterface #45,  3           // InterfaceMethod java/util/List.set:(ILjava/lang/Object;)Ljava/lang/Object;\n     104: pop\n     105: iinc          6, 1\n     108: goto          36\n     111: invokestatic  #26                 // Method java/lang/System.nanoTime:()J\n     114: lload         4\n     116: lsub\n     117: ldc2_w        #49                 // long 1000000l\n     120: ldiv\n     121: lstore        6\n     123: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     126: iload_3\n     127: invokedynamic #55,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     132: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     135: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     138: ldc           #65                 // String expected=0\n     140: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     143: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     146: aload_2\n     147: invokeinterface #32,  1           // InterfaceMethod java/util/List.size:()I\n     152: invokedynamic #67,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     157: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     160: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     163: lload         6\n     165: invokedynamic #68,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     170: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     173: return\n}"
+  },
+  "OrderedUuidV7": {
+   "hash": "b8af63a91a83f926",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 8
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 3
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 2
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 4
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 3
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 5
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 2
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 5
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 5
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 79,
+      "ms": 2
+     }
+    ],
+    "15000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 3
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 9
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 8
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 8
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 6
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 3
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 5
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 5
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 8
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 235,
+      "ms": 3
+     }
+    ],
+    "30000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 14
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 10
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 24
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 9
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 16
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 11
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 20
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 8
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 9
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 469,
+      "ms": 10
+     }
+    ],
+    "60000": [
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 23
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 5
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 13
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 13
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 30
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 22
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 21
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 17
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 17
+     },
+     {
+      "splits": 0,
+      "expected": 0,
+      "pages": 938,
+      "ms": 7
+     }
+    ]
+   },
+   "inside": "Compiled from \"OrderedUuidV7.java\"\npublic class lab.pagesplit.OrderedUuidV7 {\n  static final int PAGE_CAP;\n\n  public lab.pagesplit.OrderedUuidV7();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/ArrayList\n      10: dup\n      11: invokespecial #15                 // Method java/util/ArrayList.\"<init>\":()V\n      14: astore_2\n      15: aload_2\n      16: iconst_0\n      17: invokestatic  #16                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      20: invokeinterface #20,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      25: pop\n      26: iconst_0\n      27: istore_3\n      28: invokestatic  #26                 // Method java/lang/System.nanoTime:()J\n      31: lstore        4\n      33: iconst_0\n      34: istore        6\n      36: iload         6\n      38: iload_1\n      39: if_icmpge     111\n      42: aload_2\n      43: invokeinterface #32,  1           // InterfaceMethod java/util/List.size:()I\n      48: iconst_1\n      49: isub\n      50: istore        7\n      52: aload_2\n      53: iload         7\n      55: invokeinterface #36,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;\n      60: checkcast     #8                  // class java/lang/Integer\n      63: invokevirtual #40                 // Method java/lang/Integer.intValue:()I\n      66: istore        8\n      68: iload         8\n      70: bipush        64\n      72: if_icmplt     89\n      75: aload_2\n      76: iconst_1\n      77: invokestatic  #16                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      80: invokeinterface #20,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      85: pop\n      86: goto          105\n      89: aload_2\n      90: iload         7\n      92: iload         8\n      94: iconst_1\n      95: iadd\n      96: invokestatic  #16                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      99: invokeinterface #45,  3           // InterfaceMethod java/util/List.set:(ILjava/lang/Object;)Ljava/lang/Object;\n     104: pop\n     105: iinc          6, 1\n     108: goto          36\n     111: invokestatic  #26                 // Method java/lang/System.nanoTime:()J\n     114: lload         4\n     116: lsub\n     117: ldc2_w        #49                 // long 1000000l\n     120: ldiv\n     121: lstore        6\n     123: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     126: iload_3\n     127: invokedynamic #55,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     132: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     135: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     138: ldc           #65                 // String expected=0\n     140: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     143: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     146: aload_2\n     147: invokeinterface #32,  1           // InterfaceMethod java/util/List.size:()I\n     152: invokedynamic #67,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     157: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     160: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     163: lload         6\n     165: invokedynamic #68,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     170: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     173: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

@@ -1,0 +1,316 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "filesort-temp-table",
+  "course": "MySQL 索引、事务与锁",
+  "title": "ORDER BY 和 GROUP BY 混用，Extra 怎么冒出 Using filesort？",
+  "lead": "明明只取 LIMIT 20，为什么 EXPLAIN 里出现了 Using filesort，慢到把 Sort Buffer 打满甚至落盘归并？",
+  "minutes": 35,
+  "needs": [
+    "知道 EXPLAIN Extra"
+  ],
+  "after": [
+    "破除「filesort 就是磁盘文件排序」的误解（优先在内存 Sort Buffer 排）",
+    "用联合索引把 ORDER BY + LIMIT 变成「按序扫 20 行即停」",
+    "避开多列排序方向一升一降（ASC/DESC 混用）导致索引排序失效"
+  ],
+  "terms": {
+    "Using filesort": "数据没有按 ORDER BY 的顺序排列，MySQL 必须在 Sort Buffer（内存）或临时磁盘文件里额外排一次序。",
+    "Sort Buffer": "每个连接独占的排序内存缓冲区，超过 `sort_buffer_size` 就会切到磁盘临时文件做多路归并排序，极慢。",
+    "Using index (排序)": "直接按索引的物理顺序读取，读满 LIMIT 20 条就停，0 额外排序。"
+  },
+  "experiments": {
+    "filesort": {
+      "runner": "java",
+      "home": "lab.filesort",
+      "variants": [
+        {
+          "id": "FilesortUnindexed",
+          "label": "无索引排序 (filesort)",
+          "note": "把 5 万行全塞进 SortBuffer 排完再取前 20 条。"
+        },
+        {
+          "id": "MixedAscDesc",
+          "label": "ASC/DESC 混用 (旧版失效)",
+          "note": "ORDER BY a ASC, b DESC 在 5.7 中无法用同向索引，触发 filesort。"
+        },
+        {
+          "id": "IndexOrderLimit",
+          "label": "联合索引顺排 LIMIT 20",
+          "note": "建 (status, created_at) 索引，天然有序，扫 20 行直接收工！"
+        },
+        {
+          "id": "CoveringSort",
+          "label": "覆盖索引 + 顺排",
+          "note": "既免 filesort 又免回表，双倍快乐。"
+        }
+      ],
+      "knob": {
+        "label": "待排序总行数",
+        "values": [
+          "5000",
+          "20000",
+          "50000",
+          "100000"
+        ],
+        "default": "50000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "sortedRows",
+        "expectKey": "expected",
+        "label": "参与排序的行数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "ORDER BY 和 GROUP BY 混用，Extra 怎么冒出 Using filesort？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "面试官问：「`EXPLAIN` 的 `Extra` 里看到 `Using filesort` 和 `Using temporary` 怎么处理？」今天我们用实验把 `filesort` 的代价量出来。",
+          "say": "哪怕加了 `LIMIT 20`，只要触发 `filesort`，MySQL 也得先把满足 `WHERE` 的 **5 万行** 全部排完序才能挑出前 20 名。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "只取前 20 条，Sort Buffer 却排了 5 万行？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "同样是 `WHERE status = 1 ORDER BY created_at DESC LIMIT 20`，建对索引只要读 **20** 行，建错要排 **50,000** 行。",
+          "say": "先看 `FilesortUnindexed`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 FilesortUnindexed 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "filesort.FilesortUnindexed",
+          "say": "没有按 `(status, created_at)` 有序组织时，必须把所有符合条件的行收集起来做全量排序。",
+          "walk": [
+            {
+              "focus": [
+                "Arrays.sort(times);",
+                "int sortedRows = n;"
+              ],
+              "say": "5 万行全部参与排序，超过 `sort_buffer_size` 还要落盘归并！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "某接口 `WHERE status=1 ORDER BY created_at LIMIT 20`，符合 `status=1` 的有 5 万行，但没有 `created_at` 索引。为了返回这 20 行，MySQL 要排序多少行？",
+          "options": [
+            "20 行",
+            "50,000 行",
+            "1 行"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "filesort",
+          "show": [
+            "FilesortUnindexed"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "`FilesortUnindexed` 和 `MixedAscDesc` 都把 5 万行全拿去排了一遍！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "filesort.FilesortUnindexed",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "索引不仅能加速 `WHERE` 查找，还能免费提供有序性！建好 `(status, created_at)` 联合索引后，在 `status=1` 这个区间里，`created_at` 本身就是从头到尾排好序的，引擎从头数 20 条直接返回即可。",
+          "walk": [
+            {
+              "focus": [
+                "Arrays.sort"
+              ],
+              "say": "用索引消除 `Arrays.sort`，O(N log N) 直接变成 O(20)。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "filesort",
+          "show": [
+            "FilesortUnindexed",
+            "MixedAscDesc",
+            "IndexOrderLimit",
+            "CoveringSort"
+          ],
+          "select": "IndexOrderLimit",
+          "say": "建 `(WHERE 等值列, ORDER BY 列)` 联合索引；如果有多列排序且方向相反（`a ASC, b DESC`），MySQL 8.0 支持降序索引 `(a ASC, b DESC)` 来救！"
+        },
+        {
+          "t": "chart",
+          "of": "filesort",
+          "say": "索引有序时耗时永远是一条贴地直线；`filesort` 随数据量增长急剧攀升。",
+          "walk": [
+            {
+              "focus": [
+                "FilesortUnindexed",
+                "IndexOrderLimit"
+              ],
+              "say": "遇到分页列表接口慢，先看 `Extra` 有没有 `Using filesort`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "记住 `ORDER BY` 走索引的三个前提：符合最左前缀、排序方向一致（除非 8.0 降序索引）、不能跨范围列排序。",
+          "options": [
+            {
+              "name": "Using filesort",
+              "solves": "兜底通用排序（先内存 SortBuffer，超限走磁盘归并）",
+              "cost": "O(N log N) 排序：{ms:filesort.FilesortUnindexed} ms",
+              "when": "数据量极小（几百行）时可接受，大表必优化",
+              "say": "注意不是一定要写磁盘文件才叫 filesort。"
+            },
+            {
+              "name": "联合索引消排序",
+              "solves": "利用索引物理有序，读满 LIMIT 即停",
+              "cost": "0 排序：{ms:filesort.IndexOrderLimit} ms",
+              "when": "所有高频分页列表（WHERE + ORDER BY + LIMIT）",
+              "say": "建 `(WHERE列, ORDER BY列)`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "关于 `EXPLAIN` 中的 `Using filesort`，下面说法**正确**的是？",
+          "options": [
+            {
+              "text": "`Using filesort` 表示无法利用索引有序性，优先在内存 `Sort Buffer` 排，不够才用磁盘临时文件归并",
+              "ok": true,
+              "why": "准确破除了「filesort = 必写磁盘文件」的字面误区！"
+            },
+            {
+              "text": "`Using filesort` 一定会在磁盘生成临时排序文件",
+              "ok": false,
+              "why": "数据量小于 `sort_buffer_size` 时在内存就能排完。"
+            },
+            {
+              "text": "加上 `LIMIT 20` 后，`Using filesort` 就只会排 20 行",
+              "ok": false,
+              "why": "必须先排完所有满足 WHERE 的行才能知道哪 20 行排最前（顶多用优先队列堆排优化）。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Using filesort 与索引排序",
+          "alias": "Filesort vs Index Order",
+          "oneLine": "查询无法利用索引顺序时触发 `Using filesort`（优先内存 Sort Buffer）；建==`(WHERE列, ORDER BY列)` 联合索引==可直接消除排序。",
+          "asked": [
+            "Using filesort 一定是磁盘排序吗？",
+            "如何优化 ORDER BY + LIMIT 慢查询？",
+            "MySQL 8.0 的降序索引解决什么问题？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "EXPLAIN 出现 Using filesort 是什么意思？怎么通过索引消除它？",
+          "points": [
+            "Using filesort 说明结果未按索引有序，需额外在 Sort Buffer（超限则磁盘归并）排序",
+            "优化核心：建 (WHERE 等值列, ORDER BY 列) 联合索引，让引擎按索引顺序扫满 LIMIT 即停",
+            "注意事项：遵循最左前缀、避免对排序列用函数、注意排序方向一致性（8.0 前需同升或同降，8.0 支持降序索引）"
+          ],
+          "model": "Using filesort 并不一定意味着磁盘排序，它是指 MySQL 无法直接利用索引的有序性，必须额外开辟 Sort Buffer 在内存里排序，只有数据量超过 sort_buffer_size 时才会落盘做外部归并。消除它的最好方式是建 (WHERE 等值列, ORDER BY 列) 的联合索引，这样在等值区间内数据天然按排序列排好，读满 LIMIT 条数就能直接返回。此外要注意不要在排序列上用函数，并保持多列排序方向一致（或使用 MySQL 8.0 的降序索引）。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "Using filesort 一定会写磁盘吗？",
+              "a": "不一定。优先在内存 Sort Buffer 排序，超过 sort_buffer_size 才落盘归并。"
+            },
+            {
+              "q": "WHERE a=1 ORDER BY b LIMIT 20 怎么建索引？",
+              "a": "建联合索引 (a, b)，先锁定 a=1 再按 b 有序读 20 条即停。"
+            },
+            {
+              "q": "ORDER BY a ASC, b DESC 怎么走索引？",
+              "a": "MySQL 5.7 会触发 filesort；MySQL 8.0 可建降序索引 (a ASC, b DESC)。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

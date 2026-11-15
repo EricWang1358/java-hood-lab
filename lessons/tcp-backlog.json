@@ -1,0 +1,264 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "tcp-backlog",
+  "course": "网络与操作系统",
+  "title": "accept 慢了一拍，新连接怎么直接被拒？",
+  "lead": "服务端 ServerSocket 来不及 accept() 时，内核全连接队列 backlog 装满会发生什么？",
+  "minutes": 35,
+  "needs": ["知道三次握手", "知道 ServerSocket.accept()", "知道客户端 connect 超时"],
+  "after": [
+    "分清半连接队列（SYN Queue）与全连接队列（Accept Queue）",
+    "解释为什么 ServerSocket(port, backlog) 过小且 accept 慢时新连接会失败",
+    "用异步线程池或 NIO Selector 让 accept 线程永不阻塞"
+  ],
+  "terms": {
+    "半连接队列": "SYN Queue：服务端收到 SYN、发出 SYN+ACK 后，在等第三次握手 ACK 前暂存的连接队列。",
+    "全连接队列": "Accept Queue：三次握手已全部完成、等待服务端调用 accept() 取走的队列。",
+    "backlog": "ServerSocket 构造函数的第二个参数，用于指定内核全连接队列的上限（受系统 somaxconn 限制）。",
+    "somaxconn": "Linux 内核参数，限制单个监听端口全连接队列的最大长度。",
+    "SYN Flood": "伪造源 IP 发送海量 SYN 不回 ACK，把半连接队列打满的拒绝服务攻击。"
+  },
+  "experiments": {
+    "backlog": {
+      "runner": "java",
+      "home": "lab.backlog",
+      "variants": [
+        { "id": "TinyBacklog", "code": "TinyBacklog.java", "label": "backlog=1 且慢 accept", "note": "全连接队列设为 1，且每接一个连接睡 25ms，并发连接瞬间挤爆队列。" },
+        { "id": "LargeBacklog", "code": "LargeBacklog.java", "label": "调大 backlog=128", "note": "把全连接队列扩大到 128，允许内核先帮服务端缓存突发建连。" },
+        { "id": "AsyncAccept", "code": "AsyncAccept.java", "label": "accept 立即丢线程池", "note": "主线程只管极速 accept()，读写交给 8 线程工作池，队列根本积不住。" },
+        { "id": "NioAccept", "code": "NioAccept.java", "label": "NIO Selector 接管", "note": "单线程非阻塞 Selector 监听 OP_ACCEPT 与 OP_READ，零阻塞接管。" }
+      ],
+      "knob": { "label": "并发客户端数", "values": ["8", "16", "32", "64"], "default": "32" },
+      "repeat": 20,
+      "metric": { "key": "connected", "expectKey": "expected", "label": "成功建连数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "accept 慢了一拍，新连接怎么直接被拒？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**服务端线程还没死，只是 `accept()` 慢了一拍，为什么客户端就大批报超时或被拒？**",
+          "say": "高并发秒杀或突发流量一来，服务端进程还在跑，客户端却大量连不上。秘密就藏在内核维护的两个连接队列里。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：三次握手谁先谁后？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先核对三个关于服务端接收连接的小问题。",
+          "items": [
+            {
+              "have": "三次握手",
+              "q": "TCP 三次握手是在服务端调用 `accept()` 之前还是之后完成的？",
+              "options": ["必须等 accept() 调用后才开始握手", "由内核在 accept() 之前自动完成", "随机顺序"],
+              "answer": 1,
+              "why": "内核协议栈自己完成三次握手，然后把建好的连接放进全连接队列等 `accept()` 来取。"
+            },
+            {
+              "have": "ServerSocket",
+              "q": "`new ServerSocket(port, backlog)` 里的第二个参数控制什么？",
+              "options": ["最大在线人数", "全连接队列（Accept Queue）的最大长度", "线程池线程数"],
+              "answer": 1,
+              "why": "Java 里 `backlog` 传给内核 `listen(fd, backlog)`，受 `min(backlog, somaxconn)` 限制。"
+            },
+            {
+              "have": "阻塞",
+              "q": "如果在 `accept()` 循环里同步做耗时 25ms 的业务读写，会发生什么？",
+              "options": ["新来的连接全卡在全连接队列里没人取", "内核会自动开新线程", "客户端感知不到"],
+              "answer": 0,
+              "why": "只要队列被占满，后续新来的握手请求就会被丢弃或触发超时。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个银行叫号大厅",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["32 个客户", "1 个慢柜员"], "shared": { "name": "等候区长椅(backlog=1)", "value": "满员" } },
+          "story": "门口保安（内核）先帮客户核对身份证（半连接队列），办完就请进等候区长椅（全连接队列）坐着，等柜员（`accept()`）喊号。长椅只有 **1 个座位**，柜员每办一单又磨蹭 25 毫秒，门外冲进 32 个人时，第 3 个起直接被保安拦在门外超时。",
+          "say": "记住这两个队列的分工：保安手里未核验完的是半连接队列，长椅上坐好等叫号的是全连接队列。",
+          "map": [
+            { "scene": "门口核验身份证", "on": "actors", "tag": "半连接队列", "code": "SYN → SYN+ACK", "say": "还没收到第三个 ACK 时暂存在半连接队列。" },
+            { "scene": "只有 1 个座位的等候椅", "on": "shared", "tag": "全连接队列", "code": "`new ServerSocket(0, 1)`", "say": "三次握手完成但还没被 `accept()` 取走的连接都挤在这里。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "现场复现：backlog=1 碰上慢 accept",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "backlog.TinyBacklog",
+          "say": "看 `TinyBacklog.java`：监听队列设为 `1`，服务端每轮还故意睡 25ms 再 `accept()`，32 个客户端同时在 40ms 超时内发起建连。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：32 个客户端同时连，能成功几个？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "32 个客户端同时连向 `backlog=1` 且每 25ms 才 `accept` 一次的服务端（连接超时 40ms），能连上多少个？",
+          "options": ["32 个全连上", "大概只有几个连上，其余全超时", "0 个"],
+          "answer": 1,
+          "say": "40ms 内慢吞吞的 `accept()` 最多取走一两个连接，其余几十个全挤爆了容量为 1 的队列而超时失败。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测撞车：32 个只连上 2 个",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "backlog",
+          "show": ["TinyBacklog", "LargeBacklog"],
+          "knob": "32",
+          "hand": "TinyBacklog",
+          "focus": "connected",
+          "say": "看左边：`TinyBacklog` 32 个里常常只成功 2 个左右；把 `backlog` 放大到 128 后，32/32 全部稳稳接住。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "全连接队列满 + accept 阻塞，新连接直接超时或被拒",
+          "say": "队列只是缓冲池；真正治本还得让 `accept()` 别干重活。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的 backlog 参数",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "backlog.TinyBacklog",
+          "within": "main(",
+          "from": "new           #13",
+          "to": "invokespecial #16",
+          "say": "看 `new ServerSocket(0, 1)` 编译出的指令：第二个参数 `iconst_1` 直接传进构造器并下沉到操作系统 `listen(fd, 1)`。",
+          "walk": [
+            { "focus": ["iconst_1"], "label": "backlog=1", "say": "把全连接队列上限硬生生卡死在 1。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "治本两招：异步线程池与 NIO Selector",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "backlog.AsyncAccept",
+          "say": "`AsyncAccept` 让 `accept()` 线程拿到 Socket 后立刻丢进线程池，绝不在接人门口处理业务；`NioAccept` 则用 `Selector` 非阻塞瞬间接走所有连接。"
+        },
+        {
+          "t": "experiment",
+          "lab": "backlog",
+          "show": ["TinyBacklog", "LargeBacklog", "AsyncAccept", "NioAccept"],
+          "knob": "32",
+          "hand": "AsyncAccept",
+          "focus": "connected",
+          "say": "三条修复线全部 32/32 成功，而且异步接管比慢循环快了好几倍。"
+        },
+        {
+          "t": "try",
+          "key": "backlog",
+          "say": "把并发客户端拉到 64 试试，看 `TinyBacklog` 的惨烈对比。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "上线配置怎么调优？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "调大队列和异步接管必须配合使用。",
+          "options": [
+            { "name": "调大 backlog + somaxconn", "solves": "抗住瞬时突发建连洪峰", "cost": "耗时 {ms:backlog.LargeBacklog} ms", "when": "所有线上 Tomcat/Netty/Nginx", "say": "注意 `backlog` 取 `min(应用参数, /proc/sys/net/core/somaxconn)`，两头都要够大。" },
+            { "name": "accept 与业务读写解耦", "solves": "让全连接队列时刻保持几乎为空", "cost": "耗时 {ms:backlog.AsyncAccept} ms", "when": "任何高并发服务端架构", "say": "这也是 Netty 主从 Reactor 专门拆出 BossGroup 的原因。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住这两个队列",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "TCP 半连接队列与全连接队列",
+          "alias": "SYN Queue & Accept Queue (backlog)",
+          "oneLine": "内核用半连接队列存未完成握手的 SYN，用全连接队列（长度受 min(backlog, somaxconn) 限制）存等 accept() 的连接。",
+          "asked": "TCP 半连接队列和全连接队列满了分别会怎样？",
+          "say": "半连接满可触发 SYN Cookie 或丢包；全连接满则丢弃新包或回 RST 拒连。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "你在 Java 代码里写了 `new ServerSocket(8080, 1024)`，但 Linux 系统 `somaxconn` 默认是 128，实际全连接队列上限是多少？",
+          "options": [
+            { "text": "128（取 backlog 与 somaxconn 的较小值）", "ok": true, "why": "正确！应用层传的 backlog 无法突破内核 somaxconn 上限。" },
+            { "text": "1024（以 Java 代码为准）", "ok": false, "why": "内核会静默截断到 somaxconn。" },
+            { "text": "1152（两者相加）", "ok": false, "why": "不是相加，而是取较小值。" }
+          ],
+          "say": "这是线上调优最常踩的坑之一。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：TCP 两个队列与 backlog",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：讲讲 TCP 半连接队列、全连接队列，以及队列满了会怎样？",
+          "points": [
+            "半连接队列（SYN Queue）：收到 SYN 回完 SYN+ACK 后放入，等第三次 ACK",
+            "全连接队列（Accept Queue）：三次握手完成后放入，等应用调用 accept() 取走，上限受 min(backlog, somaxconn) 控制",
+            "满了的后果与解法：新连接超时或被 RST 拒绝；线上调大 backlog 和 somaxconn，并用独立线程/Reactor 极速 accept"
+          ],
+          "model": "内核在三次握手期间维护两个队列：收到第一次 SYN 并回 SYN+ACK 后，连接进入半连接队列；收到第三次 ACK 握手完成后移入全连接队列，等服务端调用 accept() 取走。全连接队列长度受 min(应用 backlog, 内核 somaxconn) 限制。一旦业务阻塞导致 accept() 慢，全连接队列打满，新来的连接就会超时或被拒绝。工程上既要调大 backlog 与 somaxconn 抗住突发洪峰，更要用独立 Boss 线程或 NIO Selector 极速 accept 与业务解耦。",
+          "say": "试着不看稿把两个队列的流转过程讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "记住这三张卡，下次排查 Connection refused / timeout 就有方向了。",
+          "items": [
+            { "front": "半连接 vs 全连接队列？", "back": "半连接存收到 SYN 未收 ACK 的；全连接存握手完成等 accept() 取走的。" },
+            { "front": "backlog 上限怎么算？", "back": "取 min(应用层 backlog, Linux somaxconn)，只调一边没用。" },
+            { "front": "怎么防止队列积压？", "back": "accept 线程只负责接连接，立刻交给工作线程池或 Reactor。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

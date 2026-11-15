@@ -1,0 +1,315 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "index-condition-pushdown",
+  "course": "MySQL 索引、事务与锁",
+  "title": "联合索引范围后面的列，ICP 怎么少回一半表？",
+  "lead": "建了 (name, age) 联合索引，查 name LIKE '张%' AND age = 20。age 明明被范围截断了，为什么 MySQL 5.6 之后还是变快了？",
+  "minutes": 35,
+  "needs": [
+    "知道回表和最左前缀"
+  ],
+  "after": [
+    "分清 MySQL Server 层和存储引擎层的职责边界",
+    "讲清索引下推（ICP）如何在回表前就地过滤掉无效行",
+    "区分 ICP（减少回表）与覆盖索引（彻底不回表）"
+  ],
+  "terms": {
+    "索引下推（ICP）": "Index Condition Pushdown：把本该在 Server 层过滤的条件（且该列在索引里）下推到存储引擎层，先过滤再决定要不要回表。",
+    "Using index condition": "EXPLAIN 中 Extra 出现它，表示启用了索引下推。"
+  },
+  "experiments": {
+    "icp": {
+      "runner": "java",
+      "home": "lab.icp",
+      "variants": [
+        {
+          "id": "NoIcpFilter",
+          "label": "无 ICP (先全回表)",
+          "note": "5.5 行为：所有姓张的人全部回表，再让 Server 层判断 age=20。"
+        },
+        {
+          "id": "WithIcp",
+          "label": "开启 ICP (先滤再回表)",
+          "note": "5.6+ 行为：引擎在索引里先看 age==20，只回表 10% 的人！"
+        },
+        {
+          "id": "ExactComposite",
+          "label": "调换为 (age, name)",
+          "note": "等值列放前，直接精确定位到 20 岁姓张的人。"
+        },
+        {
+          "id": "CoveringIcp",
+          "label": "覆盖索引 (0 回表)",
+          "note": "只查 id, name, age，连这 10% 的回表都省了。"
+        }
+      ],
+      "knob": {
+        "label": "姓张总人数",
+        "values": [
+          "500",
+          "2000",
+          "5000",
+          "10000"
+        ],
+        "default": "5000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "backToTable",
+        "expectKey": "expected",
+        "label": "回表次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "联合索引范围后面的列，ICP 怎么少回一半表？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "建了 `(name, age)` 联合索引，执行 `SELECT * FROM users WHERE name LIKE '张%' AND age = 20`。`name` 是范围查询，按理说后面的 `age` 用不上二分定位了——那 `age` 在索引里就完全白存了吗？",
+          "say": "MySQL 5.6 引入的索引下推（ICP），专门用来榨干索引里「能顺便过滤但没法二分」的列。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "5000 个姓张的人里只有 500 个是 20 岁",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "没有 ICP 时要回表 5000 次；有了 ICP 只需要回表 **500** 次。",
+          "say": "对比 `NoIcpFilter` 和 `WithIcp`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 NoIcpFilter 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "icp.NoIcpFilter",
+          "say": "`NoIcpFilter` 是不管三七二十一先 `backToTable++`（回表），再 `if (ages[i] == 20)`。",
+          "walk": [
+            {
+              "focus": [
+                "backToTable++;",
+                "if (ages[i] == 20) matched++;"
+              ],
+              "say": "无 ICP 时每条姓张的记录都要先回表捞整行，再丢给 Server 层过滤掉 90%。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "5000 个姓张的人中 20 岁占 10%（500 人）。开启 ICP 后，回表次数会从 5000 降到多少？",
+          "options": [
+            "5000 次",
+            "500 次",
+            "0 次"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "icp",
+          "show": [
+            "NoIcpFilter"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "无 ICP 时 `backToTable = 5000`；开启 ICP 后直接降到 500 次，省了 90% 的随机回表！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "icp.NoIcpFilter",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "因为 `(name, age)` 二级索引的叶子节点里本来就存着 `age` 的值！虽然因为 `name` 是范围查询导致 `age` 无序没法二分，但引擎在扫描索引叶子的顺手之间就能顺便比一下 `age == 20`，不满足就直接跳过，省得回表。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpne"
+              ],
+              "say": "把过滤条件从 Server 层下推到引擎层索引扫描处，直接挡掉无效回表。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "icp",
+          "show": [
+            "NoIcpFilter",
+            "WithIcp",
+            "ExactComposite",
+            "CoveringIcp"
+          ],
+          "select": "WithIcp",
+          "say": "如果业务允许把等值列放前面建 `(age, name)`，或者只查索引列变成覆盖索引，效果还能更进一步。"
+        },
+        {
+          "t": "chart",
+          "of": "icp",
+          "say": "ICP 把回表次数直接压到原来的 1/10，且随数据量越大收益越惊人。",
+          "walk": [
+            {
+              "focus": [
+                "NoIcpFilter",
+                "WithIcp"
+              ],
+              "say": "看清区别：ICP 是「减少回表」，覆盖索引是「彻底不回表」。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "MySQL 5.6+ 默认开启 ICP；记住只有二级索引回表时才需要 ICP（聚簇索引本来就在叶子里，不需要下推）。",
+          "options": [
+            {
+              "name": "索引下推 (ICP)",
+              "solves": "二级索引范围后续列无法二分时，就地过滤减少回表",
+              "cost": "仅回表命中行：{ms:icp.WithIcp} ms",
+              "when": "联合索引前导列是范围（LIKE '张%'、>、<）且后面还有条件",
+              "say": "EXPLAIN Extra 显示 Using index condition。"
+            },
+            {
+              "name": "调整列序 (age, name)",
+              "solves": "等值列在前，范围列在后，连索引扫描数一起砍掉",
+              "cost": "最优定位：{ms:icp.ExactComposite} ms",
+              "when": "建索引时优先把等值条件列放前面",
+              "say": "从源头避免范围截断更彻底。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "EXPLAIN 的 Extra 列出现 `Using index condition` 说明了什么？",
+          "options": [
+            {
+              "text": "触发了索引下推（ICP），存储引擎在索引遍历时先过滤了条件再回表",
+              "ok": true,
+              "why": "准确！`Using index` 是覆盖索引，`Using index condition` 是索引下推。"
+            },
+            {
+              "text": "触发了覆盖索引，完全不需要回表",
+              "ok": false,
+              "why": "覆盖索引显示的是 `Using index`，不是 `Using index condition`。"
+            },
+            {
+              "text": "索引失效了，正在全表扫描",
+              "ok": false,
+              "why": "全表扫描是 type=ALL。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "索引下推（ICP）",
+          "alias": "Index Condition Pushdown",
+          "oneLine": "将索引包含列上的过滤条件从 Server 层下推到存储引擎层，==先在索引内过滤再回表==，大幅减少回表 I/O。",
+          "asked": [
+            "什么是索引下推（ICP）？",
+            "Using index 和 Using index condition 有什么区别？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "什么是索引下推（ICP）？它和覆盖索引有什么区别？",
+          "points": [
+            "二级索引范围查询（如 LIKE '张%'）后，后续索引列虽不能二分，但值就在索引里",
+            "5.6 前要全部回表交给 Server 层过滤；5.6 后 ICP 下推给引擎层先过滤再回表",
+            "EXPLAIN Extra：ICP 显示 Using index condition，覆盖索引显示 Using index",
+            "ICP 减少回表次数；覆盖索引彻底消除回表"
+          ],
+          "model": "索引下推（ICP）是 MySQL 5.6 引入的优化。比如有联合索引 (name, age)，查 name LIKE '张%' AND age = 20。由于 name 是范围匹配，age 不能再二分定位，但 age 的值其实就存在二级索引的叶子节点里。没有 ICP 时，引擎会把所有姓张的行全部回表捞出来交给 Server 层再过滤 age；有了 ICP 后，引擎在扫二级索引时顺便就把 age=20 过滤掉了，只对满足条件的行回表，从而大幅减少随机 I/O。它和覆盖索引的区别是：覆盖索引完全不回表（Using index），ICP 还是要回表，只是少回了很多次（Using index condition）。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "索引下推解决什么问题？",
+              "a": "解决联合索引范围/模糊查询后，后续索引列无法二分但可以顺便过滤、减少无效回表的问题。"
+            },
+            {
+              "q": "Using index vs Using index condition？",
+              "a": "前者是覆盖索引（0 回表）；后者是索引下推（先滤后回表）。"
+            },
+            {
+              "q": "聚簇索引会用 ICP 吗？",
+              "a": "不会，聚簇索引叶子已经包含整行，不存在回表。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

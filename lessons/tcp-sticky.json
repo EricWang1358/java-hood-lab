@@ -1,0 +1,265 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "tcp-sticky",
+  "course": "网络与操作系统",
+  "title": "连发 100 条消息，怎么粘成一坨还缺半截？",
+  "lead": "TCP 是无边界的字节流，连发 100 条 \"MSG-i\"，为什么接收方按 read(buf) 读出来个数不对？",
+  "minutes": 35,
+  "needs": ["知道 InputStream.read(byte[])", "知道 TCP 字节流概念", "见过协议报文"],
+  "after": [
+    "讲清为什么 TCP 会有「粘包」和「拆包」，而 UDP 不会",
+    "亲眼看到裸流 read() 把多条消息粘在一起的事故",
+    "掌握分隔符、固定长度、长度前缀（LengthField）三种拆包方案"
+  ],
+  "terms": {
+    "粘包": "发送方连续发出的多条应用层消息，被接收方一次 read() 一起读了出来。",
+    "拆包": "发送方发出的一条完整消息，被接收方分多次 read() 才读完（半包）。",
+    "字节流": "TCP 只保证字节按顺序到达，不保留每次 write() 的调用边界。",
+    "LengthPrefix": "长度前缀协议：先发 4 字节整数声明消息体长度，再发消息体本身。",
+    "readFully": "DataInputStream 的方法：必须读满指定字节数才返回，否则一直阻塞等待后续字节。"
+  },
+  "experiments": {
+    "sticky": {
+      "runner": "java",
+      "home": "lab.sticky",
+      "variants": [
+        { "id": "RawStream", "code": "RawStream.java", "label": "裸流直接 read", "note": "发送端连发 N 条 8 字节消息，接收端每次 in.read(buf) 当成一条，结果全粘在一起。" },
+        { "id": "LineDelim", "code": "LineDelim.java", "label": "换行符定界", "note": "每条消息末尾加 \\n，接收端用 BufferedReader.readLine() 按行切分。" },
+        { "id": "FixedLen", "code": "FixedLen.java", "label": "固定长度 8 字节", "note": "约定每条消息定长 8 字节，接收端用 readFully() 精确读满一条。" },
+        { "id": "LengthPrefix", "code": "LengthPrefix.java", "label": "4 字节长度前缀", "note": "先 writeInt(len) 再写消息体，接收端先 readInt() 再 readFully(body)。" }
+      ],
+      "knob": { "label": "连续发送条数", "values": ["50", "100", "200", "400"], "default": "100" },
+      "repeat": 20,
+      "metric": { "key": "exact", "expectKey": "expected", "label": "完整切出消息数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "连发 100 条消息，怎么粘成一坨还缺半截？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**发送端明明 `write()` 了 100 次，为什么接收端 `read()` 出来的不是 100 条？**",
+          "say": "很多新手第一次写 Socket 聊天室或 RPC，本地单条测得好好的，一连发 100 条就全乱套。这不是 TCP 的 Bug，而是 TCP 本来就没有「消息边界」。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：UDP 和 TCP 传数据有什么区别？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先确认三个关于流式传输的常识。",
+          "items": [
+            {
+              "have": "字节流",
+              "q": "客户端分两次调用 `out.write(\"AB\")` 和 `out.write(\"CD\")`，服务端一次 `in.read(buf)` 可能读到什么？",
+              "options": ["一定分两次读到 AB 和 CD", "可能一次读到 \"ABCD\"，也可能先读到 \"ABC\"", "只能读到 AB"],
+              "answer": 1,
+              "why": "TCP 把数据看成一条连绵不断的水管水流，不记录你倒了几勺。"
+            },
+            {
+              "have": "UDP",
+              "q": "UDP 协议会有粘包/拆包问题吗？",
+              "options": ["不会，UDP 每个数据报自带长度边界", "会，和 TCP 一样", "只会粘包不会拆包"],
+              "answer": 0,
+              "why": "UDP 是面向报文的，每次 `receive()` 精确对应一次 `send()`。"
+            },
+            {
+              "have": "readFully",
+              "q": "`in.read(buf)` 和 `DataInputStream.readFully(buf)` 的区别是什么？",
+              "options": ["完全一样", "`read` 有多少读多少；`readFully` 必须攒满整个数组才返回", "`readFully` 只读第一个字节"],
+              "answer": 1,
+              "why": "`read(buf)` 哪怕缓冲区 256 字节，内核里只有 3 字节也会立刻返回 3；`readFully` 会等够长度。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象往水管里倒 100 杯水",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["发送端(倒水)", "接收端(接水)"], "shared": { "name": "TCP 水管", "value": "MSG-0000MSG-0001..." } },
+          "story": "发送端连着倒了 100 勺水（每勺 8 字节 `MSG-0000`），水进到 TCP 水管就融成一条连续水流；接收端拿着 256 毫升的大瓢去舀，一瓢下去直接舀出好几条粘在一起的字符。",
+          "say": "水管本身没有隔板，想要分清哪段是哪条消息，必须在应用层自己加隔板或贴长度标签。",
+          "map": [
+            { "scene": "连倒 100 勺水", "on": "actors", "tag": "100 次 write()", "code": "`out.write(payload)`", "say": "内核发送缓冲区会自动合并小块写入。" },
+            { "scene": "256 字节大瓢一勺舀", "on": "shared", "tag": "粘包现象", "code": "`in.read(new byte[256])`", "say": "一次 `read()` 把多条消息一起读出来，直接解析必错。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "现场复现：连发 100 条，直接乱套",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "sticky.RawStream",
+          "say": "看 `RawStream.java`：发送端发 100 次 `MSG-0000`～`MSG-0099`，接收端用 `new byte[256]` 直接 `read()` 并校验是否恰好是一条完整消息。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：100 条消息，裸流能完整读出几条？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`RawStream` 连发 100 条 8 字节消息，接收端每次 `in.read(buf)` 当成一条消息解析，最后 `exact` 是多少？",
+          "options": ["100（全部正确）", "明显小于 100（大量粘在一起导致匹配失败）", "200"],
+          "answer": 1,
+          "say": "多条消息在内核缓冲区或接收端瞬间粘成一串，一次 `read()` 读出十几条，单条校验直接失败。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测撞车：粘包大面积发生",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "sticky",
+          "show": ["RawStream", "LengthPrefix"],
+          "knob": "100",
+          "hand": "RawStream",
+          "focus": "exact",
+          "say": "看 20 轮散点：`RawStream` 经常只切出几十条甚至个位数，而加上 4 字节长度前缀后 100/100 稳如磐石。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "TCP 无消息边界，应用层必须自己定义帧格式",
+          "say": "不要指望 `flush()` 能划分消息边界，它只管催内核发出去，管不了对端怎么收。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的裸 read",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "sticky.RawStream",
+          "within": "lambda$main$0",
+          "from": "newarray",
+          "to": "InputStream.read",
+          "say": "接收端每次调用 `InputStream.read([B)I` 只管从内核接收缓冲区抓当前已有字节，根本不知道发送端写了几次。",
+          "walk": [
+            { "focus": ["InputStream.read"], "label": "无边界抓字节", "say": "只要缓冲区里躺着两条消息的 16 字节，它就一口气全返回给你。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "三种工业界拆包解法同台对比",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "sticky.LengthPrefix",
+          "say": "`LineDelim` 用换行符 `\\n` 切分；`FixedLen` 约定定长 8 字节；`LengthPrefix` 先发 4 字节整数长度再发消息体（Netty/HTTP2/Dubbo 同款）。"
+        },
+        {
+          "t": "experiment",
+          "lab": "sticky",
+          "show": ["RawStream", "LineDelim", "FixedLen", "LengthPrefix"],
+          "knob": "100",
+          "hand": "LengthPrefix",
+          "focus": "exact",
+          "say": "三种拆包协议全部 100/100 精确切分，无一漏网。"
+        },
+        {
+          "t": "try",
+          "key": "sticky",
+          "say": "把发送条数调到 400，`RawStream` 粘得更厉害，三种协议依然 400/400。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三种帧协议怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "对照扩展性与性能，挑最适合自己协议的。",
+          "options": [
+            { "name": "分隔符（如 \\n）", "solves": "文本协议人类可读，调试方便", "cost": "{ms:sticky.LineDelim} ms", "when": "HTTP 头、Redis RESP、纯文本日志", "say": "缺点是正文里如果出现分隔符必须转义。" },
+            { "name": "固定长度", "solves": "实现极简，不用存长度头", "cost": "{ms:sticky.FixedLen} ms", "when": "定长心跳包或硬件传感器报文", "say": "短消息填充空格浪费带宽，长消息又装不下。" },
+            { "name": "长度前缀（LengthPrefix）", "solves": "支持任意二进制数据且零转义", "cost": "{ms:sticky.LengthPrefix} ms", "when": "Dubbo、gRPC、Netty 自定义二进制 RPC", "say": "后端自定义私有协议的首选。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住这个核心原理",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "TCP 粘包与拆包（半包）",
+          "alias": "Stream Framing",
+          "oneLine": "TCP 是无边界字节流，多条消息可能被一次 read 读出（粘包），单条消息也可能被拆成多次 read（拆包），必须靠应用层帧协议切分。",
+          "asked": "为什么会有 TCP 粘包和拆包？Netty 是怎么解决的？",
+          "say": "Netty 提供了 LineBasedFrameDecoder、FixedLengthFrameDecoder 和最常用的 LengthFieldBasedFrameDecoder。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果要传输任意二进制图片或 Protobuf 数据，最推荐哪种 TCP 拆包方案？",
+          "options": [
+            { "text": "4 字节长度前缀 + 消息体（LengthField）", "ok": true, "why": "正确！支持任意二进制字节，无需转义且能一次性分配精确缓冲区。" },
+            { "text": "用 \\n 换行符分隔", "ok": false, "why": "二进制图片字节里随时可能出现 0x0A（\\n），会误切包。" },
+            { "text": "每次 write 后多调几次 flush()", "ok": false, "why": "flush() 不能在 TCP 流里制造消息边界。" }
+          ],
+          "say": "二进制协议一定要避开分隔符陷阱。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：TCP 粘包拆包",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：什么是 TCP 粘包和拆包？为什么发生？怎么解决？",
+          "points": [
+            "根本原因：TCP 是面向字节流的协议，只保序不保留每次 write 的消息边界",
+            "发生原因：发送端 Nagle 合并或内核缓冲区攒批、接收端 read 大小与消息长度不匹配",
+            "三种解法：固定长度、特殊分隔符（如 HTTP \\r\\n）、长度前缀（Header 声明 Length + Body，Netty LengthFieldBasedFrameDecoder）"
+          ],
+          "model": "TCP 是无边界的字节流协议，底层不记录应用层调用了多少次 write()。发送端缓冲区合并或 Nagle 算法可能把多条消息拼成一个 TCP 段发出去，接收端一次 read() 就读出多条，叫粘包；反之消息过大超过 MSS 或接收缓冲区一次没收全，需要多次 read() 才能拼完整，叫拆包。工程上必须在应用层定义帧边界，常见有三种方式：定长包、分隔符（如文本协议的换行）、以及二进制 RPC 最常用的长度前缀（先读 4 字节长度再 readFully 读满包体）。",
+          "say": "把「无边界字节流」和「三种解法」顺畅讲出来。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "这三张卡片帮你彻底搞定粘包拆包面试题。",
+          "items": [
+            { "front": "为什么会有粘包拆包？", "back": "TCP 是无边界字节流，不保留应用层 write() 的边界。" },
+            { "front": "flush() 能防粘包吗？", "back": "不能！就算分开发出，接收端内核缓冲区一样会拼在一起被 read() 读走。" },
+            { "front": "二进制 RPC 怎么拆包？", "back": "长度前缀（Length + Body），对应 Netty LengthFieldBasedFrameDecoder。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
