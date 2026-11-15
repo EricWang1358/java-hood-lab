@@ -5,19 +5,26 @@
   "course": "MySQL 索引、事务与锁",
   "title": "写内存不立刻刷盘，断电怎么不丢数据？WAL Redo 与 Undo 职责拆解",
   "lead": "每次改一行就随机刷 16KB 数据页慢如蜗牛；先写顺序 Redo 呢？那为什么还需要 Undo 日志？",
-  "minutes": 35,
+  "minutes": 40,
   "needs": [
-    "知道磁盘顺序写比随机写快"
+    "知道内存比磁盘快",
+    "知道事务可以提交也可以回滚"
   ],
   "after": [
-    "讲清 WAL 顺序写 Redo Log 为什么比随机刷脏页快几个数量级",
+    "讲清 WAL 顺序写 Redo Log 为什么比随机刷 16KB 脏页快",
     "分清 Redo（物理重做保持久性）和 Undo（逻辑回滚保原子性 + MVCC）",
     "避开「有 Redo 就不用 Undo」的误区"
   ],
   "terms": {
-    "WAL（Write-Ahead Logging）": "预写日志：改数据时先顺序写日志落盘，再慢慢异步刷脏页。",
-    "Redo Log": "InnoDB 物理日志，记录「在哪个数据页偏移量改了什么」，用来在断电重启后**前滚恢复**已提交数据。",
-    "Undo Log": "InnoDB 逻辑日志，记录修改前的旧值，用来做**事务回滚**和 **MVCC 多版本读**。"
+    "Buffer Pool（缓冲池）": "InnoDB 在内存里缓存数据页的区域，所有读写先在内存改，不立刻刷盘。",
+    "脏页（Dirty Page）": "内存里改过、但还没来得及写回磁盘的数据页（每页 16KB）。",
+    "WAL（Write-Ahead Logging）": "预写日志：改数据时先顺序追加写小日志落盘，再异步批量刷脏页。",
+    "Redo Log": "InnoDB 物理日志，记录「哪个数据页偏移量改了什么」，用来在断电重启后**前滚恢复**已提交数据。",
+    "Undo Log": "InnoDB 逻辑日志，记录修改前的旧值，用来做**事务回滚**和 **MVCC 多版本读**。",
+    "int[]": "Java 整数数组，本课用来模拟内存里的 Buffer Pool 数据页和顺序日志数组。",
+    "Arrays.fill": "把数组里所有格子一次性填成同一个初始值（这里是把初始余额都设为 100）。",
+    "System.nanoTime()": "读取精确到纳秒的系统时钟，用来统计实验耗时。",
+    "rollback": "事务回滚：业务执行到一半报错，把前面改过的数据全部撤销还原。"
   },
   "experiments": {
     "walredo": {
@@ -25,24 +32,24 @@
       "home": "lab.walredo",
       "variants": [
         {
+          "id": "RedoWithoutUndo",
+          "label": "只有 Redo 没有 Undo",
+          "note": "虽然写得快，但一旦事务中途回滚，旧值找不回，内存直接被脏数据污染！"
+        },
+        {
           "id": "DirectRandomFlush",
-          "label": "每次改完直接刷 16KB 页",
-          "note": "随机写 IO 放大严重，耗时极高。"
+          "label": "每次改完直接随机刷 16KB 页",
+          "note": "不用 Undo 也能靠不覆盖磁盘保底，但每次扫/刷 16KB 页，随机 IO 慢如蜗牛。"
         },
         {
           "id": "WalRedoSequential",
           "label": "WAL 顺序追加写 Redo",
-          "note": "只顺序写 32B 日志，吞吐暴涨。"
-        },
-        {
-          "id": "RedoWithoutUndo",
-          "label": "只有 Redo 没有 Undo",
-          "note": "一旦事务中途回滚，旧值找不回，数据污染！"
+          "note": "只顺序追加 32B 日志，吞吐暴涨，但仍需配合 Undo 才能回滚。"
         },
         {
           "id": "RedoPlusUndo",
           "label": "Redo + Undo 双日志协同",
-          "note": "持久性 + 原子性 + MVCC 全部满足。"
+          "note": "持久性（防断电）+ 原子性（能回滚）+ MVCC 全部满足，且耗时极低。"
         }
       ],
       "knob": {
@@ -72,39 +79,159 @@
     {
       "beat": "open",
       "title": "写内存不立刻刷盘，断电怎么不丢数据？WAL Redo 与 Undo 职责拆解",
+      "bridge": "今天不背八股定义，先看一个真实工程场景，跑出数据后再拆底层机制。",
       "blocks": [
         {
           "t": "text",
-          "md": "MySQL 改一条数据只改 100 字节，但磁盘最小刷盘单位是 16KB 数据页。如果每次提交都随机刷整页，磁盘直接卡死；但只改内存又怕断电丢数据——WAL 就是为了解决这个矛盾。",
-          "say": "先看只有 Redo 没有 Undo 会出什么事，再看直接刷页有多慢。"
+          "md": "MySQL 改一条数据往往只改 100 字节，但磁盘最小刷盘单位是 **16KB 数据页**。如果每次提交都随机刷整页，磁盘直接卡死；但只改内存又怕断电丢数据——于是有了 **WAL（Redo + Undo）**。",
+          "say": "今天不背八股，我们先从零搭起内存缓冲池模型，亲眼看看只有 Redo 没有 Undo 会出什么事故。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，热个身",
+      "bridge": "这节课会用到三个基础概念，咱们先花一分钟确认一下。忘了也没关系，选完当场给你补齐。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题，每题点一个答案就行。选完马上告诉你对不对，下面那句话就是这节课要用到的前置底座。",
+          "items": [
+            {
+              "have": "内存 vs 磁盘",
+              "q": "内存读写和磁盘随机写相比，哪个慢好几个数量级？",
+              "options": [
+                "内存慢",
+                "磁盘随机写慢",
+                "一样快"
+              ],
+              "answer": 1,
+              "why": "磁盘机械寻道和随机写 16KB 页极慢；顺序追加写日志比随机刷页快得多。"
+            },
+            {
+              "have": "事务回滚",
+              "q": "转账扣了 A 的钱，给 B 加钱时系统报错，事务回滚后 A 的钱应该？",
+              "options": [
+                "保持扣完的新值",
+                "还原回修改前的旧值",
+                "变成 0"
+              ],
+              "answer": 1,
+              "why": "事务原子性要求：要么全成功，要么全部还原回修改前的旧值。"
+            },
+            {
+              "have": "数组模拟",
+              "q": "`bufferPool[rowId] = newVal;` 执行完后，格子里原来的旧值还在吗？",
+              "options": [
+                "还在",
+                "已经被新值覆盖掉了",
+                "自动备份了"
+              ],
+              "answer": 1,
+              "why": "直接赋值会把原值覆盖掉！如果不提前把旧值记下来，回滚时就再也找不回来了。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个生活场景",
+      "bridge": "热身完了。看代码之前，先在脑子里放一个画面。后面所有的数据库和 Java 机制，都可以往这个画面上套。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "记账员（Buffer Pool）",
+              "回滚员（Undo Log）"
+            ],
+            "shared": {
+              "name": "账本页（16KB）",
+              "value": "100"
+            }
+          },
+          "story": "店里账本很厚（16KB 一页），每次买一瓶水就搬大账本去库房盖章太慢。于是记账员先在面前草稿纸（内存）改数，同时把修改动作写进流水账小本子（**Redo**）；但万一顾客退单，必须靠另一张「原价便签」（**Undo**）才能擦掉重填。",
+          "say": "记住这个分工：流水账本（Redo）防断电丢账，原价便签（Undo）管退单恢复。下面把四个角色一一对上。",
+          "map": [
+            {
+              "scene": "面前的草稿纸",
+              "on": "shared",
+              "tag": "Buffer Pool",
+              "code": "`int[] bufferPool`",
+              "say": "所有修改先在内存缓冲池里直接覆盖，速度极快。"
+            },
+            {
+              "scene": "流水账小本子",
+              "on": "actors",
+              "tag": "Redo Log",
+              "code": "`redoLog[i] = newVal;`",
+              "say": "顺序追加写新值，哪怕突然断电，重启也能照着它重做恢复。"
+            },
+            {
+              "scene": "原价便签",
+              "on": "actors",
+              "tag": "Undo Log",
+              "code": "`undoLog[i] = oldVal;`",
+              "say": "修改前先记下旧值，遇到 `rollback` 时才能把草稿纸擦回原样。"
+            },
+            {
+              "scene": "顾客中途退单",
+              "on": "action",
+              "tag": "Rollback",
+              "code": "`if (rollback)`",
+              "say": "如果没贴原价便签，退单时根本不知道原来是多少钱！"
+            }
+          ]
         }
       ]
     },
     {
       "beat": "hook",
-      "title": "事务做到一半报错回滚，没有 Undo 怎么办？",
+      "title": "事务做到一半报错回滚，只有 Redo 没有 Undo 会怎样？",
+      "bridge": "直观感觉是一回事，高并发/异常真的撞上来时，结果往往完全相反。",
       "blocks": [
         {
           "t": "text",
-          "md": "1000 次写入里每 5 次就有 1 次回滚。`RedoWithoutUndo` 已经把新值写进缓冲池和 Redo 了，回滚时还能还原吗？",
-          "say": "看 `RedoWithoutUndo` 和 `DirectRandomFlush`。"
+          "md": "1000 次写入里，每 5 次就有 1 次中途报错回滚。如果只写了内存 `bufferPool` 和顺序 `redoLog`，没记 `undoLog`，回滚时能还原旧值吗？",
+          "say": "先看 `RedoWithoutUndo` 的代码，只有三十行。"
         }
       ]
     },
     {
       "beat": "code",
-      "title": "看看 DirectRandomFlush 的执行逻辑",
+      "title": "把场景写成程序：RedoWithoutUndo",
+      "bridge": "我们用纯 JDK 把这个底层过程真实模拟出来。重点看标出来的几行，不认识的词点一下虚线就有大白话解释。",
       "blocks": [
         {
           "t": "code",
-          "of": "walredo.DirectRandomFlush",
-          "say": "`DirectRandomFlush` 每次都要扫 16KB 页；`RedoWithoutUndo` 没保存 `undoOldImage`，回滚时根本不知道原来是 100。",
+          "of": "walredo.RedoWithoutUndo",
+          "say": "重点看这三步：先把 `expectedBefore` 存进局部变量（真实库如果不写 Undo 就会丢掉），接着覆盖 `bufferPool[rowId]` 并写 `redoLog`，最后遇到 `rollback` 就傻眼了。",
           "walk": [
             {
               "focus": [
-                "if (rollback)"
+                "int[] bufferPool = new int[64];"
               ],
-              "say": "没有 Undo 记录旧值，一旦业务抛异常回滚，内存中改坏的数据就再也回不去了。"
+              "say": "模拟内存里的 64 个缓冲池槽位，初始余额都是 100。"
+            },
+            {
+              "focus": [
+                "bufferPool[rowId] = newVal;"
+              ],
+              "say": "直接把新值写进内存页，原来的 100 就被覆盖掉了。"
+            },
+            {
+              "focus": [
+                "redoLog[i] = newVal;"
+              ],
+              "say": "同时顺序追加写了一条物理 Redo 记录（只记改成了什么新值，不记旧值）。"
+            },
+            {
+              "focus": [
+                "if (rollback) {"
+              ],
+              "say": "一旦事务中途报错回滚：因为没有 Undo Log 保存旧值，内存里的脏数据直接暴露！"
             }
           ]
         }
@@ -112,87 +239,239 @@
     },
     {
       "beat": "predict",
-      "title": "先猜一猜",
+      "title": "先押一个答案",
+      "bridge": "代码看完了。先别急着看结果，按你刚才对场景的理解，先猜一猜程序跑完会打印出什么。",
       "blocks": [
         {
           "t": "predict",
           "id": "p1",
-          "q": "1000 次写入中每 5 次回滚 1 次，没有 Undo 日志的 `RedoWithoutUndo` 会留下多少条脏数据？",
+          "q": "1000 次写入中每 5 次回滚 1 次，没有 Undo 日志的 `RedoWithoutUndo` 会留下多少次无法回滚的脏数据？",
           "options": [
-            "0 条",
-            "200 条",
-            "1000 条"
+            "0 次（Redo 会自动帮我回滚）",
+            "200 次（每次回滚都还原不了）",
+            "1000 次"
           ],
           "answer": 1,
-          "say": "先根据直觉下注，再看真实跑出来的结果。"
+          "say": "选一个你觉得最可能的，猜错完全没关系，猜过再看实测印象最深。"
         }
       ]
     },
     {
       "beat": "run",
-      "title": "实测看看现场结果",
+      "title": "一次一次看真实运行结果",
+      "bridge": "你已经下注了。这组程序在本地 JDK 实测跑了多轮，现在把真实数据放出来核对。",
       "blocks": [
         {
           "t": "experiment",
           "lab": "walredo",
           "show": [
-            "DirectRandomFlush"
+            "RedoWithoutUndo"
           ],
-          "knob": false,
-          "hand": false,
-          "say": "实测 `RedoWithoutUndo` 留下 `lostOrDirty = 200`！而 `DirectRandomFlush` 虽然没错，耗时却比 `RedoPlusUndo` 慢得多。"
+          "hand": true,
+          "focus": [
+            "int[] bufferPool = new int[64];"
+          ],
+          "say": "先点运行看看基准表现，留意指标和预期是不是对得上。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "say": "实测 `lostOrDirty = 200`！因为 Redo Log 里只记了「新值/偏移量」，根本不负责撤销未提交的修改。",
+          "key": "WAL 与 Redo / Undo 分工"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "出事的是哪一行？",
+      "bridge": "结果摆在眼前了。现在回到代码里，把直接导致这个现象的关键一行找出来。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "walredo.RedoWithoutUndo",
+          "q": "回到 `RedoWithoutUndo`，点击**把原值覆盖掉、导致回滚后找不回旧值**的那一行：",
+          "answer": [
+            "bufferPool[rowId] = newVal;"
+          ],
+          "hint": "找把 `newVal` 写进 `bufferPool` 的那一行。",
+          "found": "就是这一行！内存一旦被新值覆盖，没有提前记进 Undo Log 的旧值就永久丢失了。",
+          "say": "直接在代码上点你怀疑的那一行，点错了会给你提示。"
         }
       ]
     },
     {
       "beat": "why",
-      "title": "掀开机盖：底层为什么会这样？",
+      "title": "拆开字节码 / 底层指令看一眼",
+      "bridge": "光看表面现象还不够，用 JDK 自带的 `javap -c -p` 看一眼机器到底执行了什么。",
       "blocks": [
         {
           "t": "inside",
-          "of": "walredo.DirectRandomFlush",
+          "of": "walredo.RedoWithoutUndo",
           "within": "static void main",
           "from": "0:",
           "to": "return",
-          "say": "Redo Log 是循环写的物理日志（固定大小如 `ib_logfile0/1`），保证 **Durability（持久性）**；Undo Log 是逻辑日志，记录反向操作（INSERT 对应 DELETE，UPDATE 记录旧值），保证 **Atomicity（原子性）** 并支撑 MVCC。",
+          "say": "看 `javap -c -p` 里的指令：Java 把数组写入和条件判断编成了 `iastore` 和 `if_icmpeq`，一旦没有在写入前先保存 `undoLog[i] = oldVal`，后面 `if (rollback)` 分支根本无从恢复。",
           "walk": [
+            {
+              "focus": [
+                "iastore"
+              ],
+              "label": "写内存/写日志",
+              "say": "`iastore` 把新值直接盖进了 `bufferPool` 数组槽位。"
+            },
             {
               "focus": [
                 "if_icmpeq"
               ],
-              "say": "`RedoPlusUndo` 同时写了顺序 Redo 和旧值 Undo，回滚时直接还原 `undoOldImage`。"
+              "label": "回滚核对",
+              "say": "回滚检查时发现 `bufferPool[rowId]` 已经不等于旧值 `expectedBefore`。"
             }
           ]
         }
       ]
     },
     {
+      "beat": "why",
+      "title": "把 Redo 和 Undo 的分工摊在时间线上",
+      "bridge": "把两条执行流或两个阶段摊在时间轴上，每一步谁先谁后、哪里卡住，一眼看穿。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "UPDATE t SET bal = 150 WHERE id = 1; -- 随后 ROLLBACK",
+          "parts": {
+            "read": "记 Undo",
+            "calc": "改内存",
+            "write": "写 Redo"
+          },
+          "lanes": [
+            "执行线程",
+            "磁盘/日志（Undo & Redo）"
+          ],
+          "shared": {
+            "name": "Buffer Pool[1]",
+            "start": "100"
+          },
+          "say": "看一个事务从修改到突然报错回滚的完整动作序列。",
+          "steps": [
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "Undo 记录旧值 100",
+              "say": "动手改内存前，先把旧值 `100` 记进 Undo Log。这是后面能反悔的唯一凭证。"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "value": "150",
+              "text": "内存页改成 150",
+              "say": "修改 Buffer Pool 里的内存页为 150（此时还是脏页，还没刷到数据文件）。",
+              "ask": {
+                "q": "如果此时系统突然断电（但事务还没提交），重启后靠什么擦掉这个 150？",
+                "options": [
+                  "靠 Redo",
+                  "靠 Undo 回滚未提交事务"
+                ],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "text": "Redo Prepare 记 150",
+              "say": "顺序写入 Redo Log，保证一旦提交就算断电也能前滚恢复。"
+            },
+            {
+              "lane": 0,
+              "op": "note",
+              "tone": "fail",
+              "text": "业务报错！触发 ROLLBACK",
+              "say": "业务代码抛出异常，执行 `ROLLBACK`。"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "value": "100",
+              "text": "照 Undo 恢复回 100",
+              "say": "顺着 Undo Log 里的旧值 `100` 写回 Buffer Pool，原子性完美保住！"
+            }
+          ],
+          "verdict": "Redo 管==提交后断电不丢==，Undo 管==中途反悔能回滚==。",
+          "verdictSay": "两份日志各司其职，缺一不可：Undo 保证原子性（A）和 MVCC，Redo 保证持久性（D）。"
+        }
+      ]
+    },
+    {
       "beat": "fix",
-      "title": "对照四种方案实测",
+      "title": "先猜：怎么改才能彻底修好？",
+      "bridge": "病根找到了。在看几种修法前，先判断一下哪种思路真正对症。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "既要像 WAL 一样避免每次随机刷 16KB 数据页，又要支持事务随时回滚，正确架构是？",
+          "options": [
+            "每次改完直接刷 16KB 数据页",
+            "先写 Undo 旧值 + 改内存 + 顺序写 Redo",
+            "只写 Redo 不写 Undo"
+          ],
+          "answer": 1,
+          "say": "想清楚「为什么出事」，再选一个你认为能根治的方案。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测对比",
+      "bridge": "不争论，把四种写法放在同一个开关下实测，高下立判。",
       "blocks": [
         {
           "t": "experiment",
           "lab": "walredo",
           "show": [
+            "RedoWithoutUndo",
             "DirectRandomFlush",
             "WalRedoSequential",
-            "RedoWithoutUndo",
             "RedoPlusUndo"
           ],
           "select": "RedoPlusUndo",
-          "say": "生产中靠 `Redo + Undo` 协同：平时顺序写日志极快，崩溃靠 Redo 前滚，回滚靠 Undo 复原。"
+          "say": "切到 `RedoPlusUndo`：修改前先写 `undoLog[i] = oldVal`，再改内存并顺序追加 `redoLog`。对比看四组数据的错误数与耗时！"
         },
+        {
+          "t": "reveal",
+          "of": "p2",
+          "say": "切到 `RedoPlusUndo` 后问题彻底清零，同时兼顾性能与正确性。"
+        },
+        {
+          "t": "try",
+          "say": "自己拨动上面的规模开关，对比错误数和耗时随规模的变化。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修好了，各自代价是多少？",
+      "bridge": "把四种方案在不同规模下的耗时和正确性画成折线图，工程选型靠数据说话。",
+      "blocks": [
         {
           "t": "chart",
           "of": "walredo",
-          "say": "`RedoWithoutUndo` 报错 200 条；`DirectRandomFlush` 耗时高出一截；`RedoPlusUndo` 零出错且耗时极低。",
+          "say": "横轴是写入次数，纵轴是耗时。`DirectRandomFlush` 因为每次都要扫/刷 16KB 页高高翘起；`RedoWithoutUndo` 虽然快但全是空心错点；只有 `RedoPlusUndo` 既贴地飞行又零出错。",
           "walk": [
             {
-              "focus": [
-                "DirectRandomFlush",
-                "RedoPlusUndo"
-              ],
-              "say": "记住口诀：Redo 保持久（防断电），Undo 保原子（能回滚 + MVCC）。"
+              "focus": "RedoWithoutUndo",
+              "say": "看 `只有 Redo 没有 Undo`：虽然写得快，但一旦事务中途回滚，旧值找不回，内存直接被脏数据污染！"
+            },
+            {
+              "focus": "DirectRandomFlush",
+              "say": "看 `每次改完直接随机刷 16KB 页`：不用 Undo 也能靠不覆盖磁盘保底，但每次扫/刷 16KB 页，随机 IO 慢如蜗牛。"
+            },
+            {
+              "focus": "WalRedoSequential",
+              "say": "看 `WAL 顺序追加写 Redo`：只顺序追加 32B 日志，吞吐暴涨，但仍需配合 Undo 才能回滚。"
+            },
+            {
+              "focus": "RedoPlusUndo",
+              "say": "看 `Redo + Undo 双日志协同`：持久性（防断电）+ 原子性（能回滚）+ MVCC 全部满足，且耗时极低。"
             }
           ]
         }
@@ -200,32 +479,33 @@
     },
     {
       "beat": "choose",
-      "title": "工程上怎么选？",
+      "title": "工程上到底怎么选？",
+      "bridge": "没有银弹，只有适用边界。把每种方案的优点、代价和适用场景摆成一张表。",
       "blocks": [
         {
           "t": "choose",
-          "say": "面试常问「为什么需要 Redo 和 Undo 两种日志，只留一个行不行？」——答案就在上面。",
+          "say": "记住「Redo 保持久（物理前滚）、Undo 保原子（逻辑回滚 + MVCC）」的黄金组合。",
           "options": [
             {
-              "name": "直接随机刷 16KB 数据页",
-              "solves": "不用维护日志",
-              "cost": "IO 放大且慢：{ms:walredo.DirectRandomFlush} ms",
-              "when": "几乎不用于高并发 OLTP",
-              "say": "随机 IO 瓶颈。"
+              "name": "直接随机刷 16KB 页",
+              "solves": "磁盘永远是最新页",
+              "cost": "随机 IO 放大：{ms:walredo.DirectRandomFlush} ms",
+              "when": "不用于高并发 OLTP",
+              "say": "性能瓶颈极大。"
             },
             {
               "name": "只写 Redo 不写 Undo",
               "solves": "能防断电",
-              "cost": "无法回滚也无 MVCC",
-              "when": "不存在的架构",
-              "say": "原子性直接崩盘。"
+              "cost": "回滚必留脏数据",
+              "when": "不可用",
+              "say": "破坏事务原子性。"
             },
             {
               "name": "Redo + Undo 双日志",
               "solves": "顺序写提速 + 断电恢复 + 回滚 + MVCC",
               "cost": "0 污染：{ms:walredo.RedoPlusUndo} ms",
               "when": "InnoDB 标准引擎机制",
-              "say": "面试标准答案。"
+              "say": "生产唯一正解。"
             }
           ]
         }
@@ -233,21 +513,23 @@
     },
     {
       "beat": "check",
-      "title": "随堂检验",
+      "title": "两道巩固题：检验是否真懂",
+      "bridge": "学完立刻做两道高频面试陷阱题，看看能不能一眼识破。",
       "blocks": [
         {
           "t": "quiz",
+          "id": "q1",
           "q": "关于 InnoDB 的 Redo Log 和 Undo Log，下面哪句话是**完全正确**的？",
           "options": [
             {
               "text": "Redo Log 保证持久性（Crash Recovery），Undo Log 保证原子性（回滚）和 MVCC",
               "ok": true,
-              "why": "Redo 物理前滚防丢，Undo 逻辑回滚防脏。"
+              "why": "Redo 物理前滚防丢，Undo 逻辑回滚防脏且支撑快照读。"
             },
             {
               "text": "Redo Log 用来做事务回滚，Undo Log 用来防止断电丢数据",
               "ok": false,
-              "why": "说反了！"
+              "why": "完全说反了！"
             },
             {
               "text": "Redo Log 属于 MySQL Server 层，所有存储引擎共有",
@@ -255,51 +537,82 @@
               "why": "Redo/Undo 都是 InnoDB 引擎特有的，Binlog 才在 Server 层。"
             }
           ],
-          "say": "选出最符合 InnoDB 底层机制的一项。"
+          "say": "第一题：选最精准的那一项。"
+        },
+        {
+          "t": "quiz",
+          "id": "q2",
+          "q": "为什么 MySQL 不每次提交就直接把改过的 16KB 数据页刷到磁盘，而要先写 Redo Log？",
+          "options": [
+            {
+              "text": "数据页分散在磁盘各处是随机 IO，而 Redo Log 追加写是顺序 IO，且只写几十字节",
+              "ok": true,
+              "why": "把随机写 16KB 页变成顺序追加几十字节日志，吞吐差出几个数量级。"
+            },
+            {
+              "text": "因为磁盘不支持修改 16KB 的数据页",
+              "ok": false,
+              "why": "磁盘完全支持随机写，只是太慢了；后台线程最终还是会把脏页刷盘的。"
+            },
+            {
+              "text": "因为 Redo Log 写在纯内存里不用落盘",
+              "ok": false,
+              "why": "Redo Log 必须按策略 fsync 落盘才能保证断电不丢！"
+            }
+          ],
+          "say": "第二题：换个问法考同一个底层原理。"
         }
       ]
     },
     {
       "beat": "name",
-      "title": "给它起个名字",
+      "title": "把概念装进脑子：标准叫法与面试原题",
+      "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "name",
-          "term": "WAL 与 Redo / Undo 分工",
+          "t": "term",
+          "name": "WAL 与 Redo / Undo 分工",
           "alias": "Write-Ahead Logging",
-          "oneLine": "==Redo Log== 顺序写保证断电不丢（持久性），==Undo Log== 记录旧值保证回滚与 MVCC（原子性）。",
-          "asked": [
+          "one": "==Redo Log== 顺序写保证断电不丢（持久性 D），==Undo Log== 记录旧值保证回滚与 MVCC（原子性 A）。",
+          "say": "记住这一句核心定义，面试时先抛结论再展开。"
+        },
+        {
+          "t": "asked",
+          "questions": [
             "为什么需要 Redo Log 和 Undo Log？各自负责 ACID 哪一环？",
-            "WAL 为什么能提升写性能？"
+            "WAL 为什么能大幅提升 MySQL 写性能？"
           ],
-          "say": "把核心术语和面试高频问法对齐。"
+          "say": "这几道都是真实一二面原题，下一页直接练习脱稿讲。"
         }
       ]
     },
     {
       "beat": "say",
-      "title": "两分钟开口讲清",
+      "title": "合上课件，开口讲一遍",
+      "bridge": "看懂不等于讲得出来。对着计时器，按要点一口气讲顺。",
       "blocks": [
         {
           "t": "say",
           "prompt": "讲清楚为什么要有 Redo Log 和 Undo Log，以及 WAL 为什么能把随机写变成顺序写？",
+          "seconds": 90,
           "points": [
-            "直接刷 16KB 脏页是随机 IO，太慢；WAL 先顺序追加写 Redo，后台异步刷脏页",
-            "Redo Log（InnoDB 物理日志）：保持久性（D），断电前滚恢复",
-            "Undo Log（InnoDB 逻辑日志）：保原子性（A）回滚，兼顾 MVCC 多版本读"
+            "直接刷 16KB 脏页是随机 IO 很慢，WAL 先顺序追加小日志再异步刷脏页",
+            "Redo Log（InnoDB 物理日志）：保持久性（D），断电重启前滚恢复",
+            "Undo Log（InnoDB 逻辑日志）：保原子性（A）回滚，同时支撑 MVCC 多版本读"
           ],
-          "model": "InnoDB 修改数据时不会每次都把 16KB 脏页随机刷盘，而是采用 WAL 先顺序追加写 Redo Log，将随机 IO 转为顺序 IO。其中 Redo Log 是物理日志，负责断电重启后前滚恢复，保证持久性；Undo Log 是逻辑日志，保存修改前旧值，负责事务回滚保证原子性，同时支撑 MVCC 的历史版本读取。",
-          "say": "对着要点自己脱稿顺一遍。"
+          "model": "InnoDB 修改数据时不会每次都把 16KB 脏页随机刷盘，而是采用 WAL 机制先顺序追加写 Redo Log，将随机 IO 转化为顺序 IO。其中 Redo Log 是物理日志，负责断电重启后前滚恢复，保证持久性；Undo Log 是逻辑日志，记录修改前旧值，负责事务回滚保证原子性，同时支撑 MVCC 的历史版本读取。",
+          "say": "先自己组织语言讲一遍，再点开参考答案对照漏了哪个得分点。"
         }
       ]
     },
     {
       "beat": "take",
-      "title": "带走这三张卡",
+      "title": "带走三张复习卡片",
+      "bridge": "最后留三张一问一答卡片，考前扫一眼就能全部唤醒。",
       "blocks": [
         {
           "t": "cards",
-          "items": [
+          "cards": [
             {
               "q": "Redo Log 保证 ACID 的哪一项？",
               "a": "D（Durability，持久性）。"
@@ -310,10 +623,10 @@
             },
             {
               "q": "WAL 提升写性能的核心原因？",
-              "a": "把随机写 16KB 数据页变成顺序追加写小日志。"
+              "a": "把随机写 16KB 数据页变成顺序追加写几十字节小日志。"
             }
           ],
-          "say": "收好这三张复习卡，继续下一课。"
+          "say": "这三张卡片就是本课的最小精华，全部通关，进入下一课！"
         }
       ]
     }
