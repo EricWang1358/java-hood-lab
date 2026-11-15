@@ -3,6 +3,11 @@
 > 定位：对标国内**初中级 Java 后端开发**笔试与一二面手撕线，按「实验先看现场 + 每天 2～3 题手敲」推进，建议总投入 **65～80 小时**。
 >
 > 每组专题均配有可编译运行的 Java 实验课（`src/lab/<pkg>/` + `pages/<id>.html`），先用实测数据和 `javap` 字节码搞懂「为什么暴力会超时 / 为什么边界总写错 / 为什么并发会撞坏」，再按下方清单刷题巩固。
+>
+> **18 道核心模板一键自测**：直接编译运行 [`M8PracticeTest.java`](../src/lab/m8practice/M8PracticeTest.java)：
+> ```bash
+> javac -encoding UTF-8 -d out src/lab/m8practice/M8PracticeTest.java && java -ea -cp out lab.m8practice.M8PracticeTest
+> ```
 
 ---
 

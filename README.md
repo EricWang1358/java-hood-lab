@@ -226,6 +226,23 @@
 | M6-10 | **AOF 三种刷盘策略：always、everysec、no 的吞吐与丢数账** | Redis AOF 日志写进内核 PageCache 并不等于落盘。对比 `no`、`always`、`everysec` 与组提交在崩溃丢数与吞吐上的真实代价。 | `lab.m6.aoffsync` | [网页课件](./pages/m6-aof-fsync.html) · [JSON](./lessons/m6-aof-fsync.json) · [源码](./src/lab/m6/aoffsync/) |
 | M6-11 | **内存满时随机淘汰 vs 近似 LRU vs LFU 命中率对比** | Redis 内存触顶 `maxmemory` 时，选 `noeviction` 直接报错、`random` 随机乱删、`allkeys-lru` 还是 `allkeys-lfu`？用真实二八热点负载跑出命中率差距。 | `lab.m6.eviction` | [网页课件](./pages/m6-eviction-lfu.html) · [JSON](./lessons/m6-eviction-lfu.json) · [源码](./src/lab/m6/eviction/) |
 
+### 模块八：笔试算法 + SQL 手撕（M8-01～M8-10 · 10 组专题 · 101 题）
+
+覆盖笔试与一二面高频手撕题：先用实测数据与 `javap` 字节码打破直觉误区，再对照 [101 题高频刷题清单](./docs/module8-100-problems.md)、[18 题可运行手撕自测套件](./src/lab/m8practice/M8PracticeTest.java) 与 [SQL 20 题可执行脚本](./src/lab/sqlrank/queries.sql) 每日手敲（运行自测：`javac -encoding UTF-8 -d out src/lab/m8practice/M8PracticeTest.java && java -ea -cp out lab.m8practice.M8PracticeTest`）。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M8-01 | **两数之和暴力跑了多久？哈希与双指针怎么省出 100 倍** | O(n²) 暴力在 6 万数据下直接慢成幻灯片，预分配 HashMap 怎么几乎 0 毫秒？ | `lab.hashtwo` | [网页课件](./pages/hash-twopointer.html) · [JSON](./lessons/hash-twopointer.json) · [源码](./src/lab/hashtwo/) |
+| M8-02 | **链表翻转与环检测：递归长链会爆栈，三指针怎么原地零分配** | 10 万节点链表递归直接 StackOverflowError，三指针与 dummy 哨兵怎么零分配稳过？ | `lab.linkedlist` | [网页课件](./pages/linked-list.html) · [JSON](./lessons/linked-list.json) · [源码](./src/lab/linkedlist/) |
+| M8-03 | **栈与单调队列：滑动窗口最大值怎么从 O(nk) 压到均摊 O(n)** | 窗口右移一格，为什么暴力扫和 TreeMap 都输给了 ArrayDeque 单调队列？ | `lab.stackqueue` | [网页课件](./pages/stack-queue.html) · [JSON](./lessons/stack-queue.json) · [源码](./src/lab/stackqueue/) |
+| M8-04 | **二叉树递归与层序：偏斜树为什么把递归打爆，队列 size 怎么锁死每一层** | 3 万层偏斜树下递归直接爆栈，显式栈与 Morris 怎么稳如磐石？ | `lab.bintree` | [网页课件](./pages/binary-tree.html) · [JSON](./lessons/binary-tree.json) · [源码](./src/lab/bintree/) |
+| M8-05 | **二分搜索与边界：为什么总写死循环，(l + r) / 2 怎么就溢出了** | 百万数据二分只需 20 步，差一个等号或右移符号怎么就漏解或死循环？ | `lab.binsearch` | [网页课件](./pages/binary-search.html) · [JSON](./lessons/binary-search.json) · [源码](./src/lab/binsearch/) |
+| M8-06 | **回溯排列与组合：忘掉撤销现场会全串，剪枝去重怎么省出 10 倍时间** | 每次拷贝路径慢如蜗牛，忘掉 remove 会全串，排序同层去重怎么提速？ | `lab.backtrack` | [网页课件](./pages/backtrack.html) · [JSON](./lessons/backtrack.json) · [源码](./src/lab/backtrack/) |
+| M8-07 | **动态规划与状态压缩：纯递归怎么指数级卡死，滚动变量怎么压到 O(1)** | 第 40 阶楼梯纯递归飙出数百毫秒，记忆化与滚动变量一万遍只要一眨眼？ | `lab.dpbasics` | [网页课件](./pages/dp-basics.html) · [JSON](./lessons/dp-basics.json) · [源码](./src/lab/dpbasics/) |
+| M8-08 | **手写线程安全 LRU（接第 7 课）：为什么 readLock 照样崩，分段锁怎么提速** | get() 也会改双向链表，加 readLock 照样崩；16 分段锁在 8 线程下怎么拉开差距？ | `lab.tslru` | [网页课件](./pages/threadsafe-lru.html) · [JSON](./lessons/threadsafe-lru.json) · [源码](./src/lab/tslru/) |
+| M8-09 | **多线程交替打印：wait 不包在 while 里怎么就乱序了，Condition 怎么精准接力** | 三线程交替打印 ABC：while 换成 if 立马乱套，Condition 与 Semaphore 怎么稳控？ | `lab.altprint` | [网页课件](./pages/alt-print.html) · [JSON](./lessons/alt-print.json) · [源码](./src/lab/altprint/) |
+| M8-10 | **高频分组排名 SQL 20 题：为什么窗口函数比相关子查询快一个数量级** | 部门工资前三高，相关子查询 O(n²) 慢爆，DENSE_RANK 怎么一趟搞定？ | `lab.sqlrank` | [网页课件](./pages/sql-ranking.html) · [JSON](./lessons/sql-ranking.json) · [源码](./src/lab/sqlrank/) |
+
 ## 本地动手运行实验代码
 
 仓库中的所有示例仅使用 JDK 标准库，无任何第三方依赖（第 31 课 `virtual-race` 需 **JDK 21+**，其余课程兼容常见 JDK；全部实验数据实测于 **JDK 25**）。

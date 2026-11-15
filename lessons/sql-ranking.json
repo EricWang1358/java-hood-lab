@@ -77,44 +77,57 @@
       "blocks": [
         {
           "t": "text",
-          "md": "今天是 **模块 8（笔试算法与 SQL 手撕）** 的第 #42 课：求「每个部门工资前三高」：老式相关子查询在 3 万行表上跑出数百毫秒，窗口函数为什么只要几毫秒？ROW_NUMBER、RANK、DENSE_RANK 差在哪？",
-          "say": "求「每个部门工资前三高」：老式相关子查询在 3 万行表上跑出数百毫秒，窗口函数为什么只要几毫秒？ROW_NUMBER、RANK、DENSE_RANK 差在哪？"
+          "md": "求「每个部门工资前三高」：老式相关子查询在 3 万行表上跑出数百毫秒，窗口函数为什么只要几毫秒？ROW_NUMBER、RANK、DENSE_RANK 差在哪？",
+          "say": "今天这节课核心只搞透一件事：高频分组排名 SQL 20 题：为什么窗口函数比相关子查询快一个数量级"
         },
         {
           "t": "text",
-          "md": "不死背模板。我们先跑出真实耗时与报错现场，再拆 `javap` 字节码与复杂度曲线，最后带走本专题的高频刷题清单。",
-          "say": "先看现场、再拆底层、最后总结模板与高频题清单。"
+          "md": "不死背结论。先用直觉场景建模，再看代码和 `javap` 字节码，最后在你的机器上跑出 20 次实测对比。",
+          "say": "按看现象、拆字节码、比代价、开口讲四步走完。"
         }
       ]
     },
     {
       "beat": "open",
-      "title": "开始前，确认前置基础",
-      "bridge": "快速过一遍这节课需要的三点前置知识。",
+      "title": "开始前，3 道诊断热身",
+      "bridge": "先花一分钟自测三个前置基础点，看看哪一块容易含糊。",
       "blocks": [
         {
           "t": "recall",
-          "say": "选完直接看解释，确认基础即可进入场景。",
+          "say": "三道小题直接点选，选完立刻出解析。",
           "items": [
             {
-              "have": "写过 SELECT / WHERE / GROUP BY",
-              "q": "你已经掌握「写过 SELECT / WHERE / GROUP BY」了吗？",
+              "have": "三大排名函数",
+              "q": "分数为 `100, 100, 90` 时，`ROW_NUMBER`、`RANK`、`DENSE_RANK` 给 `90` 分的排名分别是多少？",
               "options": [
-                "清楚",
-                "再看一眼提示"
+                "3, 3, 2",
+                "3, 2, 2",
+                "2, 2, 1"
               ],
               "answer": 0,
-              "why": "本课会直接用到「写过 SELECT / WHERE / GROUP BY」，接下来代码里也会标注解释。"
+              "why": "`ROW_NUMBER` 1,2,3；`RANK` 1,1,3（留空位）；`DENSE_RANK` 1,1,2（连续不跳号）。"
             },
             {
-              "have": "知道 ORDER BY 排序",
-              "q": "你已经掌握「知道 ORDER BY 排序」了吗？",
+              "have": "WHERE vs HAVING",
+              "q": "在 SQL 执行顺序里，什么时候用 `WHERE`，什么时候用 `HAVING`？",
               "options": [
-                "清楚",
-                "再看一眼提示"
+                "`WHERE` 在分组前过滤行，`HAVING` 在 `GROUP BY` 分组后过滤聚合结果",
+                "两者完全等价",
+                "`HAVING` 只能过滤数字"
               ],
               "answer": 0,
-              "why": "本课会直接用到「知道 ORDER BY 排序」，接下来代码里也会标注解释。"
+              "why": "`WHERE` 阶段还没做 `GROUP BY`，所以不能写 `COUNT(*)`/`SUM()`；聚合条件必须放 `HAVING`。"
+            },
+            {
+              "have": "SQL 分组 TopN",
+              "q": "求「每个部门工资最高的第 2 名（允许并列）」，最标准的 MySQL 8.0 写法是？",
+              "options": [
+                "`GROUP BY dept` 直接 `LIMIT 1,1`",
+                "先用 `DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn`，外层 `WHERE rn = 2`",
+                "用 `DISTINCT` 加 `ORDER BY`"
+              ],
+              "answer": 1,
+              "why": "窗口函数保留明细行同时计算组内排名，外层再按 `rn <= K` 或 `rn = 2` 过滤即可。"
             }
           ]
         }
@@ -122,8 +135,8 @@
     },
     {
       "beat": "open",
-      "title": "先放一个日常画面",
-      "bridge": "把算法和数据结构放进生活场景里，后面每行代码都能对上号。",
+      "title": "先在脑子里放一个场景",
+      "bridge": "把算法复杂度和数据结构对应到生活画面，后面所有代码都能往上套。",
       "blocks": [
         {
           "t": "scene",
@@ -139,7 +152,7 @@
             }
           },
           "story": "要给 **3 万名员工**按部门评出前三高工资。老式子查询每看一个员工，就要把全公司再数一遍「有几个人比他高」；窗口函数先按部门和工资排好一张总榜，从头到尾刷一遍直接贴名次。",
-          "say": "先记住这个画面，再对照右边三处关键动作。",
+          "say": "先记住这个对照画面，右侧每一条都能一一映射到真实代码。",
           "map": [
             {
               "scene": "每看一人重数全表",
@@ -168,35 +181,44 @@
     },
     {
       "beat": "hook",
-      "title": "直觉上能过吗？",
-      "bridge": "平时写 10 个元素的小例子都能过，放到上万数据或多线程下呢？",
+      "title": "核心矛盾：为什么直觉写法会崩？",
+      "bridge": "小数据看不出毛病，一旦把规模或并发拉上来，差距立刻暴露。",
       "blocks": [
         {
           "t": "text",
-          "md": "求「每个部门工资前三高」：老式相关子查询在 3 万行表上跑出数百毫秒，窗口函数为什么只要几毫秒？ROW_NUMBER、RANK、DENSE_RANK 差在哪？",
-          "say": "这就是今天要实测验证的问题。"
+          "md": "本节实验对比 4 种写法：**相关子查询 O(n²)、窗口 ROW_NUMBER()、窗口 RANK()、窗口 DENSE_RANK()**。",
+          "say": "把 相关子查询 O(n²)、窗口 ROW_NUMBER()、窗口 RANK()、窗口 DENSE_RANK() 放到同一套基准里实测 20 次，看谁快、谁慢、谁直接报错。"
         }
       ]
     },
     {
       "beat": "code",
-      "title": "先看基准写法与优化写法",
-      "bridge": "先看清最容易踩坑或超时的写法长什么样。",
+      "title": "先看直觉/问题写法：`NestedSubquery`",
+      "bridge": "先看最容易想到的基线写法，记住关键三处。",
       "blocks": [
         {
           "t": "code",
           "of": "sqlrank.NestedSubquery",
-          "say": "这是基准实现 `NestedSubquery`，点击虚线术语可看大白话解释。",
+          "say": "这是 `NestedSubquery` 的完整可运行代码，重点看标亮的三处。",
           "walk": [
             {
               "focus": [
-                "main"
+                "for (int i = 0; i < n; i++)"
               ],
-              "say": "入口接收命令行参数作为规模或线程数，连续计时并输出校验结果与耗时。",
-              "focusLines": [
-                1,
-                2
-              ]
+              "say": "模拟老式 MySQL 5.7 的「关联子查询」：每查一条员工记录，就去全表数有几个同部门的人比他高。",
+              "key": "相关子查询相当于 O(n²) 双重循环"
+            },
+            {
+              "focus": [
+                "for (int j = 0; j < n; j++)"
+              ],
+              "say": "50 个部门、总行数 2 万时，内层循环也要跑上千万次，耗时飙升。"
+            },
+            {
+              "focus": [
+                "if (dept[j] == dept[i] && sal[j] > sal[i]) higher++;"
+              ],
+              "say": "这就是经典 SQL `WHERE (SELECT COUNT(DISTINCT s2.sal) ...) < 3` 慢的根源。"
             }
           ]
         }
@@ -204,12 +226,12 @@
     },
     {
       "beat": "predict",
-      "title": "跑之前，先押一注",
-      "bridge": "基于你的直觉猜一下实测结果，猜错完全正常。",
+      "title": "先猜：实测结果会怎样？",
+      "bridge": "动手跑之前先押一个答案，印象会深一倍。",
       "blocks": [
         {
           "t": "predict",
-          "id": "sqlrank-guess",
+          "id": "result",
           "q": "某部门工资为 [90k, 85k, 85k, 70k]，要求查出「部门工资前三高的所有员工」，70k 的员工该不该出来？",
           "options": [
             "该出来，70k 是第 3 高的工资，要用 DENSE_RANK",
@@ -217,55 +239,105 @@
             "用 ROW_NUMBER 就行"
           ],
           "answer": 0,
-          "say": "选好你的预测，下一页直接放出 20 次实测结果。"
+          "say": "凭直觉选一个最可能的结论。"
         }
       ]
     },
     {
       "beat": "run",
-      "title": "20 次实测散点对比",
-      "bridge": "以下是本机 JDK 真实编译运行 20 次的实测记录（实心点表示结果正确，空心点表示出错）。",
+      "title": "一次一次放出 `NestedSubquery` 的 20 次实测",
+      "bridge": "以下结果是在当前 JDK 17 环境真实跑了 20 次并保存的记录。",
       "blocks": [
         {
           "t": "experiment",
           "lab": "sqlrank",
-          "select": [
+          "show": [
+            "NestedSubquery"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "for (int j = 0; j < n; j++)"
+          ],
+          "say": "逐次点击放出运行结果，观察结果是否正确以及单次耗时。"
+        },
+        {
+          "t": "reveal",
+          "of": "result",
+          "say": "对照你刚才的预测，看直觉写法在真实规模下发生了什么。",
+          "key": "模拟 WHERE (SELECT COUNT(*)...) < 3，行数翻倍耗时翻 4 倍。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拉大挡位，对比最优解",
+      "bridge": "把 `NestedSubquery` 和 `SortDenseRank` 放在一起，切换上方挡位开关看走势。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "sqlrank",
+          "show": [
             "NestedSubquery",
             "SortDenseRank"
           ],
-          "knob": "15000",
-          "show": "dots",
+          "knob": true,
           "hand": false,
-          "focus": "模拟 WHERE (SELECT COUNT(*)...) < 3，行数翻倍耗时翻 4 倍。",
-          "say": "切换上方规模/线程数挡位，对比 `NestedSubquery` 与 `SortDenseRank` 的准确率与耗时差异。"
+          "say": "切换上方 `员工表行数 n (50 部门)` 挡位，感受两种写法随规模拉大后的差距。"
+        },
+        {
+          "t": "try",
+          "key": "切换不同 员工表行数 n (50 部门) 挡位",
+          "say": "从小挡位切到最大挡位，观察实心点（正确）与空心点（失败/异常）的变化。"
         }
       ]
     },
     {
       "beat": "why",
-      "title": "掀开机盖：看真实字节码",
-      "bridge": "现象看清了，打开 `javap -c -p` 看底层指令到底在干什么。",
+      "title": "在代码里点出关键一笔",
+      "bridge": "找出真正决定成败或拉开数量级差距的那一行。",
       "blocks": [
         {
-          "t": "reveal",
+          "t": "spot",
           "of": "sqlrank.SortDenseRank",
-          "key": "看懂底层指令与复杂度来源",
-          "say": "对比 `NestedSubquery` 与 `SortDenseRank` 的核心代码与字节码，找出真正拉开差距的那几行。"
-        },
+          "q": "对比 `SortRank` 和 `SortDenseRank`，当相邻两人工资相同时，名次更新的写法差在哪里？",
+          "hint": "看 `pos` 计数器有没有累加。",
+          "answer": [
+            "else if (sal[id] != prevSal) { denseRank++; prevSal = sal[id]; }"
+          ],
+          "found": "`SortDenseRank` 只有当工资严格变化时才 `denseRank++`，所以不会跳号；而 `SortRank` 每次都会 `pos++`，遇变化就把 `rank = pos`。",
+          "say": "在左侧代码里点击你认为最关键的那一行。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "再看进阶/修复写法：`SortDenseRank`",
+      "bridge": "把优化或修复后的代码也逐行拆开，看它改了哪三处。",
+      "blocks": [
         {
-          "t": "inside",
+          "t": "code",
           "of": "sqlrank.SortDenseRank",
-          "within": "main",
-          "from": 0,
-          "to": 40,
-          "say": "这是真实 `javap -c -p` 反编译出的字节码指令，确认没有魔法，每一步开销都在这里。",
+          "say": "对照刚才的基线版本，看 `SortDenseRank` 是怎么解决问题的。",
           "walk": [
             {
-              "lines": [
-                0,
-                1
+              "focus": [
+                "Arrays.sort(idx, (a, b) ->"
               ],
-              "say": "方法入口先解析参数并初始化计时与数据结构。"
+              "say": "等价于窗口函数第一步：按 `(PARTITION BY dept, ORDER BY sal DESC)` 排序。",
+              "key": "排序 + 单遍扫描 = O(n log n)"
+            },
+            {
+              "focus": [
+                "if (dept[id] != curDept)"
+              ],
+              "say": "遇到新部门时重置当前组状态，相当于 `PARTITION BY` 切组。"
+            },
+            {
+              "focus": [
+                "else if (sal[id] != prevSal) { denseRank++; prevSal = sal[id]; }"
+              ],
+              "say": "分数变化才把 `denseRank` 加 1（`DENSE_RANK` 连续排名），一次扫描全部出结果。"
             }
           ]
         }
@@ -273,29 +345,45 @@
     },
     {
       "beat": "why",
-      "title": "在代码里找关键一笔",
-      "bridge": "考考你：上面那段优化代码里，真正起决定性作用的是哪一处？",
+      "title": "掀开机盖：看真实 `javap -c -p` 字节码",
+      "bridge": "不靠猜，直接看 javac 编译出来的底层 JVM 指令。",
       "blocks": [
         {
-          "t": "spot",
+          "t": "inside",
           "of": "sqlrank.SortDenseRank",
-          "q": "对比 `SortRank` 和 `SortDenseRank`，当相邻两人工资相同时，名次更新的写法差在哪里？",
-          "hint": "看 `pos` 计数器有没有累加。",
-          "answer": "else if (sal[id] != prevSal) { denseRank++; prevSal = sal[id]; }",
-          "found": "`SortDenseRank` 只有当工资严格变化时才 `denseRank++`，所以不会跳号；而 `SortRank` 每次都会 `pos++`，遇变化就把 `rank = pos`。",
-          "say": "定位到那一行关键代码。"
+          "within": "main(",
+          "from": "Arrays.sort",
+          "to": "if_icmpeq",
+          "say": "这是真实 `javap -c -p` 反编译出的热点指令片段。",
+          "walk": [
+            {
+              "focus": [
+                "Arrays.sort"
+              ],
+              "label": "按部门+分数排序",
+              "say": "窗口函数在数据库底层同样先做排序（或索引有序扫描），把同分区行聚在一起。",
+              "key": "O(n log n) 排序取代 O(n²) 子查询"
+            },
+            {
+              "focus": [
+                "if_icmpeq"
+              ],
+              "label": "同分不跳号",
+              "say": "比较当前分数与 `prevSal`，相等就不递增排名，这就是 `DENSE_RANK` 的本质。"
+            }
+          ]
         }
       ]
     },
     {
       "beat": "fix",
-      "title": "4 种写法的实测耗时折线",
-      "bridge": "把 相关子查询 O(n²)、窗口 ROW_NUMBER()、窗口 RANK()、窗口 DENSE_RANK() 放在同一张图上，看规模/线程数拉大后的走势。",
+      "title": "4 种写法的全量耗时折线",
+      "bridge": "把 相关子查询 O(n²)、窗口 ROW_NUMBER()、窗口 RANK()、窗口 DENSE_RANK() 放到同一张折线图上横向对比。",
       "blocks": [
         {
           "t": "chart",
           "of": "sqlrank",
-          "say": "横轴是规模/线程数，纵轴是实测耗时；空心点代表该写法出错或超时风险，实心点代表稳定正确。",
+          "say": "实心点代表正确通过，空心点代表报错或结果不对；注意纵轴耗时变化。",
           "walk": [
             {
               "focus": "NestedSubquery",
@@ -319,26 +407,26 @@
     },
     {
       "beat": "choose",
-      "title": "把工具摆在一起比代价",
-      "bridge": "没有银弹，每种写法都有明确适用边界。",
+      "title": "把方案摆在一起比代价",
+      "bridge": "括号里的毫秒数是本机默认挡位的真实实测耗时。",
       "blocks": [
         {
           "t": "choose",
-          "say": "对照每张卡片的适用场景与代价，面试被追问时就能按场景选型。",
+          "say": "面试被追问方案选型时，直接按适用场景、时间/空间代价来答。",
           "options": [
             {
               "name": "DENSE_RANK()",
               "solves": "并列同分、后续名次不跳号（如工资前三高）",
-              "cost": "O(n log n) 排序",
+              "cost": "O(n²) 级别扫描（相关子查询模拟实测 {ms:sqlrank.NestedSubquery} ms）",
               "when": "求「第 K 高 / 前 K 高数值」的所有记录",
-              "say": "DENSE_RANK()：并列同分、后续名次不跳号（如工资前三高），代价是O(n log n) 排序。"
+              "say": "DENSE_RANK()：并列同分、后续名次不跳号（如工资前三高），代价是O(n²) 级别扫描（相关子查询模拟实测 {ms:sqlrank.NestedSubquery} ms）。"
             },
             {
               "name": "RANK()",
               "solves": "并列同分、后续跳过占位（1, 1, 3）",
-              "cost": "O(n log n) 排序",
+              "cost": "O(n log n) 排序后单遍出 TopN（ROW_NUMBER {ms:sqlrank.SortRowNumber} ms，RANK {ms:sqlrank.SortRank} ms，DENSE_RANK {ms:sqlrank.SortDenseRank} ms）",
               "when": "体育比赛/积分榜排名",
-              "say": "RANK()：并列同分、后续跳过占位（1, 1, 3），代价是O(n log n) 排序。"
+              "say": "RANK()：并列同分、后续跳过占位（1, 1, 3），代价是O(n log n) 排序后单遍出 TopN（ROW_NUMBER {ms:sqlrank.SortRowNumber} ms，RANK {ms:sqlrank.SortRank} ms，DENSE_RANK {ms:sqlrank.SortDenseRank} ms）。"
             },
             {
               "name": "ROW_NUMBER()",
@@ -348,7 +436,15 @@
               "say": "ROW_NUMBER()：每组严格只取 K 条、连续登录算差值，代价是O(n log n) 排序。"
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "决策树 + 4 道真实面试场景",
+      "layout": "split",
+      "bridge": "顺着左侧决策树，给右侧 4 道高频变体题选出最优解法。",
+      "blocks": [
         {
           "t": "decide",
           "q": "面试 SQL 手撕三件套怎么选窗口函数？",
@@ -369,15 +465,8 @@
               "eg": "上升的温度、月环比"
             }
           ],
-          "say": "顺着这棵决策树，看到题面关键词就能直接落到对应模板。"
-        }
-      ]
-    },
-    {
-      "beat": "choose",
-      "title": "练三道真实面试场景",
-      "bridge": "用刚才的决策树，当场给下面三个问题选出最优解法。",
-      "blocks": [
+          "say": "看到题面关键词就顺着对应分支往下走。"
+        },
         {
           "t": "cases",
           "tools": [
@@ -400,16 +489,21 @@
               "text": "统计每个用户截至每笔订单当天的历史累计消费总额。",
               "answer": 2,
               "why": "SUM(amount) OVER (PARTITION BY user_id ORDER BY order_date, id)。"
+            },
+            {
+              "text": "查询连续 3 天登录的用户 ID（给定 `user_id, login_date` 明细表，可能同一天多次登录）。",
+              "answer": 2,
+              "why": "先按 `(user_id, login_date)` 去重，再对每个用户按日期排序计算 `login_date - ROW_NUMBER()`，差值相同即为连续登录天数，最后 `HAVING COUNT(*) >= 3`。"
             }
           ],
-          "say": "逐题点选工具，看解析是否和你想的一样。"
+          "say": "逐题点选工具，核对解析里的关键原因。"
         }
       ]
     },
     {
       "beat": "name",
       "title": "记下面试官常问的标准叫法",
-      "bridge": "把刚才的实验现象还原成面试高频术语。",
+      "bridge": "把刚才的实验现象还原成一二面高频术语。",
       "blocks": [
         {
           "t": "name",
@@ -421,14 +515,14 @@
             "部门工资前三高怎么写？",
             "连续登录 7 天的用户怎么写 SQL？"
           ],
-          "say": "记住这句总结和下面三个高频问法。"
+          "say": "记住这句总结和下面三个高频追问。"
         }
       ]
     },
     {
       "beat": "check",
-      "title": "最后核对一道易错题",
-      "bridge": "确认核心坑点真的没踩进去。",
+      "title": "检查一：核心原理与复杂度",
+      "bridge": "核对第一道易混坑点。",
       "blocks": [
         {
           "t": "quiz",
@@ -455,9 +549,38 @@
       ]
     },
     {
+      "beat": "check",
+      "title": "检查二：面试边界陷阱",
+      "bridge": "再过一道二面最爱追问的边界细节题。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "计算每个用户「最近 7 天的消费总额（滑动窗口）」时，窗口函数 `ROWS BETWEEN` 和 `RANGE BETWEEN` 有什么坑？",
+          "options": [
+            {
+              "text": "`ROWS BETWEEN 6 PRECEDING AND CURRENT ROW` 按「行数（前 6 行）」算；若某天没消费会跨过真实 7 天，按天数必须用 `RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW`",
+              "ok": true,
+              "why": "面试高频坑点：`ROWS` 数物理行数，`RANGE` 才按日期/数值逻辑区间算。"
+            },
+            {
+              "text": "两者没有任何区别",
+              "ok": false,
+              "why": "日期不连续时 `ROWS` 会把十几天前的数据算进来。"
+            },
+            {
+              "text": "`RANGE` 不能用于日期列",
+              "ok": false,
+              "why": "MySQL 8.0 支持 `RANGE BETWEEN INTERVAL ... DAY PRECEDING`。"
+            }
+          ],
+          "say": "仔细看边界条件，选出正确答案。"
+        }
+      ]
+    },
+    {
       "beat": "say",
-      "title": "2 分钟开口带走",
-      "bridge": "看懂不算会，对着屏幕脱稿讲一遍才算长在脑子里。",
+      "title": "合上代码，2 分钟开口讲一遍",
+      "bridge": "看懂不算会，对着屏幕脱稿讲顺才算长在脑子里。",
       "blocks": [
         {
           "t": "say",
@@ -469,14 +592,14 @@
             "次日留存：MIN(dt) 找首日，LEFT JOIN dt+1 算比例"
           ],
           "model": "以前 MySQL 5.7 没有窗口函数，写分组 Top-N 只能用相关子查询，每行都扫一遍表导致 O(n²) 性能很差。MySQL 8.0 以后用窗口函数只需按分区排序一次，复杂度降到 O(n log n)。三个排名函数里，ROW_NUMBER 永远不并列，RANK 并列会跳号（1,1,3），DENSE_RANK 并列不跳号（1,1,2），像「部门工资前三高」必须用 DENSE_RANK。遇到连续登录 N 天题，先对用户和日期去重，再用日期减去组内 ROW_NUMBER，连续日期会落到同一个基准日，最后 GROUP BY HAVING COUNT >= N；而 20 道高频 SQL 题已全部沉淀在仓库的 queries.sql 里可直接跑通。",
-          "say": "计时两分钟开口讲一遍，再对照参考回答查漏补缺。"
+          "say": "计时两分钟开口讲一遍，再对照要点与参考回答查漏补缺。"
         }
       ]
     },
     {
       "beat": "take",
-      "title": "带走 3 张复习卡 & 本专题高频题清单",
-      "bridge": "复习卡 + 专题刷题清单，每天手敲 2～3 题稳步推进。",
+      "title": "带走 4 张卡 & 本地手撕自测套件",
+      "bridge": "复习卡 + 18 道可运行断言自测模板，每天手敲 2～3 题。",
       "blocks": [
         {
           "t": "cards",
@@ -492,14 +615,18 @@
             {
               "q": "专题 10 完整 20 题脚本在哪？",
               "a": "仓库 `src/lab/sqlrank/queries.sql`（含建表数据与 20 题 SQLite/MySQL 通用查询），完整 101 题清单见 `docs/module8-100-problems.md`。"
+            },
+            {
+              "q": "SQL 连续 N 天登录/活跃万能模板？",
+              "a": "先去重 `(uid, dt)` → `dt - ROW_NUMBER() OVER(PARTITION BY uid ORDER BY dt) AS grp` → `GROUP BY uid, grp HAVING COUNT(*) >= N`。"
             }
           ],
-          "say": "第三张卡就是本专题的必刷题清单，完整 101 题汇总见仓库 `docs/module8-100-problems.md`。"
+          "say": "完整 101 题路线见 `docs/module8-100-problems.md`，核心 18 题模板在 `src/lab/m8practice/M8PracticeTest.java`。"
         },
         {
           "t": "try",
-          "key": "javac -encoding UTF-8 -d out src/lab/sqlrank/*.java && java -cp out lab.sqlrank.SortDenseRank 15000",
-          "say": "在本地终端编译运行一遍，亲手改一改参数验证效果。"
+          "key": "javac -encoding UTF-8 -d out src/lab/m8practice/M8PracticeTest.java && java -ea -cp out lab.m8practice.M8PracticeTest",
+          "say": "在本地终端直接运行 18 题断言自测，也可单独跑本课实验 `java -cp out lab.sqlrank.SortDenseRank 15000`。"
         }
       ]
     }
