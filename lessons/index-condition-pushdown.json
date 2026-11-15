@@ -530,15 +530,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "索引下推（ICP）",
-          "alias": "Index Condition Pushdown",
-          "one": "将原本在 Server 层做的过滤条件==下推到 InnoDB 二级索引遍历阶段==，不符合条件的直接跳过，==大幅减少回表次数==。",
+          "t": "callout",
+          "tone": "note",
+          "title": "索引下推（ICP）（Index Condition Pushdown）",
+          "md": "将原本在 Server 层做的过滤条件==下推到 InnoDB 二级索引遍历阶段==，不符合条件的直接跳过，==大幅减少回表次数==。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "什么是索引下推（ICP）？有什么作用？",
             "Using index 和 Using index condition 有什么区别？"
           ],

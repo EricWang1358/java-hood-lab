@@ -192,7 +192,14 @@
             "for (int tick = 0; tick < TICKS; tick++) {",
             "scanOps.incrementAndGet(); // full table scan every tick!"
           ],
-          "say": "双层循环每个 Tick 扫全表，数据量一放大立刻雪崩。"
+          "say": "双层循环每个 Tick 扫全表，数据量一放大立刻雪崩。",
+          "answer": [
+            "for (int tick = 0; tick < TICKS; tick++) {",
+            "scanOps.incrementAndGet(); // full table scan every tick!"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "双层循环每个 Tick 扫全表，数据量一放大立刻雪崩。"
         }
       ]
     },

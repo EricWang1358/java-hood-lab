@@ -557,15 +557,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "MVCC 与 ReadView 四字段",
-          "alias": "Multi-Version Concurrency Control",
-          "one": "普通 SELECT 走==快照读==，靠 ReadView（==m_ids / min / max / creator==）沿 Undo 链判可见性，实现**读写互不阻塞**。",
+          "t": "callout",
+          "tone": "note",
+          "title": "MVCC 与 ReadView 四字段（Multi-Version Concurrency Control）",
+          "md": "普通 SELECT 走==快照读==，靠 ReadView（==m_ids / min / max / creator==）沿 Undo 链判可见性，实现**读写互不阻塞**。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "MVCC 的底层实现原理是什么？",
             "ReadView 里有哪些字段？可见性怎么判断？"
           ],

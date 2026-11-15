@@ -555,15 +555,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "间隙锁 + 插入意向锁死锁",
-          "alias": "Gap + Insert Intention Deadlock",
-          "one": "==Gap Lock 互相兼容==，但随后的==插入意向锁被对方 Gap Lock 阻塞==；用**升序加锁**或**直接 INSERT 唯一键兜底**破局。",
+          "t": "callout",
+          "tone": "note",
+          "title": "间隙锁 + 插入意向锁死锁（Gap + Insert Intention Deadlock）",
+          "md": "==Gap Lock 互相兼容==，但随后的==插入意向锁被对方 Gap Lock 阻塞==；用**升序加锁**或**直接 INSERT 唯一键兜底**破局。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "生产遇到过哪些 MySQL 死锁？怎么排查和解决？",
             "先 SELECT FOR UPDATE 判空再 INSERT 为什么会死锁？"
           ],

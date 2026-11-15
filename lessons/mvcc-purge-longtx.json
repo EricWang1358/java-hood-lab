@@ -551,15 +551,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "长事务与 Undo Purge 膨胀",
-          "alias": "Long Transaction & Undo Bloat",
-          "one": "未提交的==老 ReadView== 会卡死 ==Purge 线程==水位线，导致海量 Undo 无法回收；务必==短事务快提交==、RPC 移出事务外。",
+          "t": "callout",
+          "tone": "note",
+          "title": "长事务与 Undo Purge 膨胀（Long Transaction & Undo Bloat）",
+          "md": "未提交的==老 ReadView== 会卡死 ==Purge 线程==水位线，导致海量 Undo 无法回收；务必==短事务快提交==、RPC 移出事务外。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "为什么线上不能有长事务？它除了锁问题还有什么危害？",
             "怎么排查和治理 MySQL 长事务？"
           ],

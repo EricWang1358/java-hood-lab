@@ -553,15 +553,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "脏读与隔离级别基线",
-          "alias": "Dirty Read & Isolation Levels",
-          "one": "读到其他事务==尚未提交==的修改即为脏读；从 ==Read Committed== 起沿 ==Undo 版本链==彻底解决。",
+          "t": "callout",
+          "tone": "note",
+          "title": "脏读与隔离级别基线（Dirty Read & Isolation Levels）",
+          "md": "读到其他事务==尚未提交==的修改即为脏读；从 ==Read Committed== 起沿 ==Undo 版本链==彻底解决。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "MySQL 有哪四种隔离级别？分别解决什么问题？",
             "什么是脏读？RC 是怎么防止脏读的？"
           ],

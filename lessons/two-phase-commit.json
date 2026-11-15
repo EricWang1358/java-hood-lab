@@ -548,15 +548,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "Redo 与 Binlog 两阶段提交",
-          "alias": "2PC (Prepare -> Binlog -> Commit)",
-          "one": "用 ==Prepare → Binlog → Commit== 配合 ==XID== 对账，防止主从在宕机瞬间产生数据劈叉。",
+          "t": "callout",
+          "tone": "note",
+          "title": "Redo 与 Binlog 两阶段提交（2PC (Prepare -> Binlog -> Commit)）",
+          "md": "用 ==Prepare → Binlog → Commit== 配合 ==XID== 对账，防止主从在宕机瞬间产生数据劈叉。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "为什么 Redo Log 和 Binlog 要两阶段提交？",
             "崩溃恢复时 Redo 处于 Prepare 状态怎么处理？"
           ],

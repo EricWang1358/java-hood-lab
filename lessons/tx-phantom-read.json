@@ -557,15 +557,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "RR 幻读真相与防范",
-          "alias": "Phantom Read under Repeatable Read",
-          "one": "RR 下==纯快照读==（MVCC）和==纯当前读==（Next-Key Lock）各防一半，==混用==会因 `UPDATE` 改写 `trx_id` 露出幻读；开局用 `FOR UPDATE` 可彻底堵住。",
+          "t": "callout",
+          "tone": "note",
+          "title": "RR 幻读真相与防范（Phantom Read under Repeatable Read）",
+          "md": "RR 下==纯快照读==（MVCC）和==纯当前读==（Next-Key Lock）各防一半，==混用==会因 `UPDATE` 改写 `trx_id` 露出幻读；开局用 `FOR UPDATE` 可彻底堵住。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "MySQL RR 隔离级别完全解决幻读了吗？为什么？",
             "什么情况下 RR 还是会出现幻读？"
           ],

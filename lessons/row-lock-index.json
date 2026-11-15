@@ -546,15 +546,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "InnoDB 行锁加在索引上",
-          "alias": "Index-based Row Locking",
-          "one": "InnoDB 行锁==加在索引记录上==；无索引或索引失效退化为全表扫描，会==锁住全表所有行==。",
+          "t": "callout",
+          "tone": "note",
+          "title": "InnoDB 行锁加在索引上（Index-based Row Locking）",
+          "md": "InnoDB 行锁==加在索引记录上==；无索引或索引失效退化为全表扫描，会==锁住全表所有行==。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "InnoDB 的行锁是怎么实现的？什么情况下会锁整张表？",
             "InnoDB 有锁升级机制吗？"
           ],

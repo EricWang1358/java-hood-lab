@@ -192,7 +192,14 @@
             "for (int i = 0; i < BURST; i++) {",
             "unboundedHeapQueue.add(new byte[4096]);"
           ],
-          "say": "Broker 磁盘能扛住百万积压，但无界拉取会把压力全部转嫁到消费者脆弱的堆内存上。"
+          "say": "Broker 磁盘能扛住百万积压，但无界拉取会把压力全部转嫁到消费者脆弱的堆内存上。",
+          "answer": [
+            "for (int i = 0; i < BURST; i++) {",
+            "unboundedHeapQueue.add(new byte[4096]);"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "Broker 磁盘能扛住百万积压，但无界拉取会把压力全部转嫁到消费者脆弱的堆内存上。"
         }
       ]
     },

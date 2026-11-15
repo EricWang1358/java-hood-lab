@@ -195,7 +195,15 @@
             "if (owner.equals(cur)) {",
             "String removed = lock.remove(\"k\");"
           ],
-          "say": "这三行在 Java 端看似紧挨着，在分布式网络与 JVM GC 面前中间隔着一道鸿沟。"
+          "say": "这三行在 Java 端看似紧挨着，在分布式网络与 JVM GC 面前中间隔着一道鸿沟。",
+          "answer": [
+            "String cur = lock.get(\"k\");",
+            "if (owner.equals(cur)) {",
+            "String removed = lock.remove(\"k\");"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "这三行在 Java 端看似紧挨着，在分布式网络与 JVM GC 面前中间隔着一道鸿沟。"
         }
       ]
     },

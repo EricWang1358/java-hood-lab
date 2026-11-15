@@ -192,7 +192,14 @@
             "int endTick = w * 10 + 9;",
             "int twoTickSum = admittedAtTick[t] + admittedAtTick[t + 1];"
           ],
-          "say": "固定窗口只盯着自己的起止边界清零，完全不管前一个窗口尾巴上刚放过多少。"
+          "say": "固定窗口只盯着自己的起止边界清零，完全不管前一个窗口尾巴上刚放过多少。",
+          "answer": [
+            "int endTick = w * 10 + 9;",
+            "int twoTickSum = admittedAtTick[t] + admittedAtTick[t + 1];"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "固定窗口只盯着自己的起止边界清零，完全不管前一个窗口尾巴上刚放过多少。"
         }
       ]
     },

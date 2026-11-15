@@ -543,15 +543,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "COUNT(*) 与 InnoDB 计数机制",
-          "alias": "COUNT(*) Optimization & MVCC",
-          "one": "InnoDB 下 ==COUNT(*) ≈ COUNT(1)==（不展开列，扫最小二级索引树）；千万级大表因 MVCC 无法 O(1)，需用 ==汇总计数器==。",
+          "t": "callout",
+          "tone": "note",
+          "title": "COUNT(*) 与 InnoDB 计数机制（COUNT(*) Optimization & MVCC）",
+          "md": "InnoDB 下 ==COUNT(*) ≈ COUNT(1)==（不展开列，扫最小二级索引树）；千万级大表因 MVCC 无法 O(1)，需用 ==汇总计数器==。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "COUNT(*)、COUNT(1)、COUNT(id)、COUNT(字段) 哪个快？",
             "InnoDB 为什么不像 MyISAM 一样直接记录总行数？",
             "千万级大表需要分页总条数怎么处理？"

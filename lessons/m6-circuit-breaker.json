@@ -192,7 +192,14 @@
             "sharedThreads.acquireUninterruptibly();",
             "if (!sharedThreads.tryAcquire()) { healthyDropped.incrementAndGet();"
           ],
-          "say": "B 本身快如闪电且完全健康，但因为和 A 抢同一个 Semaphore/线程池，只能跟着一起陪葬。"
+          "say": "B 本身快如闪电且完全健康，但因为和 A 抢同一个 Semaphore/线程池，只能跟着一起陪葬。",
+          "answer": [
+            "sharedThreads.acquireUninterruptibly();",
+            "if (!sharedThreads.tryAcquire()) { healthyDropped.incrementAndGet();"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "B 本身快如闪电且完全健康，但因为和 A 抢同一个 Semaphore/线程池，只能跟着一起陪葬。"
         }
       ]
     },

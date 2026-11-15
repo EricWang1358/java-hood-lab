@@ -554,15 +554,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "悲观锁、乐观锁与原子扣减",
-          "alias": "Pessimistic vs Optimistic vs Atomic SQL",
-          "one": "读多写少用 ==version 乐观锁==，复杂多步强互斥用 ==FOR UPDATE==，热点扣库存首选 ==WHERE stock >= 1 原子 SQL==。",
+          "t": "callout",
+          "tone": "note",
+          "title": "悲观锁、乐观锁与原子扣减（Pessimistic vs Optimistic vs Atomic SQL）",
+          "md": "读多写少用 ==version 乐观锁==，复杂多步强互斥用 ==FOR UPDATE==，热点扣库存首选 ==WHERE stock >= 1 原子 SQL==。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "悲观锁和乐观锁的区别？扣库存怎么选？",
             "为什么高并发扣库存不建议用 version 乐观锁？"
           ],

@@ -548,15 +548,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "SQL 三值逻辑与 NULL 陷阱",
-          "alias": "Three-Valued Logic & NULL Trap",
-          "one": "SQL 布尔值为 ==TRUE / FALSE / UNKNOWN==；WHERE 只留 TRUE，导致 ==!= 漏 NULL、NOT IN 含 NULL 归零==；用 ==NOT EXISTS== 和 ==NOT NULL DEFAULT== 根治。",
+          "t": "callout",
+          "tone": "note",
+          "title": "SQL 三值逻辑与 NULL 陷阱（Three-Valued Logic & NULL Trap）",
+          "md": "SQL 布尔值为 ==TRUE / FALSE / UNKNOWN==；WHERE 只留 TRUE，导致 ==!= 漏 NULL、NOT IN 含 NULL 归零==；用 ==NOT EXISTS== 和 ==NOT NULL DEFAULT== 根治。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "为什么 SQL 里 != 会漏掉 NULL 行，而 NOT IN 含 NULL 会返回 0 行？",
             "NOT IN 和 NOT EXISTS 的区别是什么？",
             "建表为什么推荐 NOT NULL DEFAULT？"
