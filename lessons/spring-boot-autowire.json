@@ -5,9 +5,17 @@
   "course": "Spring 全家桶与持久层",
   "title": "Spring Boot 自动装配：@ConditionalOnMissingBean 为什么有时会失效？",
   "lead": "自己配了一个 Serializer Bean 想覆盖默认实现，结果要么启动直接报 NoUniqueBeanDefinitionException，要么默认实现抢先占坑！",
-  "minutes": 30,
-  "needs": ["知道 @SpringBootApplication 扫描组件", "知道按类型注入 @Autowired", "了解条件注解的基本概念"],
-  "after": ["讲清 Spring Boot 自动装配先加载用户配置、最后加载 AutoConfiguration 的顺序原因", "说出 @ConditionalOnMissingBean 退让机制与失效的常见原因", "掌握 @Primary 与 @Qualifier 解决多 Bean 冲突的方法"],
+  "minutes": 35,
+  "needs": [
+    "知道 @SpringBootApplication 扫描组件",
+    "知道按类型注入 @Autowired",
+    "了解条件注解的基本概念"
+  ],
+  "after": [
+    "讲清 Spring Boot 自动装配先加载用户配置、最后加载 AutoConfiguration 的顺序原因",
+    "说出 @ConditionalOnMissingBean 退让机制与失效的常见原因",
+    "掌握 @Primary 与 @Qualifier 解决多 Bean 冲突的方法"
+  ],
   "terms": {
     "AutoConfiguration": "自动装配配置类：通过 META-INF/spring/...imports 导入，并在所有用户 @Configuration 解析完之后才处理。",
     "@ConditionalOnMissingBean": "条件装配注解：只有容器里还没有该类型的 Bean 时才创建默认 Bean，让用户配置优先。",
@@ -18,15 +26,48 @@
       "runner": "java",
       "home": "lab.autowire",
       "variants": [
-        { "id": "DuplicateBeanConflict", "label": "无条件注解直接冲突", "note": "两个同类型 Bean 都注册进容器，按类型获取直接抛 NoUniqueBeanDefinitionException。" },
-        { "id": "WrongOrderScan", "label": "自动装配抢先加载", "note": "自动装配早于用户配置执行，误判容器为空并抢先占坑。" },
-        { "id": "ConditionalOnMissing", "label": "先用户后自动装配", "note": "先解析用户配置，再由 @ConditionalOnMissingBean 检测并退让，100% 命中自定义。" },
-        { "id": "PrimaryQualifier", "label": "@Primary/@Qualifier 路由", "note": "多实现共存时显式指定主 Bean 或名称，精确路由。" }
+        {
+          "id": "DuplicateBeanConflict",
+          "label": "无条件注解直接冲突",
+          "note": "两个同类型 Bean 都注册进容器，按类型获取直接抛 NoUniqueBeanDefinitionException。"
+        },
+        {
+          "id": "WrongOrderScan",
+          "label": "自动装配抢先加载",
+          "note": "自动装配早于用户配置执行，误判容器为空并抢先占坑。"
+        },
+        {
+          "id": "ConditionalOnMissing",
+          "label": "先用户后自动装配",
+          "note": "先解析用户配置，再由 @ConditionalOnMissingBean 检测并退让，100% 命中自定义。"
+        },
+        {
+          "id": "PrimaryQualifier",
+          "label": "@Primary/@Qualifier 路由",
+          "note": "多实现共存时显式指定主 Bean 或名称，精确路由。"
+        }
       ],
-      "knob": { "label": "装配次数(千)", "values": ["1", "2", "4", "8"], "default": "2" },
+      "knob": {
+        "label": "装配次数(千)",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "2"
+      },
       "repeat": 20,
-      "metric": { "key": "custom_used", "expectKey": "expected", "label": "命中自定义 Bean 次数" },
-      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+      "metric": {
+        "key": "custom_used",
+        "expectKey": "expected",
+        "label": "命中自定义 Bean 次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
     }
   },
   "slides": [
@@ -42,11 +83,97 @@
       ]
     },
     {
+      "beat": "open",
+      "title": "热个身：先确认三件前置知识",
+      "bridge": "Spring Boot 自动装配并不神秘，核心就是「先装用户的，最后装默认的」。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题快速热身。",
+          "items": [
+            {
+              "have": "@ConditionalOnMissingBean 含义",
+              "q": "自动配置类上写 `@ConditionalOnMissingBean(Serializer.class)` 是什么意思？",
+              "options": [
+                "容器里**没有** Serializer 时才创建这个默认 Bean",
+                "容器里已经有 Serializer 时才创建"
+              ],
+              "answer": 0,
+              "why": "Missing = 缺失时才生效，这是 Spring Boot 允许用户自定义覆盖的核心机制。"
+            },
+            {
+              "have": "加载顺序的重要性",
+              "q": "如果自动配置类比用户自己的 `@Configuration` **更早**解析，会发生什么？",
+              "options": [
+                "自动配置误以为容器里没有该 Bean，抢先注册默认实现占坑",
+                "用户配置依然能生效"
+              ],
+              "answer": 0,
+              "why": "顺序一反，`@ConditionalOnMissingBean` 永远判断为 true，默认实现抢先占坑！"
+            },
+            {
+              "have": "多 Bean 冲突",
+              "q": "容器里同时存在两个 `Serializer` Bean 且都没加 `@Primary`，按类型 `@Autowired Serializer` 会怎样？",
+              "options": [
+                "随机挑一个",
+                "启动直接报 NoUniqueBeanDefinitionException"
+              ],
+              "answer": 1,
+              "why": "Spring 不知道你要哪一个，直接启动失败。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景",
+      "bridge": "把自动装配想成「酒店先问客人带没带自备洗漱包，没带才发酒店标准套装」。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "用户配置(自备)",
+              "AutoConfig(默认)"
+            ],
+            "shared": {
+              "name": "IoC 容器",
+              "value": "谁先占坑"
+            }
+          },
+          "story": "正常流程是先让客人（用户配置）登记：如果客人自己带了 `CustomSerializer`，酒店（`AutoConfiguration`）一看「客人有了（`@ConditionalOnMissingBean` 为 false）」，就收起默认套装退让。但如果酒店不等客人登记就提前把默认套装塞进房间锁门，客人的自定义配置就被挡在门外了！",
+          "say": "记住：Spring Boot 会把 `AutoConfigurationImportSelector` 放到所有用户 `@Configuration` 解析**之后**才执行。",
+          "map": [
+            {
+              "scene": "酒店抢先塞默认套装",
+              "on": "actors",
+              "tag": "扫描顺序错了",
+              "code": "if (!ctx.containsKey(\"serializer\"))",
+              "say": "用户 Bean 还没注册，条件误判为缺失，默认 Bean 抢先占坑。"
+            },
+            {
+              "scene": "客人先登记，酒店后补缺",
+              "on": "shared",
+              "tag": "ConditionalOnMissing",
+              "code": "ConditionalOnMissing",
+              "say": "先加载用户配置，再加载自动装配，100% 尊重用户自定义。"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "beat": "hook",
       "title": "2000 次装配，自定义的 CustomSerializer 生效了几次？",
       "bridge": "预期 `custom_used = 2000`。",
       "blocks": [
-        { "t": "text", "md": "对比冲突、错序与正确的条件装配。", "say": "看 `WrongOrderScan` 代码。" }
+        {
+          "t": "text",
+          "md": "对比冲突、错序与正确的条件装配。",
+          "say": "看 `WrongOrderScan` 代码。"
+        }
       ]
     },
     {
@@ -59,7 +186,13 @@
           "of": "autowire.WrongOrderScan",
           "say": "如果自动装配跑在用户配置之前，容器当时确实是空的，于是默认 Bean 就抢先注册了。",
           "walk": [
-            { "focus": ["if (!ctx.containsKey(\"serializer\")) {"], "say": "`@ConditionalOnMissingBean` 只在当前注册瞬间检查容器里有没有；如果用户配置还没扫描到，它就会误以为「没有」而占坑！", "key": "Spring Boot 把 AutoConfiguration 排在所有用户配置之后，就是为了保证 @ConditionalOnMissingBean 准确" }
+            {
+              "focus": [
+                "if (!ctx.containsKey(\"serializer\")) {"
+              ],
+              "say": "`@ConditionalOnMissingBean` 只在当前注册瞬间检查容器里有没有；如果用户配置还没扫描到，它就会误以为「没有」而占坑！",
+              "key": "Spring Boot 把 AutoConfiguration 排在所有用户配置之后，就是为了保证 @ConditionalOnMissingBean 准确"
+            }
           ]
         }
       ]
@@ -73,9 +206,55 @@
           "t": "predict",
           "id": "aw_guess",
           "q": "运行 `WrongOrderScan`（2000 次），命中自定义 Bean 的次数是？",
-          "options": ["2000", "0"],
+          "options": [
+            "2000",
+            "0"
+          ],
           "answer": 1,
           "say": "默认 Bean 抢先占坑了。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "出事的是哪一行？点出来",
+      "bridge": "在 `WrongOrderScan.java` 中点出自动装配抢先判断并占坑的那一行。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "autowire.WrongOrderScan",
+          "q": "哪一行代码因为过早检查容器，把默认 `DefaultSerializer` 抢先塞了进去？",
+          "answer": [
+            "ctx.put(\"serializer\", new DefaultSerializer());"
+          ],
+          "hint": "找 `DefaultSerializer` 被放进 `ctx` 的那一行。",
+          "found": "就是这句！如果自己写 Starter 时把自动配置类放在了 `@ComponentScan` 扫得到的普通包里，就会发生这种抢先占坑的事故。",
+          "say": "点击代码里对应的那一行。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖看字节码",
+      "bridge": "用 `javap -c -p` 看 `WrongOrderScan.main` 里的 `put` 与 `putIfAbsent` 调用。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "autowire.WrongOrderScan",
+          "within": "main",
+          "from": "invokeinterface",
+          "to": "pop",
+          "say": "反编译看容器 Map 的写入顺序。",
+          "walk": [
+            {
+              "focus": [
+                "invokeinterface"
+              ],
+              "label": "Default 先占坑，Custom 被 putIfAbsent 忽略",
+              "say": "前面已经 `put` 了 `DefaultSerializer`，后面的 `putIfAbsent(..., CustomSerializer)` 发现键已存在，返回值被一条 `pop` 丢弃，自定义 Bean 彻底失效！",
+              "key": "在禁止 Bean 覆盖的默认配置下，先注册者胜出"
+            }
+          ]
         }
       ]
     },
@@ -87,7 +266,12 @@
         {
           "t": "experiment",
           "lab": "autowire",
-          "show": ["DuplicateBeanConflict", "WrongOrderScan", "ConditionalOnMissing", "PrimaryQualifier"],
+          "show": [
+            "DuplicateBeanConflict",
+            "WrongOrderScan",
+            "ConditionalOnMissing",
+            "PrimaryQualifier"
+          ],
           "select": "WrongOrderScan",
           "say": "`DuplicateBeanConflict` 和 `WrongOrderScan` 全是 0；`ConditionalOnMissing` 和 `PrimaryQualifier` 全是 2000。"
         },
@@ -97,7 +281,10 @@
           "say": "自己写 Starter 时，自动装配类一定要通过 `AutoConfiguration.imports` 导入，绝不能被业务 `@ComponentScan` 直接扫到！",
           "key": "自定义 Starter 的 AutoConfig 不能被 @ComponentScan 扫到，否则加载顺序乱套"
         },
-        { "t": "try", "say": "切换挡位 4 和 8 观察。" }
+        {
+          "t": "try",
+          "say": "切换挡位 4 和 8 观察。"
+        }
       ]
     },
     {
@@ -110,7 +297,10 @@
           "of": "autowire",
           "say": "`ConditionalOnMissing` 和 `PrimaryQualifier` 全程实心点。",
           "walk": [
-            { "focus": "ConditionalOnMissing", "say": "标准 Starter 写法：用户配了就退让，用户没配就兜底。" }
+            {
+              "focus": "ConditionalOnMissing",
+              "say": "标准 Starter 写法：用户配了就退让，用户没配就兜底。"
+            }
           ]
         }
       ]
@@ -125,19 +315,43 @@
           "t": "decide",
           "q": "自动装配遇到 Bean 冲突或没覆盖怎么处理？",
           "branches": [
-            { "when": "写公共 Starter 提供默认实现", "pick": "AutoConfiguration.imports + @ConditionalOnMissingBean", "eg": "兜底且可覆盖" },
-            { "when": "业务里有多个合法实现需要共存", "pick": "@Primary 或 @Qualifier", "eg": "@Qualifier(\"customSerializer\")" }
+            {
+              "when": "写公共 Starter 提供默认实现",
+              "pick": "AutoConfiguration.imports + @ConditionalOnMissingBean",
+              "eg": "兜底且可覆盖"
+            },
+            {
+              "when": "业务里有多个合法实现需要共存",
+              "pick": "@Primary 或 @Qualifier",
+              "eg": "@Qualifier(\"customSerializer\")"
+            }
           ],
           "say": "写 Starter 用退让，写业务多实现用路由。"
         },
         {
           "t": "cases",
-          "tools": ["移出 @ComponentScan 放 imports", "加 @ConditionalOnMissingBean", "加 @Primary / @Qualifier"],
+          "tools": [
+            "移出 @ComponentScan 放 imports",
+            "加 @ConditionalOnMissingBean",
+            "加 @Primary / @Qualifier"
+          ],
           "say": "三个场景选最合适的。",
           "items": [
-            { "text": "自己写的 Starter 里 `@ConditionalOnMissingBean` 经常失效，发现是因为 Starter 包名和业务主类一样被 `@ComponentScan` 扫到了。", "answer": 0, "why": "移到独立包并用 `AutoConfiguration.imports` 导入。" },
-            { "text": "业务引入了主从两个 `DataSource`，注入时报错 `NoUniqueBeanDefinitionException`。", "answer": 2, "why": "主库标 `@Primary`，或注入点用 `@Qualifier` 指定。" },
-            { "text": "框架提供默认 `IdGenerator`，希望业务方一旦自己声明就自动失效。", "answer": 1, "why": "在默认 `@Bean` 上加 `@ConditionalOnMissingBean(IdGenerator.class)`。" }
+            {
+              "text": "自己写的 Starter 里 `@ConditionalOnMissingBean` 经常失效，发现是因为 Starter 包名和业务主类一样被 `@ComponentScan` 扫到了。",
+              "answer": 0,
+              "why": "移到独立包并用 `AutoConfiguration.imports` 导入。"
+            },
+            {
+              "text": "业务引入了主从两个 `DataSource`，注入时报错 `NoUniqueBeanDefinitionException`。",
+              "answer": 2,
+              "why": "主库标 `@Primary`，或注入点用 `@Qualifier` 指定。"
+            },
+            {
+              "text": "框架提供默认 `IdGenerator`，希望业务方一旦自己声明就自动失效。",
+              "answer": 1,
+              "why": "在默认 `@Bean` 上加 `@ConditionalOnMissingBean(IdGenerator.class)`。"
+            }
           ]
         }
       ]
@@ -152,24 +366,52 @@
           "term": "Spring Boot 自动装配原理",
           "alias": "@EnableAutoConfiguration · AutoConfiguration.imports · @ConditionalOnMissingBean",
           "oneLine": "`@SpringBootApplication` 通过 `AutoConfigurationImportSelector` 延迟导入自动装配类，在用户配置之后执行，配合==@ConditionalOnMissingBean==实现按需兜底。",
-          "asked": ["Spring Boot 自动装配是怎么实现的？", "为什么自己配一个 Bean 就能覆盖 Spring Boot 的默认配置？"],
+          "asked": [
+            "Spring Boot 自动装配是怎么实现的？",
+            "为什么自己配一个 Bean 就能覆盖 Spring Boot 的默认配置？"
+          ],
           "say": "把「延迟到用户配置之后加载」和「条件注解退让」讲出来，非常扎实。"
         }
       ]
     },
     {
       "beat": "check",
-      "title": "小测一下",
+      "title": "小测一下（两题）",
       "bridge": "快速检验。",
       "blocks": [
         {
           "t": "quiz",
           "q": "自定义 Starter 的自动装配类如果不小心放在了业务 `@SpringBootApplication` 的 `@ComponentScan` 路径下，最可能发生什么？",
           "options": [
-            { "text": "可能先于用户配置被扫描解析，导致 @ConditionalOnMissingBean 失效", "ok": true, "why": "正确！自动装配必须走 `AutoConfiguration.imports` 延迟导入。" },
-            { "text": "会提高启动速度", "ok": false, "why": "不会，反而破坏条件判断顺序。" }
+            {
+              "text": "可能先于用户配置被扫描解析，导致 @ConditionalOnMissingBean 失效",
+              "ok": true,
+              "why": "正确！自动装配必须走 `AutoConfiguration.imports` 延迟导入。"
+            },
+            {
+              "text": "会提高启动速度",
+              "ok": false,
+              "why": "不会，反而破坏条件判断顺序。"
+            }
           ],
           "say": "选出正确答案。"
+        },
+        {
+          "t": "quiz",
+          "q": "2. 自己写一个 Spring Boot Starter 时，应该把 `MyAutoConfiguration` 注册在哪里，才能保证它在所有用户 `@Configuration` 之后解析？",
+          "options": [
+            {
+              "text": "META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports（且不要被业务主包 @ComponentScan 扫到）",
+              "ok": true,
+              "why": "正确！Spring Boot 2.7/3.x 统一使用 `AutoConfiguration.imports` 文件，确保自动配置排在用户配置之后。"
+            },
+            {
+              "text": "直接放在用户项目的 com.example.service 包下加 @Configuration",
+              "ok": false,
+              "why": "放在业务包下会被普通 `@ComponentScan` 提前扫到，导致 `@ConditionalOnMissingBean` 时序错乱！"
+            }
+          ],
+          "say": "第 2 题：考手写 Starter 工程规范。"
         }
       ]
     },
@@ -200,9 +442,18 @@
         {
           "t": "cards",
           "items": [
-            { "q": "Spring Boot 2.7/3.x 自动装配清单放哪？", "a": "`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`。" },
-            { "q": "`@ConditionalOnMissingBean` 为什么能被用户配置覆盖？", "a": "自动装配类排在用户 `@Configuration` 之后解析，检查到已有 Bean 就退让。" },
-            { "q": "多实现合法共存时怎么解决 `NoUniqueBeanDefinitionException`？", "a": "默认实现标 `@Primary`，或注入处用 `@Qualifier(\"beanName\")`。" }
+            {
+              "q": "Spring Boot 2.7/3.x 自动装配清单放哪？",
+              "a": "`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`。"
+            },
+            {
+              "q": "`@ConditionalOnMissingBean` 为什么能被用户配置覆盖？",
+              "a": "自动装配类排在用户 `@Configuration` 之后解析，检查到已有 Bean 就退让。"
+            },
+            {
+              "q": "多实现合法共存时怎么解决 `NoUniqueBeanDefinitionException`？",
+              "a": "默认实现标 `@Primary`，或注入处用 `@Qualifier(\"beanName\")`。"
+            }
           ],
           "say": "三张卡收好。"
         }
