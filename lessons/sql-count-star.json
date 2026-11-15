@@ -1,0 +1,215 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "sql-count-star",
+  "course": "MySQL 索引、事务与锁",
+  "title": "COUNT(*) 到底比 COUNT(1) 慢多少？",
+  "lead": "面试常问 COUNT(*)、COUNT(1)、COUNT(列名) 谁最快。用错不仅慢，COUNT(列名) 还会把统计数算少！",
+  "minutes": 30,
+  "needs": ["用过 SELECT COUNT(*)"],
+  "after": [
+    "打破「COUNT(*) 会把所有列展开很慢」的误区",
+    "分清 COUNT(*)、COUNT(1)、COUNT(可空列) 在语义和性能上的区别",
+    "知道百万级大表实时总数的工程替代方案"
+  ],
+  "terms": {
+    "COUNT(*)": "统计总行数。InnoDB 专门优化过，不取列值，直接挑最小的二级索引树遍历计数。",
+    "COUNT(1)": "每行放一个常量 1 判非空后计数，不取任何列值，和 COUNT(*) 性能几乎完全一致。",
+    "COUNT(col)": "必须取出该列的值并判断是否不为 NULL；如果列允许 NULL，统计数会少！",
+    "覆盖/最小二级索引": "因为二级索引叶子节点只存索引列+主键，比聚簇索引（存整行）小得多，一页能装更多行，扫起来更省 I/O。"
+  },
+  "experiments": {
+    "countstar": {
+      "runner": "java",
+      "home": "lab.countstar",
+      "variants": [
+        { "id": "CountNullableCol", "label": "COUNT(可空列)", "note": "逐行读取字段并判断 != null，遇到 NULL 会跳过！" },
+        { "id": "CountOne", "label": "COUNT(1)", "note": "遍历最小索引树直接计数，不读列值。" },
+        { "id": "CountStar", "label": "COUNT(*)", "note": "MySQL 专属优化，不展开列，直接扫最小索引树计数。" },
+        { "id": "SummaryCounter", "label": "汇总计数表 O(1)", "note": "通过汇总表/Redis 维护总数，不扫表。" }
+      ],
+      "knob": { "label": "表行数", "values": ["50000", "200000", "500000", "1000000"], "default": "500000" },
+      "repeat": 20,
+      "metric": { "key": "counted", "expectKey": "expected", "label": "统计到的行数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "COUNT(*) 到底比 COUNT(1) 慢多少？",
+      "blocks": [
+        { "t": "text", "md": "网上流传很广的一句话：「别写 `COUNT(*)`，它会把所有列都查出来，改写 `COUNT(1)` 或 `COUNT(id)` 才快」。**这是真的吗？**", "say": "今天不仅要揭开 InnoDB 里的真实执行方式，还要看一个更危险的坑：乱用 `COUNT(列名)` 直接把行数算少。" }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "50 万行表，其中 10% 备注为 NULL",
+      "blocks": [
+        { "t": "text", "md": "如果用 `COUNT(remark)` 代替 `COUNT(*)` 去查总订单数，结果会是 **50 万** 吗？", "say": "先看四种写法的源码，再实测。" }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "对照四种计数写法",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "countstar.CountNullableCol",
+          "say": "`COUNT(remark)` 必须把每一行的 `remark` 取出来检查是不是 `null`，而 `COUNT(*)` 和 `COUNT(1)` 根本不用取列值。",
+          "walk": [
+            { "focus": ["if (remarks[i] != null) counted++;"], "say": "只要这一行是 `null`，`counted++` 就被跳过了！", "focusLines": [12] }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "cnt",
+          "q": "50 万行里每 10 行有 1 行 `remark` 为 NULL，跑 `CountNullableCol` 会输出多少？",
+          "options": ["500,000", "450,000", "50,000", "报错"],
+          "answer": 1,
+          "say": "选出你认为会被统计出来的行数。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看：COUNT(可空列) 少了 5 万行",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "countstar",
+          "show": ["CountNullableCol"],
+          "knob": false,
+          "hand": false,
+          "say": "结果 `counted = 450000`，直接漏掉了 5 万条有效订单！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：为什么 InnoDB 的 COUNT(*) 也必须扫树？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "countstar.CountStar",
+          "within": "static void main",
+          "from": "13: iconst_0",
+          "to": "27: goto",
+          "say": "MyISAM 会直接存一个总行数变量，所以是 O(1)；但 InnoDB 支持事务和多版本并发控制（MVCC），同一时刻不同事务看到的行数可能不同，所以必须现场扫一遍最小的索引树，逐行判断对当前事务是否可见。",
+          "walk": [
+            { "focus": ["smallestIndexLeaf"], "say": "因为 `COUNT(*)` 被 MySQL 专门优化过，既不展开所有列，也会自动挑体积最小的二级索引树来扫。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方式放一起跑：COUNT(*) 并不慢",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "countstar",
+          "show": ["CountNullableCol", "CountOne", "CountStar", "SummaryCounter"],
+          "select": "CountStar",
+          "say": "`CountStar` 和 `CountOne` 统计结果都是精确的 500000，耗时几乎一模一样；千万级大表要再快，只能靠 `SummaryCounter` 维护独立计数表。"
+        },
+        {
+          "t": "chart",
+          "of": "countstar",
+          "say": "`CountStar` 与 `CountOne` 曲线几乎重合；`SummaryCounter` 永远贴地 O(1)。",
+          "walk": [
+            { "focus": ["CountStar", "CountOne"], "say": "InnoDB 下 `COUNT(*)` ≈ `COUNT(1)` > `COUNT(主键)` > `COUNT(普通可空列)`。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "记牢一条铁律：统计总行数，无脑用 `COUNT(*)`；需要精确判非空才用 `COUNT(列)`；千万级高频总数用汇总表/缓存。",
+          "options": [
+            { "name": "COUNT(*)", "solves": "语义最清晰，MySQL 官方推荐，自动走最小二级索引", "cost": "扫最小索引树：{ms:countstar.CountStar} ms", "when": "绝大多数统计总行数的场景", "say": "SQL92 标准写法，别再手动改成 COUNT(1) 了。" },
+            { "name": "COUNT(可空列)", "solves": "只统计该列不为 NULL 的行数", "cost": "需解析字段值：{ms:countstar.CountNullableCol} ms", "when": "明确只要统计「填了备注的人数」等非空计数", "say": "拿来算总行数是大忌。" },
+            { "name": "SummaryCounter", "solves": "O(1) 秒出总数，不扫表", "cost": "常量读取：{ms:countstar.SummaryCounter} ms", "when": "千万级大表首页展示总记录数、且允许近似或额外维护成本", "say": "可以用汇总计数表、Redis 计数器，或用 `SHOW TABLE STATUS` 拿估算值。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在 InnoDB 引擎下，下面关于 `COUNT` 的说法哪个正确？",
+          "options": [
+            { "text": "`COUNT(*)` 会把整行所有字段都读取出来，所以比 `COUNT(1)` 慢很多", "ok": false, "why": "这是常见谣言。MySQL 对 `COUNT(*)` 有专门优化，不会展开所有列。" },
+            { "text": "`COUNT(*) ≈ COUNT(1)`，都会自动挑最小的二级索引树扫描并过滤 MVCC 可见性", "ok": true, "why": "InnoDB 不存全局精确行数，两者性能几乎完全一致。" },
+            { "text": "InnoDB 和 MyISAM 一样，直接在表头存了一个精确的总行数", "ok": false, "why": "只有 MyISAM 存了总行数，InnoDB 因为有 MVCC 并发事务隔离，无法存单一全局行数。" }
+          ],
+          "say": "选出唯一正确的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "COUNT 性能排序与语义差异",
+          "alias": "COUNT(*) vs COUNT(1) vs COUNT(col)",
+          "oneLine": "InnoDB 中 `COUNT(*)` 与 `COUNT(1)` 几乎==等价且不取列值==；`COUNT(col)` 会取列值且==跳过 NULL==。",
+          "asked": [
+            "COUNT(*)、COUNT(1)、COUNT(字段) 哪个快？",
+            "为什么 InnoDB 不像 MyISAM 一样把总行数存起来？",
+            "大表 COUNT(*) 太慢怎么优化？"
+          ],
+          "say": "面试官问这题，就是在考你知不知道 MVCC 和最小二级索引优化。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "COUNT(*)、COUNT(1)、COUNT(字段) 有什么区别？InnoDB 下为什么 COUNT(*) 也会慢，怎么优化？",
+          "points": [
+            "性能排序：COUNT(*) ≈ COUNT(1) > COUNT(主键) > COUNT(普通字段)",
+            "COUNT(*) 不会展开所有列，InnoDB 会挑最小的二级索引树扫描",
+            "COUNT(字段) 会读取字段并忽略 NULL，可能少算",
+            "InnoDB 因 MVCC 无法存全局行数；大表优化可用 Redis/汇总表、或 EXPLAIN/SHOW TABLE STATUS 估算"
+          ],
+          "model": "在 InnoDB 里，COUNT(*) 和 COUNT(1) 性能几乎一样，都不会去读取具体的字段值，MySQL 会对 COUNT(*) 做专门优化，自动选择体积最小的二级索引树去遍历计数。而 COUNT(字段) 需要取出字段值判断是否非 NULL，不仅慢还会在有 NULL 时漏掉行数。至于为什么 InnoDB 的 COUNT(*) 还是要扫索引，是因为支持事务和 MVCC，同一时刻不同事务能看到的行数不一样，没法像 MyISAM 那样只存一个数字。如果千万级大表嫌慢，可以维护汇总计数表/Redis，或者不需要精确值时用估算值。",
+          "say": "用自己的话讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "COUNT(*) 和 COUNT(1) 谁快？", "a": "几乎一样快。MySQL 官方推荐直接写 COUNT(*)，不会展开列。" },
+            { "q": "COUNT(列名) 有什么坑？", "a": "必须读列值且会忽略 NULL 行，用来统计总行数容易少算。" },
+            { "q": "千万级大表怎么加速 COUNT(*)？", "a": "加合适条件走覆盖索引；或用汇总计数表 / Redis；无需精确值时用估算值。" }
+          ],
+          "say": "下一课看 WHERE 和 HAVING 的执行顺序陷阱。"
+        }
+      ]
+    }
+  ]
+}

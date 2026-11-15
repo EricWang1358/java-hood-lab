@@ -364,9 +364,9 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>32</strong> 节循序渐进实验课</span>
-        <span><strong>128</strong> 份可独立运行的 Java 变体</span>
-        <span><strong>JDK 25</strong> 实测数据与字节码证据</span>
+        <span><strong>37</strong> 节循序渐进实验课</span>
+        <span><strong>148</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
     </section>
@@ -374,15 +374,16 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 32 / 32 课</span>
+        <span id="shownCount" class="count-note">显示 37 / 37 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (32)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (37)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
         <button type="button" class="pill" data-filter="ch4">第四章 · 线程封闭与线程池 (6)</button>
         <button type="button" class="pill" data-filter="ch5">第五章 · 工程模式与新特性 (11)</button>
+        <button type="button" class="pill" data-filter="m4ch1">MySQL 1 · SQL 与深分页 (5)</button>
       </div>
     </div>
 
@@ -810,6 +811,75 @@
           <p class="card__lead">更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？</p>
           <div class="card__foot">
             <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m4ch1">
+        <div class="chapter__head">
+          <h2>模块四 · 第一章：SQL 必知必会、联表与深分页改写（第 33～37 课）</h2>
+          <p>用真实往返次数、回表扫描行数与三值逻辑实验，彻底打通 N+1、深分页、COUNT(*)、WHERE/HAVING 与 NULL 陷阱。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/sql-join-nplus1.html" data-ch="m4ch1" data-search="33 sql-join-nplus1 循环查库 n+1，接口怎么慢成蜗牛？ 先查出 1000 条订单，再在 for 循环里一条条查下单人名字。每次只查 1 行，接口为什么还是慢到超时？ lab.sqljoin">
+          <div class="card__top">
+            <span class="card__num">#33</span>
+            <span class="card__pkg">lab.sqljoin</span>
+          </div>
+          <h3 class="card__title">循环查库 N+1，接口怎么慢成蜗牛？</h3>
+          <p class="card__lead">先查出 1000 条订单，再在 for 循环里一条条查下单人名字。每次只查 1 行，接口为什么还是慢到超时？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/sql-deep-paging.html" data-ch="m4ch1" data-search="34 sql-deep-paging 翻到第 10 万页，limit 为啥突然卡死？ 同样每页只取 20 条，limit 0, 20 只要 1 毫秒，limit 100000, 20 为什么突然变成慢查询？ lab.deeppage">
+          <div class="card__top">
+            <span class="card__num">#34</span>
+            <span class="card__pkg">lab.deeppage</span>
+          </div>
+          <h3 class="card__title">翻到第 10 万页，LIMIT 为啥突然卡死？</h3>
+          <p class="card__lead">同样每页只取 20 条，LIMIT 0, 20 只要 1 毫秒，LIMIT 100000, 20 为什么突然变成慢查询？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/sql-count-star.html" data-ch="m4ch1" data-search="35 sql-count-star count(*) 到底比 count(1) 慢多少？ 面试常问 count(*)、count(1)、count(列名) 谁最快。用错不仅慢，count(列名) 还会把统计数算少！ lab.countstar">
+          <div class="card__top">
+            <span class="card__num">#35</span>
+            <span class="card__pkg">lab.countstar</span>
+          </div>
+          <h3 class="card__title">COUNT(*) 到底比 COUNT(1) 慢多少？</h3>
+          <p class="card__lead">面试常问 COUNT(*)、COUNT(1)、COUNT(列名) 谁最快。用错不仅慢，COUNT(列名) 还会把统计数算少！</p>
+          <div class="card__foot">
+            <span>12 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/sql-group-having.html" data-ch="m4ch1" data-search="36 sql-group-having where 和 having 混用，全表都被扫了一遍？ 同样是筛选 status = 'paid'，写在 where 里只要 2 毫秒，写在 having 里为什么把临时表撑爆？ lab.wherehaving">
+          <div class="card__top">
+            <span class="card__num">#36</span>
+            <span class="card__pkg">lab.wherehaving</span>
+          </div>
+          <h3 class="card__title">WHERE 和 HAVING 混用，全表都被扫了一遍？</h3>
+          <p class="card__lead">同样是筛选 status = 'PAID'，写在 WHERE 里只要 2 毫秒，写在 HAVING 里为什么把临时表撑爆？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/sql-null-trap.html" data-ch="m4ch1" data-search="37 sql-null-trap 字段允许 null，!= 怎么把数据全漏掉了？ 用 where id not in (select ...) 查黑名单外用户，子查询里只混进了一个 null，整条 sql 竟然返回 0 行！ lab.nulltrap">
+          <div class="card__top">
+            <span class="card__num">#37</span>
+            <span class="card__pkg">lab.nulltrap</span>
+          </div>
+          <h3 class="card__title">字段允许 NULL，!= 怎么把数据全漏掉了？</h3>
+          <p class="card__lead">用 WHERE id NOT IN (SELECT ...) 查黑名单外用户，子查询里只混进了一个 NULL，整条 SQL 竟然返回 0 行！</p>
+          <div class="card__foot">
+            <span>12 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
