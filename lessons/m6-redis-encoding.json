@@ -1,0 +1,566 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-redis-encoding",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "Hash 存 100 字段还是 1000 字段？底层编码跳变代价",
+  "lead": "把用户属性拆成独立 String Key 还是塞进 Hash？当 Hash 字段数超过 512 或单值超 64B，底层从 listpack 跳变成 hashtable 内存直接翻几倍。",
+  "minutes": 35,
+  "needs": [
+    "知道 Redis 常用 String 和 Hash 结构",
+    "了解对象头与指针开销的基本概念"
+  ],
+  "after": [
+    "对比 String 散存、listpack 紧凑表与 hashtable 字典的内存差异",
+    "记住 listpack 跳变 hashtable 的两个核心阈值",
+    "会用分桶小 Hash 控制单 Key 元素数在 512 以内"
+  ],
+  "terms": {
+    "listpack": "Redis 7.0+ 紧凑列表编码，把所有元素连续排在一整块字节数组里，零指针开销，取代了可能级联更新的 ziplist。",
+    "hashtable": "标准哈希表编码（dict），每个字段都要分配 dictEntry 和指针，内存开销远高于 listpack。",
+    "hash-max-listpack-entries": "Hash 使用 listpack 编码的最大字段数阈值，默认 512。",
+    "hash-max-listpack-value": "Hash 使用 listpack 编码的单个字段/值最大字节数阈值，默认 64 字节。"
+  },
+  "experiments": {
+    "m6_encoding": {
+      "runner": "java",
+      "home": "lab.m6.encoding",
+      "knob": {
+        "name": "threads",
+        "label": "并发写入线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "memKB",
+        "expectKey": "expected",
+        "label": "内存占用 (KB)",
+        "expect": "紧凑基线"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "StringPerField",
+          "label": "独立String散存",
+          "code": "StringPerField.java",
+          "note": "每个字段一个独立 Key，承担完整 RedisObject + dictEntry 开销。"
+        },
+        {
+          "id": "LargeHashTable",
+          "label": "大Hash(hashtable)",
+          "code": "LargeHashTable.java",
+          "note": "超过阈值退化成 dict 哈希表，指针与桶开销依然高企。"
+        },
+        {
+          "id": "ListpackCompact",
+          "label": "紧凑listpack",
+          "code": "ListpackCompact.java",
+          "note": "连续字节数组存小 Hash，消除指针开销，内存暴降 75%+。"
+        },
+        {
+          "id": "BucketedHash",
+          "label": "分桶小Hash",
+          "code": "BucketedHash.java",
+          "note": "把海量字段按哈希分桶成每桶 <=512 项，锁住 listpack 红利。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "Hash 存 100 字段还是 1000 字段？底层编码跳变代价",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "同样存 8000 个用户属性，**全写成独立 `String` 要占几百 MB，改用紧凑 `listpack` 编码的 `Hash` 却只要零头**——一旦字段数突破 512，内存瞬间又跳回去。",
+          "say": "面试官问 Redis Hash 底层什么时候用 listpack 什么时候用 hashtable，不仅要背出 512 和 64 字节两个阈值，还要知道它省掉的是指针和 RedisObject 头部。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "对象头开销",
+              "q": "把一个用户的 20 个字段拆成 20 个独立 String Key 存进 Redis，最浪费内存的部分是？",
+              "options": [
+                "每个 Key 都要单独配一套 RedisObject + dictEntry + SDS 元数据",
+                "String 值必须对齐到 4KB",
+                "Redis 对 String 强制存两份"
+              ],
+              "answer": 0,
+              "why": "元数据和指针开销往往比实际几个字节的值本身还大得多。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：存 400 个用户 × 20 个属性",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "4 个线程各写 8000 个字段，对比独立 String、hashtable、listpack 与分桶小 Hash 的内存账。",
+            "actors": [
+              "业务线程 A",
+              "Redis 内存分配器"
+            ],
+            "shared": "Redis 内存池"
+          },
+          "say": "4 个线程各写 8000 个字段，对比独立 String、hashtable、listpack 与分桶小 Hash 的内存账。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `StringPerField`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_encoding.StringPerField",
+          "say": "这就是最常见的基线写法 `StringPerField`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`StringPerField` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "把 8000 个属性全部存成独立 `StringPerField`，单线程占多少 KB？",
+          "options": [
+            "约 220 KB",
+            "约 750 KB（几乎是紧凑编码的 7~8 倍）",
+            "10 KB"
+          ],
+          "answer": 1,
+          "say": "每个字段都单独包一层对象头与字典节点，元数据比数据还重。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`StringPerField` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_encoding",
+          "show": [
+            "StringPerField"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "kv.put(\"u:\" + i + \":f:\" + f, \"v\" + f);"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `StringPerField` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_encoding.StringPerField",
+          "lines": [
+            "kv.put(\"u:\" + i + \":f:\" + f, \"v\" + f);"
+          ],
+          "say": "每个字段单独进顶层全局哈希表，承担全套 Key 字符串与指针代价。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "String(96B/field) vs hashtable(48B/field) vs listpack(12B/field)",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "业务线程 A",
+            "Redis 内存分配器"
+          ],
+          "shared": {
+            "name": "Redis 内存池",
+            "start": "准备写入 8000 字段"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "A 写入第 513 个字段",
+              "say": "原本紧凑的 listpack 刚超过 512 个字段阈值。"
+            },
+            {
+              "lane": 1,
+              "op": "calc",
+              "text": "触发编码升级 -> hashtable",
+              "say": "Redis 立刻把整块连续数组拆成散落堆上的 dictEntry 链表，内存占用陡增！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `LargeHashTable`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "换成 `LargeHashTable` 后内存降了一半，为什么还是不如 `ListpackCompact` 省？",
+          "options": [
+            "hashtable 内部每个字段依然有 dictEntry 和指针开销",
+            "hashtable 会把所有值转成 double",
+            "listpack 会自动压缩图片"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`StringPerField` vs `LargeHashTable`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_encoding",
+          "show": [
+            "StringPerField",
+            "LargeHashTable"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `LargeHashTable` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_encoding.LargeHashTable",
+          "within": "runBatch()",
+          "from": "0: new",
+          "to": "return",
+          "say": "看 `LargeHashTable.runBatch`：每次循环都要 `new HashMap` 和 `put` 大量节点对象，指针链满天飞。",
+          "walk": [
+            {
+              "focus": [
+                "HashMap"
+              ],
+              "label": "离散节点指针开销",
+              "say": "不仅多占内存，CPU 缓存局部性也差，GC/释放更慢。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`ListpackCompact` 与 `BucketedHash`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_encoding",
+          "show": [
+            "StringPerField",
+            "LargeHashTable",
+            "ListpackCompact",
+            "BucketedHash"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_encoding",
+          "variants": [
+            "StringPerField",
+            "LargeHashTable",
+            "ListpackCompact",
+            "BucketedHash"
+          ],
+          "notes": [
+            {
+              "focus": "StringPerField",
+              "key": "独立 String 散存内存占用最高，是紧凑编码的 7 倍以上",
+              "say": "千万别把大量小属性拆成海量独立 String Key。"
+            },
+            {
+              "focus": "ListpackCompact",
+              "key": "listpack 紧凑编码内存与耗时双双压到最低",
+              "say": "连续内存既省空间又对 CPU Cache 极其友好。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `BucketedHash` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_encoding.BucketedHash",
+          "within": "runBatch()",
+          "from": "0: sipush",
+          "to": "return",
+          "say": "看 `BucketedHash.runBatch`：按 `BUCKET_CAP = 512` 切分出多个紧凑字节数组，把每桶元素死死压在阈值线以下。",
+          "walk": [
+            {
+              "focus": [
+                "BUCKET_CAP"
+              ],
+              "label": "分桶锁住 listpack",
+              "key": "千万级小字段用「hash 分桶」能省下 70% 以上内存",
+              "say": "这是大厂存储海量特征/短链映射时最经典的省内存绝招。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "独立 String",
+              "solves": "支持单字段独立设置过期 TTL",
+              "cost": "内存极贵（约 {memKB:m6_encoding.StringPerField} KB）",
+              "when": "每个字段必须有独立 TTL 或体积很大",
+              "say": "Hash 只能给整个大 Key 设 TTL，不能给单个 field 设 TTL。"
+            },
+            {
+              "name": "listpack / 分桶小 Hash",
+              "solves": "极致省内存与高 CPU 缓存命中",
+              "cost": "约 {memKB:m6_encoding.BucketedHash} KB，不可退化后回退",
+              "when": "海量小对象/特征向量/计数映射",
+              "say": "记住：一旦从 listpack 升级成 hashtable，删掉元素也不会自动降级回 listpack！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "存海量小字段，什么时候用 Hash 甚至分桶 Hash？",
+          "branches": [
+            {
+              "when": "需要给每个字段单独设 TTL",
+              "pick": "独立 String Key",
+              "eg": "单个验证码/会话 Token"
+            },
+            {
+              "when": "字段共享生命周期且追求极致省内存",
+              "pick": "Hash（控制 <=512 项保 listpack）",
+              "eg": "用户画像/商品多属性"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "独立 String",
+            "Hash(listpack)",
+            "分桶小 Hash"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "存 1 亿条短链映射（6 字节短码 -> URL），单机内存告急，无需单独 TTL。",
+              "answer": 2,
+              "why": "把短码按前缀哈希分桶成 20 万个小 Hash，每桶 ~500 条稳稳吃满 listpack 红利。"
+            },
+            {
+              "text": "存用户登录态 Token，要求每个设备 Token 单独 7 天过期。",
+              "answer": 0,
+              "why": "Hash 不支持单 field 过期（Redis 7.4 前），必须用独立 String。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：Redis 对象编码与 listpack",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Redis 对象编码与 listpack",
+          "alias": "Redis Encoding · listpack vs hashtable",
+          "oneLine": "小 Hash（<=512 项且单值 <=64B）用紧凑 ==listpack== 省内存；超阈值则不可逆跳变为 ==hashtable==。",
+          "asked": [
+            "ziplist 为什么在 Redis 7.0 被 listpack 取代？",
+            "为什么 Hash 从 listpack 升级成 hashtable 后删元素不会降级？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Redis 7.0 用 `listpack` 取代 `ziplist` 主要解决了什么痛点？",
+          "options": [
+            {
+              "text": "消除了 ziplist 改中间元素时引发的「连锁更新」风险",
+              "ok": true,
+              "why": "ziplist 记录前一项长度，导致极端情况引发 O(N^2) 级联重分配；listpack 只记自身长度。"
+            },
+            {
+              "text": "因为 ziplist 不能存数字",
+              "ok": false,
+              "why": "ziplist 本身支持整数编码。"
+            }
+          ],
+          "say": "高频底层原理题：连锁更新（Cascade Update）。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Hash 编码从 listpack 升级成 hashtable 后，再把字段删到 10 个，编码会怎样？",
+          "options": [
+            {
+              "text": "保持 hashtable，不会自动降级回 listpack",
+              "ok": true,
+              "why": "Redis 不支持编码降级，避免反复震荡拷贝。"
+            },
+            {
+              "text": "立刻自动退回 listpack",
+              "ok": false,
+              "why": "不会自动降级。"
+            }
+          ],
+          "say": "编码升级是单行道。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Hash 触发 listpack -> hashtable 升级的默认两个条件是？",
+          "options": [
+            {
+              "text": "字段数 > 512 或 单个字段/值 > 64 字节",
+              "ok": true,
+              "why": "对应 hash-max-listpack-entries 和 hash-max-listpack-value。"
+            },
+            {
+              "text": "字段数 > 10000 且 总内存 > 1MB",
+              "ok": false,
+              "why": "默认阈值是 512 和 64 字节。"
+            }
+          ],
+          "say": "记住 512 和 64B 两个默认配置。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "Redis Hash 底层有哪两种编码？什么时候转换？工程上怎么利用它极致省内存？",
+          "points": [
+            "两种编码：紧凑连续数组 listpack（Redis 7 取代 ziplist 防连锁更新）与哈希表 hashtable",
+            "默认字段数<=512 且单值<=64B 用 listpack，任一超限则不可逆升级为 hashtable",
+            "listpack 省去了指针和对象头，内存可省 70% 以上",
+            "海量 KV 场景可按 key 哈希分桶装进多个 <=512 项的小 Hash 吃满内存红利"
+          ],
+          "model": "Redis Hash 底层在字段数不超过 512 且单字段/值不超过 64 字节时，采用紧凑连续的 listpack 编码（Redis 7.0 用它取代 ziplist 彻底解决了连锁更新问题），消除了大量指针和对象头开销；一旦超过任一阈值就会不可逆地升级为 hashtable。工程上存储海量小 KV 且不需要单字段独立 TTL 时，可以按 Key 哈希分桶成每桶不超过 512 个字段的小 Hash，稳稳锁住 listpack 编码红利，内存通常能省下 70% 以上。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "listpack vs ziplist 核心改进？",
+              "a": "listpack 只记录当前元素长度而非前驱长度，彻底消除连锁更新。"
+            },
+            {
+              "q": "Hash 编码跳变条件？",
+              "a": "默认 entries > 512 或 value > 64 字节，且升级后不可逆。"
+            },
+            {
+              "q": "海量小 KV 省内存绝招？",
+              "a": "分桶小 Hash，把每桶控制在 512 项以内锁住 listpack。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

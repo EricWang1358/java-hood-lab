@@ -1,0 +1,566 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-rdb-cow",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "fork 生成 RDB 快照时，写放大与阻塞怎么来的？",
+  "lead": "Redis 执行 `BGSAVE` 会 `fork` 出子进程生成 RDB。虽然号称异步不阻塞，但主进程 `fork` 瞬间和写入触发的 Copy-on-Write（写时复制）依然可能造成内存翻倍与延迟毛刺。",
+  "minutes": 35,
+  "needs": [
+    "知道操作系统进程与虚拟内存页的基本概念",
+    "了解 RDB 全量快照的作用"
+  ],
+  "after": [
+    "区分 Stop-the-World 拷贝与 OS `fork` + Copy-on-Write 的延迟差异",
+    "解释高写入负载下 `BGSAVE` 为何导致内存膨胀甚至 OOM",
+    "掌握混合持久化（RDB + AOF）与控制单实例内存上限的工程规范"
+  ],
+  "terms": {
+    "fork": "Linux 系统调用，创建子进程时只拷贝父进程的页表而不立即拷贝物理内存页，实现毫秒级创建快照视图。",
+    "Copy-on-Write": "写时复制（COW）：fork 后父子共享只读物理页；父进程修改某页时触发缺页异常，OS 复制一份 4KB 新页给父进程改。",
+    "混合持久化": "Redis 4.0+ 特性：AOF 重写时先写一份 RDB 全量头，再把重写期间的增量命令以 AOF 格式追加到尾部。"
+  },
+  "experiments": {
+    "m6_rdbcow": {
+      "runner": "java",
+      "home": "lab.m6.rdbcow",
+      "knob": {
+        "name": "threads",
+        "label": "并发写入线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "cowPages",
+        "expectKey": "expected",
+        "label": "触发拷贝页数",
+        "expect": "安全阈值"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "StopTheWorldCopy",
+          "label": "全量停顿拷贝",
+          "code": "StopTheWorldCopy.java",
+          "note": "全量加锁拷贝所有 256 页，主线程彻底阻塞且页拷贝拉满。"
+        },
+        {
+          "id": "ForkCowPage",
+          "label": "Fork+COW写时复制",
+          "code": "ForkCowPage.java",
+          "note": "不阻塞读但随机写入触及大量 4KB 页，产生严重写时复制膨胀。"
+        },
+        {
+          "id": "IncrementalBuffer",
+          "label": "局部热页缓冲",
+          "code": "IncrementalBuffer.java",
+          "note": "写入集中在少数热页时，COW 拷贝页数大幅下降。"
+        },
+        {
+          "id": "HybridAofRdb",
+          "label": "混合持久化短窗",
+          "code": "HybridAofRdb.java",
+          "note": "缩短快照窗口并控制热页集中，将 COW 页数压到安全线内。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "fork 生成 RDB 快照时，写放大与阻塞怎么来的？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "明明用的是后台异步 `BGSAVE`，为什么每次凌晨跑 RDB 快照时，线上业务还是会**抖动几十毫秒，甚至内存突然飙高一倍被 OOM Killer 干掉**？",
+          "say": "问题就出在 `fork` 拷贝页表的那一瞬间，以及 `fork` 之后业务还在疯狂修改数据触发的写时复制（COW）。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "fork 机制",
+              "q": "Linux `fork()` 创建子进程时，会把父进程 10GB 的物理内存立刻全部复制一份吗？",
+              "options": [
+                "不会，只复制页表，物理内存页标记为只读共享（COW）",
+                "会立刻同步复制 10GB",
+                "子进程直接读取磁盘旧文件"
+              ],
+              "answer": 0,
+              "why": "只拷贝页表所以很快，但实例越大页表越大，fork 耗时也越长。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：256 个内存页正在被快照",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "后台线程拍快照的同时，业务线程不断随机修改内存页。",
+            "actors": [
+              "Redis 主进程",
+              "BGSAVE 子进程"
+            ],
+            "shared": "物理内存页"
+          },
+          "say": "后台线程拍快照的同时，业务线程不断随机修改内存页。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `StopTheWorldCopy`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_rdbcow.StopTheWorldCopy",
+          "say": "这就是最常见的基线写法 `StopTheWorldCopy`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`StopTheWorldCopy` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`ForkCowPage` 在随机写入 200 次时，大概会触发多少个 4KB 页的写时复制？",
+          "options": [
+            "只有 1 页",
+            "接近全量页数（如 200+ 页），内存几乎翻倍",
+            "0 页"
+          ],
+          "answer": 1,
+          "say": "随机写入打散到各个页上，每一页第一次被改都会触发 OS 复制出一份新物理页！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`StopTheWorldCopy` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_rdbcow",
+          "show": [
+            "StopTheWorldCopy"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "stwLock.lock();"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `StopTheWorldCopy` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_rdbcow.StopTheWorldCopy",
+          "lines": [
+            "stwLock.lock();"
+          ],
+          "say": "如果不借助 OS 的 fork+COW 而是自己在应用层全量加锁拷贝，主线程直接卡死。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "fork() -> share pages -> write triggers 4KB COW copy",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "Redis 主进程",
+            "BGSAVE 子进程"
+          ],
+          "shared": {
+            "name": "物理内存页",
+            "start": "fork 后只读共享"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "子进程顺序扫共享页写 RDB",
+              "say": "fork 完成，子进程安安静静地把共享页读出来写进磁盘 RDB 文件。"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "主进程修改某页 -> 触发 COW 复制新页",
+              "say": "业务请求进来改数据，触发缺页中断：OS 复制一份 4KB 新页给主进程改，子进程继续看旧页！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `ForkCowPage`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "既然 COW 只是延迟复制，为什么生产上单台 Redis 实例内存建议控制在 10GB 以内？",
+          "options": [
+            "实例越大 fork 拷贝页表越阻塞主线程，且最坏 COW 内存翻倍风险越高",
+            "Redis 最多只支持 10GB",
+            "10GB 以上无法写盘"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`StopTheWorldCopy` vs `ForkCowPage`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_rdbcow",
+          "show": [
+            "StopTheWorldCopy",
+            "ForkCowPage"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `ForkCowPage` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_rdbcow.ForkCowPage",
+          "within": "writeKey(int, int)",
+          "from": "0: iload_0",
+          "to": "return",
+          "say": "看 `ForkCowPage.writeKey`：`dirtyCow[page].compareAndSet(false, true)` 精准模拟了 OS 对每个被改过的页只做一次 COW 拷贝。",
+          "walk": [
+            {
+              "focus": [
+                "compareAndSet"
+              ],
+              "label": "首次修改触发 COW",
+              "say": "同一页改 100 次只拷贝 1 次，但如果随机改 100 万个不同页，内存就几乎翻倍。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`IncrementalBuffer` 与 `HybridAofRdb`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_rdbcow",
+          "show": [
+            "StopTheWorldCopy",
+            "ForkCowPage",
+            "IncrementalBuffer",
+            "HybridAofRdb"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_rdbcow",
+          "variants": [
+            "StopTheWorldCopy",
+            "ForkCowPage",
+            "IncrementalBuffer",
+            "HybridAofRdb"
+          ],
+          "notes": [
+            {
+              "focus": "StopTheWorldCopy",
+              "key": "全量加锁拷贝主线程阻塞且拷贝满 256 页",
+              "say": "千万不能用阻塞的 SAVE，必须用 BGSAVE。"
+            },
+            {
+              "focus": "ForkCowPage",
+              "key": "高并发随机写下 COW 拷贝页数逼近全量，需预留足够内存余量",
+              "say": "系统必须至少预留 30%~50% 空闲内存防 COW OOM。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `HybridAofRdb` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_rdbcow.HybridAofRdb",
+          "within": "writeKey(int, int)",
+          "from": "0: iload_0",
+          "to": "return",
+          "say": "看 `HybridAofRdb`：缩短窗口 + 避免大面积全库随机写期间做全量 RDB，将 COW 膨胀控制在安全线 64 页以内。",
+          "walk": [
+            {
+              "focus": [
+                "bgsaveHybrid"
+              ],
+              "label": "混合持久化与错峰",
+              "key": "混合持久化兼具 RDB 快恢复与 AOF 低丢数，且应错峰在从库执行 BGSAVE",
+              "say": "生产中通常让从节点（Replica）负责 RDB 备份，保护主节点零抖动。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "BGSAVE (Fork+COW)",
+              "solves": "不阻塞业务主线程的秒级快照生成",
+              "cost": "fork 页表阻塞 + 随机写 COW 内存膨胀",
+              "when": "全量备份、主从全量同步",
+              "say": "单实例内存别太大（建议 <10GB），尽量在从节点跑备份。"
+            },
+            {
+              "name": "混合持久化 (RDB+AOF)",
+              "solves": "重启秒级加载 RDB + 尾部 AOF 少丢数据",
+              "cost": "Redis 4.0+ 默认推荐",
+              "when": "几乎所有需要兼顾恢复速度与安全性的生产实例",
+              "say": "aof-use-rdb-preamble yes 是标配。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "RDB 快照导致延迟抖动或内存飙高，先查哪两件事？",
+          "branches": [
+            {
+              "when": "fork 瞬间主线程卡顿几十毫秒",
+              "pick": "控制单实例内存 <=10GB + 关掉透明大页 (THP)",
+              "eg": "多实例分片替代单台 64GB 大实例"
+            },
+            {
+              "when": "BGSAVE 期间内存飙高 OOM",
+              "pick": "预留 50% 内存余量 + 错峰或在从库备份",
+              "eg": "避开大促写高峰触发全量 RDB"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "BGSAVE + 从库备份",
+            "混合持久化",
+            "拆小实例"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "一台 48GB 内存的单体 Redis 每次凌晨 BGSAVE 就卡顿 200ms 且偶发 OOM。",
+              "answer": 2,
+              "why": "单实例过大导致页表拷贝慢、COW 膨胀猛，应拆成多个 8~10GB 实例并在从库备份。"
+            },
+            {
+              "text": "既想要 RDB 那样秒级重启恢复，又怕丢掉最近几分钟的写命令。",
+              "answer": 1,
+              "why": "开启 Redis 4.0+ 混合持久化（RDB 头 + AOF 尾）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：RDB fork 与写时复制 (COW)",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "RDB fork 与写时复制 (COW)",
+          "alias": "RDB Snapshot · Fork & Copy-on-Write",
+          "oneLine": "BGSAVE 靠 ==fork 共享页表 + COW 写时复制== 实现异步快照，但大实例和大随机写会放大内存与延迟。",
+          "asked": [
+            "SAVE 和 BGSAVE 的区别？",
+            "为什么 Linux 透明大页 (THP) 会加重 Redis COW 内存膨胀？",
+            "混合持久化文件长什么样？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么 Redis 生产环境建议关闭 Linux 透明大页（THP）？",
+          "options": [
+            {
+              "text": "THP 把 4KB 内存页合并成 2MB 大页，COW 改一个字节就要拷贝整整 2MB，放大 512 倍",
+              "ok": true,
+              "why": "极高频的运维面试题！大页会让写时复制的内存和延迟灾难性放大。"
+            },
+            {
+              "text": "因为 Redis 不支持 64 位内存地址",
+              "ok": false,
+              "why": "纯粹是 COW 拷贝粒度变大 512 倍的问题。"
+            }
+          ],
+          "say": "记住 4KB vs 2MB 的 512 倍放大效应。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Redis 4.0+ 开启混合持久化后，AOF 重写生成的文件内容是？",
+          "options": [
+            {
+              "text": "前半部分是 RDB 二进制全量快照，后半部分是增量 AOF 文本命令",
+              "ok": true,
+              "why": "兼顾 RDB 的快恢复和 AOF 的低丢数。"
+            },
+            {
+              "text": "两份完全独立的文件夹",
+              "ok": false,
+              "why": "是写在同一个文件里的两部分。"
+            }
+          ],
+          "say": "RDB Preamble + AOF Tail。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`BGSAVE` 期间主线程会完全不阻塞吗？",
+          "options": [
+            {
+              "text": "不会，fork() 拷贝页表瞬间以及大页 COW 缺页时仍会短暂阻塞主线程",
+              "ok": true,
+              "why": "所以单实例内存不宜过大。"
+            },
+            {
+              "text": "100% 零阻塞",
+              "ok": false,
+              "why": "fork 本身是同步系统调用。"
+            }
+          ],
+          "say": "精准理解 fork 的阻塞点。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "Redis BGSAVE 生成 RDB 的底层原理是什么？为什么仍可能引起卡顿和 OOM？怎么优化？",
+          "points": [
+            "主进程调用 fork 创建子进程，仅拷贝页表而不拷贝物理内存",
+            "子进程读共享页写 RDB，父进程继续服务；父进程修改数据时触发 OS 4KB 写时复制（COW）",
+            "卡顿与 OOM 原因：大实例 fork 页表耗时长、关闭 THP 否则 2MB 大页 COW 放大 512 倍、高随机写导致内存翻倍",
+            "优化：单实例控在 10GB 内、关 THP、从库做 RDB、开启 RDB+AOF 混合持久化"
+          ],
+          "model": "Redis 执行 BGSAVE 时会通过 fork 系统调用创建子进程。fork 只拷贝父进程的页表而不复制物理内存，两者以只读方式共享物理页。子进程负责将快照写入磁盘，而父进程继续处理请求；一旦父进程修改某页数据，OS 会触发 Copy-on-Write（写时复制），复制出一份 4KB 新页给父进程修改。它仍可能抖动或 OOM 的原因在于：实例越大 fork 拷贝页表越久、高并发随机写会让 COW 内存逼近翻倍，以及若未关闭 Linux 透明大页（2MB）会导致 COW 放大 512 倍。生产上通常控制单实例内存、关闭 THP、在从库备份并开启混合持久化。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "fork + COW 核心原理？",
+              "a": "fork 只拷页表共享物理页；父进程写某页时 OS 才复制一份新页。"
+            },
+            {
+              "q": "为什么必须关 Linux THP？",
+              "a": "2MB 大页让 COW 每次修改拷贝 2MB 而非 4KB，内存和延迟放大 512 倍。"
+            },
+            {
+              "q": "生产持久化最佳实践？",
+              "a": "单实例 <10GB + 关 THP + 从库做 RDB + 开启 RDB/AOF 混合持久化。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

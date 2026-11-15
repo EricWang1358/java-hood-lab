@@ -1,0 +1,1665 @@
+{
+ "id": "m6_skiplist",
+ "variants": {
+  "LinearList": {
+   "hash": "0b94f5c9a73f7c61",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 60
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 51
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 16
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 28
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 14
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 48
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 54
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 26
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 27
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 37
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 41
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 47
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 36
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 31
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 36
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 29
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 33
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 30
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 28
+     },
+     {
+      "cmpCount": 160000,
+      "expected": 4800,
+      "ms": 26
+     }
+    ],
+    "2": [
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 21
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 30
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 39
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 28
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 39
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 31
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 41
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 31
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 21
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 45
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 40
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 31
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 37
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 23
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 40
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 21
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 41
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 24
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 52
+     },
+     {
+      "cmpCount": 320000,
+      "expected": 9600,
+      "ms": 40
+     }
+    ],
+    "4": [
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 40
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 46
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 48
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 93
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 59
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 46
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 53
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 68
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 32
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 72
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 39
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 59
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 30
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 47
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 58
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 54
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 65
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 47
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 48
+     },
+     {
+      "cmpCount": 640000,
+      "expected": 19200,
+      "ms": 49
+     }
+    ],
+    "8": [
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 44
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 68
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 81
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 70
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 48
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 80
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 78
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 53
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 62
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 55
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 88
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 77
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 55
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 69
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 71
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 62
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 61
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 54
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 79
+     },
+     {
+      "cmpCount": 1280000,
+      "expected": 38400,
+      "ms": 56
+     }
+    ]
+   },
+   "inside": "Compiled from \"LinearList.java\"\npublic class lab.m6.skiplist.LinearList {\n  static final int N;\n\n  static final int QUERIES;\n\n  static final java.util.ArrayList<java.lang.Integer> list;\n\n  static final java.util.concurrent.atomic.AtomicLong cmpCount;\n\n  static volatile long sink;\n\n  public lab.m6.skiplist.LinearList();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static long rangeQuery(int, int);\n    Code:\n       0: lconst_0\n       1: lstore_2\n       2: iconst_0\n       3: istore        4\n       5: iload         4\n       7: getstatic     #7                  // Field list:Ljava/util/ArrayList;\n      10: invokevirtual #13                 // Method java/util/ArrayList.size:()I\n      13: if_icmpge     63\n      16: getstatic     #19                 // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n      19: invokevirtual #23                 // Method java/util/concurrent/atomic/AtomicLong.incrementAndGet:()J\n      22: pop2\n      23: getstatic     #7                  // Field list:Ljava/util/ArrayList;\n      26: iload         4\n      28: invokevirtual #29                 // Method java/util/ArrayList.get:(I)Ljava/lang/Object;\n      31: checkcast     #33                 // class java/lang/Integer\n      34: invokevirtual #35                 // Method java/lang/Integer.intValue:()I\n      37: istore        5\n      39: iload         5\n      41: iload_0\n      42: if_icmplt     57\n      45: iload         5\n      47: iload_1\n      48: if_icmpgt     57\n      51: lload_2\n      52: iload         5\n      54: i2l\n      55: ladd\n      56: lstore_2\n      57: iinc          4, 1\n      60: goto          5\n      63: lload_2\n      64: lreturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #38                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #42                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #44                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #47                 // class java/lang/Thread\n      20: astore_3\n      21: invokestatic  #49                 // Method java/lang/System.nanoTime:()J\n      24: lstore        4\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     65\n      35: aload_3\n      36: iload         6\n      38: new           #47                 // class java/lang/Thread\n      41: dup\n      42: aload_2\n      43: invokedynamic #54,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n      48: invokespecial #58                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      51: aastore\n      52: aload_3\n      53: iload         6\n      55: aaload\n      56: invokevirtual #61                 // Method java/lang/Thread.start:()V\n      59: iinc          6, 1\n      62: goto          29\n      65: aload_3\n      66: astore        6\n      68: aload         6\n      70: arraylength\n      71: istore        7\n      73: iconst_0\n      74: istore        8\n      76: iload         8\n      78: iload         7\n      80: if_icmpge     101\n      83: aload         6\n      85: iload         8\n      87: aaload\n      88: astore        9\n      90: aload         9\n      92: invokevirtual #64                 // Method java/lang/Thread.join:()V\n      95: iinc          8, 1\n      98: goto          76\n     101: invokestatic  #49                 // Method java/lang/System.nanoTime:()J\n     104: lload         4\n     106: lsub\n     107: ldc2_w        #67                 // long 1000000l\n     110: ldiv\n     111: lstore        6\n     113: getstatic     #69                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     116: getstatic     #19                 // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n     119: invokevirtual #73                 // Method java/util/concurrent/atomic/AtomicLong.get:()J\n     122: invokedynamic #75,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     127: invokevirtual #79                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     130: getstatic     #69                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     133: iload_1\n     134: bipush        40\n     136: imul\n     137: bipush        120\n     139: imul\n     140: invokedynamic #85,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     145: invokevirtual #79                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     148: getstatic     #69                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     151: lload         6\n     153: invokedynamic #88,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     158: invokevirtual #79                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     161: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #89                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: lconst_0\n       6: lstore_1\n       7: iconst_0\n       8: istore_3\n       9: iload_3\n      10: bipush        40\n      12: if_icmpge     33\n      15: lload_1\n      16: sipush        6000\n      19: sipush        6300\n      22: invokestatic  #92                 // Method rangeQuery:(II)J\n      25: ladd\n      26: lstore_1\n      27: iinc          3, 1\n      30: goto          9\n      33: lload_1\n      34: putstatic     #96                 // Field sink:J\n      37: goto          50\n      40: astore_1\n      41: new           #102                // class java/lang/RuntimeException\n      44: dup\n      45: aload_1\n      46: invokespecial #104                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      49: athrow\n      50: return\n    Exception table:\n       from    to  target type\n           0    37    40   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #14                 // class java/util/ArrayList\n       3: dup\n       4: sipush        4000\n       7: invokespecial #107                // Method java/util/ArrayList.\"<init>\":(I)V\n      10: putstatic     #7                  // Field list:Ljava/util/ArrayList;\n      13: new           #24                 // class java/util/concurrent/atomic/AtomicLong\n      16: dup\n      17: invokespecial #108                // Method java/util/concurrent/atomic/AtomicLong.\"<init>\":()V\n      20: putstatic     #19                 // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n      23: iconst_0\n      24: istore_0\n      25: iload_0\n      26: sipush        4000\n      29: if_icmpge     51\n      32: getstatic     #7                  // Field list:Ljava/util/ArrayList;\n      35: iload_0\n      36: iconst_3\n      37: imul\n      38: invokestatic  #109                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      41: invokevirtual #113                // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z\n      44: pop\n      45: iinc          0, 1\n      48: goto          25\n      51: return\n}\n"
+  },
+  "TreeMapRange": {
+   "hash": "2ff26441156d35cd",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 25
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 27
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 24
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 19
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 26
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 26
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 31
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 35
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 31
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 12
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 30
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 12
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 38
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 28
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 24
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 29
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 24
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 27
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 24
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 20
+     }
+    ],
+    "2": [
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 25
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 19
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 19
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 12
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 27
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 20
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 26
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 31
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 24
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 45
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 39
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 20
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 31
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 20
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 26
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 23
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 20
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 22
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 26
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 29
+     }
+    ],
+    "4": [
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 30
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 27
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 29
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 32
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 26
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 30
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 19
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 23
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 29
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 42
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 29
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 30
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 24
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 28
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 26
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 28
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 32
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 42
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 24
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 22
+     }
+    ],
+    "8": [
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 25
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 42
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 33
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 23
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 47
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 37
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 37
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 61
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 44
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 25
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 40
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 48
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 49
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 40
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 15
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 28
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 33
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 33
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 20
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 28
+     }
+    ]
+   },
+   "inside": "Compiled from \"TreeMapRange.java\"\npublic class lab.m6.skiplist.TreeMapRange {\n  static final int N;\n\n  static final int QUERIES;\n\n  static final java.util.TreeMap<java.lang.Integer, java.lang.Integer> tree;\n\n  static final java.util.concurrent.atomic.AtomicLong cmpCount;\n\n  static volatile long sink;\n\n  public lab.m6.skiplist.TreeMapRange();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static long rangeQuery(int, int);\n    Code:\n       0: getstatic     #7                  // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n       3: ldc2_w        #13                 // long 12l\n       6: invokevirtual #15                 // Method java/util/concurrent/atomic/AtomicLong.addAndGet:(J)J\n       9: pop2\n      10: getstatic     #21                 // Field tree:Ljava/util/TreeMap;\n      13: iload_0\n      14: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      17: iconst_1\n      18: iload_1\n      19: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      22: iconst_1\n      23: invokevirtual #31                 // Method java/util/TreeMap.subMap:(Ljava/lang/Object;ZLjava/lang/Object;Z)Ljava/util/NavigableMap;\n      26: astore_2\n      27: lconst_0\n      28: lstore_3\n      29: aload_2\n      30: invokeinterface #37,  1           // InterfaceMethod java/util/NavigableMap.keySet:()Ljava/util/Set;\n      35: invokeinterface #43,  1           // InterfaceMethod java/util/Set.iterator:()Ljava/util/Iterator;\n      40: astore        5\n      42: aload         5\n      44: invokeinterface #49,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n      49: ifeq          83\n      52: aload         5\n      54: invokeinterface #55,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n      59: checkcast     #26                 // class java/lang/Integer\n      62: astore        6\n      64: getstatic     #7                  // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n      67: invokevirtual #59                 // Method java/util/concurrent/atomic/AtomicLong.incrementAndGet:()J\n      70: pop2\n      71: lload_3\n      72: aload         6\n      74: invokevirtual #63                 // Method java/lang/Integer.intValue:()I\n      77: i2l\n      78: ladd\n      79: lstore_3\n      80: goto          42\n      83: lload_3\n      84: lreturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #67                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #71                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #73                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #76                 // class java/lang/Thread\n      20: astore_3\n      21: invokestatic  #78                 // Method java/lang/System.nanoTime:()J\n      24: lstore        4\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     65\n      35: aload_3\n      36: iload         6\n      38: new           #76                 // class java/lang/Thread\n      41: dup\n      42: aload_2\n      43: invokedynamic #83,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n      48: invokespecial #87                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      51: aastore\n      52: aload_3\n      53: iload         6\n      55: aaload\n      56: invokevirtual #90                 // Method java/lang/Thread.start:()V\n      59: iinc          6, 1\n      62: goto          29\n      65: aload_3\n      66: astore        6\n      68: aload         6\n      70: arraylength\n      71: istore        7\n      73: iconst_0\n      74: istore        8\n      76: iload         8\n      78: iload         7\n      80: if_icmpge     101\n      83: aload         6\n      85: iload         8\n      87: aaload\n      88: astore        9\n      90: aload         9\n      92: invokevirtual #93                 // Method java/lang/Thread.join:()V\n      95: iinc          8, 1\n      98: goto          76\n     101: invokestatic  #78                 // Method java/lang/System.nanoTime:()J\n     104: lload         4\n     106: lsub\n     107: ldc2_w        #96                 // long 1000000l\n     110: ldiv\n     111: lstore        6\n     113: getstatic     #98                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     116: getstatic     #7                  // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n     119: invokevirtual #102                // Method java/util/concurrent/atomic/AtomicLong.get:()J\n     122: invokedynamic #105,  0            // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     127: invokevirtual #109                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     130: getstatic     #98                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     133: iload_1\n     134: bipush        40\n     136: imul\n     137: bipush        120\n     139: imul\n     140: invokedynamic #115,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     145: invokevirtual #109                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     148: getstatic     #98                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     151: lload         6\n     153: invokedynamic #118,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     158: invokevirtual #109                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     161: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #119                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: lconst_0\n       6: lstore_1\n       7: iconst_0\n       8: istore_3\n       9: iload_3\n      10: bipush        40\n      12: if_icmpge     33\n      15: lload_1\n      16: sipush        6000\n      19: sipush        6300\n      22: invokestatic  #122                // Method rangeQuery:(II)J\n      25: ladd\n      26: lstore_1\n      27: iinc          3, 1\n      30: goto          9\n      33: lload_1\n      34: putstatic     #126                // Field sink:J\n      37: goto          50\n      40: astore_1\n      41: new           #132                // class java/lang/RuntimeException\n      44: dup\n      45: aload_1\n      46: invokespecial #134                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      49: athrow\n      50: return\n    Exception table:\n       from    to  target type\n           0    37    40   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #32                 // class java/util/TreeMap\n       3: dup\n       4: invokespecial #137                // Method java/util/TreeMap.\"<init>\":()V\n       7: putstatic     #21                 // Field tree:Ljava/util/TreeMap;\n      10: new           #16                 // class java/util/concurrent/atomic/AtomicLong\n      13: dup\n      14: invokespecial #138                // Method java/util/concurrent/atomic/AtomicLong.\"<init>\":()V\n      17: putstatic     #7                  // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n      20: iconst_0\n      21: istore_0\n      22: iload_0\n      23: sipush        4000\n      26: if_icmpge     52\n      29: getstatic     #21                 // Field tree:Ljava/util/TreeMap;\n      32: iload_0\n      33: iconst_3\n      34: imul\n      35: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      38: iload_0\n      39: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      42: invokevirtual #139                // Method java/util/TreeMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      45: pop\n      46: iinc          0, 1\n      49: goto          22\n      52: return\n}\n"
+  },
+  "SkipListRange": {
+   "hash": "0e4a5bedcd05eea5",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 15
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 10
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 27
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 24
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 24
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 12
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 22
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 31
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 25
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 22
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 22
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 22
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 22
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 17
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 8
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 28
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 21
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 18
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 10
+     },
+     {
+      "cmpCount": 4520,
+      "expected": 4800,
+      "ms": 23
+     }
+    ],
+    "2": [
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 28
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 21
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 34
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 19
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 23
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 27
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 29
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 37
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 16
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 21
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 31
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 18
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 19
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 19
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 16
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 29
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 27
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 22
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 32
+     },
+     {
+      "cmpCount": 9040,
+      "expected": 9600,
+      "ms": 22
+     }
+    ],
+    "4": [
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 27
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 18
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 19
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 33
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 25
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 29
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 30
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 29
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 34
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 27
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 28
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 37
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 19
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 22
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 28
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 37
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 26
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 32
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 13
+     },
+     {
+      "cmpCount": 18080,
+      "expected": 19200,
+      "ms": 20
+     }
+    ],
+    "8": [
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 31
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 44
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 40
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 39
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 30
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 38
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 22
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 38
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 24
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 33
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 38
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 51
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 41
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 35
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 24
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 53
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 26
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 28
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 21
+     },
+     {
+      "cmpCount": 36160,
+      "expected": 38400,
+      "ms": 34
+     }
+    ]
+   },
+   "inside": "Compiled from \"SkipListRange.java\"\npublic class lab.m6.skiplist.SkipListRange {\n  static final int N;\n\n  static final int QUERIES;\n\n  static final java.util.concurrent.ConcurrentSkipListMap<java.lang.Integer, java.lang.Integer> skip;\n\n  static final java.util.concurrent.atomic.AtomicLong cmpCount;\n\n  static volatile long sink;\n\n  public lab.m6.skiplist.SkipListRange();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static long rangeQuery(int, int);\n    Code:\n       0: getstatic     #7                  // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n       3: ldc2_w        #13                 // long 12l\n       6: invokevirtual #15                 // Method java/util/concurrent/atomic/AtomicLong.addAndGet:(J)J\n       9: pop2\n      10: lconst_0\n      11: lstore_2\n      12: getstatic     #21                 // Field skip:Ljava/util/concurrent/ConcurrentSkipListMap;\n      15: iload_0\n      16: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      19: iconst_1\n      20: iload_1\n      21: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      24: iconst_1\n      25: invokevirtual #31                 // Method java/util/concurrent/ConcurrentSkipListMap.subMap:(Ljava/lang/Object;ZLjava/lang/Object;Z)Ljava/util/concurrent/ConcurrentNavigableMap;\n      28: invokeinterface #37,  1           // InterfaceMethod java/util/concurrent/ConcurrentNavigableMap.keySet:()Ljava/util/NavigableSet;\n      33: invokeinterface #43,  1           // InterfaceMethod java/util/NavigableSet.iterator:()Ljava/util/Iterator;\n      38: astore        4\n      40: aload         4\n      42: invokeinterface #49,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n      47: ifeq          81\n      50: aload         4\n      52: invokeinterface #55,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n      57: checkcast     #26                 // class java/lang/Integer\n      60: astore        5\n      62: getstatic     #7                  // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n      65: invokevirtual #59                 // Method java/util/concurrent/atomic/AtomicLong.incrementAndGet:()J\n      68: pop2\n      69: lload_2\n      70: aload         5\n      72: invokevirtual #63                 // Method java/lang/Integer.intValue:()I\n      75: i2l\n      76: ladd\n      77: lstore_2\n      78: goto          40\n      81: lload_2\n      82: lreturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #67                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #71                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #73                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #76                 // class java/lang/Thread\n      20: astore_3\n      21: invokestatic  #78                 // Method java/lang/System.nanoTime:()J\n      24: lstore        4\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     65\n      35: aload_3\n      36: iload         6\n      38: new           #76                 // class java/lang/Thread\n      41: dup\n      42: aload_2\n      43: invokedynamic #83,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n      48: invokespecial #87                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      51: aastore\n      52: aload_3\n      53: iload         6\n      55: aaload\n      56: invokevirtual #90                 // Method java/lang/Thread.start:()V\n      59: iinc          6, 1\n      62: goto          29\n      65: aload_3\n      66: astore        6\n      68: aload         6\n      70: arraylength\n      71: istore        7\n      73: iconst_0\n      74: istore        8\n      76: iload         8\n      78: iload         7\n      80: if_icmpge     101\n      83: aload         6\n      85: iload         8\n      87: aaload\n      88: astore        9\n      90: aload         9\n      92: invokevirtual #93                 // Method java/lang/Thread.join:()V\n      95: iinc          8, 1\n      98: goto          76\n     101: invokestatic  #78                 // Method java/lang/System.nanoTime:()J\n     104: lload         4\n     106: lsub\n     107: ldc2_w        #96                 // long 1000000l\n     110: ldiv\n     111: lstore        6\n     113: getstatic     #98                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     116: getstatic     #7                  // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n     119: invokevirtual #102                // Method java/util/concurrent/atomic/AtomicLong.get:()J\n     122: invokedynamic #105,  0            // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     127: invokevirtual #109                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     130: getstatic     #98                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     133: iload_1\n     134: bipush        40\n     136: imul\n     137: bipush        120\n     139: imul\n     140: invokedynamic #115,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     145: invokevirtual #109                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     148: getstatic     #98                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     151: lload         6\n     153: invokedynamic #118,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     158: invokevirtual #109                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     161: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #119                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: lconst_0\n       6: lstore_1\n       7: iconst_0\n       8: istore_3\n       9: iload_3\n      10: bipush        40\n      12: if_icmpge     33\n      15: lload_1\n      16: sipush        6000\n      19: sipush        6300\n      22: invokestatic  #122                // Method rangeQuery:(II)J\n      25: ladd\n      26: lstore_1\n      27: iinc          3, 1\n      30: goto          9\n      33: lload_1\n      34: putstatic     #126                // Field sink:J\n      37: goto          50\n      40: astore_1\n      41: new           #132                // class java/lang/RuntimeException\n      44: dup\n      45: aload_1\n      46: invokespecial #134                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      49: athrow\n      50: return\n    Exception table:\n       from    to  target type\n           0    37    40   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #32                 // class java/util/concurrent/ConcurrentSkipListMap\n       3: dup\n       4: invokespecial #137                // Method java/util/concurrent/ConcurrentSkipListMap.\"<init>\":()V\n       7: putstatic     #21                 // Field skip:Ljava/util/concurrent/ConcurrentSkipListMap;\n      10: new           #16                 // class java/util/concurrent/atomic/AtomicLong\n      13: dup\n      14: invokespecial #138                // Method java/util/concurrent/atomic/AtomicLong.\"<init>\":()V\n      17: putstatic     #7                  // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n      20: iconst_0\n      21: istore_0\n      22: iload_0\n      23: sipush        4000\n      26: if_icmpge     52\n      29: getstatic     #21                 // Field skip:Ljava/util/concurrent/ConcurrentSkipListMap;\n      32: iload_0\n      33: iconst_3\n      34: imul\n      35: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      38: iload_0\n      39: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      42: invokevirtual #139                // Method java/util/concurrent/ConcurrentSkipListMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      45: pop\n      46: iinc          0, 1\n      49: goto          22\n      52: return\n}\n"
+  },
+  "BucketedTopK": {
+   "hash": "dfda55ae7391483c",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 16
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 9
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 25
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 21
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 19
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 12
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 25
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 18
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 6
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 29
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 23
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 11
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 10
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 11
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 16
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 15
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 16
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 14
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 19
+     },
+     {
+      "cmpCount": 140,
+      "expected": 4800,
+      "ms": 21
+     }
+    ],
+    "2": [
+     {
+      "cmpCount": 180,
+      "expected": 9600,
+      "ms": 20
+     },
+     {
+      "cmpCount": 280,
+      "expected": 9600,
+      "ms": 27
+     },
+     {
+      "cmpCount": 180,
+      "expected": 9600,
+      "ms": 20
+     },
+     {
+      "cmpCount": 280,
+      "expected": 9600,
+      "ms": 12
+     },
+     {
+      "cmpCount": 180,
+      "expected": 9600,
+      "ms": 11
+     },
+     {
+      "cmpCount": 280,
+      "expected": 9600,
+      "ms": 8
+     },
+     {
+      "cmpCount": 280,
+      "expected": 9600,
+      "ms": 27
+     },
+     {
+      "cmpCount": 280,
+      "expected": 9600,
+      "ms": 12
+     },
+     {
+      "cmpCount": 280,
+      "expected": 9600,
+      "ms": 17
+     },
+     {
+      "cmpCount": 280,
+      "expected": 9600,
+      "ms": 17
+     },
+     {
+      "cmpCount": 280,
+      "expected": 9600,
+      "ms": 14
+     },
+     {
+      "cmpCount": 180,
+      "expected": 9600,
+      "ms": 24
+     },
+     {
+      "cmpCount": 180,
+      "expected": 9600,
+      "ms": 13
+     },
+     {
+      "cmpCount": 280,
+      "expected": 9600,
+      "ms": 13
+     },
+     {
+      "cmpCount": 180,
+      "expected": 9600,
+      "ms": 15
+     },
+     {
+      "cmpCount": 180,
+      "expected": 9600,
+      "ms": 25
+     },
+     {
+      "cmpCount": 180,
+      "expected": 9600,
+      "ms": 12
+     },
+     {
+      "cmpCount": 180,
+      "expected": 9600,
+      "ms": 13
+     },
+     {
+      "cmpCount": 280,
+      "expected": 9600,
+      "ms": 14
+     },
+     {
+      "cmpCount": 280,
+      "expected": 9600,
+      "ms": 14
+     }
+    ],
+    "4": [
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 30
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 27
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 21
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 31
+     },
+     {
+      "cmpCount": 560,
+      "expected": 19200,
+      "ms": 31
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 32
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 20
+     },
+     {
+      "cmpCount": 560,
+      "expected": 19200,
+      "ms": 30
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 13
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 19
+     },
+     {
+      "cmpCount": 560,
+      "expected": 19200,
+      "ms": 21
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 32
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 18
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 13
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 18
+     },
+     {
+      "cmpCount": 560,
+      "expected": 19200,
+      "ms": 20
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 12
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 12
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 18
+     },
+     {
+      "cmpCount": 260,
+      "expected": 19200,
+      "ms": 14
+     }
+    ],
+    "8": [
+     {
+      "cmpCount": 420,
+      "expected": 38400,
+      "ms": 24
+     },
+     {
+      "cmpCount": 420,
+      "expected": 38400,
+      "ms": 25
+     },
+     {
+      "cmpCount": 1120,
+      "expected": 38400,
+      "ms": 12
+     },
+     {
+      "cmpCount": 520,
+      "expected": 38400,
+      "ms": 12
+     },
+     {
+      "cmpCount": 920,
+      "expected": 38400,
+      "ms": 11
+     },
+     {
+      "cmpCount": 420,
+      "expected": 38400,
+      "ms": 11
+     },
+     {
+      "cmpCount": 1120,
+      "expected": 38400,
+      "ms": 15
+     },
+     {
+      "cmpCount": 1120,
+      "expected": 38400,
+      "ms": 25
+     },
+     {
+      "cmpCount": 1120,
+      "expected": 38400,
+      "ms": 13
+     },
+     {
+      "cmpCount": 720,
+      "expected": 38400,
+      "ms": 15
+     },
+     {
+      "cmpCount": 1120,
+      "expected": 38400,
+      "ms": 21
+     },
+     {
+      "cmpCount": 420,
+      "expected": 38400,
+      "ms": 14
+     },
+     {
+      "cmpCount": 620,
+      "expected": 38400,
+      "ms": 9
+     },
+     {
+      "cmpCount": 420,
+      "expected": 38400,
+      "ms": 16
+     },
+     {
+      "cmpCount": 520,
+      "expected": 38400,
+      "ms": 16
+     },
+     {
+      "cmpCount": 1120,
+      "expected": 38400,
+      "ms": 11
+     },
+     {
+      "cmpCount": 520,
+      "expected": 38400,
+      "ms": 12
+     },
+     {
+      "cmpCount": 920,
+      "expected": 38400,
+      "ms": 9
+     },
+     {
+      "cmpCount": 420,
+      "expected": 38400,
+      "ms": 12
+     },
+     {
+      "cmpCount": 1120,
+      "expected": 38400,
+      "ms": 27
+     }
+    ]
+   },
+   "inside": "Compiled from \"BucketedTopK.java\"\npublic class lab.m6.skiplist.BucketedTopK {\n  static final int N;\n\n  static final int QUERIES;\n\n  static final java.util.concurrent.ConcurrentSkipListMap<java.lang.Integer, java.lang.Integer> skip;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.Integer, java.lang.Long> topKCache;\n\n  static final java.util.concurrent.atomic.AtomicLong cmpCount;\n\n  static volatile long sink;\n\n  public lab.m6.skiplist.BucketedTopK();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static long rangeQuery(int, int);\n    Code:\n       0: getstatic     #7                  // Field topKCache:Ljava/util/concurrent/ConcurrentHashMap;\n       3: iload_0\n       4: invokestatic  #13                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n       7: invokevirtual #19                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n      10: checkcast     #25                 // class java/lang/Long\n      13: astore_2\n      14: aload_2\n      15: ifnull        30\n      18: getstatic     #27                 // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n      21: invokevirtual #31                 // Method java/util/concurrent/atomic/AtomicLong.incrementAndGet:()J\n      24: pop2\n      25: aload_2\n      26: invokevirtual #37                 // Method java/lang/Long.longValue:()J\n      29: lreturn\n      30: lconst_0\n      31: lstore_3\n      32: getstatic     #40                 // Field skip:Ljava/util/concurrent/ConcurrentSkipListMap;\n      35: iload_0\n      36: invokestatic  #13                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      39: iconst_1\n      40: iload_1\n      41: invokestatic  #13                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      44: iconst_1\n      45: invokevirtual #44                 // Method java/util/concurrent/ConcurrentSkipListMap.subMap:(Ljava/lang/Object;ZLjava/lang/Object;Z)Ljava/util/concurrent/ConcurrentNavigableMap;\n      48: invokeinterface #50,  1           // InterfaceMethod java/util/concurrent/ConcurrentNavigableMap.keySet:()Ljava/util/NavigableSet;\n      53: invokeinterface #56,  1           // InterfaceMethod java/util/NavigableSet.iterator:()Ljava/util/Iterator;\n      58: astore        5\n      60: aload         5\n      62: invokeinterface #62,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n      67: ifeq          101\n      70: aload         5\n      72: invokeinterface #68,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n      77: checkcast     #14                 // class java/lang/Integer\n      80: astore        6\n      82: getstatic     #27                 // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n      85: invokevirtual #31                 // Method java/util/concurrent/atomic/AtomicLong.incrementAndGet:()J\n      88: pop2\n      89: lload_3\n      90: aload         6\n      92: invokevirtual #72                 // Method java/lang/Integer.intValue:()I\n      95: i2l\n      96: ladd\n      97: lstore_3\n      98: goto          60\n     101: getstatic     #7                  // Field topKCache:Ljava/util/concurrent/ConcurrentHashMap;\n     104: iload_0\n     105: invokestatic  #13                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     108: lload_3\n     109: invokestatic  #76                 // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;\n     112: invokevirtual #79                 // Method java/util/concurrent/ConcurrentHashMap.putIfAbsent:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n     115: pop\n     116: lload_3\n     117: lreturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #83                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #87                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #89                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #92                 // class java/lang/Thread\n      20: astore_3\n      21: invokestatic  #94                 // Method java/lang/System.nanoTime:()J\n      24: lstore        4\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     65\n      35: aload_3\n      36: iload         6\n      38: new           #92                 // class java/lang/Thread\n      41: dup\n      42: aload_2\n      43: invokedynamic #99,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n      48: invokespecial #103                // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      51: aastore\n      52: aload_3\n      53: iload         6\n      55: aaload\n      56: invokevirtual #106                // Method java/lang/Thread.start:()V\n      59: iinc          6, 1\n      62: goto          29\n      65: aload_3\n      66: astore        6\n      68: aload         6\n      70: arraylength\n      71: istore        7\n      73: iconst_0\n      74: istore        8\n      76: iload         8\n      78: iload         7\n      80: if_icmpge     101\n      83: aload         6\n      85: iload         8\n      87: aaload\n      88: astore        9\n      90: aload         9\n      92: invokevirtual #109                // Method java/lang/Thread.join:()V\n      95: iinc          8, 1\n      98: goto          76\n     101: invokestatic  #94                 // Method java/lang/System.nanoTime:()J\n     104: lload         4\n     106: lsub\n     107: ldc2_w        #112                // long 1000000l\n     110: ldiv\n     111: lstore        6\n     113: getstatic     #114                // Field java/lang/System.out:Ljava/io/PrintStream;\n     116: getstatic     #27                 // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n     119: invokevirtual #118                // Method java/util/concurrent/atomic/AtomicLong.get:()J\n     122: invokedynamic #120,  0            // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     127: invokevirtual #124                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     130: getstatic     #114                // Field java/lang/System.out:Ljava/io/PrintStream;\n     133: iload_1\n     134: bipush        40\n     136: imul\n     137: bipush        120\n     139: imul\n     140: invokedynamic #130,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     145: invokevirtual #124                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     148: getstatic     #114                // Field java/lang/System.out:Ljava/io/PrintStream;\n     151: lload         6\n     153: invokedynamic #133,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     158: invokevirtual #124                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     161: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #134                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: lconst_0\n       6: lstore_1\n       7: iconst_0\n       8: istore_3\n       9: iload_3\n      10: bipush        40\n      12: if_icmpge     33\n      15: lload_1\n      16: sipush        6000\n      19: sipush        6300\n      22: invokestatic  #137                // Method rangeQuery:(II)J\n      25: ladd\n      26: lstore_1\n      27: iinc          3, 1\n      30: goto          9\n      33: lload_1\n      34: putstatic     #141                // Field sink:J\n      37: goto          50\n      40: astore_1\n      41: new           #147                // class java/lang/RuntimeException\n      44: dup\n      45: aload_1\n      46: invokespecial #149                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      49: athrow\n      50: return\n    Exception table:\n       from    to  target type\n           0    37    40   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #45                 // class java/util/concurrent/ConcurrentSkipListMap\n       3: dup\n       4: invokespecial #152                // Method java/util/concurrent/ConcurrentSkipListMap.\"<init>\":()V\n       7: putstatic     #40                 // Field skip:Ljava/util/concurrent/ConcurrentSkipListMap;\n      10: new           #20                 // class java/util/concurrent/ConcurrentHashMap\n      13: dup\n      14: invokespecial #153                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n      17: putstatic     #7                  // Field topKCache:Ljava/util/concurrent/ConcurrentHashMap;\n      20: new           #32                 // class java/util/concurrent/atomic/AtomicLong\n      23: dup\n      24: invokespecial #154                // Method java/util/concurrent/atomic/AtomicLong.\"<init>\":()V\n      27: putstatic     #27                 // Field cmpCount:Ljava/util/concurrent/atomic/AtomicLong;\n      30: iconst_0\n      31: istore_0\n      32: iload_0\n      33: sipush        4000\n      36: if_icmpge     62\n      39: getstatic     #40                 // Field skip:Ljava/util/concurrent/ConcurrentSkipListMap;\n      42: iload_0\n      43: iconst_3\n      44: imul\n      45: invokestatic  #13                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      48: iload_0\n      49: invokestatic  #13                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      52: invokevirtual #155                // Method java/util/concurrent/ConcurrentSkipListMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      55: pop\n      56: iinc          0, 1\n      59: goto          32\n      62: return\n}\n"
+  }
+ }
+}
