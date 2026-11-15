@@ -374,10 +374,10 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 105 / 105 课</span>
+        <span id="shownCount" class="count-note">显示 110 / 110 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (105)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (110)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
@@ -393,6 +393,7 @@
         <button type="button" class="pill" data-filter="m5ch1">Spring 1 · 事务与 AOP (5)</button>
         <button type="button" class="pill" data-filter="m5ch2">Spring 2 · IoC 与自动装配 (5)</button>
         <button type="button" class="pill" data-filter="m5ch3">Spring 3 · MVC 与链路隔离 (5)</button>
+        <button type="button" class="pill" data-filter="m5ch4">Spring 4 · MyBatis 与连接池 (5)</button>
 
         <button type="button" class="pill" data-filter="m8">模块 8 · 算法与 SQL (10)</button>
         <button type="button" class="pill" data-filter="m6">模块 6 · Redis / MQ / 微服务 (11)</button>
@@ -1225,6 +1226,75 @@
           <p class="card__lead">一个导出报表慢接口拖垮了整个 Spring Boot 应用：所有核心下单接口和 /actuator/health 全部超时雪崩！</p>
           <div class="card__foot">
             <span>11 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m5ch4">
+        <div class="chapter__head">
+          <h2>模块五 · 第四章：MyBatis 持久层与 HikariCP 连接池（第 53～57 课）</h2>
+          <p>打通 MyBatis #{} 与 ${} 注入机理、一二级缓存脏读陷阱，以及 HikariCP 连接池经验公式与连接泄漏排障。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/mybatis-dollar-hash.html" data-ch="m5ch4" data-search="53 mybatis-dollar-hash mybatis #{} ${} sql注入 预编译 order by 白名单 lab.sqlinject">
+          <div class="card__top">
+            <span class="card__num">#53</span>
+            <span class="card__pkg">lab.sqlinject</span>
+          </div>
+          <h3 class="card__title">MyBatis 里 #{id} 和 ${id} 只差一个符号，为什么上线就遭 SQL 注入？</h3>
+          <p class="card__lead">为了图省事在模糊查询和排序里写了 ${kw}，结果渗透测试一扫直接脱库，还把数据库执行计划缓存打爆！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/mybatis-l1-cache.html" data-ch="m5ch4" data-search="54 mybatis-l1-cache mybatis 一级缓存 sqlsession transactional 旧值 脏读 lab.l1cache">
+          <div class="card__top">
+            <span class="card__num">#54</span>
+            <span class="card__pkg">lab.l1cache</span>
+          </div>
+          <h3 class="card__title">同一个事务里查了两次余额，怎么第二次读到的还是旧值？</h3>
+          <p class="card__lead">账务线程明明已经把余额从 1000 扣成了 800，结果上游方法在同一个 @Transactional 里再查一次，还是 1000！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/mybatis-l2-cache.html" data-ch="m5ch4" data-search="55 mybatis-l2-cache mybatis 二级缓存 namespace 联表 脏读 redis lab.l2cache">
+          <div class="card__top">
+            <span class="card__num">#55</span>
+            <span class="card__pkg">lab.l2cache</span>
+          </div>
+          <h3 class="card__title">开了 MyBatis 二级缓存，怎么联表查询查出半年前的脏数据？</h3>
+          <p class="card__lead">用户早就把昵称从 Alice 改成了 Bob，结果 OrderMapper 联表查订单时，显示的用户名永远是 Alice！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/hikari-pool-size.html" data-ch="m5ch4" data-search="56 hikari-pool-size hikaricp 连接池 maximum-pool-size concurrentbag 公式 lab.hikarisize">
+          <div class="card__top">
+            <span class="card__num">#56</span>
+            <span class="card__pkg">lab.hikarisize</span>
+          </div>
+          <h3 class="card__title">数据库连接池不是越大越好？为什么设到 200 反而比设 9 更慢？</h3>
+          <p class="card__lead">为了应对高并发把 HikariCP 的 maximum-pool-size 从 10 调到 200，结果接口响应时间直接翻了 3 倍！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/hikari-leak-trap.html" data-ch="m5ch4" data-search="57 hikari-leak-trap hikaricp 连接泄漏 connection is not available leakdetectionthreshold try-with-resources lab.hikarileak">
+          <div class="card__top">
+            <span class="card__num">#57</span>
+            <span class="card__pkg">lab.hikarileak</span>
+          </div>
+          <h3 class="card__title">服务跑了半小时突然全部 Connection is not available，怎么排查？</h3>
+          <p class="card__lead">QPS 明明很低，但只要跑够 10 次某个接口，整个系统所有数据库请求就全部超时卡死！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 25 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>

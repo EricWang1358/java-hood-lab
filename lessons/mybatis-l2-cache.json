@@ -1,0 +1,107 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "mybatis-l2-cache",
+  "course": "Spring 全家桶与持久层",
+  "title": "开了 MyBatis 二级缓存，怎么联表查询查出半年前的脏数据？",
+  "lead": "用户早就把昵称从 Alice 改成了 Bob，结果 OrderMapper 联表查订单时，显示的用户名永远是 Alice！",
+  "minutes": 25,
+  "needs": ["了解 MyBatis 一级缓存（SqlSession 级）", "知道 Mapper XML 里的 <cache/> 标签"],
+  "after": ["讲清 MyBatis 二级缓存以 Mapper namespace 为单位隔离的致命缺陷", "解释多表 JOIN 查询为什么在二级缓存下必然出现脏读", "掌握生产环境禁用 MyBatis 二级缓存、改用 Redis Cache-Aside 的理由"],
+  "terms": {
+    "二级缓存 (Namespace Cache)": "作用域是单个 Mapper 的 namespace，跨 SqlSession 共享（事务提交后才写入）。只要某个 Mapper 执行增删改，只会清空它自己的 namespace 缓存！",
+    "跨 Mapper 脏读": "OrderMapper 联表查了 User 表并缓存；随后 UserMapper 更新了 User 表但只清了 UserMapper 缓存，OrderMapper 缓存里的旧 User 数据永远不会失效！",
+    "<cache-ref>": "让两个 Mapper 强行共享同一块二级缓存命名空间，虽能防脏读，但会导致任何小改动清空大面积缓存，命中率暴跌。"
+  },
+  "experiments": {
+    "l2cache": {
+      "runner": "java",
+      "home": "lab.l2cache",
+      "variants": [
+        { "id": "L2CrossMapperDirty", "label": "联表 + 跨 Mapper 更新", "note": "UserMapper 更新并清自己缓存，但 OrderMapper 的联表二级缓存依然返回旧 Alice！" },
+        { "id": "L2UncommittedLeak", "label": "外部/原生 SQL 写库", "note": "其他服务或 JDBC 改库绕过 Mapper，二级缓存彻底感知不到，持续脏读。" },
+        { "id": "DisableL2UseRedis", "label": "禁用二级缓存 + Redis", "note": "关闭 <cache/>，用 Redis Key 精准失效，100% 一致。" },
+        { "id": "CacheRefShared", "label": "<cache-ref> 共享区域", "note": "两个 Mapper 绑定同一 namespace，更新任一方同步清空，100% 一致。" }
+      ],
+      "knob": { "label": "读写轮次", "values": ["100", "200", "400", "800"], "default": "400" },
+      "repeat": 20,
+      "metric": { "key": "consistent", "expectKey": "expected", "label": "联表读到最新 Bob 的一致次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "开了 MyBatis 二级缓存，怎么联表查询查出半年前的脏数据？",
+      "blocks": [{ "t": "text", "md": "不少同学背八股时看到 MyBatis 有二级缓存，觉得‘加个 `<cache/>` 就能免费提速’。结果一上线，**`UserMapper` 明明把昵称改了，`OrderMapper` 联表查出来的订单人名永远是旧的！**", "say": "这就是为什么阿里等大厂规范**明确禁止开启 MyBatis 二级缓存**。" }]
+    },
+    {
+      "beat": "hook",
+      "title": "400 轮 User 更新后 Order 联表查询，能一致几次？",
+      "bridge": "目标：400 轮全部读到新昵称 `Bob`（`consistent = 400`）。",
+      "blocks": [{ "t": "text", "md": "对比跨 Mapper 二级缓存、外部写库、禁用改 Redis 与 `<cache-ref>`。", "say": "看 `L2CrossMapperDirty` 的惨状。" }]
+    },
+    {
+      "beat": "code",
+      "title": "看清二级缓存为什么管不到别的 Mapper",
+      "bridge": "注意 `L2CrossMapperDirty.java` 第 17～19 行。",
+      "blocks": [{ "t": "code", "of": "l2cache.L2CrossMapperDirty", "say": "看这两行缓存清理。", "walk": [{ "focus": ["userMapperL2.clear(); // 注意：OrderMapper 的二级缓存完全不知道！"], "say": "`UserMapper` 更新后只会清 `userMapperL2`，对 `orderMapperL2` 里的联表旧数据一无所知！", "key": "二级缓存按 Mapper namespace 隔离，跨表更新不会联动失效" }] }]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：L2CrossMapperDirty 400 轮能读到几次最新 Bob？",
+      "bridge": "跑之前下注。",
+      "blocks": [{ "t": "predict", "id": "l2_guess", "q": "`OrderMapper` 开了二级缓存并缓存了联表结果，随后 `UserMapper` 把名字改成 Bob 并提交，之后再查 `OrderMapper` 能读到几次 Bob？", "options": ["400 次（MyBatis 会分析 SQL 自动清关联表）", "0 次（OrderMapper 缓存完全没失效，全读旧值 Alice）"], "answer": 1, "say": "选出你的判断。" }]
+    },
+    {
+      "beat": "run",
+      "title": "四种缓存方案实测对比",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        { "t": "experiment", "lab": "l2cache", "show": ["L2CrossMapperDirty", "L2UncommittedLeak", "DisableL2UseRedis", "CacheRefShared"], "select": "L2CrossMapperDirty", "say": "`L2CrossMapperDirty` 和 `L2UncommittedLeak` 全是 0/400；禁用二级缓存改用 Redis 与 `<cache-ref>` 都是 400/400！" },
+        { "t": "reveal", "of": "l2_guess", "say": "MyBatis 二级缓存不会做表级血缘分析，它只认 `namespace`！在多服务、多表联查的现代架构下几乎必然脏读。", "key": "生产环境关闭 MyBatis 二级缓存，改用业务可控的 Redis Cache-Aside" },
+        { "t": "try", "say": "把读写轮次调到 800 看看。" }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "耗时对比",
+      "bridge": "四种写法耗时折线。",
+      "blocks": [{ "t": "chart", "of": "l2cache", "say": "Redis 精准删 Key 既快又不会整片清缓存。", "walk": [{ "focus": "DisableL2UseRedis", "say": "精准可控才是正道。" }] }]
+    },
+    {
+      "beat": "choose",
+      "title": "持久层缓存架构选型",
+      "layout": "split",
+      "bridge": "真的想做查询缓存，怎么设计？",
+      "blocks": [
+        { "t": "decide", "q": "项目想用缓存加速热点查询怎么选？", "branches": [{ "when": "正常生产/微服务/有联表或多服务写库", "pick": "禁用 MyBatis 二级缓存，使用 Redis Cache-Aside + 精准删 Key", "eg": "cache-enabled: false" }, { "when": "极少数纯单表只读字典表（如省市区）", "pick": "可用本地 Caffeine 缓存或单表 Redis", "eg": "可控 TTL" }], "say": "别把缓存控制权交给黑盒 `<cache/>`。" },
+        { "t": "cases", "tools": ["关闭二级缓存改 Redis", "<cache-ref> 临时止血", "本地 Caffeine + 短 TTL"], "say": "三个场景怎么选？", "items": [{ "text": "老项目误开了二级缓存导致联表脏读，想彻底根治。", "answer": 0, "why": "全局 `mybatis.configuration.cache-enabled=false`，热点数据迁到 Redis。" }, { "text": "老单体项目暂时改不动架构，只有两个强关联 Mapper 互相联表。", "answer": 1, "why": "临时用 `<cache-ref>` 绑定同一个 namespace，但注意命中率会下降。" }, { "text": "全国省市区编码表，几个月才变一次。", "answer": 2, "why": "用进程内 Caffeine + 合理过期时间或启动预热，不走 MyBatis 二级缓存。" }] }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频提问。",
+      "blocks": [{ "t": "name", "term": "MyBatis 二级缓存脏读与禁用规范", "alias": "Namespace 隔离 · 跨表失效盲区 · Cache-Aside", "oneLine": "MyBatis 二级缓存以 ==Mapper namespace== 为粒度，跨 Mapper 联表更新或多服务写库时==无法联动失效==，生产环境应禁用并改用 ==Redis 精准缓存==。", "asked": ["为什么生产环境不建议使用 MyBatis 的二级缓存？"], "say": "这是必考的工程实战题。" }]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "快速检验。",
+      "blocks": [{ "t": "quiz", "q": "以下关于 MyBatis 二级缓存的说法，哪项是正确的？", "options": [{ "text": "二级缓存以 Mapper namespace 为单位隔离，A Mapper 更新不会清理 B Mapper 的联表缓存", "ok": true, "why": "正确！此外默认在单机 JVM 内存里，集群多实例部署下还会出现节点间缓存不一致。" }, { "text": "只要开启二级缓存，任何 SQL 更新都会自动分析表依赖并清理所有相关缓存", "ok": false, "why": "MyBatis 不会做 SQL 表级血缘分析。" }], "say": "选出正确答案。" }]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [{ "t": "say", "prompt": "为什么大厂和生产项目普遍禁止开启 MyBatis 二级缓存？", "points": ["粒度粗且按 namespace 隔离：二级缓存绑定在单个 Mapper 的 namespace 上，多表 JOIN 查询时，别的 Mapper 更新了关联表，当前 Mapper 的缓存完全不会失效，必然脏读", "跨服务/原生 SQL 盲区：微服务或定时任务绕过该 Mapper 改库时，二级缓存感知不到", "分布式不一致：默认二级缓存存在单机本地内存，多节点部署时机器 A 改库机器 B 读旧缓存", "序列化与大面积失效：开启后要求实体类实现 Serializable，且任意小更新会清空整个 namespace", "正确做法：配置 cache-enabled=false，改用 Redis Cache-Aside 按业务 Key 精准失效"], "model": "生产环境普遍禁用 MyBatis 二级缓存，核心原因有三个：第一是**粒度太粗且按 Mapper namespace 隔离**，一旦存在联表查询，A Mapper 更新了主表但不会清理 B Mapper 的联表缓存，必然产生脏读；第二是**分布式不一致**，默认二级缓存存在单机本地内存里，多实例部署时一个节点更新了，其他节点还是旧数据；第三是**外部写库盲区**，其他微服务或原生 SQL 改库它完全感知不到。因此工程上通常配置 `cache-enabled=false`，把缓存交给业务可控的 Redis，按具体 Key 精准失效。", "say": "点击开始自述。" }]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [{ "t": "cards", "items": [{ "q": "二级缓存的作用域是什么？", "a": "单个 Mapper 的 `namespace`，跨 `SqlSession` 共享（需事务提交后写入）。" }, { "q": "为什么联表查询开二级缓存会脏读？", "a": "关联表的 Mapper 更新时只清自己的 namespace，不清联表 Mapper 的缓存。" }, { "q": "生产环境替代方案？", "a": "关闭二级缓存（`cache-enabled=false`），使用业务侧 Redis + 精准删 Key。" }], "say": "三张卡收好。" }]
+    }
+  ]
+}

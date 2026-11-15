@@ -1,0 +1,107 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "hikari-leak-trap",
+  "course": "Spring 全家桶与持久层",
+  "title": "服务跑了半小时突然全部 Connection is not available，怎么排查？",
+  "lead": "QPS 明明很低，但只要跑够 10 次某个接口，整个系统所有数据库请求就全部超时卡死！",
+  "minutes": 25,
+  "needs": ["知道连接池借用与归还（close）的机制", "了解 Java try-with-resources 语法"],
+  "after": ["讲清连接泄漏（Connection Leak）如何把连接池吃光", "区分「慢 SQL 占着不放」与「异常路径/提前 return 忘记 close()」", "掌握 leak-detection-threshold 告警参数与 try-with-resources 防泄漏规范"],
+  "terms": {
+    "连接泄漏 (Connection Leak)": "代码从连接池借出 Connection 后，因提前 return 或抛异常跳过 close()，导致连接既不干活也不回池，10 个连接漏完后全站彻底阻塞。",
+    "connectionTimeout": "等待从池里借出连接的最大超时时间（Hikari 默认 30 秒），超时抛出 SQLTransientConnectionException: Connection is not available。",
+    "leakDetectionThreshold": "HikariCP 泄漏检测阈值（如设为 2000ms）：连接借出超过 2 秒没还，立即打印 WARN 日志和借出时的完整代码堆栈，精准定位泄漏行！"
+  },
+  "experiments": {
+    "hikarileak": {
+      "runner": "java",
+      "home": "lab.hikarileak",
+      "variants": [
+        { "id": "LeakNoClose", "label": "提前 return 忘记 close", "note": "借出连接后直接 return，10 个连接瞬间漏光，第 11～40 个请求全部超时失败！" },
+        { "id": "SwallowTimeout", "label": "异常路径漏掉 release", "note": "只在 try 正常末尾还连接，1/3 请求抛异常导致连接慢慢漏光。" },
+        { "id": "TryWithResources", "label": "try-with-resources 自动还", "note": "无论正常返回还是抛异常都自动调用 close() 归还连接，40/40 全过！" },
+        { "id": "LeakDetection", "label": "finally + 泄漏阈值监控", "note": "finally 兜底归还 + 超时打堆栈告警，40/40 零泄漏。" }
+      ],
+      "knob": { "label": "请求数", "values": ["10", "20", "40", "60"], "default": "40" },
+      "repeat": 20,
+      "metric": { "key": "served", "expectKey": "expected", "label": "成功借到连接并响应的请求数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "服务跑了半小时突然全部 Connection is not available，怎么排查？",
+      "blocks": [{ "t": "text", "md": "生产经典夺命连环报错：`HikariPool-1 - Connection is not available, request timed out after 30000ms.`——**数据库明明很闲，为什么一个连接都借不到？**", "say": "遇到这种 QPS 不高却突然全站超时的情况，90% 是某段手写 JDBC 代码发生了**连接泄漏**。" }]
+    },
+    {
+      "beat": "hook",
+      "title": "池里共有 10 个连接，连续来 40 个请求，能成功几个？",
+      "bridge": "目标：40 个请求全部成功响应 `served = 40`。",
+      "blocks": [{ "t": "text", "md": "对比忘记 close、异常分支漏还、try-with-resources 与 finally+检测。", "say": "看 `LeakNoClose` 和 `SwallowTimeout` 是怎么把池子吃干的。" }]
+    },
+    {
+      "beat": "code",
+      "title": "看清提前 return 和异常吞没如何漏光连接",
+      "bridge": "注意 `LeakNoClose.java` 与 `SwallowTimeout.java`。",
+      "blocks": [{ "t": "code", "of": "hikarileak.SwallowTimeout", "say": "看第 16～21 行。", "walk": [{ "focus": ["pool.release(); // 只在正常路径还连接，异常路径泄漏！"], "say": "一旦 `i % 3 == 0` 抛出异常，代码直接跳进 `catch`，`pool.release()` 永远不会执行，连接就这么人间蒸发了！", "key": "不在 finally 或 try-with-resources 里还连接，异常路径必泄漏" }] }]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：池子有 10 个连接，LeakNoClose 跑 40 个请求能成功几个？",
+      "bridge": "跑之前下注。",
+      "blocks": [{ "t": "predict", "id": "hl_guess", "q": "连接池容量为 10，每次借用都不调用 close()，连续 40 个请求能成功几个？", "options": ["40 个（GC 会自动回收连接）", "10 个（前 10 个把连接漏光，后 30 个全部超时失败）"], "answer": 1, "say": "选出你的判断。" }]
+    },
+    {
+      "beat": "run",
+      "title": "四种连接归还方式实测对比",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        { "t": "experiment", "lab": "hikarileak", "show": ["LeakNoClose", "SwallowTimeout", "TryWithResources", "LeakDetection"], "select": "LeakNoClose", "say": "`LeakNoClose` 死死卡在 10/40，`SwallowTimeout` 漏到一半卡在 18/40；而 `TryWithResources` 和 `LeakDetection` 稳稳 40/40 且耗时接近 0ms！" },
+        { "t": "reveal", "of": "hl_guess", "say": "连接池里的物理连接被池本身持有强引用，GC 根本不会回收它！一旦漏光，只能等重启或超时。", "key": "所有手动借出的 Connection 必须用 try-with-resources 托管" },
+        { "t": "try", "say": "把请求数调到 60，感受 `LeakNoClose` 依然卡死在 10。" }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "耗时对比",
+      "bridge": "四种写法耗时折线。",
+      "blocks": [{ "t": "chart", "of": "hikarileak", "say": "泄漏发生后，后续每个请求都要白白干等到 `connectionTimeout` 才失败，耗时直线飙升！", "walk": [{ "focus": "TryWithResources", "say": "0ms 丝滑通过。" }] }]
+    },
+    {
+      "beat": "choose",
+      "title": "线上 Connection is not available 排查与防护",
+      "layout": "split",
+      "bridge": "真在生产遇到这个报错怎么查？",
+      "blocks": [
+        { "t": "decide", "q": "线上报 Connection is not available 怎么快速定位？", "branches": [{ "when": "怀疑代码手写 DataSource.getConnection() 漏关", "pick": "开启 leak-detection-threshold: 2000 直接打印泄漏堆栈", "eg": "Apparent connection leak detected" }, { "when": "代码全用 MyBatis/JdbcTemplate 无手写连接", "pick": "排查数据库慢 SQL（SHOW PROCESSLIST）或长事务（@Transactional 里调外部 HTTP）", "eg": "连接被慢操作长期占着" }], "say": "一半是代码漏关，一半是长事务/慢 SQL 占坑！" },
+        { "t": "cases", "tools": ["leak-detection-threshold 抓堆栈", "try-with-resources 托管", "剔除事务内的外部 RPC/HTTP"], "say": "三个根因怎么治？", "items": [{ "text": "日志报连接耗尽，怀疑某个老工具类借了连接没 close。", "answer": 0, "why": "配 `spring.datasource.hikari.leak-detection-threshold=3000`，日志直接打印借出连接的精确代码行号！" }, { "text": "自己写原生 JDBC 批处理导入工具。", "answer": 1, "why": "用 `try (Connection c = ds.getConnection(); PreparedStatement ps = ...)` 自动关闭。" }, { "text": "在 `@Transactional` 方法里调第三方支付 HTTP 接口超时 30 秒。", "answer": 2, "why": "长事务会一直霸占数据库连接不归还！必须把 HTTP/RPC 调用移到事务外。" }] }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频提问。",
+      "blocks": [{ "t": "name", "term": "HikariCP 连接泄漏与排障三板斧", "alias": "Connection is not available · leakDetectionThreshold · 长事务占坑", "oneLine": "出现 ==Connection is not available== 通常源于==手写连接未 close 泄漏==或==长事务/慢 SQL 霸占连接==；可用 ==leak-detection-threshold== 打印借出堆栈秒级定位。", "asked": ["线上报 HikariPool Connection is not available 怎么排查和解决？"], "say": "既有编码规范又有线上排障手段，非常扎实。" }]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "快速检验。",
+      "blocks": [{ "t": "quiz", "q": "以下哪种做法最容易在不知不觉中把 HikariCP 连接池耗尽？", "options": [{ "text": "在 @Transactional 方法内部调用耗时 10 秒的第三方 HTTP 接口", "ok": true, "why": "正确！Spring 事务开启后会从连接池借出一个连接绑定到当前线程直到事务结束，外部 HTTP 慢 10 秒，连接就白白占着茅坑 10 秒！" }, { "text": "使用 MyBatis Mapper 进行普通的单条主键查询", "ok": false, "why": "MyBatis 会由框架自动归还连接。" }], "say": "选出正确答案。" }]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [{ "t": "say", "prompt": "线上报 HikariCP `Connection is not available`，你会怎么一步步排查？", "points": ["原因分类：1) 真的并发太高连接池小；2) 代码手动 getConnection() 没在 finally/try-with-resources 里 close() 导致连接泄漏；3) 大事务/慢 SQL 占着连接不放（尤其 @Transactional 里调外部 HTTP/RPC）", "排障第一步：看 Hikari 监控指标（active/idle/pending），如果 active 一直满且不下降，大概率是泄漏或长事务", "排障第二步：打开 spring.datasource.hikari.leak-detection-threshold=2000，触发告警后直接看日志打印的借出堆栈定位代码", "排障第三步：去 MySQL 查 SHOW PROCESSLIST 和 innodb_trx 看有没有慢 SQL 或未提交长事务", "预防规范：原生连接一律 try-with-resources；禁止在 @Transactional 内做远程调用或文件 IO"], "model": "线上遇到 `Connection is not available`，本质是所有连接都被占着没还，常见就三大原因：真实流量突增、代码连接泄漏、或者慢 SQL/长事务占坑。我的排查步骤是：先看监控面板里 `active` 和 `pending` 指标，如果流量不高但 `active` 长期打满，十有八九是泄漏或长事务；接着配置 `leak-detection-threshold=2000`，让 HikariCP 在连接借出超 2 秒时打印完整的借出代码堆栈，能直接抓出忘记 `close()` 的原生 JDBC 代码；同时去数据库查 `SHOW PROCESSLIST` 和 `innodb_trx`，看是不是有慢 SQL 或者在 `@Transactional` 里调外部 HTTP 把事务拖长了。规范上所有手写连接必须用 `try-with-resources`，并且严禁在数据库事务里做远程 RPC 调用。", "say": "点击开始自述。" }]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [{ "t": "cards", "items": [{ "q": "手写 JDBC 连接防泄漏铁律？", "a": "一律使用 `try (Connection conn = ds.getConnection())`，绝不靠人工手动 close。" }, { "q": "快速抓连接泄漏的神器配置？", "a": "`leak-detection-threshold: 2000`，超时直接打印借出时的代码堆栈。" }, { "q": "@Transactional 里最隐蔽的占连接行为？", "a": "在事务里调外部 HTTP/RPC 或发 MQ，外部一慢连接池瞬间被拖死。" }], "say": "三张卡收好。" }]
+    }
+  ]
+}
