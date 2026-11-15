@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>84</strong> 节循序渐进实验课</span>
-        <span><strong>336</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>89</strong> 节循序渐进实验课</span>
+        <span><strong>356</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,10 +374,10 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 84 / 84 课</span>
+        <span id="shownCount" class="count-note">显示 89 / 89 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (84)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (89)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
@@ -388,6 +388,7 @@
         <button type="button" class="pill" data-filter="m4ch1">MySQL 1 · SQL 与深分页 (5)</button>
         <button type="button" class="pill" data-filter="m4ch2">MySQL 2 · B+ 树与索引 (7)</button>
         <button type="button" class="pill" data-filter="m4ch3">MySQL 3 · EXPLAIN 与失效 (5)</button>
+        <button type="button" class="pill" data-filter="m4ch4">MySQL 4 · MVCC 与隔离 (5)</button>
         <button type="button" class="pill" data-filter="m5ch1">Spring 1 · 事务与 AOP (5)</button>
         <button type="button" class="pill" data-filter="m5ch2">Spring 2 · IoC 与自动装配 (5)</button>
         <button type="button" class="pill" data-filter="m6">模块 6 · Redis / MQ / 微服务 (6)</button>
@@ -1247,6 +1248,44 @@
         </a>
         </div>
       </section>
+      <section class="chapter" data-ch="m4ch4">
+        <div class="chapter__head">
+          <h2>模块四 · 第四章：四大隔离级别、MVCC 版本链与 ReadView（第 55～59 课）</h2>
+          <p>用 ReadView 可见性算法与版本链实验，彻底打通脏读、不可重复读、快照读 vs 当前读、RR 幻读真相与长事务 Undo 膨胀。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/tx-dirty-read.html" data-ch="m4ch4" data-search="55 tx-dirty-read 不加隔离，怎么读到了别人回滚掉的假数据？ 脏读 read uncommitted rc rr lab.dirtyread">
+          <div class="card__top"><span class="card__num">#55</span><span class="card__pkg">lab.dirtyread</span></div>
+          <h3 class="card__title">不加隔离，怎么读到了别人回滚掉的假数据？</h3>
+          <p class="card__lead">线程 A 把余额改成 900 还没提交，线程 B 读走 900 后发了货；接着线程 A 回滚成 100，钱货两空！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/tx-nonrepeatable-read.html" data-ch="m4ch4" data-search="56 tx-nonrepeatable-read 同一事务里连读两次余额，怎么两次不一样？ 不可重复读 rc rr readview lab.nonrepeat">
+          <div class="card__top"><span class="card__num">#56</span><span class="card__pkg">lab.nonrepeat</span></div>
+          <h3 class="card__title">同一事务里连读两次余额，怎么两次不一样？</h3>
+          <p class="card__lead">同一个事务里先查余额是 100，隔了一秒再查一次竟然变成 200——这就是 RC 级别下的「不可重复读」！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/mvcc-readview.html" data-ch="m4ch4" data-search="57 mvcc-readview 不加锁的快照读，怎么做到读写互不阻塞？ mvcc readview undo 快照读 当前读 lab.readview">
+          <div class="card__top"><span class="card__num">#57</span><span class="card__pkg">lab.readview</span></div>
+          <h3 class="card__title">不加锁的快照读，怎么做到读写互不阻塞？</h3>
+          <p class="card__lead">写事务正在改这一行并拿着 X 锁，为什么普通 SELECT 却一毫秒都不等直接返回旧值？掀开 ReadView 可见性算法！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/tx-phantom-read.html" data-ch="m4ch4" data-search="58 tx-phantom-read rr 级快照读防住了幻读，一 update 怎么又冒出新行？ 幻读 next-key lock 当前读 lab.phantom">
+          <div class="card__top"><span class="card__num">#58</span><span class="card__pkg">lab.phantom</span></div>
+          <h3 class="card__title">RR 级快照读防住了幻读，一 UPDATE 怎么又冒出新行？</h3>
+          <p class="card__lead">面试常问「MySQL RR 到底有没有彻底解决幻读？」答案是：没有！一旦混用快照读和当前读，幻影行立刻现身。</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/mvcc-purge-longtx.html" data-ch="m4ch4" data-search="59 mvcc-purge-longtx 一个长事务挂着不提交，undo 日志怎么把磁盘撑爆？ 长事务 purge undo lab.longtrx">
+          <div class="card__top"><span class="card__num">#59</span><span class="card__pkg">lab.longtrx</span></div>
+          <h3 class="card__title">一个长事务挂着不提交，Undo 日志怎么把磁盘撑爆？</h3>
+          <p class="card__lead">线上突然告警 ibdata1 / undo 表空间暴涨几十 GB、所有查询变慢——罪魁祸首往往只是一个忘了 commit 的长事务！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        </div>
+      </section>
 
       <section class="chapter" data-ch="m6">
         <div class="chapter__head">
@@ -1289,6 +1328,9 @@
           <h3 class="card__title">BigKey 阻塞单线程 + Pipeline 批量往返代价</h3>
           <p class="card__lead">一次查 40 条数据，循环单发和 Pipeline 差多少？大 Key 又是怎么把单线程卡死的？</p>
           <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        </div>
+      </section>
 
       <section class="chapter" data-ch="m8">
         <div class="chapter__head">

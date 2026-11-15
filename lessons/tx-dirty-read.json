@@ -1,0 +1,321 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "tx-dirty-read",
+  "course": "MySQL 索引、事务与锁",
+  "title": "不加隔离，怎么读到了别人回滚掉的假数据？",
+  "lead": "线程 A 把余额改成 900 还没提交，线程 B 读走 900 后发了货；接着线程 A 回滚成 100，钱货两空！",
+  "minutes": 35,
+  "needs": [
+    "知道事务提交和回滚"
+  ],
+  "after": [
+    "复现 Read Uncommitted 下的脏读事故",
+    "讲清 Read Committed 如何通过 Undo 版本链消灭脏读",
+    "记住四大隔离级别的最低生产底线是 RC"
+  ],
+  "terms": {
+    "脏读（Dirty Read）": "一个事务读到了另一个事务**尚未提交**且可能随时回滚的修改。",
+    "Read Uncommitted": "读未提交：连快照都不看，直接读内存中最新修改（即使未提交）。",
+    "Read Committed": "读已提交（RC）：只允许读已经提交的事务版本。"
+  },
+  "experiments": {
+    "dirtyread": {
+      "runner": "java",
+      "home": "lab.dirtyread",
+      "variants": [
+        {
+          "id": "ReadUncommitted",
+          "label": "RU (读未提交)",
+          "note": "直接读未提交数据，对方回滚就酿成脏读事故。"
+        },
+        {
+          "id": "ReadCommitted",
+          "label": "RC (读已提交)",
+          "note": "沿 Undo 链找已提交版本，0 脏读。"
+        },
+        {
+          "id": "RepeatableRead",
+          "label": "RR (可重复读)",
+          "note": "InnoDB 默认级别，0 脏读。"
+        },
+        {
+          "id": "Serializable",
+          "label": "Serializable (串行化)",
+          "note": "读写加锁排队，0 脏读但并发最差。"
+        }
+      ],
+      "knob": {
+        "label": "并发事务轮数",
+        "values": [
+          "100",
+          "500",
+          "1000",
+          "2000"
+        ],
+        "default": "1000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "dirtyReads",
+        "expectKey": "expected",
+        "label": "脏读次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "不加隔离，怎么读到了别人回滚掉的假数据？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "数据库隔离级别共有 4 档。今天从最危险的第 1 档 `Read Uncommitted` 开始：看看「读到未提交数据」为什么会直接把账搞劈。",
+          "say": "生产环境绝不允许开启 Read Uncommitted，原因一跑就懂。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "对方改完还没 commit，我能读吗？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "1000 次并发读写里，每次写线程改完 900 后都会回滚回 100。`RU` 下会有多少次读到假账？",
+          "say": "看 `ReadUncommitted`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 ReadUncommitted 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "dirtyread.ReadUncommitted",
+          "say": "`ReadUncommitted` 直接拿了未提交的 `uncommittedVal`，根本不管对方有没有 `commit`。",
+          "walk": [
+            {
+              "focus": [
+                "int seen = uncommittedVal;"
+              ],
+              "say": "一旦写线程随后 `rollback`，这笔 900 的读就是彻头彻尾的脏数据。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "1000 轮中写线程每次都回滚，使用 `ReadUncommitted` 会出现多少次脏读？",
+          "options": [
+            "0 次",
+            "1000 次",
+            "随机几次"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "dirtyread",
+          "show": [
+            "ReadUncommitted"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `dirtyReads = 1000`，100% 踩雷！而 `RC`、`RR`、`Serializable` 全是 0。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "dirtyread.ReadUncommitted",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "从 `Read Committed` 开始，InnoDB 引入了 MVCC 的 ReadView：未提交事务的 `trx_id` 在活跃列表里，不可见，必须顺着 `roll_ptr` 找回上一个已提交的 Undo 版本。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpeq"
+              ],
+              "say": "RU 省掉了版本链可见性判断，换来的是假数据灾难。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "dirtyread",
+          "show": [
+            "ReadUncommitted",
+            "ReadCommitted",
+            "RepeatableRead",
+            "Serializable"
+          ],
+          "select": "ReadCommitted",
+          "say": "切到 `ReadCommitted` 或 MySQL 默认的 `RepeatableRead`，脏读直接归零。"
+        },
+        {
+          "t": "chart",
+          "of": "dirtyread",
+          "say": "只有 `ReadUncommitted` 飙升，其余三档全为 0。",
+          "walk": [
+            {
+              "focus": [
+                "ReadUncommitted",
+                "ReadCommitted"
+              ],
+              "say": "工程底线：任何线上库至少是 RC（如阿里/Oracle 默认 RC，MySQL 默认 RR）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "互联网高频业务通常在 RC 和 RR 之间选；RU 只存在于极少数允许估算的统计场景。",
+          "options": [
+            {
+              "name": "Read Uncommitted",
+              "solves": "不看版本链",
+              "cost": "脏读泛滥",
+              "when": "生产严禁",
+              "say": "千万别用。"
+            },
+            {
+              "name": "Read Committed (RC)",
+              "solves": "杜绝脏读，锁范围更小（无间隙锁）",
+              "cost": "0 脏读：{ms:dirtyread.ReadCommitted} ms",
+              "when": "互联网大厂高并发首选（配合 binlog_format=ROW）",
+              "say": "减少死锁概率。"
+            },
+            {
+              "name": "Repeatable Read (RR)",
+              "solves": "杜绝脏读与不可重复读，MySQL 默认",
+              "cost": "0 脏读：{ms:dirtyread.RepeatableRead} ms",
+              "when": "MySQL 开箱默认",
+              "say": "对账类事务很需要可重复读。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "下面哪个问题在 `Read Committed`（读已提交）级别下**已经被彻底解决**了？",
+          "options": [
+            {
+              "text": "脏读（读到未提交并回滚的数据）",
+              "ok": true,
+              "why": "RC 保证只读已提交的数据，彻底消灭脏读。"
+            },
+            {
+              "text": "不可重复读",
+              "ok": false,
+              "why": "RC 每次 SELECT 新建 ReadView，依然存在不可重复读。"
+            },
+            {
+              "text": "幻读",
+              "ok": false,
+              "why": "RC 不解决幻读。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "脏读与隔离级别基线",
+          "alias": "Dirty Read & Isolation Levels",
+          "oneLine": "读到其他事务==尚未提交==的修改即为脏读；从 `Read Committed` 起通过==Undo 版本链==彻底解决。",
+          "asked": [
+            "MySQL 有哪四种隔离级别？分别解决什么问题？",
+            "什么是脏读？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚什么是脏读，以及 MySQL 的四种隔离级别分别解决了什么问题？",
+          "points": [
+            "脏读：读到未提交且可能回滚的数据",
+            "RU：啥都不防；RC：防脏读；RR（MySQL默认）：防脏读+不可重复读（+快照幻读）；Serializable：全防但串行加锁",
+            "互联网常见选择：MySQL 默认 RR，或调成 RC 减少间隙锁死锁"
+          ],
+          "model": "脏读是指一个事务读到了另一个事务还没有提交的修改，如果对方随后回滚，读到的就是假数据。MySQL 四种隔离级别从低到高分别是：Read Uncommitted（啥都不防）、Read Committed（通过只读已提交版本防住了脏读）、Repeatable Read（MySQL 默认，复用 ReadView 防住了不可重复读）、Serializable（全加锁串行，防住所有问题但并发最低）。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "什么是脏读？",
+              "a": "读到别的事务未提交（可能回滚）的修改。"
+            },
+            {
+              "q": "哪个级别开始解决脏读？",
+              "a": "Read Committed（读已提交）。"
+            },
+            {
+              "q": "MySQL 默认隔离级别是？",
+              "a": "Repeatable Read（可重复读）。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

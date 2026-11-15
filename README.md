@@ -153,6 +153,16 @@
 | 53 | **范围查询后面的联合索引列，怎么突然失效了？** | 建了 (a, b, c) 联合索引，查 a=1 AND b>10 AND c=2。明明三列全在条件里，为什么 key_len 显示只用到了 (a, b)？ | `lab.rangebreak` | [网页课件](./pages/index-range-break.html) · [JSON](./lessons/index-range-break.json) · [源码](./src/lab/rangebreak/) |
 | 54 | **ORDER BY 和 GROUP BY 混用，Extra 怎么冒出 Using filesort？** | 明明只取 LIMIT 20，为什么 EXPLAIN 里出现了 Using filesort，慢到把 Sort Buffer 打满甚至落盘归并？ | `lab.filesort` | [网页课件](./pages/filesort-temp-table.html) · [JSON](./lessons/filesort-temp-table.json) · [源码](./src/lab/filesort/) |
 
+### 模块四 · 第四章：四大隔离级别、MVCC 版本链与 ReadView（第 55～59 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 55 | **不加隔离，怎么读到了别人回滚掉的假数据？** | 线程 A 把余额改成 900 还没提交，线程 B 读走 900 后发了货；接着线程 A 回滚成 100，钱货两空！ | `lab.dirtyread` | [网页课件](./pages/tx-dirty-read.html) · [JSON](./lessons/tx-dirty-read.json) · [源码](./src/lab/dirtyread/) |
+| 56 | **同一事务里连读两次余额，怎么两次不一样？** | 同一个事务里先查余额是 100，隔了一秒再查一次竟然变成 200——这就是 RC 级别下的「不可重复读」！ | `lab.nonrepeat` | [网页课件](./pages/tx-nonrepeatable-read.html) · [JSON](./lessons/tx-nonrepeatable-read.json) · [源码](./src/lab/nonrepeat/) |
+| 57 | **不加锁的快照读，怎么做到读写互不阻塞？** | 写事务正在改这一行并拿着 X 锁，为什么普通 SELECT 却一毫秒都不等直接返回旧值？掀开 ReadView 可见性算法！ | `lab.readview` | [网页课件](./pages/mvcc-readview.html) · [JSON](./lessons/mvcc-readview.json) · [源码](./src/lab/readview/) |
+| 58 | **RR 级快照读防住了幻读，一 UPDATE 怎么又冒出新行？** | 面试常问「MySQL RR 到底有没有彻底解决幻读？」答案是：没有！一旦混用快照读和当前读，幻影行立刻现身。 | `lab.phantom` | [网页课件](./pages/tx-phantom-read.html) · [JSON](./lessons/tx-phantom-read.json) · [源码](./src/lab/phantom/) |
+| 59 | **一个长事务挂着不提交，Undo 日志怎么把磁盘撑爆？** | 线上突然告警 ibdata1 / undo 表空间暴涨几十 GB、所有查询变慢——罪魁祸首往往只是一个忘了 commit 的长事务！ | `lab.longtrx` | [网页课件](./pages/mvcc-purge-longtx.html) · [JSON](./lessons/mvcc-purge-longtx.json) · [源码](./src/lab/longtrx/) |
+
 ### 模块五 · 第一章：Spring 事务失效、动态代理与 AOP 切面（第 38～42 课）
 
 用纯 JDK 动态代理与字节码证据，亲手复现同类自调用、异常吞没、传播行为连坐回滚、JDK/CGLIB 代理坑与多切面洋葱错序。

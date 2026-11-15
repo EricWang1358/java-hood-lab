@@ -1,0 +1,314 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "tx-phantom-read",
+  "course": "MySQL 索引、事务与锁",
+  "title": "RR 级快照读防住了幻读，一 UPDATE 怎么又冒出新行？",
+  "lead": "面试常问「MySQL RR 到底有没有彻底解决幻读？」答案是：没有！一旦混用快照读和当前读，幻影行立刻现身。",
+  "minutes": 35,
+  "needs": [
+    "知道快照读和当前读"
+  ],
+  "after": [
+    "讲清纯快照读下 RR 为什么能防住幻读",
+    "复现「快照读 → 别人插行提交 → 自己 UPDATE（当前读）→ 再快照读冒出新行」的经典幻读场景",
+    "知道用 SELECT ... FOR UPDATE（触发临键锁）彻底防幻读"
+  ],
+  "terms": {
+    "幻读（Phantom Read）": "同事务内按同一条件查询，突然多出了之前不存在的新行（重点是**新插入**的行）。",
+    "Next-Key Lock（临键锁）": "InnoDB 在 RR 级别下当前读使用的锁 = 记录锁 + 间隙锁，直接锁住区间防止别人新插行。"
+  },
+  "experiments": {
+    "phantom": {
+      "runner": "java",
+      "home": "lab.phantom",
+      "variants": [
+        {
+          "id": "RrSnapshotPlusUpdate",
+          "label": "RR 快照读+中途 UPDATE",
+          "note": "UPDATE 是当前读，把别人刚插的新行 trx_id 改成自己，再查就冒出来了！"
+        },
+        {
+          "id": "PureSnapshotRead",
+          "label": "纯快照读",
+          "note": "不执行 UPDATE，始终复用 ReadView，看不到新行。"
+        },
+        {
+          "id": "CurrentReadGapLock",
+          "label": "全程当前读 (FOR UPDATE)",
+          "note": "一开始就加临键锁，直接堵死别人插入，0 幻读！"
+        },
+        {
+          "id": "SerializableRange",
+          "label": "Serializable",
+          "note": "所有读自动加锁，0 幻读。"
+        }
+      ],
+      "knob": {
+        "label": "并发事务轮数",
+        "values": [
+          "100",
+          "500",
+          "1000",
+          "2000"
+        ],
+        "default": "1000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "phantomHits",
+        "expectKey": "expected",
+        "label": "幻读发生次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "RR 级快照读防住了幻读，一 UPDATE 怎么又冒出新行？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "关于「MySQL RR 有没有解决幻读」，网上吵翻了天。今天用 15 行代码把争议彻底终结：**大部分情况防住了，但混用当前读就会破防**。",
+          "say": "面试官最喜欢追问这一题，答出来直接拉满深度。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "第 1 次查 5 条，执行一次 UPDATE 后再查变成 6 条！",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "事务 A 先查有 5 条；事务 B 新插第 6 条并提交；事务 A 执行 `UPDATE ...` 更新这批行，再 `SELECT` 变成 **6** 条！",
+          "say": "看看 `RrSnapshotPlusUpdate`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 RrSnapshotPlusUpdate 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "phantom.RrSnapshotPlusUpdate",
+          "say": "罪魁祸首就在于 `UPDATE` 是**当前读**，它会把第 6 行的 `trx_id` 改写成事务 A 自己的 `creator_trx_id`！",
+          "walk": [
+            {
+              "focus": [
+                "int afterUpdateCount = 6;"
+              ],
+              "say": "改写成自己的 `trx_id` 后，下一次快照读命中「自己改的可见」，第 6 行凭空现身！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "RR 级别下，事务 A 先快照读 5 行；事务 B 插入第 6 行提交；事务 A 执行全范围 `UPDATE` 后再快照读，会看到几行？",
+          "options": [
+            "还是 5 行",
+            "变成 6 行（触发幻读）",
+            "报错"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "phantom",
+          "show": [
+            "RrSnapshotPlusUpdate"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "`RrSnapshotPlusUpdate` 1000 轮全部触发幻读！而一开始就用 `FOR UPDATE` 的 `CurrentReadGapLock` 0 次幻读。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "phantom.RrSnapshotPlusUpdate",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "总结成面试满分回答：MySQL RR **很大程度上**避免了幻读——纯快照读靠 MVCC ReadView 防住了；当前读靠 Next-Key Lock（间隙锁+行锁）防住了。但如果**先快照读、再当前读 UPDATE、再快照读**，就会出现幻读！",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpeq"
+              ],
+              "say": "如果一开始就用 `SELECT ... FOR UPDATE`，临键锁早早锁住区间，事务 B 根本插不进来。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "phantom",
+          "show": [
+            "RrSnapshotPlusUpdate",
+            "PureSnapshotRead",
+            "CurrentReadGapLock",
+            "SerializableRange"
+          ],
+          "select": "CurrentReadGapLock",
+          "say": "如果业务在同一个事务里既要查又要改并严防新行插入，一开始就用当前读 `SELECT ... FOR UPDATE`。"
+        },
+        {
+          "t": "chart",
+          "of": "phantom",
+          "say": "纯快照读与全程当前读加临键锁都能做到 0 幻读，唯独混用会漏。",
+          "walk": [
+            {
+              "focus": [
+                "RrSnapshotPlusUpdate",
+                "CurrentReadGapLock"
+              ],
+              "say": "记住：InnoDB 用 MVCC 防快照读幻读，用 Next-Key Lock 防当前读幻读。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "日常读用快照读；涉及范围校验后写入（如查某用户未超限再插），用当前读或唯一索引防重。",
+          "options": [
+            {
+              "name": "纯快照读 (MVCC)",
+              "solves": "不加锁防止看到新插行",
+              "cost": "0 幻读：{ms:phantom.PureSnapshotRead} ms",
+              "when": "只读事务",
+              "say": "只要自己不 UPDATE 新行就绝对看不到。"
+            },
+            {
+              "name": "当前读 (FOR UPDATE)",
+              "solves": "上 Next-Key Lock 物理挡住别人插入",
+              "cost": "0 幻读：{ms:phantom.CurrentReadGapLock} ms",
+              "when": "事务内要先查范围再改/插",
+              "say": "下一章专门实验间隙锁与临键锁！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "关于「MySQL 的 RR 隔离级别是否完全解决了幻读」，最准确的说法是？",
+          "options": [
+            {
+              "text": "没有 100% 解决：纯快照读靠 MVCC、纯当前读靠 Next-Key Lock 都能防，但混用快照读和 UPDATE 当前读仍会出现幻读",
+              "ok": true,
+              "why": "标准大厂面试满分答案！"
+            },
+            {
+              "text": "完全解决了，RR 级别绝对不可能出现幻读",
+              "ok": false,
+              "why": "混用快照读和 UPDATE 当前读就会出现。"
+            },
+            {
+              "text": "RR 根本不管幻读，全靠 Serializable",
+              "ok": false,
+              "why": "InnoDB 在 RR 下已经通过 MVCC 和 Next-Key Lock 防住了绝大部分场景。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "RR 幻读真相",
+          "alias": "Phantom Read in RR",
+          "oneLine": "InnoDB RR 用==MVCC 护快照读、Next-Key Lock 护当前读==，但==先快照读后 UPDATE 再快照读==仍会现出幻影行。",
+          "asked": [
+            "MySQL RR 隔离级别解决幻读了吗？",
+            "InnoDB 是怎么防止幻读的？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "MySQL 的 RR 隔离级别到底有没有完全解决幻读？请分情况说明。",
+          "points": [
+            "标准回答：很大程度上避免了，但没有 100% 彻底解决",
+            "纯快照读（普通 SELECT）：靠 MVCC 复用 ReadView 防住幻读",
+            "纯当前读（FOR UPDATE / UPDATE）：靠 Next-Key Lock（行锁+间隙锁）挡住新行插入",
+            "漏洞场景：先快照读→别人插入提交→自己执行 UPDATE（当前读把新行 trx_id 改成自己）→再快照读就会冒出新行"
+          ],
+          "model": "MySQL 在 RR 级别下很大程度上避免了幻读，但并没有 100% 彻底解决。具体分两种情况：对于纯快照读，MVCC 通过复用首次生成的 ReadView 防住了幻读；对于当前读（比如 SELECT ... FOR UPDATE），InnoDB 通过 Next-Key Lock 临键锁锁住记录和间隙，直接阻塞其他事务的新增插入。但如果在同一个事务里混用：先快照读、期间别人插入提交、接着自己执行一次 UPDATE 当前读把新行的 trx_id 改成了自己，那下一次快照读就能看见这条新行，触发幻读。解决之道是一开始就用 FOR UPDATE 加锁。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "RR 下怎么防幻读？",
+              "a": "快照读靠 MVCC ReadView；当前读靠 Next-Key Lock（记录锁+间隙锁）。"
+            },
+            {
+              "q": "RR 下什么操作仍会触发幻读？",
+              "a": "先快照读 → 别人插入提交 → 自己 UPDATE 当前读（改写新行 trx_id）→ 再快照读。"
+            },
+            {
+              "q": "怎么彻底堵死？",
+              "a": "一开始就用 SELECT ... FOR UPDATE 当前读加锁，或升级 Serializable。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}
