@@ -1,0 +1,582 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-circuit-breaker",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "服务 A 慢查询卡死，为什么健康的服务 B 跟着全线崩溃？",
+  "lead": "微服务最怕「级联雪崩」：所有接口共用同一个 Tomcat 线程池时，慢服务 A 会把线程全占光，导致健康的服务 B 也拿不到线程！必须靠舱壁隔离（Bulkhead）、超时快速失败与熔断器状态机守住防线。",
+  "minutes": 35,
+  "needs": [
+    "了解线程池与阻塞等待的概念",
+    "知道微服务远程调用的基本链路"
+  ],
+  "after": [
+    "复现共享线程池被慢服务 A 占满导致健康服务 B 全线饿死的雪崩现场",
+    "对比线程池隔离（舱壁模式）、超时快速失败、熔断器三态状态机（Closed/Open/Half-Open）",
+    "讲清 Sentinel/Resilience4j 熔断降级的完整工作流"
+  ],
+  "terms": {
+    "舱壁隔离 (Bulkhead)": "像轮船水密舱一样，为不同下游依赖分配独立的小线程池或信号量，A 挂了只淹死 A 的舱室，不影响 B。",
+    "熔断器三态状态机": "Closed（正常统计失败率）→ 达阈值跳 Open（直接走降级兜底，不发请求）→ 冷却后进 Half-Open（放少量探针试探恢复）。"
+  },
+  "experiments": {
+    "m6_breaker": {
+      "runner": "java",
+      "home": "lab.m6.breaker",
+      "knob": {
+        "name": "threads",
+        "label": "服务B并发请求线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "healthyDropped",
+        "expectKey": "expected",
+        "label": "健康服务B被连坐丢弃数",
+        "expect": "零连坐丢弃"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "SharedPoolCascade",
+          "label": "共享线程池雪崩",
+          "code": "SharedPoolCascade.java",
+          "note": "慢服务 A 占满全部 8 个共享线程，健康服务 B 拿不到任何线程，被连坐丢弃 80 次！"
+        },
+        {
+          "id": "ThreadPoolBulkhead",
+          "label": "舱壁隔离(独立池)",
+          "code": "ThreadPoolBulkhead.java",
+          "note": "A 最多占用自己的 4 线程舱壁，健康服务 B 拥有独立 8 线程通道，零连坐丢弃。"
+        },
+        {
+          "id": "TimeoutFailFast",
+          "label": "严格超时快速失败",
+          "code": "TimeoutFailFast.java",
+          "note": "调用 A 设置短超时立即释放线程资源，不再死等拖垮公共线程池。"
+        },
+        {
+          "id": "CircuitBreakerSm",
+          "label": "熔断器三态状态机",
+          "code": "CircuitBreakerSm.java",
+          "note": "连续失败触发 Open 熔断直接走兜底，根本不消耗线程；冷却后 Half-Open 探活自动恢复。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "服务 A 慢查询卡死，为什么健康的服务 B 跟着全线崩溃？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "大促时，哪怕只是页面上一个边角料接口（比如推荐广告服务 A）数据库慢查询卡住了，**如果不做隔离和熔断，几秒钟内整个核心下单服务 B 也会跟着 502 全站瘫痪**。",
+          "say": "这就是微服务架构师最怕的「雪崩效应」，今天用最后 1 课把隔离、超时、熔断三道防线一次性立起来。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "线程池资源共享风险",
+              "q": "Tomcat 默认所有 HTTP 接口共用同一个业务线程池，如果 `/ad` 接口每次调用阻塞 10 秒，`/order` 接口会怎样？",
+              "options": [
+                "Tomcat 线程被 `/ad` 占光，`/order` 请求全被拒或排队超时，全站一起瘫痪",
+                "`/order` 完全不受任何影响",
+                "JVM 会自动给 `/order` 多分配 CPU"
+              ],
+              "answer": 0,
+              "why": "共享资源池没有隔离，一个慢依赖就能把整个进程的工作线程吸干。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：慢服务 A 正在卡死，同时健康服务 B 正常接收流量",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "观察服务 B 有多少原本正常的请求因为线程耗尽而被连坐丢弃（`healthyDropped`）。",
+            "actors": [
+              "服务 A (故障慢查询)",
+              "服务 B (健康核心链路)"
+            ],
+            "shared": "线程池资源"
+          },
+          "say": "观察服务 B 有多少原本正常的请求因为线程耗尽而被连坐丢弃（`healthyDropped`）。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `SharedPoolCascade`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_breaker.SharedPoolCascade",
+          "say": "这就是最常见的基线写法 `SharedPoolCascade`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`SharedPoolCascade` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`SharedPoolCascade` 中服务 A 占满了 8 个共享线程不释放，健康的服务 B 会怎样？",
+          "options": [
+            "正常服务 B 照常成功",
+            "服务 B 一个线程也抢不到，所有请求全被丢弃（healthyDropped = 80）",
+            "服务 B 会自动扩容线程池"
+          ],
+          "answer": 1,
+          "say": "一颗老鼠屎坏了一锅汤——慢服务 A 把整个服务的线程全锁死了。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`SharedPoolCascade` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_breaker",
+          "show": [
+            "SharedPoolCascade"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "sharedThreads.acquireUninterruptibly();",
+            "if (!sharedThreads.tryAcquire()) { healthyDropped.incrementAndGet();"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `SharedPoolCascade` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_breaker.SharedPoolCascade",
+          "lines": [
+            "sharedThreads.acquireUninterruptibly();",
+            "if (!sharedThreads.tryAcquire()) { healthyDropped.incrementAndGet();"
+          ],
+          "say": "B 本身快如闪电且完全健康，但因为和 A 抢同一个 Semaphore/线程池，只能跟着一起陪葬。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "Closed(正常) --[失败率超阈值]--> Open(直接降级) --[冷却超时]--> Half-Open(探活)",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "服务 A (故障慢查询)",
+            "服务 B (健康核心链路)"
+          ],
+          "shared": {
+            "name": "线程池资源",
+            "start": "隔离/熔断保护"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "SharedPoolCascade：A 死占 8 个公共线程，B 全线饿死",
+              "say": "无隔离无熔断，单点慢查询直接引发全站雪崩。"
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "ThreadPoolBulkhead：A 被锁死在自己的 4 线程水密舱，B 独享 8 线程",
+              "say": "即使 A 彻底卡死，B 依然稳如泰山。"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "CircuitBreakerSm：A 连续失败 3 次后跳 Open 直接走降级，冷却后 Half-Open 探活",
+              "say": "连发请求和占线程的步骤都省了，保护自己也给下游喘息恢复的时间。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `ThreadPoolBulkhead`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "熔断器处于 `OPEN` 状态时，为什么说它不仅保护了自己，还保护了已经快挂掉的下游服务 A？",
+          "options": [
+            "因为 OPEN 态直接走本地降级返回，不再往故障的 A 发请求，让 A 有机会喘息恢复",
+            "因为 OPEN 态会帮 A 重启机器",
+            "因为 OPEN 态会自动扩容 A"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`SharedPoolCascade` vs `ThreadPoolBulkhead`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_breaker",
+          "show": [
+            "SharedPoolCascade",
+            "ThreadPoolBulkhead"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `ThreadPoolBulkhead` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_breaker.SharedPoolCascade",
+          "within": "main(java.lang.String[])",
+          "from": "0: iload_0",
+          "to": "return",
+          "say": "看 `SharedPoolCascade.main`：代表慢调用的线程死死卡在 `releaseSlow.await()` 上不释放 `sharedThreads`，健康调用只能干瞪眼。",
+          "walk": [
+            {
+              "focus": [
+                "sharedThreads"
+              ],
+              "label": "共享资源枯竭",
+              "say": "生产中常见表现为：下游慢查询 → 线程占满 → 上游也跟着超时 → 全链路雪崩。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`TimeoutFailFast` 与 `CircuitBreakerSm`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_breaker",
+          "show": [
+            "SharedPoolCascade",
+            "ThreadPoolBulkhead",
+            "TimeoutFailFast",
+            "CircuitBreakerSm"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_breaker",
+          "variants": [
+            "SharedPoolCascade",
+            "ThreadPoolBulkhead",
+            "TimeoutFailFast",
+            "CircuitBreakerSm"
+          ],
+          "notes": [
+            {
+              "focus": "SharedPoolCascade",
+              "key": "无隔离共享池导致健康服务 B 被连坐全灭",
+              "say": "核心接口与非核心/慢接口千万不能共用无限制的线程资源。"
+            },
+            {
+              "focus": "CircuitBreakerSm",
+              "key": "舱壁隔离 + 超时快速失败 + 熔断降级三道防线全部实现零连坐",
+              "say": "恭喜！至此模块 6（Redis/MQ/微服务）全部 24 课闭环。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `CircuitBreakerSm` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_breaker.CircuitBreakerSm",
+          "within": "callServiceA(int)",
+          "from": "0: getstatic",
+          "to": "ireturn",
+          "say": "看 `CircuitBreakerSm.callServiceA`：`CLOSED → OPEN → HALF_OPEN → CLOSED` 完整三态流转，使用 `AtomicInteger.compareAndSet` 保证并发下只放行探针。",
+          "walk": [
+            {
+              "focus": [
+                "compareAndSet"
+              ],
+              "label": "熔断三态与半开探活",
+              "key": "熔断 ≠ 永远写死降级，Half-Open 探活成功后能自动自愈",
+              "say": "这就是 Sentinel 和 Resilience4j 熔断器的核心状态机。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "信号量/线程池舱壁隔离",
+              "solves": "慢依赖耗尽公共线程池连累健康业务",
+              "cost": "约 {ms:m6_breaker.ThreadPoolBulkhead} ms，线程池隔离有线程切换开销但支持异步超时；信号量零切换开销",
+              "when": "核心下单链路调用非核心推荐/积分/风控接口",
+              "say": "轻量并发控制用信号量（Sentinel 默认），强超时隔离用独立线程池。"
+            },
+            {
+              "name": "超时 + 熔断器三态状态机",
+              "solves": "下游故障时快速失败走兜底并自动探活恢复",
+              "cost": "约 {ms:m6_breaker.CircuitBreakerSm} ms，需要提前写好 Fallback 降级逻辑",
+              "when": "所有外部 RPC/HTTP/DB 关键依赖调用",
+              "say": "降级返回值（如默认空推荐列表、缓存兜底数据）必须简单可靠，不能在降级方法里又去调别的远程服务！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "防微服务雪崩的四板斧怎么配合？",
+          "branches": [
+            {
+              "when": "第 1 板斧：严格超时",
+              "pick": "所有远程调用必设 ConnectTimeout + ReadTimeout，绝不无限等待",
+              "eg": "防止线程被死连接永久占住"
+            },
+            {
+              "when": "第 2 板斧：舱壁隔离",
+              "pick": "核心与非核心业务按独立线程池或信号量限并发",
+              "eg": "推荐接口挂了不影响下单"
+            },
+            {
+              "when": "第 3 板斧：熔断降级",
+              "pick": "错误率/慢调用比例达阈值跳 Open 直接走 Fallback，Half-Open 自动恢复",
+              "eg": "Sentinel / Resilience4j"
+            },
+            {
+              "when": "第 4 板斧：入口限流",
+              "pick": "超过系统承载能力的新流量在网关/入口直接拒绝",
+              "eg": "保护系统不被突发流量打死"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "共享公共线程池",
+            "舱壁隔离 + 熔断降级",
+            "无限期等待下游"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "商品详情页同时展示「商品基本信息（核心）」和「猜你喜欢推荐（非核心）」，推荐服务偶发卡死 10 秒。",
+              "answer": 1,
+              "why": "给推荐服务设短超时 + 独立信号量/线程池隔离 + 熔断降级返回空列表，保证详情页主流程秒开。"
+            },
+            {
+              "text": "RestTemplate 默认不设超时时间去调第三方支付回调接口。",
+              "answer": 2,
+              "why": "一旦对方网络黑洞不回包，你的 Tomcat 线程就会被永久卡死直到全站 502。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：服务隔离、熔断与降级",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "服务隔离、熔断与降级",
+          "alias": "Bulkhead · Circuit Breaker · Fallback",
+          "oneLine": "==超时快速失败==防死等，==舱壁隔离==防连坐，==熔断三态状态机==在下游故障时直接走降级并自动探活自愈。",
+          "asked": [
+            "什么是服务雪崩？如何防止雪崩？",
+            "熔断器的三种状态是如何流转的？",
+            "线程池隔离和信号量隔离有什么区别？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "熔断器从 `OPEN`（熔断打开）状态恢复到 `CLOSED`（关闭）状态，必须经过哪个中间状态？",
+          "options": [
+            {
+              "text": "HALF-OPEN（半开状态）：先放行少量试探请求，成功才切回 CLOSED，失败继续回 OPEN",
+              "ok": true,
+              "why": "直接切回 CLOSED 可能瞬间把刚喘过气的下游再次打死。"
+            },
+            {
+              "text": "直接从 OPEN 跳回 CLOSED",
+              "ok": false,
+              "why": "必须经过半开探活验证下游真的恢复了。"
+            }
+          ],
+          "say": "三态流转图几乎是微服务面试必画题。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "关于线程池隔离和信号量隔离的区别，说法正确的是？",
+          "options": [
+            {
+              "text": "线程池隔离支持异步执行与强超时中断，但有线程上下文切换开销；信号量隔离无切换开销，但不支持异步超时中断",
+              "ok": true,
+              "why": "并且使用线程池隔离时要注意 ThreadLocal（如用户信息/TraceId）不会自动跨线程传递！"
+            },
+            {
+              "text": "信号量隔离会为每个请求新建一个线程",
+              "ok": false,
+              "why": "信号量只是计数器，直接在调用方原线程执行。"
+            }
+          ],
+          "say": "补充 ThreadLocal 透传问题，面试官会眼前一亮。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "「降级（Fallback）」和「熔断（Circuit Breaker）」是什么关系？",
+          "options": [
+            {
+              "text": "熔断是触发保护的开关机制（异常达标跳闸）；降级是跳闸或超时后的兜底处理动作（如返回默认值/读缓存）",
+              "ok": true,
+              "why": "二者常配合使用，也可以单独针对大促主动关闭非核心功能（主动降级）。"
+            },
+            {
+              "text": "完全是同一个概念的两个名字",
+              "ok": false,
+              "why": "一个是状态判断机制，一个是兜底策略。"
+            }
+          ],
+          "say": "概念区分清晰，表达才专业。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "什么是微服务雪崩？舱壁隔离、熔断和降级分别是怎么协同防雪崩的？",
+          "points": [
+            "雪崩是指单个非核心或下游慢服务占满共享线程池，导致健康核心服务无资源可用并全线级联崩溃",
+            "防线一超时+舱壁隔离：严格设超时，并用独立线程池/信号量把不同依赖隔开防连坐",
+            "防线二熔断+降级：Closed→Open→Half-Open 状态机在异常达标时直接短路走 Fallback 兜底，既保住自身线程又给下游喘息恢复时间"
+          ],
+          "model": "微服务雪崩通常是由单个下游服务的慢查询或故障引起的：如果所有接口共用一个线程池，慢服务会把线程全部占满，导致原本健康的业务也拿不到线程，故障顺着调用链级联扩散。防止雪崩主要靠四板斧协同：第一是严格设置连接和读取超时，绝不无限等待；第二是舱壁隔离，通过独立线程池或信号量把核心业务和非核心慢依赖隔离开，防止相互连坐；第三是熔断器状态机，当失败率或慢调用比例超过阈值时，从 Closed 跳到 Open 状态，直接走本地 Fallback 降级兜底，不再消耗线程去打故障下游；等冷却时间过了再进入 Half-Open 放少量探针试探，成功就恢复 Closed。第四再配合入口限流，就能彻底守住系统高可用防线。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "熔断器三态流转顺序？",
+              "a": "Closed →（失败达阈值）→ Open →（冷却超时）→ Half-Open →（探活成功回 Closed / 失败回 Open）。"
+            },
+            {
+              "q": "线程池隔离 vs 信号量隔离？",
+              "a": "线程池隔离可强超时但有切换开销且需传 ThreadLocal；信号量零切换开销但依赖调用方超时。"
+            },
+            {
+              "q": "防雪崩四板斧？",
+              "a": "限流、超时快速失败、舱壁隔离、熔断降级。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

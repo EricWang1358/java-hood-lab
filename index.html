@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>124</strong> 节循序渐进实验课</span>
-        <span><strong>496</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>132</strong> 节循序渐进实验课</span>
+        <span><strong>528</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,15 +374,16 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 124 / 124 课</span>
+        <span id="shownCount" class="count-note">显示 132 / 132 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (124)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (132)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
         <button type="button" class="pill" data-filter="ch4">第四章 · 线程封闭与线程池 (6)</button>
         <button type="button" class="pill" data-filter="ch5">第五章 · 工程模式与新特性 (11)</button>
+        <button type="button" class="pill" data-filter="m2ch1">JVM 1 · 类加载与栈堆 (4)</button>
         <button type="button" class="pill" data-filter="m3ch1">网络 1 · TCP 与 Socket (5)</button>
         <button type="button" class="pill" data-filter="m3ch2">网络 2 · HTTP 与认证 (4)</button>
         <button type="button" class="pill" data-filter="m3ch3">网络 3 · BIO/NIO 与 OS I/O (5)</button>
@@ -397,7 +398,7 @@
         <button type="button" class="pill" data-filter="m5ch4">Spring 4 · MyBatis 与连接池 (5)</button>
 
         <button type="button" class="pill" data-filter="m8">模块 8 · 算法与 SQL (10)</button>
-        <button type="button" class="pill" data-filter="m6">模块 6 · Redis / MQ / 微服务 (20)</button>
+        <button type="button" class="pill" data-filter="m6">模块 6 · Redis / MQ / 微服务 (24)</button>
       </div>
     </div>
 
@@ -825,6 +826,63 @@
           <p class="card__lead">更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？</p>
           <div class="card__foot">
             <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m2ch1">
+        <div class="chapter__head">
+          <h2>模块二 · 第一章：类加载、初始化与栈堆分配（M2-01～M2-04）</h2>
+          <p>用真实 ClassLoader 隔离、&lt;clinit&gt; 死锁、栈帧深度爆栈与 Eden TLAB 并发分配实测 JVM 底层运行机制。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/jvm-classload.html" data-ch="m2ch1" data-search="m2-01 jvm-classload 双亲委派与打破：同名类怎么加载出两份？ jdbc spi、tomcat 多应用隔离和热部署为什么要打破双亲委派？重写 findclass 与 loadclass 差在哪？ lab.classload">
+          <div class="card__top">
+            <span class="card__num">#M2-01</span>
+            <span class="card__pkg">lab.classload</span>
+          </div>
+          <h3 class="card__title">双亲委派与打破：同名类怎么加载出两份？</h3>
+          <p class="card__lead">JDBC SPI、Tomcat 多应用隔离和热部署为什么要打破双亲委派？重写 findClass 与 loadClass 差在哪？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/jvm-clinit.html" data-ch="m2ch1" data-search="m2-02 jvm-clinit 静态初始化顺序与 clinit 死锁 静态变量和 static{} 谁先执行？两个类在静态初始化时互相调用为什么会触发隐蔽的 clinit 死锁？ lab.clinit">
+          <div class="card__top">
+            <span class="card__num">#M2-02</span>
+            <span class="card__pkg">lab.clinit</span>
+          </div>
+          <h3 class="card__title">静态初始化顺序与 &lt;clinit&gt; 死锁</h3>
+          <p class="card__lead">静态变量和 static{} 谁先执行？两个类在静态初始化时互相调用为什么会触发隐蔽的 &lt;clinit&gt; 死锁？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/jvm-stack.html" data-ch="m2ch1" data-search="m2-03 jvm-stack 虚拟机栈帧与 stackoverflow 同样递归 10000 层，为什么局部变量多写几个 long 就会提前炸出 stackoverflowerror？ lab.jvmstack">
+          <div class="card__top">
+            <span class="card__num">#M2-03</span>
+            <span class="card__pkg">lab.jvmstack</span>
+          </div>
+          <h3 class="card__title">虚拟机栈帧与 StackOverflow</h3>
+          <p class="card__lead">同样递归 10000 层，为什么局部变量多写几个 long 就会提前炸出 StackOverflowError？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/jvm-tlab.html" data-ch="m2ch1" data-search="m2-04 jvm-tlab tlab 线程本地分配缓冲 堆内存明明所有线程共享，为什么多线程同时 new 对象不抢同一把锁？ lab.tlab">
+          <div class="card__top">
+            <span class="card__num">#M2-04</span>
+            <span class="card__pkg">lab.tlab</span>
+          </div>
+          <h3 class="card__title">TLAB 线程本地分配缓冲</h3>
+          <p class="card__lead">堆内存明明所有线程共享，为什么多线程同时 new 对象不抢同一把锁？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1613,7 +1671,7 @@
 
       <section class="chapter" data-ch="m6">
         <div class="chapter__head">
-          <h2>模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-20）</h2>
+          <h2>模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-24）</h2>
           <p>纯 JDK 零依赖仿真实验室：覆盖缓存高并发灾难与底层原理、分布式锁与看门狗、MQ 可靠幂等积压、微服务注册/重试/限流熔断。</p>
         </div>
         <div class="grid">
@@ -1735,6 +1793,30 @@
           <div class="card__top"><span class="card__num">#M6-20</span><span class="card__pkg">lab.m6.mqbacklog</span></div>
           <h3 class="card__title">百万消息积压在 MQ 里，为什么加机器反而可能把消费者打 OOM？</h3>
           <p class="card__lead">大促突发流量或下游故障恢复后，MQ 积压几十万条消息。盲目用无界线程池/无界队列狂拉消息会瞬间撑爆消费者内存 OOM；正确姿势是「扩容分区 + 临时 Topic 分片转移 + 有界批量拉取反压」。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-registry-heartbeat.html" data-ch="m6" data-search="m6-21 m6-registry-heartbeat 注册中心心跳全超时，为什么 eureka 死保旧列表而 zookeeper 直接踢光？ 微服务注册中心不是简单的心跳打卡表：网络抖动时如果不管三七二十一全踢掉，健康节点也会团灭；如果连本地快照都不缓存，注册中心一挂全网跟着瘫痪。 lab.m6.registry">
+          <div class="card__top"><span class="card__num">#M6-21</span><span class="card__pkg">lab.m6.registry</span></div>
+          <h3 class="card__title">注册中心心跳全超时，为什么 Eureka 死保旧列表而 Zookeeper 直接踢光？</h3>
+          <p class="card__lead">微服务注册中心不是简单的心跳打卡表：网络抖动时如果不管三七二十一全踢掉，健康节点也会团灭；如果连本地快照都不缓存，注册中心一挂全网跟着瘫痪。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-rpc-retry.html" data-ch="m6" data-search="m6-22 m6-rpc-retry 下游已经快被压垮了，为什么盲目重试 3 次会直接引发雪崩？ rpc 超时重试是一把双刃剑：偶尔网络抖动时重试能救活请求；但如果下游本就过载，所有上游同时盲目同步重试 3 次，流量瞬间放大 3 倍把下游彻底打死！必须配合退避抖动、重试预算与接口幂等。 lab.m6.rpcretry">
+          <div class="card__top"><span class="card__num">#M6-22</span><span class="card__pkg">lab.m6.rpcretry</span></div>
+          <h3 class="card__title">下游已经快被压垮了，为什么盲目重试 3 次会直接引发雪崩？</h3>
+          <p class="card__lead">RPC 超时重试是一把双刃剑：偶尔网络抖动时重试能救活请求；但如果下游本就过载，所有上游同时盲目同步重试 3 次，流量瞬间放大 3 倍把下游彻底打死！必须配合退避抖动、重试预算与接口幂等。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-rate-limiter.html" data-ch="m6" data-search="m6-23 m6-rate-limiter 固定窗口限流明明设了 10 qps，为什么边界一秒放过了 20 个请求？ 限流算法不是随便计数就行：固定窗口在时间临界点会被「双倍突刺」打穿；滑动窗口精准统计最近区间却占内存；令牌桶（guava ratelimiter）既能恒定速率放行又允许可控突发。 lab.m6.ratelimit">
+          <div class="card__top"><span class="card__num">#M6-23</span><span class="card__pkg">lab.m6.ratelimit</span></div>
+          <h3 class="card__title">固定窗口限流明明设了 10 QPS，为什么边界一秒放过了 20 个请求？</h3>
+          <p class="card__lead">限流算法不是随便计数就行：固定窗口在时间临界点会被「双倍突刺」打穿；滑动窗口精准统计最近区间却占内存；令牌桶（Guava RateLimiter）既能恒定速率放行又允许可控突发。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-circuit-breaker.html" data-ch="m6" data-search="m6-24 m6-circuit-breaker 服务 a 慢查询卡死，为什么健康的服务 b 跟着全线崩溃？ 微服务最怕「级联雪崩」：所有接口共用同一个 tomcat 线程池时，慢服务 a 会把线程全占光，导致健康的服务 b 也拿不到线程！必须靠舱壁隔离（bulkhead）、超时快速失败与熔断器状态机守住防线。 lab.m6.breaker">
+          <div class="card__top"><span class="card__num">#M6-24</span><span class="card__pkg">lab.m6.breaker</span></div>
+          <h3 class="card__title">服务 A 慢查询卡死，为什么健康的服务 B 跟着全线崩溃？</h3>
+          <p class="card__lead">微服务最怕「级联雪崩」：所有接口共用同一个 Tomcat 线程池时，慢服务 A 会把线程全占光，导致健康的服务 B 也拿不到线程！必须靠舱壁隔离（Bulkhead）、超时快速失败与熔断器状态机守住防线。</p>
           <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
         </a>
         </div>

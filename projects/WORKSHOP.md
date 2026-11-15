@@ -1,37 +1,45 @@
-# 模块 7：20 节实战拆解工坊（从空目录到上线压测）
+# 模块 7：20 节实战拆解工坊总路线图
 
-> 建议节奏：先对照模块 0 的 32 节并发实验课，再按本工坊 20 节顺序亲手敲出或拆解两个工程，每完成一节跑通对应的自动化测试。
-
----
-
-## 上半场：项目 A — 企业级 RBAC 后台系统（第 1～10 节）
-
-| 节次 | 主题 | 核心代码定位 | 手敲/拆解要点与常见坑 |
-|---|---|---|---|
-| **01** | Maven 脚手架与环境隔离 | `pom.xml`、`application.yml`、`application-mysql.yml` | 本地默认用 H2 `MODE=MySQL` + `open-in-view: false`，生产切 `mysql` profile。 |
-| **02** | 统一响应体与全局异常 | `ApiResponse`、`ErrorCode`、`GlobalExceptionHandler` | 把业务异常 `BizException`、参数校验 `MethodArgumentNotValidException` 收口为统一错误码。 |
-| **03** | RBAC 三表模型与初始化 | `SysUser`、`SysRole`、`SysPermission`、`DataInitializer` | 多对多关系不要在实体上用 `CascadeType.ALL` 误删基础角色；注意密码必须 BCrypt 加密。 |
-| **04** | JWT 双 Token 签发 | `JwtService`、`JwtProperties` | `ACCESS` 与 `REFRESH` 必须带独立 `type` claim，防止拿 Refresh Token 直接调业务接口。 |
-| **05** | Token 轮换与黑名单吊销 | `TokenStore`、`InMemoryTokenStore`、`RedisTokenStore`、`AuthService` | Refresh Token 使用一次即消费（`getAndDelete`），旧 Token 重放直接报 `40102`；Logout 将 Access `jti` 写入黑名单至剩余 TTL。 |
-| **06** | 无状态过滤器与 RBAC 鉴权 | `JwtAuthFilter`、`SecurityConfig`、`UserController` | `@EnableMethodSecurity` 开启 `@PreAuthorize("hasAuthority('user:write')")`；区分 401（未登录）与 403（无权限）。 |
-| **07** | JPA 动态分页检索 | `UserService.queryUsers`、`PageResult` | 用 `Specification` 动态拼接关键字与状态过滤，限制单页最大 `size <= 100` 防深分页拖垮数据库。 |
-| **08** | 流式 CSV 导出与安全防护 | `UserService.exportCsv` | 分页切片流式写 `Writer` 防 OOM；写 UTF-8 BOM 兼容 Excel；对 `= + - @` 开头单元格转义防 CSV 公式注入。 |
-| **09** | Spring AOP 操作审计日志 | `@Audited`、`AuditLogAspect`、`RoleController` | 用 `@Around` 统计耗时并记录操作人、方法与成败；跑通 `AuditAndRoleIntegrationTest`。 |
-| **10** | Docker 多阶段构建与 Nginx | `Dockerfile`、`docker-compose.yml`、`deploy/nginx.conf` | 多阶段构建裁剪镜像体积（仅含 JRE 17）；`depends_on: condition: service_healthy` 等 MySQL/Redis 就绪再启动。 |
+> **如果你觉得看框架代码「心里发虚、基础不牢」，请严格按下面 4 步走（不要跳步！）**：
+> 1. **先补地基透视图（30 分钟）**：精读 [`FOUNDATIONS_MAP.md`](./FOUNDATIONS_MAP.md) —— 一次看懂 Tomcat 线程池、`Filter`、`ThreadLocal`/`MDC`、Spring 动态代理洋葱圈、JPA `LAZY+@BatchSize` 与秒杀五道防线到底是怎么咬合的。
+> 2. **再开交互工作台边测边学**：双击打开 [`workshop-lab.html`](./workshop-lab.html)（零外链离线可用），逐节做基础热身问答、看正反代码对照、领断点破坏任务。
+> 3. **顺着逐节手册跑通 10 个「踩坑对照演练」**：
+>    - 上半场（第 01～10 节）：精读 [`project-a-admin/WORKSHOP_A.md`](./project-a-admin/WORKSHOP_A.md)，在 IDE Debug 运行 [`FoundationPitfallDrillsTest.java`](./project-a-admin/src/test/java/com/javahood/admin/drills/FoundationPitfallDrillsTest.java)（5 组实验）。
+>    - 下半场（第 11～20 节）：精读 [`project-b-seckill/WORKSHOP_B.md`](./project-b-seckill/WORKSHOP_B.md)，在 IDE Debug 运行 [`SeckillFoundationDrillsTest.java`](./project-b-seckill/src/test/java/com/javahood/seckill/drills/SeckillFoundationDrillsTest.java)（5 组实验）。
+> 4. **最后做 2 分钟脱稿检验**：对照 [`RESUME_GUIDE.md`](./RESUME_GUIDE.md) 白纸画架构图 + 开口回答 Top 12 面试连环追问。
 
 ---
 
-## 下半场：项目 B — 高并发秒杀与订单履约系统（第 11～20 节）
+## 20 节完整课程与演练对照表
 
-| 节次 | 主题 | 核心代码定位 | 手敲/拆解要点与常见坑 |
+### 上半场：项目 A — 企业级 RBAC 后台系统（[`WORKSHOP_A.md`](./project-a-admin/WORKSHOP_A.md)）
+
+| 节次 | 课程主题 | 补牢哪块基础地基 | 对应源码与可运行演练 |
 |---|---|---|---|
-| **11** | 秒杀域模型与防超卖底线 | `CouponCampaign`、`SeckillOrder`、`db/schema.sql` | 数据库层加 `UNIQUE KEY uk_campaign_user(campaign_id, user_id)` 与 `WHERE remaining_stock > 0` 兜底。 |
-| **12** | 16 分片 CAS 库存预扣 | `LocalShardedPreDeductEngine` | 对应实验课 `#26`：把单点库存拆进 16 个桶，先按 `userId` 哈希落桶，空桶则顺延探测，降低锁/CAS 竞争 16 倍。 |
-| **13** | 每人限领一次原子拦截 | `LocalShardedPreDeductEngine`、`claimedUsers` | 对应实验课 `#23`：先原子占位再扣桶，若全桶售罄需回滚用户占位，保持状态一致。 |
-| **14** | Redis Lua 脚本原子预扣 | `seckill_pre_deduct.lua`、`RedisLuaPreDeductEngine` | 单次 Lua 脚本内完成 `SISMEMBER` 判重 + `GET` 判余量 + `DECR` + `SADD`，消除网络 RTT 与竞态窗口。 |
-| **15** | 有界线程池与显式反压 | `SeckillExecutorConfig`、`SeckillService` | 对应实验课 `#20`：用有界 `ArrayBlockingQueue`，队列满时抛 `RejectedExecutionException` 并立即回滚预扣库存，返回 HTTP `429`。 |
-| **16** | `tx-outbox` 同事务落盘 | `SeckillOrderPersistenceService`、`TxOutbox` | 对应实验课 `#32`：订单表与本地消息表必须在**同一个 `@Transactional`** 内提交，且独立 Service 避免同类自调用失效。 |
-| **17** | 发件箱定时中继与幂等投递 | `OutboxRelayScheduler`、`InMemoryOrderEventPublisher` | 定时扫描 `PENDING` 事件投递并更新 `SENT`，失败累计重试次数，消费端按 `eventId` 幂等去重。 |
-| **18** | CAS 订单状态机防撞车 | `OrderStateService`、`SeckillOrderRepository` | 对应实验课 `#24`：`UPDATE ... SET status = :target WHERE order_no = :no AND status = :expected`，保证支付回调与超时关单互斥成功。 |
-| **19** | 全链路集成与并发基准验证 | `SeckillConcurrencyBenchmarkTest`、`SeckillControllerIntegrationTest` | 验证 32 线程 1600 次并发下零超卖、零重领、`tx_outbox` 100% 投递、以及 `428 req/s` vs `50,000+ req/s` 吞吐对比。 |
-| **20** | JMeter 压测与简历量化 | `jmeter/seckill-benchmark.jmx`、`RESUME_GUIDE.md` | 跑通 200 并发压测，把架构演进、实测 QPS 与排障思考沉淀为 STAR 简历话术。 |
+| **01** | Maven 脚手架、Profile 隔离与关掉 OSIV | 配置优先级、数据库连接池生命周期 | `application.yml` (`open-in-view: false`) |
+| **02** | `TraceIdFilter`、统一响应与全局异常 | Servlet Filter 链顺序、`ThreadLocal`/`MDC` 复用串号 | `TraceIdFilter` · `FoundationPitfallDrillsTest#drill01` |
+| **03** | RBAC 三表模型与 `LAZY + @BatchSize` | 消除 `EAGER` N+1 查询、`@EntityGraph` 单次联表 | `SysUser` / `SysRole` · `FoundationPitfallDrillsTest#drill05` |
+| **04** | JWT 双 Token 签名与防类型混淆攻击 | HMAC 验签本质、`ACCESS` vs `REFRESH` 权限隔离 | `JwtService` · `FoundationPitfallDrillsTest#drill02` |
+| **05** | Refresh 一次性轮换、黑名单与防爆破 | 原子消费防重放、`ConcurrentHashMap.compute` 计数 | `AuthService` / `LoginAttemptGuard` · `#drill03` |
+| **06** | Spring Security 无状态链与 `@PreAuthorize` | 401 vs 403、`SecurityContextHolder` 线程上下文 | `JwtAuthFilter` / `SecurityConfig` · `AuthFlowIntegrationTest` |
+| **07** | JPA `Specification` 动态分页与防爆页 | 预编译防注入、分页上限钳制 | `UserService.queryUsers` |
+| **08** | 流式分批 CSV 导出、BOM 与防公式注入 | 分批写流防 OOM、UTF-8 BOM、Excel 公式注入转义 | `UserService.exportCsv` · `RbacAndExportIntegrationTest` |
+| **09** | AOP `@Audited` 审计切面与 `REQUIRES_NEW` | 动态代理自调用坑、挂起外层回滚事务保失败日志 | `AuditLogPersistenceService` · `FoundationPitfallDrillsTest#drill04` |
+| **10** | Docker 多阶段构建、健康编排与 Nginx | 镜像瘦身、非 root 运行、`service_healthy` 启动序 | `Dockerfile` / `docker-compose.yml` / `deploy/nginx.conf` |
+
+---
+
+### 下半场：项目 B — 高并发秒杀与订单履约系统（[`WORKSHOP_B.md`](./project-b-seckill/WORKSHOP_B.md)）
+
+| 节次 | 课程主题 | 补牢哪块基础地基 | 对应源码与可运行演练 |
+|---|---|---|---|
+| **11** | 秒杀表结构与数据库防超卖铁闸 | InnoDB 行锁条件更新、`(campaign_id, user_id)` 唯一键 | `CouponCampaignRepository` / `db/schema.sql` |
+| **12** | 热点详情页：SingleFlight + 空哨兵 + 随机 TTL | 防缓存击穿（请求合并）、防穿透、防雪崩 | `CampaignQueryService` · `SeckillFoundationDrillsTest#drill04` |
+| **13** | 16 分片 CAS 预扣 + 顺延探测 + 按人限领 | 热点拆分降自旋、`Math.floorMod` 负哈希防坑 | `LocalShardedPreDeductEngine` |
+| **14** | 分布式 Redis Lua 脚本原子预扣 | 单线程脚本消除多命令 RTT 竞态窗口 | `seckill_pre_deduct.lua` / `RedisLuaPreDeductEngine` |
+| **15** | 有界线程池反压回滚 + 跨线程 `MDC` 快照 | 防无界队列 OOM、防 `DiscardPolicy` 静默丢库存 | `SeckillExecutorConfig` · `SeckillFoundationDrillsTest#drill01, #drill05` |
+| **16** | 本地消息表 `tx-outbox` 同事务落盘 | 解决「写库 + 发 MQ」双写不一致、避免长事务占连接 | `SeckillOrderPersistenceService` / `TxOutbox` |
+| **17** | 发件箱定时中继 + 下游唯一键幂等发券 | At-Least-Once 投递重发必然性与 `uk_coupon_order_no` 兜底 | `OutboxRelayScheduler` / `CouponFulfillmentConsumer` · `#drill03` |
+| **18** | CAS 订单状态机 + 关单安全回补库存 | 支付 vs 关单互斥、`casWon==1` + `afterCommit()` 回补 | `OrderStateService` · `SeckillFoundationDrillsTest#drill02` |
+| **19** | 32 线程高并发对账与吞吐量基准实测 | 账实核对闭环、同步锁 vs 分片异步实测对比 | `SeckillConcurrencyBenchmarkTest` / `SeckillControllerIntegrationTest` |
+| **20** | JMeter 压测、Docker 生产编排与简历答辩 | P99/QPS 压测度量、白板画图与 STAR 法则表达 | `jmeter/seckill-benchmark.jmx` / `RESUME_GUIDE.md` |

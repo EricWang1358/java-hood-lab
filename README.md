@@ -98,6 +98,17 @@
 | 31 | **换上虚拟线程，共享计数还需要锁吗** | 只把平台线程换成 Thread.ofVirtual()，百万次 count++ 会少掉吗？ | `lab.virtrace` | [网页课件](./pages/virtual-race.html) · [JSON](./lessons/virtual-race.json) · [源码](./src/lab/virtrace/) |
 | 32 | **库与缓存各用原子数组，为啥还会写反？** | 更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？ | `lab.txoutbox` | [网页课件](./pages/tx-outbox.html) · [JSON](./lessons/tx-outbox.json) · [源码](./src/lab/txoutbox/) |
 
+### 模块二 · 第一章：类加载、初始化与栈堆分配（M2-01～M2-04）
+
+用真实 `ClassLoader` 隔离、`<clinit>` 死锁、栈帧深度爆栈与 Eden TLAB 并发分配实测 JVM 底层运行机制。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M2-01 | **双亲委派与打破：同名类怎么加载出两份？** | JDBC SPI、Tomcat 多应用隔离和热部署为什么要打破双亲委派？重写 findClass 与 loadClass 差在哪？ | `lab.classload` | [网页课件](./pages/jvm-classload.html) · [JSON](./lessons/jvm-classload.json) · [源码](./src/lab/classload/) |
+| M2-02 | **静态初始化顺序与 <clinit> 死锁** | 静态变量和 static{} 谁先执行？两个类在静态初始化时互相调用为什么会触发隐蔽的 <clinit> 死锁？ | `lab.clinit` | [网页课件](./pages/jvm-clinit.html) · [JSON](./lessons/jvm-clinit.json) · [源码](./src/lab/clinit/) |
+| M2-03 | **虚拟机栈帧与 StackOverflow** | 同样递归 10000 层，为什么局部变量多写几个 long 就会提前炸出 StackOverflowError？ | `lab.jvmstack` | [网页课件](./pages/jvm-stack.html) · [JSON](./lessons/jvm-stack.json) · [源码](./src/lab/jvmstack/) |
+| M2-04 | **TLAB 线程本地分配缓冲** | 堆内存明明所有线程共享，为什么多线程同时 new 对象不抢同一把锁？ | `lab.tlab` | [网页课件](./pages/jvm-tlab.html) · [JSON](./lessons/jvm-tlab.json) · [源码](./src/lab/tlab/) |
+
 ### 模块三 · 第一章：TCP 传输与 Socket 底层（M3-01～M3-05）
 
 用真实 Socket 实测三次握手建连成本、`TIME_WAIT` 端口复用、全连接队列 `backlog` 拥堵、TCP 粘包拆包与 Nagle 延迟 ACK 撞车。
@@ -232,7 +243,8 @@
 
 
 
-### 模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-20）
+
+### 模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-24）
 
 纯 JDK 零依赖仿真实验室：覆盖缓存高并发灾难与底层原理、分布式锁与看门狗、MQ 可靠幂等积压、微服务注册/重试/限流熔断。
 
@@ -258,6 +270,10 @@
 | M6-18 | **订单创建、支付、发货三条消息并发消费，怎么乱序了？** | MQ 默认把消息轮询分散到多个分区并由多线程并发消费，同一笔订单的「创建→支付→发货」落到不同分区或不同线程就会彻底乱序。按业务 Key 哈希路由 + 分区内串行（或局部有序缓冲）才能既保顺序又保吞吐。 | `lab.m6.mqorder` | [网页课件](./pages/m6-mq-order.html) · [JSON](./lessons/m6-mq-order.json) · [源码](./src/lab/m6/mqorder/) |
 | M6-19 | **30 分钟未支付自动关单：定时扫表、时间轮还是延迟队列+死信？** | 定时扫数据库全表会随订单膨胀把 DB 扫崩；为每个订单开一个睡眠线程会瞬间耗尽线程池。延迟消息底层靠时间轮/分层队列把扫描次数降到 O(1)，配合死信队列还能兜底异常消息。 | `lab.m6.mqdelay` | [网页课件](./pages/m6-mq-delay-dlq.html) · [JSON](./lessons/m6-mq-delay-dlq.json) · [源码](./src/lab/m6/mqdelay/) |
 | M6-20 | **百万消息积压在 MQ 里，为什么加机器反而可能把消费者打 OOM？** | 大促突发流量或下游故障恢复后，MQ 积压几十万条消息。盲目用无界线程池/无界队列狂拉消息会瞬间撑爆消费者内存 OOM；正确姿势是「扩容分区 + 临时 Topic 分片转移 + 有界批量拉取反压」。 | `lab.m6.mqbacklog` | [网页课件](./pages/m6-mq-backlog.html) · [JSON](./lessons/m6-mq-backlog.json) · [源码](./src/lab/m6/mqbacklog/) |
+| M6-21 | **注册中心心跳全超时，为什么 Eureka 死保旧列表而 Zookeeper 直接踢光？** | 微服务注册中心不是简单的心跳打卡表：网络抖动时如果不管三七二十一全踢掉，健康节点也会团灭；如果连本地快照都不缓存，注册中心一挂全网跟着瘫痪。 | `lab.m6.registry` | [网页课件](./pages/m6-registry-heartbeat.html) · [JSON](./lessons/m6-registry-heartbeat.json) · [源码](./src/lab/m6/registry/) |
+| M6-22 | **下游已经快被压垮了，为什么盲目重试 3 次会直接引发雪崩？** | RPC 超时重试是一把双刃剑：偶尔网络抖动时重试能救活请求；但如果下游本就过载，所有上游同时盲目同步重试 3 次，流量瞬间放大 3 倍把下游彻底打死！必须配合退避抖动、重试预算与接口幂等。 | `lab.m6.rpcretry` | [网页课件](./pages/m6-rpc-retry.html) · [JSON](./lessons/m6-rpc-retry.json) · [源码](./src/lab/m6/rpcretry/) |
+| M6-23 | **固定窗口限流明明设了 10 QPS，为什么边界一秒放过了 20 个请求？** | 限流算法不是随便计数就行：固定窗口在时间临界点会被「双倍突刺」打穿；滑动窗口精准统计最近区间却占内存；令牌桶（Guava RateLimiter）既能恒定速率放行又允许可控突发。 | `lab.m6.ratelimit` | [网页课件](./pages/m6-rate-limiter.html) · [JSON](./lessons/m6-rate-limiter.json) · [源码](./src/lab/m6/ratelimit/) |
+| M6-24 | **服务 A 慢查询卡死，为什么健康的服务 B 跟着全线崩溃？** | 微服务最怕「级联雪崩」：所有接口共用同一个 Tomcat 线程池时，慢服务 A 会把线程全占光，导致健康的服务 B 也拿不到线程！必须靠舱壁隔离（Bulkhead）、超时快速失败与熔断器状态机守住防线。 | `lab.m6.breaker` | [网页课件](./pages/m6-circuit-breaker.html) · [JSON](./lessons/m6-circuit-breaker.json) · [源码](./src/lab/m6/breaker/) |
 
 ## 本地动手运行实验代码
 
