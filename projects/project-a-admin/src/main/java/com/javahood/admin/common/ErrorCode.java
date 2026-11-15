@@ -9,6 +9,7 @@ public enum ErrorCode {
     FORBIDDEN(40301, HttpStatus.FORBIDDEN, "Forbidden"),
     NOT_FOUND(40401, HttpStatus.NOT_FOUND, "Resource not found"),
     CONFLICT(40901, HttpStatus.CONFLICT, "Resource conflict"),
+    TOO_MANY_REQUESTS(42901, HttpStatus.TOO_MANY_REQUESTS, "Too many failed login attempts"),
     INTERNAL_ERROR(50000, HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
 
     private final int code;
