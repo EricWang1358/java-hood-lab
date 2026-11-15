@@ -1,0 +1,157 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "io-nio-buffer",
+  "course": "Java 工程语法与集合",
+  "title": "NIO ByteBuffer 三指针与堆外内存：flip、compact 与半包丢失事故",
+  "lead": "往 ByteBuffer 写了数据直接 getInt() 居然读出 0；处理 TCP 半包时图省事调了 clear()，未读完的后半截数据当场蒸发！",
+  "minutes": 25,
+  "needs": ["知道数组有下标和容量概念", "了解 Netty/NIO 通信用 ByteBuffer 存字节"],
+  "after": [
+    "画出 ByteBuffer 的 capacity、limit、position 三个核心指针在 put、flip、get、compact 时的移动轨迹",
+    "解释忘记调用 flip() 导致读出脏数据/0 的原因",
+    "区分 clear()（清空重来）与 compact()（保留未读尾部前移）在网络粘包半包解析中的关键差异",
+    "对比堆内 HeapByteBuffer 与堆外 DirectByteBuffer（零拷贝、减少 GC 压力但分配回收昂贵）"
+  ],
+  "terms": {
+    "三指针 (pos/lim/cap)": "`capacity` 是总容量永不变；写模式下 `position` 是下一个写入位置、`limit == capacity`；调用 `flip()` 切换为读模式时，`limit = position; position = 0`。",
+    "compact()": "把 `[position, limit)` 之间还没读完的剩余字节拷贝到数组索引 `0` 处，并把 `position` 设在剩余字节末尾、`limit = capacity`，专门用于网络半包续写！",
+    "DirectByteBuffer": "通过 `allocateDirect()` 在操作系统堆外内存分配，避免一次 JVM 堆内到堆外的拷贝（适合长期复用的 IO 缓冲区），但受 `-XX:MaxDirectMemorySize` 限制，泄漏会引发堆外 OOM。"
+  },
+  "experiments": {
+    "niobuf": {
+      "runner": "java",
+      "home": "lab.niobuf",
+      "variants": [
+        { "id": "ForgetFlipReadsGarbage", "code": "ForgetFlipReadsGarbage.java", "label": "写入后忘记调 flip() 直接读", "note": "position 停在写入末尾 4，读到的全是后面未写入的 0，正确数 0。" },
+        { "id": "ClearLosesUnreadTail", "code": "ClearLosesUnreadTail.java", "label": "未读完半包误调 clear() 重写", "note": "clear() 把 position 直接归零，还没读的 222 被后续写入的 333 覆盖，丢失数 100%。" },
+        { "id": "FlipAndCompactSafe", "code": "FlipAndCompactSafe.java", "label": "flip() 读 + compact() 保留半包", "note": "compact() 把未读的 222 挪到头部再追加 333，再 flip() 全部无损读出，100% 正确。" },
+        { "id": "DirectByteBufferReuse", "code": "DirectByteBufferReuse.java", "label": "复用 DirectByteBuffer 堆外缓冲区", "note": "一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。" }
+      ],
+      "knob": { "label": "读写轮次 N", "values": ["50000", "200000", "500000", "1000000"], "default": "500000" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "完整无损轮次" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "NIO ByteBuffer 状态机与半包陷阱",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "Java NIO 的 `ByteBuffer` 是**读写共用同一套指针**的状态机（Netty 后来受不了它才拆成了 `readerIndex` 和 `writerIndex` 双指针的 `ByteBuf`）。只要漏了一句 `flip()` 或把 `compact()` 写成 `clear()`，数据立刻读错或半包蒸发。",
+          "say": "记住 position、limit、capacity 这三个指针的移动规律，ByteBuffer 就彻底透明了。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：flip() 与 clear() 指针变化",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先口算一下两个最常考的指针状态。",
+          "items": [
+            {
+              "have": "flip() 的本质",
+              "q": "容量 16 的 ByteBuffer 写入 8 字节后（`position=8, limit=16`），调用 `flip()` 后指针变成什么？",
+              "options": ["position=0, limit=8（把刚写的 8 字节框成可读区间）", "position=8, limit=16", "position=0, limit=16"],
+              "answer": 0,
+              "why": "`flip()` 两步动作：`limit = position; position = 0;` 写切读必备。"
+            },
+            {
+              "have": "堆外内存",
+              "q": "为什么网络框架偏好复用 `DirectByteBuffer` 而不是每次现创建？",
+              "options": ["IO 少一次堆内到堆外的内存拷贝，且长期复用不给堆内 GC 添乱，但创建销毁昂贵", "堆外内存永远不会 OOM", "堆外内存比堆内算得更快"],
+              "answer": 0,
+              "why": "`allocateDirect` 需要系统调用且受 `MaxDirectMemorySize` 限制，必须池化复用。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：ForgetFlipReadsGarbage vs ClearLosesUnreadTail",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "niobuf",
+          "variants": ["ForgetFlipReadsGarbage", "ClearLosesUnreadTail"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：忘记 flip() 或误用 clear()，能正确读出数据的次数是？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "niobuf",
+          "question": "`ForgetFlipReadsGarbage` 和 `ClearLosesUnreadTail` 跑 500,000 轮，完整无损轮次分别是多少？",
+          "options": ["两者都是 0（分别读到未写入的 0 和被覆盖的 333）", "500000 和 0", "0 和 500000"],
+          "answer": 0,
+          "why": "没 `flip()` 时 `position` 停在写入末尾；误调 `clear()` 时未读完的 `222` 指针被归零覆盖。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种 ByteBuffer 用法正确性与耗时实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "niobuf",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：compact() 如何保住半包",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "niobuf",
+          "variant": "FlipAndCompactSafe",
+          "explain": "先 `flip()` 读走 `111`，此时缓冲区还剩未读的 `222`；调用 `compact()` 会把 `222` 搬到下标 0 并把 `position` 置为 4，随后 `putInt(333)` 紧接其后写入，再 `flip()` 即可按顺序读出 `222` 和 `333`。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对比正确写法：FlipAndCompactSafe vs DirectByteBufferReuse",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "niobuf",
+          "variants": ["FlipAndCompactSafe", "DirectByteBufferReuse"]
+        },
+        {
+          "t": "text",
+          "md": "- **写切读**：必调 `flip()`。\n- **半包继续收**：有未读数据时必调 `compact()` 而不是 `clear()`。\n- **Netty 为什么发明 ByteBuf**：把单指针拆成 `readerIndex` 和 `writerIndex`，读写不用频繁 `flip()`，还自带引用计数与内存池！",
+          "say": "理解了 ByteBuffer 的痛点，后面学 Netty ByteBuf 就会觉得特别顺滑。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲清 ByteBuffer 与堆外内存",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "用 6 句话讲清：1）capacity/limit/position 三指针含义；2）flip 与 compact 各自解决什么问题；3）HeapByteBuffer 与 DirectByteBuffer 优缺点；4）Netty ByteBuf 的改进。",
+          "points": [
+            "ByteBuffer 靠 capacity、limit、position 三个指针区分读写边界",
+            "写完切读调 flip()（limit=position, position=0）；处理半包保留未读字节调 compact()，全读完重置调 clear()",
+            "DirectByteBuffer 分配在堆外，减少一次堆内到堆外的拷贝且不占堆 GC，但分配慢需池化复用",
+            "Netty ByteBuf 用读写双指针替代单指针，无需频繁 flip()"
+          ],
+          "seconds": 120
+        }
+      ]
+    }
+  ]
+}

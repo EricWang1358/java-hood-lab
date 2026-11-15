@@ -1,0 +1,156 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "io-charset-garble",
+  "course": "Java 工程语法与集合",
+  "title": "字符编码与乱码救火：UTF-8、GBK 与不可逆损坏边界",
+  "lead": "接口中文变成「璁㈠崟」、日志里全是「???」：同样是编码搞错了，为什么有些乱码还能救回来，有些却神仙难救？",
+  "minutes": 25,
+  "needs": ["知道字符串在计算机底层以字节数组存储", "见过 UTF-8 和 GBK 编码名称"],
+  "after": [
+    "区分编码（getBytes）与解码（new String）两个方向，解释为什么必须显式指定 StandardCharsets.UTF_8",
+    "理解 UTF-8 中文占 3 字节、GBK 占 2 字节导致的「奇数字节错位」与替换字符 U+FFFD 不可逆丢失",
+    "分清 ISO-8859-1 单字节无损透传可逆 vs 二次 UTF-8 重编码永久损坏的边界"
+  ],
+  "terms": {
+    "字符集与编码": "UTF-8 是变长编码（ASCII 1 字节，常见汉字 3 字节）；GBK 常见汉字占 2 字节；ISO-8859-1 是单字节编码（0x00~0xFF 一一映射）。",
+    "U+FFFD 替换符": "解码器遇到非法字节序列时，会丢弃原字节并写入统一的替换字符 （U+FFFD），原始字节信息自此永久丢失！",
+    "无损单字节透传": "ISO-8859-1 对 0~255 每个字节都有独立码点，所以 `new String(utf8, ISO_8859_1)` 虽显示乱码但字节没丢；一旦再被错误地 `.getBytes(UTF_8)` 扩写，就再也回不去了。"
+  },
+  "experiments": {
+    "charset": {
+      "runner": "java",
+      "home": "lab.charset",
+      "variants": [
+        { "id": "MismatchGbkDecode", "code": "MismatchGbkDecode.java", "label": "UTF-8 字节误用 GBK 解码", "note": "3 字节汉字按 2 字节切分，产生经典「璁㈠崟」乱码，原样匹配数 0。" },
+        { "id": "ReplacementCharIrreversible", "code": "ReplacementCharIrreversible.java", "label": "误解后再按 UTF-8 二次重编码", "note": "ISO 乱码字符被重新编码成多字节 UTF-8，原始字节结构彻底破坏，救回数 0。" },
+        { "id": "ExplicitUtf8Consistent", "code": "ExplicitUtf8Consistent.java", "label": "显式统一 StandardCharsets.UTF_8", "note": "编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。" },
+        { "id": "IsoRoundTripRecoverable", "code": "IsoRoundTripRecoverable.java", "label": "ISO-8859-1 单字节透传后逆向救回", "note": "仅当中间层按 ISO-8859-1 原样透传时，按原编码取回字节再用 UTF-8 解码可 100% 救回。" }
+      ],
+      "knob": { "label": "编解码次数 N", "values": ["5000", "10000", "20000", "50000"], "default": "20000" },
+      "repeat": 20,
+      "metric": { "key": "intact", "expectKey": "expected", "label": "完整还原次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "字符编码与乱码救火边界",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "生产排查中最常见的文字事故：**「璁㈠崟鏀粯」**（UTF-8 当成 GBK 读）、**「????」**（缺少字符集映射）。记住一条铁律：**永远不要依赖无参 `getBytes()` 和 `new String(bytes)`**——因为 JDK 18 之前它们会偷偷读取操作系统默认编码（Windows 中文环境是 GBK，Linux 容器是 UTF-8），本地好好的，上线必乱码！",
+          "say": "乱码的本质永远只有一句话：编码用的字典和解码用的字典不是同一本。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：编码与字节长度",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先回忆一下常见编码的字节规则。",
+          "items": [
+            {
+              "have": "默认编码隐患",
+              "q": "在 JDK 11 下调用 `\"中文\".getBytes()` 不传参数，结果长度一定一样吗？",
+              "options": ["不一定！依赖 file.encoding（Windows GBK 4 字节，Linux UTF-8 6 字节）", "一定都是 6 字节", "一定都是 4 字节"],
+              "answer": 0,
+              "why": "JDK 18 起才把默认字符集统一为 UTF-8（JEP 400）；工程里永远显式传 `StandardCharsets.UTF_8`。"
+            },
+            {
+              "have": "乱码可逆性",
+              "q": "如果字节流已经因为解码失败变成了替换字符 ``（U+FFFD），还能通过再次转码救回原中文吗？",
+              "options": ["不能，原始字节信息已被 U+FFFD 覆盖丢失", "可以，再转一次 GBK 就好", "可以，用 Base64 解开"],
+              "answer": 0,
+              "why": "多对一映射丢失了原始字节，不可逆。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：MismatchGbkDecode vs ReplacementCharIrreversible",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "charset",
+          "variants": ["MismatchGbkDecode", "ReplacementCharIrreversible"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：ISO 乱码被再按 UTF-8 编码一次，还能救回吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "charset",
+          "question": "`ReplacementCharIrreversible` 把 UTF-8 字节用 ISO-8859-1 解成 String 后，又调 `iso.getBytes(UTF_8)`，最终完整还原次数是？",
+          "options": ["0 次（二次 UTF-8 重编码破坏了原字节序列）", "20000 次", "10000 次"],
+          "answer": 0,
+          "why": "高于 0x7F 的单字节在 ISO-8859-1 里是独立字符，再次 `getBytes(UTF_8)` 会被扩写成 2 字节 UTF-8，直接和原字节彻底脱节。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种编解码路径还原率实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "charset",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：显式传入 StandardCharsets.UTF_8",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "charset",
+          "variant": "ExplicitUtf8Consistent",
+          "explain": "字节码里调用的是 `String.getBytes(Charset)` 与 `new String(byte[], Charset)` 重载，直接传入 `StandardCharsets.UTF_8` 静态常量，彻底绕过 `Charset.defaultCharset()` 的环境漂移。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对比安全写法：ExplicitUtf8Consistent vs IsoRoundTripRecoverable",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "charset",
+          "variants": ["ExplicitUtf8Consistent", "IsoRoundTripRecoverable"]
+        },
+        {
+          "t": "text",
+          "md": "- **预防第一**：HTTP 请求体、文件流 `InputStreamReader`、`String.getBytes()` 全部显式锁定 `StandardCharsets.UTF_8`。\n- **线上救火**：只有当旧网关把 UTF-8 按 `ISO-8859-1` 无损读成字符串且**尚未二次重编码**时，才能用 `new String(s.getBytes(ISO_8859_1), UTF_8)` 救回。",
+          "say": "乱码排查先抓十六进制原始字节，看一眼字节长度就能秒判是 UTF-8 还是 GBK。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲清字符编码与乱码",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "用 6 句话讲清：1）无参 getBytes 的跨环境隐患；2）为什么 UTF-8 当 GBK 读会乱码；3）什么情况下乱码不可逆；4）工程统一规范。",
+          "points": [
+            "无参 getBytes/new String 依赖操作系统默认编码（Windows GBK vs Linux UTF-8），工程必须显式传 StandardCharsets.UTF_8",
+            "UTF-8 中文 3 字节、GBK 2 字节，错位切分就会出现「璁㈠崟」类乱码",
+            "一旦产生 U+FFFD 替换符或被二次错误重编码，原始字节丢失就不可逆",
+            "仅当中间层用单字节 ISO-8859-1 无损透传时，才能按原编码取回字节再解码救回"
+          ],
+          "seconds": 120
+        }
+      ]
+    }
+  ]
+}
