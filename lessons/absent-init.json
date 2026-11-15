@@ -2,18 +2,18 @@
   "format": "studyhub-lesson/1",
   "template": "experiment",
   "id": "absent-init",
-  "course": "Java 并发从零",
-  "title": "换成 putIfAbsent，连接还会多建吗？",
-  "lead": "懒加载缓存时换成 ConcurrentHashMap 的 putIfAbsent，为什么连接照样被新建了好几遍？",
-  "minutes": 45,
+  "course": "Java 并发",
+  "title": "几个线程同时读冷缓存，连接会建几次？",
+  "lead": "表里还没有连接时才现建一个放进去。几个线程同时遇到空缓存，一共会新建多少次连接？",
+  "minutes": 42,
   "needs": [
-    "先查再改为什么有缝（第二节）",
-    "安全容器单步不护复合操作（第三节）",
+    "先查再改为什么有缝（第 2 节）",
+    "安全容器单步不护复合操作（第 3 节）",
     "知道 HashMap 能按键存对象"
   ],
   "after": [
-    "说清 putIfAbsent 为何挡不住对象被重复新建",
-    "用字节码证明实参在进方法前就已提前算好",
+    "区分 putIfAbsent 与 computeIfAbsent 的执行时机",
+    "会看字节码里实参求值与方法调用的先后顺序",
     "会用 computeIfAbsent 或加锁写对懒加载缓存",
     "分清传现成值与传延迟配方的使用边界"
   ],
@@ -33,7 +33,7 @@
     "javap": "JDK 自带反编译工具，能把编译好的 class 字节码指令印出来给人看。",
     "invokeinterface": "JVM 字节码指令，通过 Map 接口去调用 containsKey 或 put 方法。",
     "invokevirtual": "JVM 字节码指令，直接调用 ConcurrentHashMap 类自己的方法。",
-    "invokestatic": "JVM 字节码指令，调用静态方法；它会先执行完实参里的 createConn。",
+    "invokestatic": "JVM 字节码指令，用于调用类的静态方法（本节里对应调用 createConn）。",
     "ifne": "JVM 条件跳转指令：如果前面查到键已存在，就直接跳过后面的新建分支。"
   },
   "experiments": {
@@ -43,7 +43,12 @@
       "knob": {
         "name": "threads",
         "label": "几个线程同时建",
-        "values": ["1", "2", "4", "8"],
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
         "default": "4"
       },
       "metric": {
@@ -59,29 +64,45 @@
       },
       "repeat": 20,
       "variants": [
-        { "id": "Plain", "label": "普通 Map", "note": "基准写法：HashMap 预先留够容量，先 containsKey 再 put。" },
-        { "id": "PutIfAbsent", "label": "安全 putIf", "note": "换成 ConcurrentHashMap，把 put 改成 putIfAbsent。" },
-        { "id": "Sync", "label": "加锁整段", "note": "还是普通 HashMap，只在 getConn 方法前面加上 synchronized。" },
-        { "id": "Compute", "label": "compute 一步", "note": "换成 computeIfAbsent，把新建连接的动作写成 Lambda 配方。" }
+        {
+          "id": "Plain",
+          "label": "普通 Map",
+          "note": "基准写法：HashMap 预先留够容量，先 containsKey 再 put。"
+        },
+        {
+          "id": "PutIfAbsent",
+          "label": "安全 putIf",
+          "note": "换成 ConcurrentHashMap，把 put 改成 putIfAbsent。"
+        },
+        {
+          "id": "Sync",
+          "label": "加锁整段",
+          "note": "还是普通 HashMap，只在 getConn 方法前面加上 synchronized。"
+        },
+        {
+          "id": "Compute",
+          "label": "compute 一步",
+          "note": "换成 computeIfAbsent，把新建连接的动作写成 Lambda 配方。"
+        }
       ]
     }
   },
   "slides": [
     {
       "beat": "open",
-      "title": "换成 putIfAbsent，连接还会多建吗？",
+      "title": "今天讲什么：几个人同时遇到空缓存，会怎样？",
       "blocks": [
         {
           "t": "text",
-          "md": "上一节用 `merge` 摆平了分组计数。今天来看另一种高频场景：**缓存里没有时，才新建一次放进去。**",
-          "say": "上一节我们解决了「按商品名加一」的账本问题。今天问题稍微换个样子：很多系统要做懒加载缓存，没有连接时才现建一个放进表里。换成 ConcurrentHashMap 的 putIfAbsent 就安全了吗？"
+          "md": "上一节用 `merge` 解决了分组计数。今天来看另一种常见场景：**缓存里还没有时，才新建一次放进去。**",
+          "say": "上一节处理了按商品名累加销量的问题。今天换个场景：冷缓存里还没有连接时才现建一个放进去，几个线程同时遇到空表，一共会建多少次。"
         }
       ]
     },
     {
       "beat": "open",
       "title": "开始前，翻一翻前三节",
-      "bridge": "今天这个坑跟前两节是同一条藤上结的瓜。先花一分钟把前三节攒下的三块积木点热。",
+      "bridge": "今天这节和前三节一脉相承。先花一分钟回顾前三节的三个核心结论。",
       "blocks": [
         {
           "t": "recall",
@@ -90,21 +111,33 @@
             {
               "have": "先查再改有缝",
               "q": "为什么 `if (stock > 0) stock--;` 还是会卖出负数？",
-              "options": ["编译器把大于号算反了", "查和改两步之间能被插队", "库存数字设得太大了"],
+              "options": [
+                "编译器把大于号算反了",
+                "查和改两步之间能被插队",
+                "库存数字设得太大了"
+              ],
               "answer": 1,
               "why": "看完条件到动手改动之间有空当，别人在缝里把货拿走了，刚才的判断就过期了。"
             },
             {
               "have": "安全容器的边界",
               "q": "换成 `ConcurrentHashMap` 先 `get` 再 `put` 为何照样丢？",
-              "options": ["安全表不保护写入", "只护住单步，护不住两步中间", "线程超过四个就失效"],
+              "options": [
+                "安全表不保护写入",
+                "只护住单步，护不住两步中间",
+                "线程超过四个就失效"
+              ],
               "answer": 1,
               "why": "容器只保住每一次进门不把表弄坏，两趟调用中间隔着的走廊照样没人拦着。"
             },
             {
               "have": "合成一步的办法",
-              "q": "第 3 节靠什么把 Map 里的「查、算、写」焊成一体？",
-              "options": ["只加上 volatile", "merge 或加锁包住整段", "提前把键全部放好"],
+              "q": "第 3 节靠什么把 Map 里的「查、算、写」合成一体？",
+              "options": [
+                "只加上 volatile",
+                "merge 或加锁包住整段",
+                "提前把键全部放好"
+              ],
               "answer": 1,
               "why": "要么加锁把门外的人挡住，要么把计算规则传进容器，让它在锁住格子时自己做完。"
             }
@@ -121,8 +154,14 @@
           "t": "scene",
           "picture": {
             "kind": "share",
-            "actors": ["服务员 A", "服务员 B"],
-            "shared": { "name": "联络簿", "value": "空" }
+            "actors": [
+              "服务员 A",
+              "服务员 B"
+            ],
+            "shared": {
+              "name": "联络簿",
+              "value": "空"
+            }
           },
           "story": "餐厅门口放着一本公用**联络簿**，准备按名字记 64 家供应商的直通电话。几个服务员同时来翻 `db-0` 这一页：看到上面还是空的，就现打一条专线再抄上去，下回别人直接照着打。",
           "say": "留意和上一节的区别：这回表里一开始是空的，谁第一次用到某个键，谁才去新建一条昂贵的连接并记进表里。下面把画面里的四样对到程序里。",
@@ -162,12 +201,12 @@
     {
       "beat": "hook",
       "title": "连接真的只会新建一次吗",
-      "bridge": "一个服务员翻本子，每个键肯定只建一次连接。可几条线程同时冲进冷缓存里抢着初始化，结果会怎样？",
+      "bridge": "一个服务员翻本子，每个键只会建一次连接。可几条线程同时进入冷缓存准备初始化，结果会怎样？",
       "blocks": [
         {
           "t": "text",
           "md": "每轮要初始化 **64 个**键，一共测 **200 轮**冷启动。最后真正新建连接的次数，会正好是 **12,800** 吗？",
-          "say": "注意这次的鬼地方：就算最后表里安安静静只躺着 64 个键，背后可能已经白白新建并扔掉了一大堆连接。真实系统里数据库连接池被瞬间打爆，很多时候就栽在这。"
+          "say": "注意这次统计的指标不是最后表里剩几个键，而是整个过程一共调了多少次创建方法。先从常见的 HashMap 写法看起。"
         }
       ]
     },
@@ -182,16 +221,25 @@
           "say": "带虚线的词没见过随时点开看。这次我们用 `CyclicBarrier` 让几条线程每轮从同一起跑线出发，把冷缓存翻一遍。",
           "walk": [
             {
-              "focus": ["static Map<String, String> cache = new HashMap<>(256);", "static final AtomicInteger inits = new AtomicInteger();"],
-              "key": "预先留够 256 容量，避免半路扩容搞崩",
-              "say": "第一处是共享表和计数器：`HashMap` 提前给了 256 容量，装 64 个键永远不会半路扩容；`inits` 用 `AtomicInteger` 专门如实统计 `createConn` 被调用了多少次。"
+              "focus": [
+                "static Map<String, String> cache = new HashMap<>(256);",
+                "static final AtomicInteger inits = new AtomicInteger();"
+              ],
+              "key": "预先留够 256 容量，避免运行途中触发扩容",
+              "say": "第一处是共享表和计数器：`HashMap` 提前给了 256 容量，装 64 个键不会触发扩容；`inits` 用 `AtomicInteger` 如实统计 `createConn` 被调用的次数。"
             },
             {
-              "focus": ["if (!cache.containsKey(key)) {", "cache.put(key, createConn(key));"],
-              "say": "第二处就是今天的主角 `getConn`：先问 `!cache.containsKey(key)`，没有就调用 `createConn(key)` 新建并放回，最后 `get` 出来。"
+              "focus": [
+                "if (!cache.containsKey(key)) {",
+                "cache.put(key, createConn(key));"
+              ],
+              "say": "第二处就是主角 `getConn`：先用 `containsKey(key)` 检查键在不在，没有就调用 `createConn(key)` 新建并放回，最后 `get` 出来。"
             },
             {
-              "focus": ["CyclicBarrier barrier = new CyclicBarrier(threads, () -> cache = new HashMap<>(256));", "System.out.println(\"inits=\" + inits.get());"],
+              "focus": [
+                "CyclicBarrier barrier = new CyclicBarrier(threads, () -> cache = new HashMap<>(256));",
+                "System.out.println(\"inits=\" + inits.get());"
+              ],
               "say": "第三处是 200 轮起跑线：每轮开始前栅栏把 `cache` 换回一张空表，几个线程齐刷刷扫完 64 个键，最后把实际新建次数 `inits` 跟该建的 `expected` 对账。"
             }
           ]
@@ -201,7 +249,7 @@
     {
       "beat": "predict",
       "title": "先猜：普通 HashMap 会多建吗",
-      "bridge": "容量已经留够了，代码里也老老实实先判了 `!containsKey` 才去新建。先押一注，几个线程一起跑会怎样？",
+      "bridge": "容量已经留够了，代码里也先调过 `containsKey` 才去新建。先按直觉选一个，几个线程一起跑会怎样？",
       "blocks": [
         {
           "t": "predict",
@@ -211,65 +259,74 @@
             "正好 12,800，因为每次都先查了键",
             "明显超过 12,800，同一连接被重复新建",
             "少于 12,800，因为有键被漏建了",
-            "肯定直接抛出并发异常停住"
+            "直接抛出并发异常，程序中途停住"
           ],
           "answer": 1,
-          "say": "回想第 2 节的「先检查再操作」和第 3 节的账本，凭直觉先押一个。押对押错都不要紧，后面马上去看实测数据。"
+          "say": "先凭直觉选一个结果。选好以后，我们马上到下一页看这台电脑上跑出来的真实数据。"
         }
       ]
     },
     {
       "beat": "run",
       "title": "一次一次看真实的新建次数",
-      "bridge": "猜完不废话，直接看这台电脑上真实跑出来的运行记录。点下面的按钮，一次一次把次数放出来。",
+      "bridge": "选好了，我们来看这台电脑上真实跑出来的运行记录。点下面的按钮，一次一次把次数放出来。",
       "blocks": [
         {
           "t": "experiment",
           "lab": "absent",
-          "show": ["Plain"],
+          "show": [
+            "Plain"
+          ],
           "knob": false,
           "hand": true,
-          "focus": ["cache.put(key, createConn(key));"],
-          "say": "点「看第 1 次运行」，瞅瞅实际新建连接数比该建的 12,800 多出了多少；再点一次看看每次数字是不是还飘着不一样，看够了就把剩下的全放出来。"
+          "focus": [
+            "cache.put(key, createConn(key));"
+          ],
+          "say": "点「看第 1 次运行」，看看实际新建连接数比应建的 12,800 多多少；再多点几次观察每次数字是否波动，看够了就把剩下的全放出来。"
         },
         {
           "t": "reveal",
           "of": "plain",
-          "key": "表里键数看着没多，连接早已在暗中多建一倍多",
-          "say": "没有抛错，表里照样只有 64 个键，可每一轮的新建次数都远远高过 12,800！多出来的那些连接刚花完力气建好，转身就被盖掉扔进了垃圾堆。"
+          "key": "表里键数还是 64 个，但实际新建连接已明显超过应建数",
+          "say": "没有抛错，表里最终也只有 64 个键，可每一轮的新建次数都明显高过 12,800。多建出来的那些连接刚创建完，很快就被后续写入覆盖丢弃了。"
         }
       ]
     },
     {
       "beat": "run",
       "title": "只开一个线程，还会多建吗",
-      "bridge": "4 个线程时每次都建超。老规矩，把线程数拨到 1 当对照组验一下，确认不是循环或统计数写错了。",
+      "bridge": "4 个线程时每次都建超。按习惯把线程数拨到 1 当对照组验一下，确认不是循环或计数逻辑写错了。",
       "blocks": [
         {
           "t": "experiment",
           "lab": "absent",
-          "show": ["Plain"],
+          "show": [
+            "Plain"
+          ],
           "say": "还是 `Plain` 这份程序，上面多了线程数拨盘。1、2、4、8 四个档位都真跑了记录。"
         },
         {
           "t": "try",
           "key": "一个线程一次不多；2 个以上就回回建超",
-          "say": "动手拨滑块：调到 1 时所有点全落在虚线上，一次不多建；拨回 2、4、8，多建出来的比例一路往上飙，说明病根只在多个线程同时动手。"
+          "say": "动手拨滑块：调到 1 时所有点全落在虚线上，一次不多建；拨到 2、4、8，多建出来的比例随着线程数增加一路往上升，说明问题只在多线程并发。"
         }
       ]
     },
     {
       "beat": "run",
       "title": "多建是从哪两行冒出来的",
-      "bridge": "一个线程稳稳正好，多个线程就次次建超。回到源码里，把把「查」和「建后放入」拆成两半的那两行点出来。",
+      "bridge": "一个线程每次都刚好对，多个线程就次次建超。回到源码里，把「查」和「建后放入」拆成两半的那两行点出来。",
       "blocks": [
         {
           "t": "spot",
           "of": "absent.Plain",
           "q": "在 `getConn` 里，哪两行把「检查键在不在」和「新建并放入」拆成了两趟？",
-          "answer": ["if (!cache.containsKey(key)) {", "cache.put(key, createConn(key));"],
+          "answer": [
+            "if (!cache.containsKey(key)) {",
+            "cache.put(key, createConn(key));"
+          ],
           "hint": "提示：找 `getConn` 方法大括号里面先判断键存不存在、再放新连接的那两行。",
-          "found": "抓准了！第 1 行先查键在不在，第 2 行才现建连接并写入表里，两步之间没人拦着。",
+          "found": "找对了。第 1 行先查键在不在，第 2 行再现建连接并写入表里，两步之间没人拦着。",
           "say": "直接在左边的源码上点你怀疑的两行，点错了会给你方向提示。"
         }
       ]
@@ -285,20 +342,27 @@
           "within": "getConn",
           "from": "getstatic",
           "to": "areturn",
-          "say": "这是从 `Plain.class` 里真实反编译出来的 `getConn` 指令。留意我们写了 `` `invokeinterface` ``、`ifne` 和 `` `invokestatic` `` 的位置，一步步往下走。",
+          "say": "这是从 `Plain.class` 里真实反编译出来的 `getConn` 指令。留意 `invokeinterface`、`ifne` 和 `invokestatic` 的位置，一步步往下走。",
           "walk": [
             {
-              "focus": ["Map.containsKey", "ifne"],
+              "focus": [
+                "Map.containsKey",
+                "ifne"
+              ],
               "label": "第 1 步：查键在不在",
               "say": "先用 `invokeinterface` 调 `Map.containsKey` 查一遍，再用 `ifne` 决定要不要跳过。到这一步，表里门已经撒手不管了。"
             },
             {
-              "focus": ["createConn"],
+              "focus": [
+                "createConn"
+              ],
               "label": "第 2 步：先建好连接",
-              "say": "接着直接跑 `invokestatic` 去执行 `createConn`！注意此时新连接还在半空建着，表里那个格子依然空着。"
+              "say": "接着直接跑 `invokestatic` 去执行 `createConn`。注意此时新连接还在建着，表里那个格子依然空着。"
             },
             {
-              "focus": ["Map.put"],
+              "focus": [
+                "Map.put"
+              ],
               "label": "第 3 步：再放回表里",
               "key": "查、建、放三步在字节码里清清楚楚分成三段",
               "say": "等连接完全建好回来，才第二次用 `invokeinterface` 调 `Map.put` 放进去。从查完到放回这段时间，谁都能一头撞进来再建一遍。"
@@ -314,36 +378,67 @@
       "blocks": [
         {
           "t": "lanes",
-          "expr": "if (!has(k)) put(k, createConn(k))",
-          "parts": { "read": "查键在不在", "calc": "现建好连接", "write": "放进 cache" },
-          "lanes": ["服务员 A", "服务员 B"],
-          "shared": { "name": "db-0 格", "start": "空" },
+          "expr": "若无 k 则 put(k, createConn(k))",
+          "parts": {
+            "read": "查键在不在",
+            "calc": "现建好连接",
+            "write": "放进 cache"
+          },
+          "lanes": [
+            "服务员 A",
+            "服务员 B"
+          ],
+          "shared": {
+            "name": "db-0 格",
+            "start": "空"
+          },
           "say": "公用联络簿里 `db-0` 这一格现在是空的，A 和 B 同时都要连它。点「走一步」，中间我会停下来先问你一步。",
           "steps": [
             {
-              "lane": 0, "op": "read", "text": "查得：空",
+              "lane": 0,
+              "op": "read",
+              "text": "查得：空",
               "say": "服务员 A 先翻开联络簿，看见 `db-0` 写着空。它刚决定去拉专线，本子上一个字都还没写。",
-              "ask": { "q": "这时服务员 B 也翻开本子查 `db-0`，它会看到什么？", "options": ["还是空", "已经有连接了"], "answer": 0 }
+              "ask": {
+                "q": "这时服务员 B 也翻开本子查 `db-0`，它会看到什么？",
+                "options": [
+                  "还是空",
+                  "已经有连接了"
+                ],
+                "answer": 0
+              }
             },
             {
-              "lane": 1, "op": "read", "text": "也查得：空",
+              "lane": 1,
+              "op": "read",
+              "text": "也查得：空",
               "say": "本子还空着，所以 B 一样看见空。两个服务员都拿到了「没人建过」的过期信号。"
             },
             {
-              "lane": 0, "op": "calc", "text": "建好 = 连接A",
+              "lane": 0,
+              "op": "calc",
+              "text": "建好 = 连接A",
               "say": "A 在自己那边打电话花时间建好了「连接 A」，准备往本子上抄。"
             },
             {
-              "lane": 1, "op": "calc", "text": "建好 = 连接B",
+              "lane": 1,
+              "op": "calc",
+              "text": "建好 = 连接B",
               "say": "B 同时也在自己那边忙活，同样花了一份力气建出了「连接 B」。"
             },
             {
-              "lane": 0, "op": "write", "value": "连接A", "text": "放入 连接A",
+              "lane": 0,
+              "op": "write",
+              "value": "连接A",
+              "text": "放入 连接A",
               "say": "A 先抄完，把连接 A 记进 `db-0` 格子里。"
             },
             {
-              "lane": 1, "op": "write", "value": "连接B", "text": "盖成 连接B",
-              "say": "B 跟着调普通 `put`，把连接 B 直接盖上去！不仅建了两次，刚才 A 拿去用的连接 A 和表里留下的连接 B 还不是同一个对象。"
+              "lane": 1,
+              "op": "write",
+              "value": "连接B",
+              "text": "盖成 连接B",
+              "say": "B 跟着调普通 `put`，把连接 B 覆盖上去。不仅建了两次，A 拿走用的连接 A 和表里最终留下的连接 B 还不是同一个对象。"
             }
           ],
           "verdict": "只需要一条连接，却==建了两遍==还把先放的盖掉了。",
@@ -354,8 +449,8 @@
     },
     {
       "beat": "fix",
-      "title": "常见误改：换成安全表和 putIfAbsent",
-      "bridge": "不少人一查资料，发现 `ConcurrentHashMap` 自带一个听起来专门治这病的方法叫 `putIfAbsent`（缺时才放），于是顺手就把容器和这个方法一起换上。",
+      "title": "常见改法：换成安全表和 putIfAbsent",
+      "bridge": "不少人看到 `ConcurrentHashMap` 自带一个叫 `putIfAbsent` 的方法，便顺手把容器和写入方法一起换成它。",
       "blocks": [
         {
           "t": "predict",
@@ -363,43 +458,46 @@
           "q": "换成 `ConcurrentHashMap` 加 `putIfAbsent`，结果会怎样？",
           "options": [
             "正好 12,800，因为 putIfAbsent 原子",
-            "照样多建很多遍，因为实参会先算完",
+            "依然明显超过 12,800，重复创建没有停",
             "少于 12,800，有些键被跳过去了",
             "程序直接抛出并发异常停住"
           ],
           "answer": 1,
-          "say": "这回代码确实只换了安全表和 `putIfAbsent`。别被方法名「缺时才放」骗了，想想 Java 调方法时括号里的参数什么时候算出结果，先押一注。"
+          "say": "这回代码只换了安全表和 `putIfAbsent`。先不要翻后面的解析，按你的理解选出最可能出现的结果。"
         }
       ]
     },
     {
       "beat": "fix",
-      "title": "实测打脸：putIfAbsent 照样建超",
-      "bridge": "押完注，直接把 `PutIfAbsent` 放进同一批实验里，和普通 Map 并排跑给它看。",
+      "title": "实测结果：putIfAbsent 依然建超",
+      "bridge": "选好之后，把 `PutIfAbsent` 放进同一批实验里，和普通 Map 并排运行对比。",
       "blocks": [
         {
           "t": "experiment",
           "lab": "absent",
-          "show": ["Plain", "PutIfAbsent"],
+          "show": [
+            "Plain",
+            "PutIfAbsent"
+          ],
           "select": "PutIfAbsent",
           "say": "点开左边高亮那两行：表换成了 `ConcurrentHashMap`，`put` 改成了 `putIfAbsent`。盯紧右侧那些点是不是真乖乖飞回虚线上了。"
         },
         {
           "t": "reveal",
           "of": "putif",
-          "key": "putIfAbsent 保住了不覆盖，却拦不住连接白建",
-          "say": "又是一场空欢喜！实测结果一样回回严重超过 12,800，和普通 Map 几乎多出同样一大截！安全方法虽然保证表里只留下先到的那个对象、不会互相覆盖，可白建连接的次数一点没少。"
+          "key": "putIfAbsent 保住了不覆盖，却拦不住连接重复新建",
+          "say": "实测结果依然每轮都明显超过 12,800，多建的数量和普通 Map 很接近。安全方法虽然保证表里只留下先到的那个对象、不会互相覆盖，可重复建连接的次数并没有少。"
         },
         {
           "t": "try",
-          "say": "拨动线程数试试：1 线程时稳稳全对；一旦拨到 2、4、8，每一次的新建次数照样飙高。它比普通 Map 唯一的进步，只是后到的连接被默默扔掉、没盖掉表里先到的那份。"
+          "say": "拨动线程数试试：1 线程时每次全对；拨到 2、4、8 后，新建次数依然明显高于 12,800。它比普通 Map 唯一的改善，只是后到的连接被丢弃、没盖掉先到的那份。"
         }
       ]
     },
     {
       "beat": "fix",
       "title": "字节码揭秘：putIfAbsent 为什么还多建",
-      "bridge": "方法名都叫「没有才放」了，凭什么还把 `createConn` 跑了好几遍？老规矩，看 `PutIfAbsent.class` 编出来的指令。",
+      "bridge": "方法名既然叫缺时才放，为什么还把 `createConn` 跑了这么多遍？按惯例看 `PutIfAbsent.class` 编出来的指令。",
       "blocks": [
         {
           "t": "inside",
@@ -410,20 +508,27 @@
           "say": "盯紧中间两条指令顺序：`invokestatic` 在前，`invokevirtual` 在后。就是这个前后顺序，把真相捅穿了。",
           "walk": [
             {
-              "focus": ["ConcurrentHashMap.containsKey", "ifne"],
+              "focus": [
+                "ConcurrentHashMap.containsKey",
+                "ifne"
+              ],
               "label": "安全查键在不在",
               "say": "先是一次 `invokevirtual` 调安全的 `containsKey`，加 `ifne` 判断。两线程一起冲进来时，照样会同时看见键不在，于是双双放行往下走。"
             },
             {
-              "focus": ["invokestatic"],
+              "focus": [
+                "invokestatic"
+              ],
               "label": "进门前先建连接",
               "key": "实参 createConn 在进方法前就已执行",
-              "say": "关键在这行 `invokestatic`！Java 调任何方法之前，必须先把括号里的实参算成确定对象，所以 `createConn(key)` 在真正跨进 `putIfAbsent` 大门前就已经跑完了！"
+              "say": "关键在这行 `invokestatic`。Java 调用任何方法之前，必须先把括号里的实参算成确定对象，所以 `createConn(key)` 在进入 `putIfAbsent` 之前就已经跑完了。"
             },
             {
-              "focus": ["ConcurrentHashMap.putIfAbsent"],
+              "focus": [
+                "ConcurrentHashMap.putIfAbsent"
+              ],
               "label": "进门后才知已有",
-              "say": "最后 `invokevirtual` 走进 `putIfAbsent` 时表里早就存着别人的对象，手里刚造出的连接只能当场作废。就算删掉外层 `if` 直接调，连热命中都会白建。"
+              "say": "最后 `invokevirtual` 走进 `putIfAbsent` 时表里往往已有先到的对象，刚造出的连接只能被丢弃。哪怕删掉外层判断直接调用，已存在键命中时也会白建一次。"
             }
           ]
         }
@@ -432,12 +537,17 @@
     {
       "beat": "fix",
       "title": "两种只建一次的写法：加锁 vs 配方",
-      "bridge": "光靠传「算好后的对象」挡不住门前白算，要怎么改才能真只建一次？今天给你两条真能过的路：整段加锁，或者传一段延迟执行的配方给 `computeIfAbsent`。",
+      "bridge": "光靠传「算好后的对象」挡不住方法调用前的求值，要真只建一次，这节看两种写法：整段加锁，或者传延迟执行的配方给 `computeIfAbsent`。",
       "blocks": [
         {
           "t": "experiment",
           "lab": "absent",
-          "show": ["Plain", "PutIfAbsent", "Sync", "Compute"],
+          "show": [
+            "Plain",
+            "PutIfAbsent",
+            "Sync",
+            "Compute"
+          ],
           "select": "Compute",
           "say": "四个写法全摆上台了。点到「compute 一步」，整个 `if` 全删掉，只留一句 `cache.computeIfAbsent(key, k -> createConn(k))`；点到「加锁整段」，只是在方法前添了 `synchronized`。"
         },
@@ -463,17 +573,17 @@
             },
             {
               "focus": "PutIfAbsent",
-              "say": "「安全 putIf」同样在 2、4、8 线程全是空心点，4 和 8 线程爬到了最上头——白造了一大堆废对象，还付出了最高的时间代价。"
+              "say": "「安全 putIf」同样在 2、4、8 线程全是空心点，4 和 8 线程排在最上头——重复建了大量无用对象，耗时也排到最高。"
             },
             {
               "focus": "Sync",
               "key": "热键高度重合时，整段加锁耗时也贴底",
-              "say": "「加锁整段」四个档位全是实心点！因为在每轮齐扫这批键时，前一个线程建完放好后，后来的线程几乎瞬间命中返回，4 和 8 线程时它走在了最底下。"
+              "say": "「加锁整段」四个档位全是实心点。因为每轮齐扫这批键时，前一个线程建完放好后，后续线程很快就能命中返回，4 和 8 线程时它走在了最底下。"
             },
             {
               "focus": "Compute",
-              "key": "全对且耗时明显低于两种白建对象的写法",
-              "say": "「compute 一步」同样全档位实心点，整条线贴着加锁线一起走低，在 4 和 8 线程明显压过两个出错版本。单键懒加载既不用自己写锁，又稳又划算。"
+              "key": "全对，4 和 8 线程耗时低于两种重复建连接的写法",
+              "say": "「compute 一步」同样全档位实心点，整条线和加锁版本贴得很近，在 4 和 8 线程明显低于两个出错版本。单键懒加载不用自己写锁，就能一次建准。"
             }
           ]
         }
@@ -487,23 +597,81 @@
         {
           "t": "lanes",
           "expr": "synchronized getConn(key)",
-          "parts": { "read": "查键在不在", "calc": "现建好连接", "write": "放进 cache" },
-          "lanes": ["服务员 A", "服务员 B"],
-          "shared": { "name": "db-0 格", "start": "空" },
+          "parts": {
+            "read": "查键在不在",
+            "calc": "现建好连接",
+            "write": "放进 cache"
+          },
+          "lanes": [
+            "服务员 A",
+            "服务员 B"
+          ],
+          "shared": {
+            "name": "db-0 格",
+            "start": "空"
+          },
           "say": "还是普通 `HashMap`，只在 `getConn` 门口挂上一把总锁。注意看 B 必须等到什么时候才被允许翻本子。",
           "steps": [
-            { "lane": 0, "op": "note", "tone": "ok", "text": "A 拿到锁", "say": "A 先跨进门拿到锁，整本联络簿归它一个人查和改。" },
-            { "lane": 1, "op": "note", "tone": "wait", "text": "B 门外排队", "say": "B 同时赶来，但门锁着，只能乖乖在门外等着。" },
-            { "lane": 0, "op": "read", "text": "查得：空", "say": "A 在门里安心翻查 `db-0`，确定是空的。" },
-            { "lane": 0, "op": "calc", "text": "建好 = 连接A", "say": "A 在门里建好「连接 A」，外面没人能同时去建。" },
-            { "lane": 0, "op": "write", "value": "连接A", "text": "放入 连接A", "say": "A 把「连接 A」稳稳写进 `db-0` 这一格。" },
             {
-              "lane": 0, "op": "note", "text": "A 放开锁",
-              "say": "A 办完事出门放锁，门口排队的 B 这才终于进门。",
-              "ask": { "q": "B 这会儿进门查 `db-0`，会看见什么？", "options": ["还是空，得自己建", "已有 连接A"], "answer": 1 }
+              "lane": 0,
+              "op": "note",
+              "tone": "ok",
+              "text": "A 拿到锁",
+              "say": "A 先跨进门拿到锁，整本联络簿归它一个人查和改。"
             },
-            { "lane": 1, "op": "read", "text": "查得 连接A", "say": "B 一翻开就看见热乎的「连接 A」，直接跳过 `createConn`。" },
-            { "lane": 1, "op": "note", "tone": "ok", "text": "直接用连接A", "say": "B 拿着现成的连接出门。从头到尾只建了一次。" }
+            {
+              "lane": 1,
+              "op": "note",
+              "tone": "wait",
+              "text": "B 门外排队",
+              "say": "B 同时赶来，但门锁着，只能乖乖在门外等着。"
+            },
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "查得：空",
+              "say": "A 在门里安心翻查 `db-0`，确定是空的。"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "建好 = 连接A",
+              "say": "A 在门里建好「连接 A」，外面没人能同时去建。"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "value": "连接A",
+              "text": "放入 连接A",
+              "say": "A 把「连接 A」写入 `db-0` 这一格。"
+            },
+            {
+              "lane": 0,
+              "op": "note",
+              "text": "A 放开锁",
+              "say": "A 办完事出门放锁，门口排队的 B 这才终于进门。",
+              "ask": {
+                "q": "B 这会儿进门查 `db-0`，会看见什么？",
+                "options": [
+                  "还是空，得自己建",
+                  "已有 连接A"
+                ],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "查得 连接A",
+              "say": "B 一翻开就看见热乎的「连接 A」，直接跳过 `createConn`。"
+            },
+            {
+              "lane": 1,
+              "op": "note",
+              "tone": "ok",
+              "text": "直接用连接A",
+              "say": "B 拿着现成的连接出门。从头到尾只建了一次。"
+            }
           ],
           "verdict": "总共只建了==一次==；代价是同时建别的键也得排一队。",
           "verdictSay": "整段加锁粗暴却稳妥：不管初始化里动几个变量、要不要连带更新统计，锁住全段就没缝可钻。"
@@ -518,21 +686,68 @@
         {
           "t": "lanes",
           "expr": "computeIfAbsent(k, k -> createConn(k))",
-          "parts": { "read": "锁格先查空", "calc": "缺才跑配方", "write": "写入放格锁" },
-          "lanes": ["服务员 A", "服务员 B"],
-          "shared": { "name": "db-0 格", "start": "空" },
+          "parts": {
+            "read": "锁格先查空",
+            "calc": "缺才跑配方",
+            "write": "写入放格锁"
+          },
+          "lanes": [
+            "服务员 A",
+            "服务员 B"
+          ],
+          "shared": {
+            "name": "db-0 格",
+            "start": "空"
+          },
           "say": "这回括号里传的不再是提前建好的对象，而是 `k -> createConn(k)` 这个配方。往下走看看容器怎么调度它。",
           "steps": [
-            { "lane": 0, "op": "read", "text": "锁格查：空", "say": "A 带着配方进容器，容器先锁住 `db-0` 这一格再检查，发现还是空的。" },
-            { "lane": 1, "op": "note", "tone": "wait", "text": "等 db-0 格", "say": "B 也带着配方来问 `db-0`，容器发现这格正在初始化，让 B 只在这一格门外等（注意配方根本还没跑）。" },
-            { "lane": 0, "op": "calc", "text": "跑配方=连接A", "say": "容器确认空着、又不放开这格的锁，当场在格内替 A 跑完 `createConn` 拿到连接 A。" },
             {
-              "lane": 0, "op": "write", "value": "连接A", "text": "放 A 并放锁",
-              "say": "写入「连接 A」后容器才解开 `db-0` 的锁！把「检查」和「执行配方」死死封在了同一次加锁里。",
-              "ask": { "q": "如果 B 要初始化的是另一把键 `db-1`，它需要等 A 建完 `db-0` 吗？", "options": ["需要，全表同一把锁", "不需要，只锁各自格"], "answer": 1 }
+              "lane": 0,
+              "op": "read",
+              "text": "锁格查：空",
+              "say": "A 带着配方进容器，容器先锁住 `db-0` 这一格再检查，发现还是空的。"
             },
-            { "lane": 1, "op": "read", "text": "锁格查得 A", "say": "B 进到 `db-0` 这一格里一查，发现已经有连接 A 了。" },
-            { "lane": 1, "op": "note", "tone": "ok", "text": "配方没跑用A", "say": "因为配方一直没执行，容器直接把现成的连接 A 退给 B，一次多余创建都没有！" }
+            {
+              "lane": 1,
+              "op": "note",
+              "tone": "wait",
+              "text": "等 db-0 格",
+              "say": "B 也带着配方来问 `db-0`，容器发现这格正在初始化，让 B 只在这一格门外等（注意配方根本还没跑）。"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "跑配方=连接A",
+              "say": "容器确认空着、又不放开这格的锁，当场在格内替 A 跑完 `createConn` 拿到连接 A。"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "value": "连接A",
+              "text": "放 A 并放锁",
+              "say": "写入「连接 A」后容器才解开 `db-0` 的锁，把「检查」和「执行配方」一起封在同一次加锁里。",
+              "ask": {
+                "q": "如果 B 要初始化的是另一把键 `db-1`，它需要等 A 建完 `db-0` 吗？",
+                "options": [
+                  "需要，全表同一把锁",
+                  "不需要，只锁各自格"
+                ],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "锁格查得 A",
+              "say": "B 进到 `db-0` 这一格里一查，发现已经有连接 A 了。"
+            },
+            {
+              "lane": 1,
+              "op": "note",
+              "tone": "ok",
+              "text": "配方没跑用A",
+              "say": "因为配方一直没执行，容器直接把现成的连接 A 退给 B，没有多余创建。"
+            }
           ],
           "verdict": "先锁格再判断，缺时才跑==延迟配方==，不同键互不耽误。",
           "verdictSay": "对照 `putIfAbsent`：前者在进门前就把对象捏出来带着进门，后者只带了一张配方纸进门，容器锁住那一格确认真没有时才照着纸去现做。",
@@ -547,21 +762,21 @@
       "blocks": [
         {
           "t": "choose",
-          "say": "把今天这三种常见写法摆在同一张桌子上对照。耗时用的是 4 线程在电脑上的真实中位数，我们一行一行看。",
+          "say": "这组实验模拟的是单机内存里 64 个键的冷启动，用 4 线程下的实测中位数对比；真系统连数据库还要配连接池与超时控制。",
           "options": [
             {
               "name": "putIfAbsent",
               "solves": "不盖掉旧键，但实参在进门前就会先算完",
-              "cost": "4 线程白建一堆连接耗时 {ms:absent.PutIfAbsent} ms",
+              "cost": "4 线程重复建连接，耗时 {ms:absent.PutIfAbsent} ms",
               "when": "放进去的是现成常量、数字或廉价小对象",
-              "say": "如果本来就要放一个现成字符串或数字，不心疼构造开销，`putIfAbsent` 足够保住「先到先得不覆盖」。可一旦值要现连数据库、开文件或查接口，用它就一定白造对象。"
+              "say": "如果本来就要放一个现成字符串或数字，不心疼构造开销，`putIfAbsent` 足够保住先到先得。可一旦要现连数据库或开文件，用它就会重复创建再丢弃。"
             },
             {
               "name": "computeIfAbsent",
               "solves": "锁住单格，只在真正缺键时跑一次 Lambda 配方",
               "cost": "4 线程零重复耗时 {ms:absent.Compute} ms；护不住多键联动",
               "when": "懒加载连接、本地缓存、按单键构建昂贵对象",
-              "say": "只要建新值需要花力气，而且只涉及这一个键，立刻换成 `computeIfAbsent` 传配方进去，这是懒加载最干净的标准答案。"
+              "say": "只要建新值需要花力气，而且只涉及这一个键，在单机本地缓存里就换成 `computeIfAbsent` 传配方进去。"
             },
             {
               "name": "synchronized",
@@ -581,22 +796,38 @@
       "beat": "choose",
       "title": "三个初始化场景，你来挑",
       "layout": "split",
-      "bridge": "规矩串好了，下面三个真实工程里的初始化场景，照着右边那棵小树逐一选出最稳妥的做法。",
+      "bridge": "规矩串好了，下面三个单机内存缓存的初始化场景，照着右边那棵小树逐一选出合适做法。",
       "blocks": [
         {
           "t": "decide",
           "q": "新值现造贵吗？只动单键吗？",
           "branches": [
-            { "when": "已有现成廉价常量", "pick": "putIfAbsent", "eg": "兜底写入默认版本号" },
-            { "when": "单键懒加载贵对象", "pick": "computeIfAbsent", "eg": "按库名现建连接池" },
-            { "when": "要同时改多处状态", "pick": "synchronized", "eg": "建连接再扣减全局配额" }
+            {
+              "when": "已有现成廉价常量",
+              "pick": "putIfAbsent",
+              "eg": "兜底写入默认版本号"
+            },
+            {
+              "when": "单键懒加载贵对象",
+              "pick": "computeIfAbsent",
+              "eg": "按库名现建连接池"
+            },
+            {
+              "when": "要同时改多处状态",
+              "pick": "synchronized",
+              "eg": "建连接再扣减全局配额"
+            }
           ],
           "say": "这棵小树就是刚才那条规则的图形版。选完右侧的每个场景，对应的树枝就会亮起来给你验证。"
         },
         {
           "t": "cases",
-          "tools": ["putIfAbsent", "computeIfAbsent", "synchronized"],
-          "say": "每个场景选一个最贴切的工具。别看名字好不好听，先想「实参会不会白算、是不是只动一格」。",
+          "tools": [
+            "putIfAbsent",
+            "computeIfAbsent",
+            "synchronized"
+          ],
+          "say": "下面按单机进程内的内存场景挑做法（真实生产连接池还要加连接上限、关闭清理或分布式协调）。对照两步问题挑出来。",
           "items": [
             {
               "text": "多条接口线程往配置表里塞一个早就定义好的静态常量 `\"v1\"`，只要求如果已有新版本就别盖掉。",
@@ -606,12 +837,12 @@
             {
               "text": "多线程按租户号从缓存取数据库连接池；没有时要解析配置、现连数据库建好再放进去。",
               "answer": 1,
-              "why": "新建连接池代价高且只按单个租户键生成，用 `computeIfAbsent` 传配方进去，确保全网只连一次。"
+              "why": "新建连接池代价高且只按租户键生成，单机里用 `computeIfAbsent`；生产还要管池上限和回收。"
             },
             {
               "text": "初始化某路由缓存时，既要新建对象放进 Map，又必须把全局剩余配额减 1 并记录到审计表。",
               "answer": 2,
-              "why": "涉及缓存、配额、审计多处变量同步生效，单键的 `computeIfAbsent` 管不到外头，必须靠 `synchronized`。"
+              "why": "涉及缓存、配额、审计多处状态同步，单机用 `synchronized`；真系统落库还要放进事务。"
             }
           ]
         }
@@ -620,7 +851,7 @@
     {
       "beat": "name",
       "title": "起个名字：实参提前求值与延迟执行",
-      "bridge": "现象看穿了，字节码实锤也看过了，几种工具也排好队了。现在给今天这个隐蔽老坑记上它的学名和面试问法。",
+      "bridge": "现象看清了，字节码也看过了，几种写法也排清了。给今天这个容易忽略的问题记上名字和面试问法。",
       "blocks": [
         {
           "t": "name",
@@ -632,7 +863,7 @@
             "为什么换了 putIfAbsent 还是重复建对象？",
             "computeIfAbsent 怎么保证只创建一次？"
           ],
-          "say": "面试常问「putIfAbsent 和 computeIfAbsent 区别在哪」，别光背「后者传函数」，直接说出「Java 实参会提前求值，前者进门前就把对象造好了，后者带着配方进桶锁住后才真动手」，一句话就能拿满分。"
+          "say": "面试常问「putIfAbsent 和 computeIfAbsent 区别在哪」，别光背「后者传函数」，直接说出「Java 实参会提前求值，前者进门前就把对象造好了，后者带着配方进桶锁住后才动手」，重点就讲清了。"
         }
       ]
     },
@@ -645,9 +876,21 @@
           "t": "quiz",
           "q": "多线程用 `ConcurrentHashMap.putIfAbsent(k, createConn(k))`，为什么还会重复新建连接？",
           "options": [
-            { "text": "因为 putIfAbsent 内部完全没有加锁", "ok": false, "why": "它内部加锁保证写不覆盖，可 `createConn(k)` 早在进 `putIfAbsent` 之前就已跑完了。" },
-            { "text": "因为实参 createConn(k) 在进方法前先求值并造出了对象", "ok": true, "why": "精准！哪怕外层加了 `!containsKey`，两线程同时错过判断时也会各自先造完对象。" },
-            { "text": "因为 HashMap 默认容量太小触发了扩容", "ok": false, "why": "换了 `ConcurrentHashMap` 且提前留够容量照样白建，根源在参数求值时机。" }
+            {
+              "text": "因为 putIfAbsent 内部完全没有加锁",
+              "ok": false,
+              "why": "它内部加锁保证写不覆盖，可 `createConn(k)` 早在进 `putIfAbsent` 之前就已跑完了。"
+            },
+            {
+              "text": "因为实参 createConn(k) 在进方法前先求值并造出了对象",
+              "ok": true,
+              "why": "判断准确。哪怕外层先用 `containsKey` 检查，两线程同时错过判断时也会各自先造完对象。"
+            },
+            {
+              "text": "因为 HashMap 默认容量太小触发了扩容",
+              "ok": false,
+              "why": "换了 `ConcurrentHashMap` 且提前留够容量照样白建，根源在参数求值时机。"
+            }
           ],
           "say": "回想字节码里 `invokestatic` 排在 `invokevirtual` 前面的画面，选出一个。"
         }
@@ -656,15 +899,27 @@
     {
       "beat": "check",
       "title": "不写外层 if，只调一句 putIfAbsent 呢",
-      "bridge": "第二道防一个更惨的常见误区：有人觉得外层写 `if (!containsKey)` 太啰嗦，干脆全删掉只留一行 `putIfAbsent(k, createConn(k))`。",
+      "bridge": "第二道防一个常见误区：有人觉得外层先写 `containsKey` 判断太啰嗦，干脆全删掉只留一行 `putIfAbsent(k, createConn(k))`。",
       "blocks": [
         {
           "t": "quiz",
           "q": "如果连外层判断也删掉，每次都直接调 `cache.putIfAbsent(k, createConn(k))`，会怎样？",
           "options": [
-            { "text": "比加外层判断更好，因为少了一趟方法调用", "ok": false, "why": "大错！虽然省了查表，但以后每次查已存在的键也都要先执行一遍 `createConn(k)`！" },
-            { "text": "不仅多线程白建，连单线程重复命中都会白白建一次再扔掉", "ok": true, "why": "完全正确！进方法前先求实参的规矩不分单线程多线程，热缓存命中时每次都白造。" },
-            { "text": "只要键值表放满了就不会再调用 createConn", "ok": false, "why": "Java 语言先求实参再进方法，`putIfAbsent` 根本没机会在 `createConn` 之前拦截。" }
+            {
+              "text": "比加外层判断更好，因为少了一趟方法调用",
+              "ok": false,
+              "why": "不对，虽然省了查表，但以后每次查已存在的键也都要先执行一遍 `createConn(k)`。"
+            },
+            {
+              "text": "不仅多线程白建，连单线程重复命中都会白白建一次再扔掉",
+              "ok": true,
+              "why": "判断正确。进方法前先求实参的规则不分单线程多线程，热缓存命中时每次都会多造一次。"
+            },
+            {
+              "text": "只要键值表放满了就不会再调用 createConn",
+              "ok": false,
+              "why": "Java 语言先求实参再进方法，`putIfAbsent` 根本没机会在 `createConn` 之前拦截。"
+            }
           ],
           "say": "想想一个线程连查同一个已缓存的键一百次会发生什么，三选一点出来。"
         }
@@ -679,9 +934,21 @@
           "t": "quiz",
           "q": "下面哪种初始化需求，光用 `computeIfAbsent` 守不住？",
           "options": [
-            { "text": "按用户编号懒加载一个耗时的配置对象", "ok": false, "why": "这只涉及单键建对象，`computeIfAbsent` 一步搞定。" },
-            { "text": "按商品建好缓存条目后，还得同步更新另一个全局配额整数", "ok": true, "why": "对了！`computeIfAbsent` 只锁缓存里这一格，跨多个变量保持原子还是得请锁。" },
-            { "text": "高并发同时初始化上百个不同的租户键", "ok": false, "why": "不同键散落在不同桶里，这恰恰是 `computeIfAbsent` 最擅长的并行场景。" }
+            {
+              "text": "按用户编号懒加载一个耗时的配置对象",
+              "ok": false,
+              "why": "这只涉及单键建对象，`computeIfAbsent` 一步搞定。"
+            },
+            {
+              "text": "按商品建好缓存条目后，还得同步更新另一个全局配额整数",
+              "ok": true,
+              "why": "对了，`computeIfAbsent` 只锁缓存里这一格，跨多个变量保持原子还是得加锁。"
+            },
+            {
+              "text": "高并发同时初始化上百个不同的租户键",
+              "ok": false,
+              "why": "不同键散落在不同桶里，这恰恰是 `computeIfAbsent` 最擅长的并行场景。"
+            }
           ],
           "say": "对比前面讲过的两种全对方案，找出越出「单个格」边界的那一项。"
         }
@@ -709,7 +976,7 @@
     {
       "beat": "take",
       "title": "带走三张卡",
-      "bridge": "今天的坑绕开以后，我们在单数和键值表上的常见并发陷阱就全部打通了。把这三张小卡装进口袋。",
+      "bridge": "这一节的内容理清后，我们在单个数字和键值表上的常见并发陷阱就串联起来了。把这三张小卡收好。",
       "blocks": [
         {
           "t": "cards",
@@ -727,7 +994,7 @@
               "a": "现成廉价对象用 `putIfAbsent`；现造昂贵单键用 `computeIfAbsent`；牵涉多个变量联动用 `synchronized`。"
             }
           ],
-          "say": "三张卡收好。下一节我们走出键值表，去看看往一个共享列表里同时追加订单流水时，给 `ArrayList` 加上 `volatile` 能不能防止少条数、冒空洞。"
+          "say": "三张卡收好。下一节我们走出键值表，看看几个线程往同一个 `ArrayList` 末尾追加日志，加上 `volatile` 之后会发生什么。"
         }
       ]
     }

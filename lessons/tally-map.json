@@ -2,18 +2,18 @@
   "format": "studyhub-lesson/1",
   "template": "experiment",
   "id": "tally-map",
-  "course": "Java 并发从零",
-  "title": "换了安全容器，销量怎么还是少？",
-  "lead": "大家都说线程安全的 ConcurrentHashMap，先取再加一放回为什么照样丢？",
+  "course": "Java 并发",
+  "title": "几个线程一起按商品记销量，账对得上吗？",
+  "lead": "八样商品提前建好键，几个线程同时往同一张表里累加销量，最后总件数是多少？",
   "minutes": 45,
   "needs": [
-    "count++ 为什么会丢数（第一节）",
-    "先查再改为什么会超卖（第二节）",
+    "count++ 为什么会丢数（第 1 节）",
+    "先查再改为什么会超卖（第 2 节）",
     "知道 HashMap 能按键存数字"
   ],
   "after": [
-    "说清容器方法安全与复合动作不安全的区别",
-    "解释 ConcurrentHashMap 先 get 再 put 为何还丢",
+    "说清单方法线程安全与复合操作原子的区别",
+    "说明 ConcurrentHashMap 先 get 再 put 的边界",
     "会用 synchronized 或 merge 写准分组计数",
     "把单数、条件判断、键值表串成一套选择规则"
   ],
@@ -36,7 +36,12 @@
       "knob": {
         "name": "threads",
         "label": "几个线程同时记账",
-        "values": ["1", "2", "4", "8"],
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
         "default": "4"
       },
       "metric": {
@@ -53,52 +58,84 @@
       "inside": "Plain,SafeMap",
       "repeat": 20,
       "variants": [
-        { "id": "Plain", "label": "普通 Map", "class": "lab.tally.Plain", "code": "Plain.java" },
-        { "id": "SafeMap", "label": "换安全 Map", "class": "lab.tally.SafeMap", "code": "SafeMap.java" },
-        { "id": "Sync", "label": "加锁整段", "class": "lab.tally.Sync", "code": "Sync.java" },
-        { "id": "Merge", "label": "merge 一步", "class": "lab.tally.Merge", "code": "Merge.java" }
+        {
+          "id": "Plain",
+          "label": "普通 Map",
+          "class": "lab.tally.Plain",
+          "code": "Plain.java"
+        },
+        {
+          "id": "SafeMap",
+          "label": "换安全 Map",
+          "class": "lab.tally.SafeMap",
+          "code": "SafeMap.java"
+        },
+        {
+          "id": "Sync",
+          "label": "加锁整段",
+          "class": "lab.tally.Sync",
+          "code": "Sync.java"
+        },
+        {
+          "id": "Merge",
+          "label": "merge 一步",
+          "class": "lab.tally.Merge",
+          "code": "Merge.java"
+        }
       ]
     }
   },
   "slides": [
     {
       "beat": "open",
-      "title": "今天讲什么：容器安全了，业务就安全吗？",
+      "title": "今天讲什么：按商品一起记账，总数能对上吗？",
       "blocks": [
         {
           "t": "text",
-          "md": "前两节摆平了单个数字的并发：`AtomicInteger`、`CAS` 和 `synchronized`。今天进到装一排数字的 `Map`。",
-          "say": "前两节你已经能守住一个计数器、一个库存数了。可真实业务里总要按商品名分开记一排数，很多人一上手就把 HashMap 换成线程安全的 ConcurrentHashMap，今天我们亲手验证它管不管用。"
+          "md": "前两节讨论了单个数字的并发：`AtomicInteger`、`CAS` 和 `synchronized`。今天进到按商品分页记数的 `Map`。",
+          "say": "前两节处理的是单个数字的计数器或库存数。实际业务里常需要按商品名分开记账，有人继续用普通表，也有人直接换成线程安全的 ConcurrentHashMap，今天一起来实测看看。"
         }
       ]
     },
     {
       "beat": "open",
       "title": "开始前，翻一翻前两节",
-      "bridge": "今天这节专门顺着前两节那条线往下走，先花一分钟把前两节手里的三样武器点热。",
+      "bridge": "今天这节顺着前两节那条线往下走，先花一分钟回顾前两节的三个基础结论。",
       "blocks": [
         {
           "t": "recall",
-          "say": "三道小题都来自前两节学过的内容，点一个答案，当场帮你核对。记得它们，等会儿很快就会在销量表里看见熟悉的影子。",
+          "say": "三道小题都来自前两节学过的内容，点一个答案当场核对。帮自己热一下身，等会儿很快会在销量表里见到类似的场景。",
           "items": [
             {
               "have": "读、改、写三步",
               "q": "为什么简简单单一句 `count++` 会丢数？",
-              "options": ["编译器算错乘法了", "拆成读、加、写三步，中间被插队", "线程自己忘记保存"],
+              "options": [
+                "编译器算错乘法了",
+                "拆成读、加、写三步，中间被插队",
+                "线程自己忘记保存"
+              ],
               "answer": 1,
               "why": "一句 `count++` 背后其实是读、加一、写回三步，两步之间没人拦着，后写的就会把先写的盖掉。"
             },
             {
               "have": "单次调用原子",
               "q": "为什么换了 `AtomicInteger`，先查再减还是会超卖？",
-              "options": ["AtomicInteger 没锁住自己", "单次调用原子，合在一起的两步不原子", "线程数超过两个才安全"],
+              "options": [
+                "AtomicInteger 没锁住自己",
+                "单次调用原子，合在一起的两步不原子",
+                "线程数超过两个才安全"
+              ],
               "answer": 1,
               "why": "`get()` 和 `decrementAndGet()` 各自都守住了自己那一步，可它们是两次独立调用，看和减之间照样有缝。"
             },
             {
               "have": "前两节的防线",
               "q": "改动如果依赖刚才看到的值，前两节靠什么修对？",
-              "options": ["只加上 volatile", "加锁包整段，或用 CAS 合成一步", "把循环次数减半"],
+              "options": [
+                "只加上 volatile",
+                "加锁包整段，或用 CAS 合成一步",
+                "把循环次数减半"
+              ],
               "answer": 1,
               "why": "要么请锁把多步关进同一间屋，要么靠 `CAS` 把核对旧值和写新值合成不可打断的一步。"
             }
@@ -115,8 +152,14 @@
           "t": "scene",
           "picture": {
             "kind": "share",
-            "actors": ["收银台 A", "收银台 B"],
-            "shared": { "name": "apple格", "value": "5" }
+            "actors": [
+              "收银台 A",
+              "收银台 B"
+            ],
+            "shared": {
+              "name": "apple格",
+              "value": "5"
+            }
           },
           "story": "八样商品提前在公用销量表里占好了格子，初始销量全写 `0`。几个收银台同时卖出苹果，每人先翻到 **apple** 这一格看旧数，心里加 1，再写回去。",
           "say": "留意一个特意做的安排：八个商品名在线程启动前就全写进表里了，线程途中不添新商品也不删格子，只往已有格子里改数字。下面把画面里的角色和程序对上号。",
@@ -147,7 +190,7 @@
               "on": "action",
               "tag": "sales.put",
               "code": "`sales.put(item, n + 1)`",
-              "say": "把拿到的 `n` 在手里加 1，再写回同一格。从看到算再到写回去，跟前两节是不是像极了？"
+              "say": "把拿到的 `n` 在手里加 1，再写回同一格。每次记一笔销量，都要走完「查看、加 1、写回」这几步。"
             }
           ]
         }
@@ -156,12 +199,12 @@
     {
       "beat": "hook",
       "title": "按商品记账，总数能对上吗",
-      "bridge": "前两节只盯着一个数字加减，这次变成按商品名分别记进一张表里。更关键的是，有人很快就会想到把普通表换成「线程安全的表」。",
+      "bridge": "前两节都是只盯着一个数字加减，这次变成多个线程共同维护一张按商品名记账的表。",
       "blocks": [
         {
           "t": "text",
           "md": "八样商品提前写好键，几个线程各自轮流卖出 **20 万次**。总销量真的等于卖出的总件数吗？",
-          "say": "这就是今天唯一要搞透的事。先把最普通、显然没防备的 HashMap 版本写出来当照妖镜，再看大家最容易想错的那一步「只换安全容器」的改法到底行不行。"
+          "say": "这就是这一节要弄清的问题。先把常见的 HashMap 写法写出来跑一遍，看看提前把 8 个商品名放好之后会发生什么。"
         }
       ]
     },
@@ -176,16 +219,25 @@
           "say": "还是和前两节一样，带虚线的词没见过随时点开看解释。先点步骤走完三处重点，留意为什么提前把八个商品先放进了表里。",
           "walk": [
             {
-              "focus": ["static final String[] ITEMS", "static final Map<String, Integer> sales = new HashMap<>();"],
+              "focus": [
+                "static final String[] ITEMS",
+                "static final Map<String, Integer> sales = new HashMap<>();"
+              ],
               "key": "八个商品名固定放好，不扩容也不改结构",
-              "say": "第一处是共享账本：`ITEMS` 一共 8 样商品，后面主方法一开头就把它们全 `put` 成 0。`HashMap` 默认装 12 个才扩容，8 个永远不会半路挪窝，所以这次既不会报错也不会卡死。"
+              "say": "第一处是共享账本：`ITEMS` 一共 8 样商品，主方法一开头就把它们全 `put` 成 0。`HashMap` 默认装 12 个才扩容，8 个键占好格子后运行途中不会触发扩容。"
             },
             {
-              "focus": ["Integer n = sales.get(item);", "sales.put(item, n + 1);"],
-              "say": "第二处就是今天的主角 `addSale`：就两行，先按商品名 `get` 出旧销量 `n`，再把 `n + 1` 用 `put` 写回去。所有漏洞都藏在这两行之间。"
+              "focus": [
+                "Integer n = sales.get(item);",
+                "sales.put(item, n + 1);"
+              ],
+              "say": "第二处是记账方法 `addSale`：一共两行，先按商品名 `get` 出旧销量 `n`，再把 `n + 1` 用 `put` 写回去。"
             },
             {
-              "focus": ["for (String item : ITEMS) sales.put(item, 0);", "for (int count : sales.values()) total += count;"],
+              "focus": [
+                "for (String item : ITEMS) sales.put(item, 0);",
+                "for (int count : sales.values()) total += count;"
+              ],
               "say": "第三处是启线程前先把 8 个键放进去，每个线程跑 `200_000` 次 `addSale`，最后把 8 样商品的销量加起来写成 `total`，跟应记总数 `expected` 对账。"
             }
           ]
@@ -195,71 +247,85 @@
     {
       "beat": "predict",
       "title": "先猜：普通 HashMap 会发生什么",
-      "bridge": "因为我们已经特意把 8 个商品名预先填好了，线程只更新已有格子的数字，不用扩容也不用挪链表。先押一注跑起来会怎样。",
+      "bridge": "8 个商品名在启动前已经全部填好，线程只负责给已有格子的数字加 1。先按你的直觉选一个结果。",
       "blocks": [
         {
           "t": "predict",
           "id": "plain",
           "q": "4 个线程用 `Plain` 各记 20 万件，最后统计 `total` 会怎样？",
-          "options": ["正好 800,000，因为 key 都提前放好了", "明显少于 800,000，悄悄丢了销量", "肯定直接抛出并发异常崩掉", "只会多记，不会少记"],
+          "options": [
+            "正好 800,000，因为 key 都提前放好了",
+            "明显少于 800,000，悄悄丢了销量",
+            "直接抛出并发异常，程序中途停掉",
+            "只会多记，不会少记"
+          ],
           "answer": 1,
-          "say": "凭直觉先押一个。提前把 key 填好能躲开扩容崩溃和死循环，却躲不开另一件事——想想第 1 节 BlackBoard 上的黑板擦写。"
+          "say": "先凭直觉选一个。可以想想第 1 节黑板上几个人同时擦写同一个数字的画面，再结合这里的提前填键想一想。"
         }
       ]
     },
     {
       "beat": "run",
       "title": "一次一次看普通 HashMap 的真实结果",
-      "bridge": "猜完不废话，直接看你这台电脑上真跑出来的 20 轮记录。点下面的按钮，一轮一轮放出来对账。",
+      "bridge": "选好了，直接看这台电脑上真实跑出来的 20 轮记录。点下面的按钮，一轮一轮放出来对账。",
       "blocks": [
         {
           "t": "experiment",
           "lab": "tally",
-          "show": ["Plain"],
+          "show": [
+            "Plain"
+          ],
           "knob": false,
           "hand": true,
-          "focus": ["sales.put(item, n + 1);"],
-          "say": "点「看第 1 次运行」，瞅瞅实际记账跟该记的 800,000 差多少；再点一次看看是不是每次数字都漂着不一样，看够了就把剩下的全部放出来。"
+          "focus": [
+            "sales.put(item, n + 1);"
+          ],
+          "say": "点「看第 1 次运行」，看看实际记账跟该记的 800,000 差多少；再多点几次观察结果是否每次都不同，然后把剩下的全部放出来。"
         },
         {
           "t": "reveal",
           "of": "plain",
           "key": "不扩容不报错，照样安安静静少了一大截",
-          "say": "没有抛一次异常，也没卡死，可每一轮都静悄悄地少记了二十多万件。跟第 1 节 `count++` 如出一辙：多出来的更新被后写的人不动声色抹掉了。"
+          "say": "没有抛一次异常，也没有卡住，可每一轮都少记了一大截。跟第 1 节 `count++` 一样，先写的更新被后写的结果悄无声息覆盖掉了。"
         }
       ]
     },
     {
       "beat": "run",
       "title": "只开一个线程，还会少记吗",
-      "bridge": "普通 HashMap 每次都少记，先照老习惯把「只开 1 个线程」当成对照组验一下，证明逻辑本身没写歪。",
+      "bridge": "普通 HashMap 每次都少记，先照习惯把「只开 1 个线程」当成对照组验一下，确认计票逻辑本身没有写错。",
       "blocks": [
         {
           "t": "experiment",
           "lab": "tally",
-          "show": ["Plain"],
+          "show": [
+            "Plain"
+          ],
           "say": "还是 `Plain` 这份程序，上面多了线程数拨盘。1、2、4、8 全都在这台电脑上各跑了 20 次。"
         },
         {
           "t": "try",
           "key": "一个线程全对；只要 2 个以上就次次出错",
-          "say": "动手拨滑块：调到 1 时点全落在虚线上，一次不错；再拨回 2、4、8，看看少掉的比例是不是随着线程增多越来越吓人。"
+          "say": "动手拨滑块：调到 1 时点全落在虚线上，一次不错；再拨回 2、4、8，观察少记的幅度随着线程数增多如何变化。"
         }
       ]
     },
     {
       "beat": "run",
       "title": "丢更新是从哪两行开始的",
-      "bridge": "一个线程稳稳全对，多个线程就次次掉坑。回到源码里，亲自把把「查」和「改」劈成两半的那两行点出来。",
+      "bridge": "一个线程次次全对，多个线程就次次出错。回到源码里，把「查」和「改」拆成两半的那两行点出来。",
       "blocks": [
         {
           "t": "spot",
           "of": "tally.Plain",
           "say": "直接点源码里负责读取旧值并写回新值的那两行，选错了会给提示。",
           "q": "每个线程都会调用，又把「取旧销量」和「写新销量」拆成两趟的是哪两行？",
-          "answer": ["Integer n = sales.get(item);", "sales.put(item, n + 1);"],
+          "answer": [
+            "Integer n = sales.get(item);",
+            "sales.put(item, n + 1);"
+          ],
           "hint": "提示：找 `addSale` 方法大括号里面那两句对 `sales` 动手的代码。",
-          "found": "抓准了！第 1 行先 `get` 出旧销量 `n`，第 2 行在手里算出 `n + 1` 后再调用 `put` 放回——门开关了两趟，算加一站在门外做。"
+          "found": "找对了。第 1 行先用 `get` 取出旧销量 `n`，第 2 行在外面算出 `n + 1` 后再调用 `put` 放回，取数和写回之间隔着一步计算。"
         }
       ]
     },
@@ -277,20 +343,26 @@
           "say": "下面是从 `Plain.class` 里真实反编译出来的 `addSale` 指令片段。点步骤一步步往下走，盯着看中间那条 `iadd` 到底落在谁手里。",
           "walk": [
             {
-              "focus": ["Map.get"],
+              "focus": [
+                "Map.get"
+              ],
               "label": "第 1 趟：get 取值",
               "say": "这里用 `invokeinterface` 调 `Map.get` 把值取回来，存进当前线程自己的局部变量表里。这一趟只是把数借出来看。"
             },
             {
-              "focus": ["iadd"],
+              "focus": [
+                "iadd"
+              ],
               "label": "第 2 步：iadd",
               "say": "中间这行 `iadd` 把旧值加 1。它在当前线程自己的操作数栈上算，跟外头的 `sales` 账本一点关系都没有。"
             },
             {
-              "focus": ["Map.put"],
+              "focus": [
+                "Map.put"
+              ],
               "label": "第 3 趟：put 写回",
               "key": "取、算、写三截在字节码里清清楚楚分家",
-              "say": "最后再用 `invokeinterface` 调 `Map.put` 把新数字写回表里。跟第一节的黑板一模一样，从读到写之间大敞着门。"
+              "say": "最后再用 `invokeinterface` 调 `Map.put` 把新数字写回表里。和第 1 节的黑板一样，从读到写之间大敞着门。"
             }
           ]
         }
@@ -304,35 +376,66 @@
         {
           "t": "lanes",
           "expr": "sales.put(k, sales.get(k) + 1)",
-          "parts": { "read": "get 看旧值", "calc": "手里算出 6", "write": "put 写回 6" },
-          "lanes": ["收银台 A", "收银台 B"],
-          "shared": { "name": "apple", "start": "5" },
+          "parts": {
+            "read": "get 看旧值",
+            "calc": "手里算出 6",
+            "write": "put 写回 6"
+          },
+          "lanes": [
+            "收银台 A",
+            "收银台 B"
+          ],
+          "shared": {
+            "name": "apple",
+            "start": "5"
+          },
           "say": "现在公用表里 `apple` 记着 5，台 A 和台 B 各自卖出一颗苹果。往下点「走一步」，中间我会停下来先问你一步。",
           "steps": [
             {
-              "lane": 0, "op": "read", "text": "查 apple=5",
+              "lane": 0,
+              "op": "read",
+              "text": "查 apple=5",
               "say": "台 A 先翻表调 `get`，看见 `apple` 是 5。注意它刚取走数，还没算完更没写回。",
-              "ask": { "q": "这时台 B 也翻表调 `get`，它会读到几？", "options": ["5", "6"], "answer": 0 }
+              "ask": {
+                "q": "这时台 B 也翻表调 `get`，它会读到几？",
+                "options": [
+                  "5",
+                  "6"
+                ],
+                "answer": 0
+              }
             },
             {
-              "lane": 1, "op": "read", "text": "也查到 5",
+              "lane": 1,
+              "op": "read",
+              "text": "也查到 5",
               "say": "表里根本没改，所以台 B 一样读到 5。两个收银台手里拿着同一张过期的 5。"
             },
             {
-              "lane": 0, "op": "calc", "text": "心里算 5+1",
+              "lane": 0,
+              "op": "calc",
+              "text": "心里算 5+1",
               "say": "台 A 在自己手里算出 `5 + 1 = 6`，账本上依然是 5。"
             },
             {
-              "lane": 1, "op": "calc", "text": "也算出 5+1",
+              "lane": 1,
+              "op": "calc",
+              "text": "也算出 5+1",
               "say": "台 B 同样按自己记着的 5 算出 6。"
             },
             {
-              "lane": 0, "op": "write", "value": "6", "text": "写回 6",
+              "lane": 0,
+              "op": "write",
+              "value": "6",
+              "text": "写回 6",
               "say": "台 A 先进去调 `put` 写回 6，卖出一颗算记上了。"
             },
             {
-              "lane": 1, "op": "write", "value": "6", "text": "再写回 6",
-              "say": "台 B 跟着调 `put` 把自己手里的 6 也盖上去。表里还是 6，另 1 颗苹果彻底没了。"
+              "lane": 1,
+              "op": "write",
+              "value": "6",
+              "text": "再写回 6",
+              "say": "台 B 跟着调 `put` 把自己手里的 6 也盖上去。表里最后还是 6，另外卖出的一颗苹果没有算进总账里。"
             }
           ],
           "verdict": "卖了两件苹果，账本上只从 5 涨到 ==6==。",
@@ -344,18 +447,30 @@
     {
       "beat": "why",
       "title": "你自己排一排：故意撞出一次丢更新",
-      "bridge": "看完老师给你放的慢镜头，现在调度权交给你。左右两边的步骤你自己点，亲手把 6 和 7 两种结局都排出来。",
+      "bridge": "看完慢镜头，现在调度权交给你。左右两边的步骤自己点，试着把 6 和 7 两种结局都排出来。",
       "blocks": [
         {
           "t": "schedule",
-          "lanes": ["台 A", "台 B"],
-          "shared": { "name": "apple", "start": 5 },
+          "lanes": [
+            "台 A",
+            "台 B"
+          ],
+          "shared": {
+            "name": "apple",
+            "start": 5
+          },
           "delta": 1,
           "goals": [
-            { "value": 6, "label": "让台 A 和台 B 撞车丢 1 次（apple = 6）" },
-            { "value": 7, "label": "让台 A 做完再让台 B 上手（apple = 7）" }
+            {
+              "value": 6,
+              "label": "让台 A 和台 B 撞车丢 1 次（apple = 6）"
+            },
+            {
+              "value": 7,
+              "label": "让台 A 做完再让台 B 上手（apple = 7）"
+            }
           ],
-          "done": "两个目标都排出来了！只要一方在写回前另一方就先读走了旧数，丢更新就一定发生；先做完一整套再轮到下一个人，才能保住 7。",
+          "done": "两个目标都排出来了。只要一方在写回前另一方就先读走了旧数，丢更新就会发生；只有先做完一整套再轮到下一个人，才能保住 7。",
           "say": "不用背步骤，自己点左边「查 apple」、右边「查 apple」试一遍就会体会到，缝隙全卡在两趟之间。"
         }
       ]
@@ -363,27 +478,35 @@
     {
       "beat": "fix",
       "title": "大家都以为能行的改法：换成安全 Map",
-      "bridge": "好，病根摸透了。现在到了真实工程里最常见、也最坑人的一步：很多人一看报错或丢数，第一反应不是改代码逻辑，而是「把 HashMap 换成线程安全的 ConcurrentHashMap」。",
+      "bridge": "普通 HashMap 的交错过程看清了。真实工程里遇到这类问题，很多人第一个想到的改法，就是把 HashMap 换成线程安全的 ConcurrentHashMap。",
       "blocks": [
         {
           "t": "predict",
           "id": "safemap",
           "q": "换成 `ConcurrentHashMap` 仍先 `get` 再 `put` 会怎样？",
-          "options": ["一件不丢，因为换了线程安全的 Map", "照样丢销量，甚至可能跑得比普通 Map 慢", "只有 8 线程才丢，2 和 4 线程全对", "会直接抛异常停住"],
+          "options": [
+            "一件不丢，因为换了线程安全的 Map",
+            "照样少记销量，和普通 Map 一样丢更新",
+            "只有 8 线程才丢，2 和 4 线程全对",
+            "会直接抛异常停住"
+          ],
           "answer": 1,
-          "say": "代码就改了一个类名：表换成了 ConcurrentHashMap，方法里先 get 再 put 一字没动。回想第 2 节用 AtomicInteger 为什么照样超卖，先押一注。"
+          "say": "代码只改了一个类名：表换成了 ConcurrentHashMap，方法里的先 get 再 put 一字没动。可以回想一下第 2 节换用 AtomicInteger 那个场景，再选一次。"
         }
       ]
     },
     {
       "beat": "fix",
-      "title": "实测打脸：换上安全容器还是次次少",
-      "bridge": "押完注，直接把 `SafeMap` 放进同一批实验里，和 `Plain` 并排摆在一起跑给它看。",
+      "title": "实测结果：换上安全容器依然次次少记",
+      "bridge": "选好之后，直接把 `SafeMap` 放进同一批实验里，和 `Plain` 并排运行对比。",
       "blocks": [
         {
           "t": "experiment",
           "lab": "tally",
-          "show": ["Plain", "SafeMap"],
+          "show": [
+            "Plain",
+            "SafeMap"
+          ],
           "select": "SafeMap",
           "say": "点开对照左边的标记行，它只换了容器名，里面的先取后放一个标点都没动。现在看点是不是真飞上了虚线。"
         },
@@ -391,7 +514,7 @@
           "t": "reveal",
           "of": "safemap",
           "key": "容器自己安全，合起来先取后放照样次次错",
-          "say": "一个都没落到虚线上，错的次数和普通 HashMap 一模一样，全军覆没！而且在多线程下，它花的时间比普通 HashMap 还长了一大截——白白付了安全容器的代价，却连对错都没保住。"
+          "say": "一个都没落到虚线上，出错轮次和普通 HashMap 一模一样，每轮都少记。而且在多线程下，它花的耗时还比普通 HashMap 更高，付了安全容器的开销，也没把账记准。"
         },
         {
           "t": "try",
@@ -402,7 +525,7 @@
     {
       "beat": "fix",
       "title": "安全 Map 版本，机器眼里到底干了啥",
-      "bridge": "名字都叫「并发安全 Map」了，凭什么还丢、还跑得更慢？老办法，再用 `javap` 看 `SafeMap.class` 的字节码，一帧一帧比给它看。",
+      "bridge": "名字都叫「并发安全 Map」了，凭什么还丢、耗时还更高？用 `javap` 打开 `SafeMap.class` 的字节码对照着看。",
       "blocks": [
         {
           "t": "inside",
@@ -413,17 +536,23 @@
           "say": "留意两条灰底的高亮线：刚刚是 `invokeinterface`，现在因为字段直接写了安全表类型，编成了两次 `invokevirtual`。",
           "walk": [
             {
-              "focus": ["ConcurrentHashMap.get"],
+              "focus": [
+                "ConcurrentHashMap.get"
+              ],
               "label": "安全进门取旧数",
               "say": "第一下 `invokevirtual` 叫 `ConcurrentHashMap.get`：安全容器保证这一步拿出来的数一定干净、不会破坏表结构——可拿完门就松开了。"
             },
             {
-              "focus": ["iadd"],
+              "focus": [
+                "iadd"
+              ],
               "label": "栈里自己跑 iadd",
               "say": "接着回到线程自己的栈里执行 `iadd` 加 1。安全表根本看不见你在外头拿旧值做了什么计算。"
             },
             {
-              "focus": ["ConcurrentHashMap.put"],
+              "focus": [
+                "ConcurrentHashMap.put"
+              ],
               "label": "安全再进门写回",
               "key": "每扇门都有保镖，可惜两道门中间的走廊没人管",
               "say": "最后再 `invokevirtual` 叫一次安全 `put`。进一次门掏一份安检开销，两道安检门中间的空当却照样能让别人钻进来写旧数。"
@@ -435,12 +564,17 @@
     {
       "beat": "fix",
       "title": "两种真正修好的写法：加锁 vs merge",
-      "bridge": "光换容器堵不住中间的走廊，怎么才能把「取、算、写」真正焊死？今天给两招真正能过的：`synchronized` 锁整段，或者用容器自带的 `merge`（同理还有 `compute`）。",
+      "bridge": "只换容器堵不住中间的走廊，要把「取、算、写」合拢，这节看两种修法：`synchronized` 锁整段，或者用容器自带的 `merge`（同理还有 `compute`）。",
       "blocks": [
         {
           "t": "experiment",
           "lab": "tally",
-          "show": ["Plain", "SafeMap", "Sync", "Merge"],
+          "show": [
+            "Plain",
+            "SafeMap",
+            "Sync",
+            "Merge"
+          ],
           "select": "Sync",
           "say": "四个写法全上台了。点到「加锁整段」，只是在 `addSale` 方法前面添了个 `synchronized`；点到「merge 一步」，整段两行合成了一句 `sales.merge(item, 1, Integer::sum)`。"
         },
@@ -462,21 +596,21 @@
           "walk": [
             {
               "focus": "Plain",
-              "say": "「普通 Map」在 1 线程是实心点；一旦到 2、4、8 线程全变成空心点，数量越大错得越离谱，只快不用也没资格上桌。"
+              "say": "「普通 Map」只在 1 线程时是实心点；到了 2、4、8 线程全变成空心点，耗时虽然较低，但每一轮都在少记，不能用于并发记账。"
             },
             {
               "focus": "SafeMap",
-              "say": "「换安全 Map」从 2 到 8 线程同样全是空心点，而且整条线爬到了最上面——又错得彻底又跑得最慢，证明这步改法最亏。"
+              "say": "「换安全 Map」从 2 到 8 线程同样全是空心点，而且整条耗时线爬到了最上方，既没算准，开销又最大。"
             },
             {
               "focus": "Sync",
               "key": "集中撞少数几个热门 key 时，一把整段锁也不输",
-              "say": "「加锁整段」1 到 8 线程全是实心点！注意一个小意外：在这张只有 8 个热门商品、所有线程挤一起碰撞的小表里，4 和 8 线程下整段加锁的线反而压在 merge 下方。"
+              "say": "「加锁整段」在 1 到 8 线程全是实心点。注意一个实测现象：在这张只有 8 个热门商品、所有线程挤一起碰撞的小表里，4 和 8 线程下整段加锁的线反而压在 merge 下方。"
             },
             {
               "focus": "Merge",
-              "key": "别死背分段锁一定最快，高冲突热键要看实测曲线",
-              "say": "「merge 一步」同样 1 到 8 线程全是实心点：2 线程时略低于加锁，4 和 8 线程反而走到了加锁上头。因为只有 8 个格、八个线程猛撞同一个格子，每次进箱加格锁加调求和函数的开销，反而赶超了一把干脆的整段锁。"
+              "key": "高冲突热键下整段锁不一定输给分段锁，要看实测曲线",
+              "say": "「merge 一步」同样全部是实心点：2 线程时略低于加锁，4 和 8 线程反而走到了加锁上头。因为只有 8 个热键、多个线程频繁撞在同一批格子上时，每次进桶加节点锁并调求和函数的开销会累积上来。"
             }
           ]
         }
@@ -490,23 +624,81 @@
         {
           "t": "lanes",
           "expr": "synchronized addSale(item)",
-          "parts": { "read": "get 看 5", "calc": "算成 6", "write": "put 写 6" },
-          "lanes": ["收银台 A", "收银台 B"],
-          "shared": { "name": "apple", "start": "5" },
+          "parts": {
+            "read": "get 看 5",
+            "calc": "算成 6",
+            "write": "put 写 6"
+          },
+          "lanes": [
+            "收银台 A",
+            "收银台 B"
+          ],
+          "shared": {
+            "name": "apple",
+            "start": "5"
+          },
           "say": "里面还是最普通的 `HashMap`，只在 `addSale` 门口挂了一把锁。注意看 B 什么时候才能走进来。",
           "steps": [
-            { "lane": 0, "op": "note", "tone": "ok", "text": "A 拿到锁", "say": "台 A 先抢到整份账本的门锁，把走廊一并关进屋。" },
-            { "lane": 1, "op": "note", "tone": "wait", "text": "B 门口排队", "say": "台 B 也想来记一笔，但门锁在 A 手里，只能在门外干等。" },
-            { "lane": 0, "op": "read", "text": "查得 5", "say": "台 A 屋里安全读出 5。" },
-            { "lane": 0, "op": "calc", "text": "算出 6", "say": "台 A 屋里算出 `5 + 1 = 6`。" },
-            { "lane": 0, "op": "write", "value": "6", "text": "写回 6", "say": "台 A 把 6 写回账本。" },
             {
-              "lane": 0, "op": "note", "text": "A 放开锁",
-              "say": "台 A 一整套干完出门松开锁，这时候门外排队的 B 终于进去了。",
-              "ask": { "q": "台 B 这会儿进门查 `apple`，看见的是几？", "options": ["5，还没改", "6，A 写好了"], "answer": 1 }
+              "lane": 0,
+              "op": "note",
+              "tone": "ok",
+              "text": "A 拿到锁",
+              "say": "台 A 先抢到整份账本的门锁，把走廊一并关进屋。"
             },
-            { "lane": 1, "op": "read", "text": "查得 6", "say": "台 B 清清楚楚看到 6，接着算完写回 7，两笔全保住了。" },
-            { "lane": 1, "op": "write", "value": "7", "text": "写回 7", "say": "台 B 写入 7 后出门放锁。" }
+            {
+              "lane": 1,
+              "op": "note",
+              "tone": "wait",
+              "text": "B 门口排队",
+              "say": "台 B 也想来记一笔，但门锁在 A 手里，只能在门外干等。"
+            },
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "查得 5",
+              "say": "台 A 屋里安全读出 5。"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "算出 6",
+              "say": "台 A 屋里算出 `5 + 1 = 6`。"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "value": "6",
+              "text": "写回 6",
+              "say": "台 A 把 6 写回账本。"
+            },
+            {
+              "lane": 0,
+              "op": "note",
+              "text": "A 放开锁",
+              "say": "台 A 一整套干完出门松开锁，这时候门外排队的 B 终于进去了。",
+              "ask": {
+                "q": "台 B 这会儿进门查 `apple`，看见的是几？",
+                "options": [
+                  "5，还没改",
+                  "6，A 写好了"
+                ],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "查得 6",
+              "say": "台 B 清清楚楚看到 6，接着算完写回 7，两笔全保住了。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "value": "7",
+              "text": "写回 7",
+              "say": "台 B 写入 7 后出门放锁。"
+            }
           ],
           "verdict": "两件全记上了，代价是 B 哪怕卖的是香蕉也要跟苹果排同一队。",
           "verdictSay": "整段加锁什么都护得住，不管是查完算、还是改好几个商品；缺点就是同一时间只让一个人翻这本账。"
@@ -521,21 +713,68 @@
         {
           "t": "lanes",
           "expr": "sales.merge(k, 1, Integer::sum)",
-          "parts": { "read": "格内取旧 5", "calc": "算 5+1=6", "write": "写回 6 放锁" },
-          "lanes": ["收银台 A", "收银台 B"],
-          "shared": { "name": "apple", "start": "5" },
+          "parts": {
+            "read": "格内取旧 5",
+            "calc": "算 5+1=6",
+            "write": "写回 6 放锁"
+          },
+          "lanes": [
+            "收银台 A",
+            "收银台 B"
+          ],
+          "shared": {
+            "name": "apple",
+            "start": "5"
+          },
           "say": "两个人都不用自己写 `synchronized`，直接把初始增量 `1` 和加法规则 `Integer::sum` 塞给 `merge`，让容器自己挑时间找好那一格后一口气算完。",
           "steps": [
-            { "lane": 0, "op": "read", "text": "锁 apple 格", "say": "A 叫一声 `merge`：容器自动锁住 `apple` 所在的这一格，当场读出 5。" },
-            { "lane": 1, "op": "note", "tone": "wait", "text": "等 apple 格", "say": "B 恰好也卖苹果，发现 `apple` 这格正在被锁，只在这一格门口等。" },
-            { "lane": 0, "op": "calc", "text": "格内算成 6", "say": "容器没放锁，直接就在桶里调用 `Integer::sum(5, 1)` 算出 6。" },
             {
-              "lane": 0, "op": "write", "value": "6", "text": "写 6 放格锁",
-              "say": "写入 6 才解开这格的锁——算账和写回一秒没拆出容器外！",
-              "ask": { "q": "如果 B 同时要记的是 `milk`（另一格），B 需要等 A 写完苹果吗？", "options": ["需要，全表同一把锁", "不需要，各自锁各自那一格"], "answer": 1 }
+              "lane": 0,
+              "op": "read",
+              "text": "锁 apple 格",
+              "say": "A 叫一声 `merge`：容器自动锁住 `apple` 所在的这一格，当场读出 5。"
             },
-            { "lane": 1, "op": "read", "text": "拿最新 6", "say": "B 拿到 `apple` 这格的锁，直接拿到的就是最新的 6。" },
-            { "lane": 1, "op": "write", "value": "7", "text": "写回 7", "say": "B 同样格内算出 7 并写回放锁，两件精准记牢。" }
+            {
+              "lane": 1,
+              "op": "note",
+              "tone": "wait",
+              "text": "等 apple 格",
+              "say": "B 恰好也卖苹果，发现 `apple` 这格正在被锁，只在这一格门口等。"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "格内算成 6",
+              "say": "容器没放锁，直接就在桶里调用 `Integer::sum(5, 1)` 算出 6。"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "value": "6",
+              "text": "写 6 放格锁",
+              "say": "写入 6 才解开这格的锁，算账和写回始终锁在同一次桶锁之内，没有拆出容器外。",
+              "ask": {
+                "q": "如果 B 同时要记的是 `milk`（另一格），B 需要等 A 写完苹果吗？",
+                "options": [
+                  "需要，全表同一把锁",
+                  "不需要，各自锁各自那一格"
+                ],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "拿最新 6",
+              "say": "B 拿到 `apple` 这格的锁，直接拿到的就是最新的 6。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "value": "7",
+              "text": "写回 7",
+              "say": "B 同样格内算出 7 并写回放锁，两件精准记牢。"
+            }
           ],
           "verdict": "单键内「取、算、写」==锁在桶里一气呵成==，不同商品还能各算各的。",
           "verdictSay": "如果逻辑更复杂不只是加 1，同家族还有 `compute(k, (key, oldVal) -> ...)`，道理完全一样，都是容器锁定这一格后帮你跑完括号里的计算。"
@@ -545,32 +784,32 @@
     {
       "beat": "choose",
       "title": "前三节的工具，这会儿怎么共存、怎么选",
-      "bridge": "学完前三节，手边已经站了五位主力：`HashMap`、`AtomicInteger`、`CAS`、`merge/compute` 和 `synchronized`。把它们摆在真实项目桌面上一起对齐。",
+      "bridge": "学完前三节，手边已经站了五位常用工具：`HashMap`、`AtomicInteger`、`CAS`、`merge/compute` 和 `synchronized`。把它们在单机内存里的边界对齐。",
       "blocks": [
         {
           "t": "choose",
-          "say": "先看今天表上的耗时对比，记清不要迷信「无锁或安全容器一定快」，更重要的是看清每件工具到底各自守住哪一摊。",
+          "say": "本节实验模拟的是单进程内存里的 8 键表，先对照默认 4 线程耗时看清各自守住的边界；真实多实例或落库系统，还要靠数据库事务或分布式锁。",
           "options": [
             {
               "name": "安全 Map 单步",
               "solves": "不依赖旧值的单个读写，或不撞同键的新增查询",
               "cost": "4 线程错跑成 {ms:tally.SafeMap} ms，还守不住先读后算",
               "when": "纯覆盖写入最新配置、直接读状态，不看旧数计算新数",
-              "say": "只要不依赖刚才看到的旧值，直接 `ConcurrentHashMap` 的 `put`/`get` 就安全；可一旦顺手拿旧值算出新值再 `put`，马上翻车。"
+              "say": "只要不依赖刚才看到的旧值，直接用 `ConcurrentHashMap` 的 `put`/`get` 就安全；一旦顺手拿旧值算出新值再 `put`，就会互相覆盖。"
             },
             {
               "name": "merge / compute",
               "solves": "多线程按单个 key 依赖旧值累加或更新",
               "cost": "4 线程跑全对耗时 {ms:tally.Merge} ms；千百键分散更好，护不住两格联动",
               "when": "报表统计、词频/销量累加等「只盯单个 key 算新值」的场景",
-              "say": "在 Map 里按单键做「读-算-写」，直接交 `merge` 或 `compute` 一步进门办完，绝不再外面自己算。"
+              "say": "在 Map 里按单键做「读、算、写」，直接交给 `merge` 或 `compute` 一步进门办完，不要在外面自己算。"
             },
             {
               "name": "synchronized",
               "solves": "多变量、多 key、多步业务绑定成原子一整块",
               "cost": "4 线程全记对耗时 {ms:tally.Sync} ms；少数热键更快，代价是并发多键得排队",
               "when": "需要「减 A 库存同时加 B 销量」等跨多个键或带多步条件判断的操作",
-              "say": "跟第 1、2 节完全一脉相承：单个数字找 `Atomic`/`CAS`，单键进表找 `merge`/`compute`，一旦跨越多个变量或多个格，立刻请回 `synchronized`。"
+              "say": "跟第 1、2 节一脉相承：单机内单个数字找 `Atomic`/`CAS`，单键进表找 `merge`/`compute`，跨多个变量或多个格就用 `synchronized`。"
             }
           ],
           "rule": "不靠旧值用安全单步；靠旧值时单数找 CAS，单键找 merge，多变量用锁。",
@@ -583,23 +822,44 @@
       "beat": "choose",
       "title": "四个项目场景，你来挑趁手工具",
       "layout": "split",
-      "bridge": "规矩串成了一整棵树，现在把三节课的真实场景混在一起，考考你能不能一眼对号入座。",
+      "bridge": "规矩串成了一整棵树，现在把前三节的单机内存场景混在一起，练习一下对号入座。",
       "blocks": [
         {
           "t": "decide",
           "q": "改动依赖旧值吗？涉及几处？",
           "branches": [
-            { "when": "只单线程自己用，不共享", "pick": "普通 HashMap", "eg": "单请求局部拼接结果" },
-            { "when": "多线程直写覆盖，不靠旧值", "pick": "ConcurrentHashMap", "eg": "刷新商品最新标价" },
-            { "when": "按单键或单数靠旧值算新值", "pick": "merge / CAS", "eg": "按品累销量或减单一库存" },
-            { "when": "跨多个键或绑定多步业务", "pick": "synchronized", "eg": "减库存再记入销量表" }
+            {
+              "when": "只单线程自己用，不共享",
+              "pick": "普通 HashMap",
+              "eg": "单请求局部拼接结果"
+            },
+            {
+              "when": "多线程直写覆盖，不靠旧值",
+              "pick": "ConcurrentHashMap",
+              "eg": "刷新商品最新标价"
+            },
+            {
+              "when": "按单键或单数靠旧值算新值",
+              "pick": "merge / CAS",
+              "eg": "按品累销量或减单一库存"
+            },
+            {
+              "when": "跨多个键或绑定多步业务",
+              "pick": "synchronized",
+              "eg": "减库存再记入销量表"
+            }
           ],
           "say": "这棵选择树把第一、二、三节学过的工具全部排好了座次。每答完一道场景题，看对应哪一枝亮起来。"
         },
         {
           "t": "cases",
-          "tools": ["普通 HashMap", "ConcurrentHashMap", "merge / CAS", "synchronized"],
-          "say": "每个场景选一个最贴切的工具。别背书名，照着选择树的两步提问顺下来，选完马上给理由。",
+          "tools": [
+            "普通 HashMap",
+            "ConcurrentHashMap",
+            "merge / CAS",
+            "synchronized"
+          ],
+          "say": "这里模拟的都是单进程内存里的操作（真实下单或跨实例统计还要交给数据库事务或外部存储）。按选择树的两步提问挑完马上看理由。",
           "items": [
             {
               "text": "接口在单次请求内部建个 Map 统计几条订单，方法一完就扔掉。",
@@ -619,7 +879,7 @@
             {
               "text": "下单既要扣减某件商品库存 `stock`，又要往 `sales` 表加 1，要求两处严丝合缝不能差一半。",
               "answer": 3,
-              "why": "单步 `CAS` 和单键 `merge` 都只能管住各自那一小点；把两处绑在一起变整体，还得请 `synchronized` 锁整段。"
+              "why": "单机内存里跨两处联动要靠 `synchronized` 锁整段；真实生产下单还要放进数据库事务。"
             }
           ]
         }
@@ -640,7 +900,7 @@
             "统计词频或销量表怎么写才不会丢？",
             "merge 和 compute 什么时候比不过加锁？"
           ],
-          "say": "记住这句比名言更好用的大白话：「容器只护得住你每次进出它的那一瞬间，护不住你捧着它给的数走去外面兜一圈再放回来的那条走廊。」"
+          "say": "可以用这句大白话记住：「容器只护得住你每次进出它的那一次调用，护不住你捧着它给的数走去外面算完再放回来的整条走廊。」"
         }
       ]
     },
@@ -653,9 +913,21 @@
           "t": "quiz",
           "q": "代码用安全表先 get(k) 再 put(k, old + 1)，哪里还有并发漏洞？",
           "options": [
-            { "text": "没有漏洞，因为 ConcurrentHashMap 已经线程安全了", "ok": false, "why": "安全的是单次 `get` 和单次 `put`，两行拼成的读改写中间依然可能被别的线程插队覆盖。" },
-            { "text": "有漏洞：读、算、写拆成两趟调用，要改成 merge 或整段加锁", "ok": true, "why": "精准！一定要把取旧值、算加 1、写回合成容器内一步（或整段加锁）。" },
-            { "text": "把 `old + 1` 改成 `++old` 就能变原子", "ok": false, "why": "局部变量 `old` 再怎么加，写回的 `m.put` 照样在外面另跑一趟。" }
+            {
+              "text": "没有漏洞，因为 ConcurrentHashMap 已经线程安全了",
+              "ok": false,
+              "why": "安全的是单次 `get` 和单次 `put`，两行拼成的读改写中间依然可能被别的线程插队覆盖。"
+            },
+            {
+              "text": "有漏洞：读、算、写拆成两趟调用，要改成 merge 或整段加锁",
+              "ok": true,
+              "why": "说得准，一定要把取旧值、算加 1、写回合成容器内一步（或整段加锁）。"
+            },
+            {
+              "text": "把 `old + 1` 改成 `++old` 就能变原子",
+              "ok": false,
+              "why": "局部变量 `old` 再怎么加，写回的 `m.put` 照样在外面另跑一趟。"
+            }
           ],
           "say": "对着刚才看过的 SafeMap 字节码想一想，三选一点出来。"
         }
@@ -670,9 +942,21 @@
           "t": "quiz",
           "q": "为什么「单线程测试全对，2 线程次次少记」不能推给线程太多？",
           "options": [
-            { "text": "因为缝一直就在 get 和 put 之间，1 线程只是没人来插队", "ok": true, "why": "对！漏洞跟线程数量无关，只跟步骤间有没有被锁或合成一步有关。" },
-            { "text": "因为 ConcurrentHashMap 设计规定只支持 1 个线程写入", "ok": false, "why": "它本来就是为多线程设计的，错的是拆成 get+put 的用法，直接用 `merge` 多线程一样全对。" },
-            { "text": "只要把 key 放进 HashMap 前提前填满就能多线程安全", "ok": false, "why": "提前填满只能防止扩容崩坏和死链，护不住同一个 key 的值相互覆盖。" }
+            {
+              "text": "因为缝一直就在 get 和 put 之间，1 线程只是没人来插队",
+              "ok": true,
+              "why": "对，漏洞跟线程数量无关，只跟步骤间有没有被锁或合成一步有关。"
+            },
+            {
+              "text": "因为 ConcurrentHashMap 设计规定只支持 1 个线程写入",
+              "ok": false,
+              "why": "它本来就是为多线程设计的，错的是拆成 get+put 的用法，直接用 `merge` 多线程一样全对。"
+            },
+            {
+              "text": "只要把 key 放进 HashMap 前提前填满就能多线程安全",
+              "ok": false,
+              "why": "提前填满只能避开扩容错乱和结构异常，护不住同一个 key 的值相互覆盖。"
+            }
           ],
           "say": "回忆刚才实测台把旋钮调到 1 和调到 2 的对照结果。"
         }
@@ -687,9 +971,21 @@
           "t": "quiz",
           "q": "下面哪个场景只靠 `ConcurrentHashMap.merge` 拦不住并发问题？",
           "options": [
-            { "text": "10 个收银台给同一个商品销量表按商品名加 1", "ok": false, "why": "这只依赖这一个键的旧值，`merge` 一步正合身。" },
-            { "text": "一次操作既要把「苹果」格减 1，又要把「礼盒销量」格加 1", "ok": true, "why": "对！`merge` 每次只锁单个键的那一格；两格之间必须像同一套动作生效，需要整段加锁。" },
-            { "text": "不同线程根据最新通知直接 `put(k, newText)` 写入", "ok": false, "why": "单次覆盖写入连 `merge` 都不用，`put` 本身就已经安全。" }
+            {
+              "text": "10 个收银台给同一个商品销量表按商品名加 1",
+              "ok": false,
+              "why": "这只依赖这一个键的旧值，`merge` 一步正合身。"
+            },
+            {
+              "text": "一次操作既要把「苹果」格减 1，又要把「礼盒销量」格加 1",
+              "ok": true,
+              "why": "对，`merge` 每次只锁单个键的那一格；两格之间必须一起生效，需要整段加锁。"
+            },
+            {
+              "text": "不同线程根据最新通知直接 `put(k, newText)` 写入",
+              "ok": false,
+              "why": "单次覆盖写入连 `merge` 都不用，`put` 本身就已经安全。"
+            }
           ],
           "say": "找找哪一件事情超出了「一格」的边界。"
         }
@@ -717,16 +1013,25 @@
     {
       "beat": "take",
       "title": "带走三张卡",
-      "bridge": "今天的三句话收进口袋。加上前两节的积木，你手里已经有一整套能打的单机并发底座了。",
+      "bridge": "今天的三句话收进卡片。加上前两节的积木，单机内存里的几条基础并发规则就接起来了。",
       "blocks": [
         {
           "t": "cards",
           "items": [
-            { "q": "ConcurrentHashMap 线程安全，为什么 get+put 还是会丢？", "a": "安全的是单个方法内部，不包你写的连续两步。先 get 拿到旧数、外头算完再 put 回去，中间照样会被别人覆盖。" },
-            { "q": "安全的按键计数 / 累加在 Map 里怎么写对？", "a": "用 `merge(key, 1, Integer::sum)` 或 `compute(...)`，把找旧值、算新值、写回合成容器格子内不可拆的一步。" },
-            { "q": "前三节学完，手头五样工具一句话怎么选？", "a": "单线程用 `HashMap`；直写用安全容器；靠旧值时，单数找 `Atomic/CAS`、单键找 `merge`、多变量多步找锁。" }
+            {
+              "q": "ConcurrentHashMap 线程安全，为什么 get+put 还是会丢？",
+              "a": "安全的是单个方法内部，不包你写的连续两步。先 get 拿到旧数、外头算完再 put 回去，中间照样会被别人覆盖。"
+            },
+            {
+              "q": "安全的按键计数 / 累加在 Map 里怎么写对？",
+              "a": "用 `merge(key, 1, Integer::sum)` 或 `compute(...)`，把找旧值、算新值、写回合成容器格子内不可拆的一步。"
+            },
+            {
+              "q": "前三节学完，手头五样工具一句话怎么选？",
+              "a": "单线程用 `HashMap`；直写用安全容器；靠旧值时，单数找 `Atomic/CAS`、单键找 `merge`、多变量多步找锁。"
+            }
           ],
-          "say": "这三张小卡连着前两节一起存着。下一节我们就要看看，如果问题不是加 1，而是「没有的时候才初始化一次放进去」，只换个方法叫 putIfAbsent 会不会也有坑？"
+          "say": "这三张小卡连着前两节一起存着。下一节我们来看另一类情况：只有键不存在时才初始化一次放进去，换成 `putIfAbsent` 会出现什么现象。"
         }
       ]
     }

@@ -1,110 +1,80 @@
 # Java Hood Lab — 掀开机盖学 Java
 
-> **不背口诀，先看现场**：基于真实压测数据与 `javap` 字节码证据的交互式 Java 实验课。
->
-> *Interactive Java labs — guess first, break it for real, inspect bytecode, and choose tools by measured trade-offs.*
+> **先猜后验，再看证据**：基于本机实测数据与 `javap` 字节码的交互式 Java 并发实验课。
 
-## 在线学习与快速开始
+## 学一节课
 
-- **在线体验（GitHub Pages）**：[https://ericwang1358.github.io/java-hood-lab/](https://ericwang1358.github.io/java-hood-lab/)
-- **本地离线学习**：克隆或下载本仓库后，直接双击打开 [`index.html`](./index.html)（或 [`pages/`](./pages/) 下任意 `.html`），**零外部依赖**即可使用。
-- **操作方式**：点击「下一步」或按 `→` / `空格` 推进讲解，按 `←` 回退；点击带虚线下划线的术语可弹出大白话解释；点击右上角可切换亮/暗配色与课堂笔记。
+学习时请先看下面的[课程顺序](#课程顺序)，了解全系列 32 节的主题和前置顺序，再从第 1 节（[`pages/counter-race.html`](pages/counter-race.html)）开始按顺序学习。
 
-## 每节课的设计闭环
+- **在线打开（GitHub Pages）**：[https://ericwang1358.github.io/java-hood-lab/](https://ericwang1358.github.io/java-hood-lab/)
+- **本地离线学习**：克隆或下载本仓库后，直接双击打开 [`index.html`](index.html) 或 [`pages/`](pages/) 下对应一节的 `.html` 文件即可浏览，不依赖外部网络资源。
+- **课堂操作**：点击「下一步」或按 `→` / `空格` 推进讲解，按 `←` 回退；点击带虚线下划线的术语可以弹出解释；右上角可切换亮/暗配色与课堂笔记。
 
-1. **先猜后撞**：先让你基于直觉下注，再放出 20 次实测运行散点对照，亲眼看见为什么会出事。
-2. **掀开机盖**：调取真实 `javap -c -p` 字节码指令与双线程交错泳道（甚至手动排班触发撞车），用证据替代断言。
-3. **算清代价**：在 1/2/4/8 等不同并发挡位下对比多种修复写法的真实耗时折线，提炼选型规则并用决策树当场练题。
-4. **开口带走**：2 分钟计时自述检验 + 最多 3 张核心复习卡。
+## 每节的设计闭环
+
+1. **先猜后看**：先按直觉选一个预估结果，再放出本机多轮实际运行散点做对照。
+2. **掀开机盖**：结合 `javap -c -p` 字节码指令与并发交错泳道，看清多步之间从哪里被插队。
+3. **权衡代价**：在不同并发线程数下对比几种改法的真实耗时折线与正确率，总结选型规则并做题核对。
+4. **复述带走**：2 分钟自述检验重点，并整理最多 3 张复习卡。
+
+## 课程顺序
+
+第 1、2 节固定从共享计数和库存扣减起步，随后依次经过并发容器、锁边界与读写协同、无锁 CAS 与不可变快照、线程封闭与异步编排，再到后半段的工程并发模式与虚拟线程（注：高并发工程场景均采用内存级小型模型演示单机核心竞争点，真实现场需配合数据库事务、分布式锁或消息重试机制）。
+
+| 序号 | 课 id | 标题 | 页面 | 一句话讲什么 |
+|---|---|---|---|---|
+| 1 | `counter-race` | 两个线程一起数数，能数对吗 | [pages/counter-race.html](pages/counter-race.html) | 多线程对同一个 `static` 整数循环加一，对照普通计数、`volatile`、`synchronized` 和 `AtomicInteger`。 |
+| 2 | `stock-oversell` | 库存只有这么多，会卖超吗 | [pages/stock-oversell.html](pages/stock-oversell.html) | 多线程先查库存再扣一件，比较普通写法、`AtomicInteger`、加锁与 `CAS` 循环的差异。 |
+| 3 | `tally-map` | 几个线程一起按商品记销量，账对得上吗？ | [pages/tally-map.html](pages/tally-map.html) | 多个线程往同一张 `Map` 里按商品累加销量，对比 `ConcurrentHashMap` 先取再放、加锁与 `merge`。 |
+| 4 | `absent-init` | 几个线程同时读冷缓存，连接会建几次？ | [pages/absent-init.html](pages/absent-init.html) | 缓存缺失时现建连接，对比普通先查后放、`putIfAbsent`、全方法加锁与 `computeIfAbsent`。 |
+| 5 | `list-append` | 几个线程往同一列表追加日志，条数对得上吗？ | [pages/list-append.html](pages/list-append.html) | 预留足容量的共享列表被多线程并发追加，对比普通列表、`volatile` 列表、同步列表与并发队列。 |
+| 6 | `cow-iter` | 一边遍历白名单一边偶尔更新，能顺利读完吗？ | [pages/cow-iter.html](pages/cow-iter.html) | 读多写少场景下多线程扫描白名单同时偶发增删，对比普通列表、同步列表、加锁遍历与写时复制。 |
+| 7 | `lru-visit` | 几个线程只从最近访问缓存里读数据，会出事吗？ | [pages/lru-visit.html](pages/lru-visit.html) | 开启按访问排序的 `LinkedHashMap` 只调 `get` 也会改链表，对比安全 `Map`、`readLock` 与 `writeLock`。 |
+| 8 | `lock-scope` | 每次新建对象去调记账方法，总账对得上吗？ | [pages/lock-scope.html](pages/lock-scope.html) | 总账记在静态字段而 `synchronized` 锁住每次新建的 `this` 实例，对比锁范围与类锁。 |
+| 9 | `box-lock` | 把共享计数器写成包装类，几个线程能数准吗？ | [pages/box-lock.html](pages/box-lock.html) | 用会因自动装箱而换对象的静态 `Integer` 当锁监视器，对比固定锁对象与原子类。 |
+| 10 | `rw-lock` | 原价和折扣成对修改，并发查价会读到什么？ | [pages/rw-lock.html](pages/rw-lock.html) | 原价和折扣需成对维持比例，读远多于写时对比双 `volatile`、互斥锁与读写锁。 |
+| 11 | `stamped-opt` | 一边改双格坐标一边高频读取，读到的是一对吗？ | [pages/stamped-opt.html](pages/stamped-opt.html) | 高频读双格坐标配合偶发写，对比 `StampedLock` 先验后读、先读后验乐观读与读写锁。 |
+| 12 | `deadlock-order` | 几个线程在账户之间互相转账，总账能平吗？ | [pages/deadlock-order.html](pages/deadlock-order.html) | 两账户互转需要同时持有两把锁，对比无锁、按参数顺序加锁、固定全序加锁与单把大锁。 |
+| 13 | `cas-aba` | 账户余额变过又回到原值，首充补贴会发几次？ | [pages/cas-aba.html](pages/cas-aba.html) | 余额从原值改写后又回到原值，对比单值 `CAS`、全方法加锁与带版本号的 `AtomicStampedReference`。 |
+| 14 | `adder-limit` | 用分段累加器统计已发券数，能卡住上限吗？ | [pages/adder-limit.html](pages/adder-limit.html) | 高并发下卡每波优惠券上限，对比 `LongAdder` 先求和再自增、整段加锁与 `CAS` 自旋限发。 |
+| 15 | `multi-ref` | 门槛和减免额成套热更新，接单会读到哪一套？ | [pages/multi-ref.html](pages/multi-ref.html) | 折扣与门槛需成套切换并校验，对比双 `AtomicInteger`、加锁与不可变对象配 `AtomicReference`。 |
+| 16 | `date-format` | 几个线程共用日期格式化工具，转出的日子准吗？ | [pages/date-format.html](pages/date-format.html) | 多线程并发转换固定日期，对比共用实例、按模板缓存实例、加锁与不可变 `DateTimeFormatter`。 |
+| 17 | `singleton-state` | 把订单原价暂存在共享服务字段里，折后价准吗？ | [pages/singleton-state.html](pages/singleton-state.html) | 多线程共用同一服务实例却把中间金额存进成员字段，对比成员暂存、`volatile`、加锁与局部参数。 |
+| 18 | `threadlocal-pool` | 固定线程池轮流接待请求，用户身份会留底吗？ | [pages/threadlocal-pool.html](pages/threadlocal-pool.html) | 线程池复用线程时用 `ThreadLocal` 存身份，遇到异常分支对比不清理、仅普通路径清理、`finally` 清理与按单号查表。 |
+| 19 | `tl-inherit` | 主线程存好的追踪编号，进了线程池还读得到吗？ | [pages/tl-inherit.html](pages/tl-inherit.html) | 父线程的 `ThreadLocal` 追踪号随子任务进固定线程池，对比普通、可继承、每次新建线程与显式快照传参。 |
+| 20 | `pool-reject` | 有界线程池与队列都满时，多出来的任务去哪了？ | [pages/pool-reject.html](pages/pool-reject.html) | 有界工作线程与有界队列满载后，对比默认拒收吞错、静默丢弃、全局串行与调用者反压策略。 |
+| 21 | `cf-combine` | 几个异步分支算完汇总到同一本账，结果准吗？ | [pages/cf-combine.html](pages/cf-combine.html) | 多路异步任务用 `allOf` 汇合，对比回调改共享表、汇合后再算、加锁写入与只返回值由主线程归并。 |
+| 22 | `semaphore-gate` | 下游最多同时接两单，八路请求涌来会放进几个？ | [pages/semaphore-gate.html](pages/semaphore-gate.html) | 模拟下游同时最多承受两单，对比先查原子计数再放行、单通道互斥锁与 `Semaphore` 信号量闸门。 |
+| 23 | `once-per-user` | 每人限领一张优惠券，同一账号连点会发出几张？ | [pages/once-per-user.html](pages/once-per-user.html) | 模拟同一账号并发连点领券，对比先查后记、局部拼字符串加锁、全局锁与用户键 `ConcurrentHashMap` 原子方法。 |
+| 24 | `order-state` | 支付回调与超时关单同时到达，订单会落向哪边？ | [pages/order-state.html](pages/order-state.html) | 待支付订单同时收到支付与超时事件，对比普通状态字段、`volatile` 判断、全锁与 `CAS` 状态迁移。 |
+| 25 | `cache-aside` | 缓存刚清空就涌来并发查询，数据库会被查几次？ | [pages/cache-aside.html](pages/cache-aside.html) | 缓存清空后面对并发冷查询，对比无保护回源、判空查库后 `putIfAbsent`、全锁与按键单飞归并。 |
+| 26 | `sharded-stock` | 把八百件库存拆进十六个格子卖，最后会卖出多少？ | [pages/sharded-stock.html](pages/sharded-stock.html) | 在内存模拟中把一份库存拆成 16 个槽位并允许顺延扣减，对比单把大锁、普通整数分片与分段原子 `CAS`。 |
+| 27 | `id-gen` | 时间窗配序列号一起发号，跨窗瞬间会重号吗？ | [pages/id-gen.html](pages/id-gen.html) | 模拟时间窗与序列号协同递增发号，对比分开的两组原子字段、全局锁与单 `long` 位打包 `CAS`。 |
+| 28 | `compound-avg` | 一边累加次数与总耗时一边算均值，结果准吗？ | [pages/compound-avg.html](pages/compound-avg.html) | 统计总次数与总耗时并实时求比值，对比双原子字段、加锁与不可变统计快照 `CAS`。 |
+| 29 | `lazy-singleton` | 多个线程同时首次获取懒加载对象，会建出几个？ | [pages/lazy-singleton.html](pages/lazy-singleton.html) | 多线程同时首次懒加载初始化共享对象，对比普通判空、单检加锁、全方法加锁与 `volatile` 双检锁。 |
+| 30 | `queue-drain` | 一边往队列写日志一边整批取走，条数对得上吗？ | [pages/queue-drain.html](pages/queue-drain.html) | 生产线程连续入队、消费线程定期批量取走清空，对比先快照再 `clear`、互斥加锁与 `drainTo` 原子抽干。 |
+| 31 | `virtual-race` | 把平台线程换成虚拟线程，一起数数能数对吗？ | [pages/virtual-race.html](pages/virtual-race.html) | 只把线程从平台线程换成 `Thread.ofVirtual()` 跑共有计数，对比无同步、加锁与并发累加。 |
+| 32 | `tx-outbox` | 改完主数据再异步刷新查询表，两边最后一致吗？ | [pages/tx-outbox.html](pages/tx-outbox.html) | 在内存数组模拟主写后异步投影的乱序覆写，对比无锁双写、双原子数组、全局锁与按版本号覆盖（模拟可靠投递后下游按版本丢弃旧消息这一半）。 |
 
 ## 目录结构
 
 ```text
 .
-├── index.html   # 32 节实验课总导航入口页（支持搜索、分章筛选与亮暗主题）
+├── index.html   # 32 节实验导航入口页（支持搜索、分章筛选与亮暗主题）
 ├── pages/       # 32 份单文件交互式课件网页（双击即开，零外链依赖）
 ├── lessons/     # 32 份课程结构与讲解数据（JSON）
-├── src/         # 128 份可独立编译运行的 Java 对照源码（每课 4 种变体）
+├── src/         # 128 份可独立编译运行的 Java 对照源码（每节 4 种变体）
 └── results/     # 实验台在本机实测沉淀的运行数据与 javap 输出记录（JSON）
 ```
 
-## 完整课表（共 32 课）
-
-### 第一章：竞态与并发容器（第 1～7 课）
-
-从最基础的 count++ 丢数出发，建立「读-改-写回被插队」模型，打破「换上线程安全容器/写时复制就绝对安全」的误区。
-
-| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
-|---|---|---|---|---|
-| 01 | **两个线程一起数数，能数对吗** | 每个线程把同一个数加 100 万次。两个线程一起，最后是多少？ | `lab.counter` | [网页课件](./pages/counter-race.html) · [JSON](./lessons/counter-race.json) · [源码](./src/lab/counter/) |
-| 02 | **库存只有这么多，会卖超吗** | 几个线程一起卖货，每次先看有没有货，有就拿走一件。最后会卖出多少？ | `lab.stock` | [网页课件](./pages/stock-oversell.html) · [JSON](./lessons/stock-oversell.json) · [源码](./src/lab/stock/) |
-| 03 | **换了安全容器，销量怎么还是少？** | 大家都说线程安全的 ConcurrentHashMap，先取再加一放回为什么照样丢？ | `lab.tally` | [网页课件](./pages/tally-map.html) · [JSON](./lessons/tally-map.json) · [源码](./src/lab/tally/) |
-| 04 | **换成 putIfAbsent，连接还会多建吗？** | 懒加载缓存时换成 ConcurrentHashMap 的 putIfAbsent，为什么连接照样被新建了好几遍？ | `lab.absent` | [网页课件](./pages/absent-init.html) · [JSON](./lessons/absent-init.json) · [源码](./src/lab/absent/) |
-| 05 | **列表加 volatile，日志还是少？** | 多线程把日志一条条写进共享列表，为什么不光少条数，给列表加上 volatile 照样挡不住？ | `lab.listadd` | [网页课件](./pages/list-append.html) · [JSON](./lessons/list-append.json) · [源码](./src/lab/listadd/) |
-| 06 | **加了同步包装，遍历还是炸？** | 读多写少的白名单换成 Collections.synchronizedList，为什么一边遍历一边改照样炸出异常？ | `lab.cow` | [网页课件](./pages/cow-iter.html) · [JSON](./lessons/cow-iter.json) · [源码](./src/lab/cow/) |
-| 07 | **只调 get 不修改，读写锁怎么也撞坏？** | 开启按访问排序的 LinkedHashMap 后，连读取都要改双向链表；以为只读就上 readLock 照样把缓存搞碎。 | `lab.lru` | [网页课件](./pages/lru-visit.html) · [JSON](./lessons/lru-visit.json) · [源码](./src/lab/lru/) |
-
-### 第二章：锁的边界、读写分离与死锁（第 8～12 课）
-
-为什么加了 synchronized 还是锁不住？弄清锁对象身份、装箱陷阱、读写锁与乐观读切点，以及按序加锁防死锁。
-
-| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
-|---|---|---|---|---|
-| 08 | **方法都加了 synchronized，怎么还丢数？** | 给 add() 加上了 synchronized，为什么每个线程各自 new 对象来调时，静态总账还是照样少？ | `lab.lockscope` | [网页课件](./pages/lock-scope.html) · [JSON](./lessons/lock-scope.json) · [源码](./src/lab/lockscope/) |
-| 09 | **锁在 static 变量上，怎么照样锁不住？** | 这次锁对象老实写成了 static 全局共享，可只因为把 Integer count 拿去加锁，它竟在眼皮底下被掉包了。 | `lab.boxlock` | [网页课件](./pages/box-lock.html) · [JSON](./lessons/box-lock.json) · [源码](./src/lab/boxlock/) |
-| 10 | **读多写少，读写锁什么时候真该请出场？** | 两个关联字段都加上 volatile 照样读到半截数；真正只读且读远多于写时，读写锁怎么胜出？ | `lab.rwlock` | [网页课件](./pages/rw-lock.html) · [JSON](./lessons/rw-lock.json) · [源码](./src/lab/rwlock/) |
-| 11 | **不占读锁也能防撕裂吗** | 用版本戳替掉读写锁的读计数，为什么还是读出半新半旧的一对数？ | `lab.stamped` | [网页课件](./pages/stamped-opt.html) · [JSON](./lessons/stamped-opt.json) · [源码](./src/lab/stamped/) |
-| 12 | **两个账户各自上锁，转账怎么还卡死？** | 前面学会了 ReentrantLock 与读写锁，可只要一次操作同时要拿两把锁，照着参数顺序各自加锁竟会互相卡死。 | `lab.deadlock` | [网页课件](./pages/deadlock-order.html) · [JSON](./lessons/deadlock-order.json) · [源码](./src/lab/deadlock/) |
-
-### 第三章：无锁 CAS、分段累加与不可变快照（第 13～15 课）
-
-直面 CAS 的 ABA 欺骗、LongAdder 散列计数为何不能卡硬上限，以及多字段关联时「两个原子类拼接仍撕裂」的真相。
-
-| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
-|---|---|---|---|---|
-| 13 | **值变回 19，CAS 怎么还是发重了？** | 第 2 节学过无锁 CAS，可若值先从 A 变 B 又改回 A，只查当前值的 compareAndSet 会怎样？ | `lab.aba` | [网页课件](./pages/cas-aba.html) · [JSON](./lessons/cas-aba.json) · [源码](./src/lab/aba/) |
-| 14 | **用 LongAdder 抢券为什么还是超发？** | 面经说 LongAdder 更快，可用来卡抢券上限怎么照样超发？ | `lab.adder` | [网页课件](./pages/adder-limit.html) · [JSON](./lessons/adder-limit.json) · [源码](./src/lab/adder/) |
-| 15 | **两字段各自换成原子类，还读半套？** | 折扣和门槛必须配套生效；各换成 AtomicInteger 分开改，怎么还是读出新折扣配旧门槛？ | `lab.multiref` | [网页课件](./pages/multi-ref.html) · [JSON](./lessons/multi-ref.json) · [源码](./src/lab/multiref/) |
-
-### 第四章：线程封闭、线程池反压与异步编排（第 16～21 课）
-
-告别共享与排队：彻底厘清无状态局部隔离、ThreadLocal 池复用串号、异步快照透传、队列反压策略与异步汇总失误。
-
-| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
-|---|---|---|---|---|
-| 16 | **静态日期工具为啥会串味？** | 看似无状态的静态日期格式化，并发下一方面串出别人日期，另一方面直接抛异常。 | `lab.datefmt` | [网页课件](./pages/date-format.html) · [JSON](./lessons/date-format.json) · [源码](./src/lab/datefmt/) |
-| 17 | **单例成员暂存单价，为何一并发就串单？** | 看似先写后用没毛病，一多线程全乱套，加 volatile 也白搭。 | `lab.singleton` | [网页课件](./pages/singleton-state.html) · [JSON](./lessons/singleton-state.json) · [源码](./src/lab/singleton/) |
-| 18 | **线程各有口袋，进线程池怎么还串号？** | 每个线程独享一份上下文，进了线程池反复复用，为什么还是把上一单身份串给了下一单？ | `lab.tlpool` | [网页课件](./pages/threadlocal-pool.html) · [JSON](./lessons/threadlocal-pool.json) · [源码](./src/lab/tlpool/) |
-| 19 | **异步丢进线程池，traceId 还能传过去吗？** | 上游把 traceId 放进 ThreadLocal，进线程池却读成 null；换可继承版怎么还串号？ | `lab.tlinherit` | [网页课件](./pages/tl-inherit.html) · [JSON](./lessons/tl-inherit.json) · [源码](./src/lab/tlinherit/) |
-| 20 | **队列满了换「不报错」策略，怎么还在丢单？** | 吞掉拒单异常或换成不抛错的丢弃策略，表面一片安静，订单却悄悄没了；怎么在不撑爆队列的前提下反压保单？ | `lab.poolreject` | [网页课件](./pages/pool-reject.html) · [JSON](./lessons/pool-reject.json) · [源码](./src/lab/poolreject/) |
-| 21 | **allOf 等完了，总账怎么还是错？** | 三个异步分支并行算优惠、积分和运费，加了 allOf().join() 等收尾，为何共享总账照样丢更新？ | `lab.cfcombine` | [网页课件](./pages/cf-combine.html) · [JSON](./lessons/cf-combine.json) · [源码](./src/lab/cfcombine/) |
-
-### 第五章：高并发工程模式与新特性实战（第 22～32 课）
-
-把单机并发推向真实后端生产场景：Semaphore 限流、按用户加锁、CAS 状态机、SingleFlight 防击穿、分段扣库存、位打包发号、DCL 双检锁、虚拟线程与 Outbox 发件箱。
-
-| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
-|---|---|---|---|---|
-| 22 | **Semaphore：同时只放 2 个线程** | 下游最多扛 2 并发，先查再加照样打超，互斥锁又只放 1 个，用 Semaphore 精准卡在 2。 | `lab.semgate` | [网页课件](./pages/semaphore-gate.html) · [JSON](./lessons/semaphore-gate.json) · [源码](./src/lab/semgate/) |
-| 23 | **每人限领一次：按用户加锁** | 同一个人连点两下要拦住，不相干的人还得同时领。 | `lab.userlock` | [网页课件](./pages/once-per-user.html) · [JSON](./lessons/once-per-user.json) · [源码](./src/lab/userlock/) |
-| 24 | **同一张订单，怎么又付款又取消？** | 支付回调和超时关单同时扑向一张待支付订单，为什么连 volatile 也拦不住双方同时放行？ | `lab.orderstate` | [网页课件](./pages/order-state.html) · [JSON](./lessons/order-state.json) · [源码](./src/lab/orderstate/) |
-| 25 | **换成安全表先查后放，怎么还会多查库？** | 缓存已换安全表，先判空查库再调 putIfAbsent；冷键并发一来，数据库还是被重复查了很多遍。 | `lab.cacheaside` | [网页课件](./pages/cache-aside.html) · [JSON](./lessons/cache-aside.json) · [源码](./src/lab/cacheaside/) |
-| 26 | **热点库存分片：16 桶为何还超卖** | 爆品秒杀挤死一把全局锁，有人把库存拆进 16 个普通桶却照样卖超；改用分段 CAS 加顺延探测才稳。 | `lab.shardstock` | [网页课件](./pages/sharded-stock.html) · [JSON](./lessons/sharded-stock.json) · [源码](./src/lab/shardstock/) |
-| 27 | **位打包 CAS 发号：告别跨窗重号** | 把时间窗和序列号分开放，为什么加了原子类跨窗瞬间还是会撞出重复 ID？ | `lab.idgen` | [网页课件](./pages/id-gen.html) · [JSON](./lessons/id-gen.json) · [源码](./src/lab/idgen/) |
-| 28 | **两数各换 AtomicLong，均值还算劈？** | 实时延迟监控累加 (count, sum)，每笔 10ms；各自换成原子类，为什么还会算出错位均值？ | `lab.compavg` | [网页课件](./pages/compound-avg.html) · [JSON](./lessons/compound-avg.json) · [源码](./src/lab/compavg/) |
-| 29 | **外面判空里面又加锁，怎么还建出两份实例？** | 只在锁外判空、进锁直接建，并发仍造两份；全方法加锁拖慢纯读，靠 volatile 双检锁只建一次又秒读。 | `lab.lazysingle` | [网页课件](./pages/lazy-singleton.html) · [JSON](./lessons/lazy-singleton.json) · [源码](./src/lab/lazysingle/) |
-| 30 | **换了安全队列再 clear，怎么还丢日志？** | 并发安全的队列保得住单次入队，却护不住「遍历拷贝」与「整队清空」之间的间隙。 | `lab.queuedrain` | [网页课件](./pages/queue-drain.html) · [JSON](./lessons/queue-drain.json) · [源码](./src/lab/queuedrain/) |
-| 31 | **换上虚拟线程，共享计数还需要锁吗** | 只把平台线程换成 Thread.ofVirtual()，百万次 count++ 会少掉吗？ | `lab.virtrace` | [网页课件](./pages/virtual-race.html) · [JSON](./lessons/virtual-race.json) · [源码](./src/lab/virtrace/) |
-| 32 | **库与缓存各用原子数组，为啥还会写反？** | 更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？ | `lab.txoutbox` | [网页课件](./pages/tx-outbox.html) · [JSON](./lessons/tx-outbox.json) · [源码](./src/lab/txoutbox/) |
-
 ## 本地动手运行实验代码
 
-仓库中的所有示例仅使用 JDK 标准库，无任何第三方依赖（第 31 课 `virtual-race` 需 **JDK 21+**，其余课程兼容常见 JDK；全部实验数据实测于 **JDK 25**）。
+仓库中的示例仅使用 JDK 标准库，不引入第三方依赖（第 31 节 `virtual-race` 需 **JDK 21+**，其余各节兼容常见 JDK；全部实验数据实测于 **JDK 25**）。
 
-在仓库根目录下编译并运行任意一课（以第 3 课 `lab.tally` 为例）：
+在仓库根目录下编译并运行任意一节（以第 3 节 `lab.tally` 为例）：
 
 ```bash
-# 1. 编译该课的所有变体实现
+# 1. 编译该节的所有变体实现
 javac -encoding UTF-8 -d out src/lab/tally/*.java
 
 # 2. 以 4 个并发线程运行不同写法对比结果
