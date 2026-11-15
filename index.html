@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>54</strong> 节循序渐进实验课</span>
-        <span><strong>216</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>70</strong> 节循序渐进实验课</span>
+        <span><strong>280</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,10 +374,10 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 54 / 54 课</span>
+        <span id="shownCount" class="count-note">显示 70 / 70 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (54)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (70)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
@@ -388,6 +388,7 @@
         <button type="button" class="pill" data-filter="m4ch2">MySQL 2 · B+ 树与索引 (7)</button>
         <button type="button" class="pill" data-filter="m4ch3">MySQL 3 · EXPLAIN 与失效 (5)</button>
         <button type="button" class="pill" data-filter="m5ch1">Spring 1 · 事务与 AOP (5)</button>
+        <button type="button" class="pill" data-filter="m5ch2">Spring 2 · IoC 与自动装配 (5)</button>
         <button type="button" class="pill" data-filter="m6">模块 6 · Redis / MQ / 微服务 (6)</button>
       </div>
     </div>
@@ -1023,6 +1024,75 @@
           <p class="card__lead">下单方法同时挂了分布式锁切面和 @Transactional。如果锁在事务里面——锁都放开了事务还没提交，下一个线程直接读到旧余额！</p>
           <div class="card__foot">
             <span>13 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m5ch2">
+        <div class="chapter__head">
+          <h2>模块五 · 第二章：IoC 容器、Bean 生命周期与自动装配（第 43～47 课）</h2>
+          <p>用纯 JDK 拆解三级缓存如何兼容 AOP 代理、单例注入 Prototype 退化、@PostConstruct 代理时机、多线程事务隔离与自动装配退让机制。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/spring-ioc-cycle.html" data-ch="m5ch2" data-search="43 spring-ioc-cycle 三级缓存解循环依赖 objectfactory aop 代理 构造器循环依赖 lab.ioccycle">
+          <div class="card__top">
+            <span class="card__num">#43</span>
+            <span class="card__pkg">lab.ioccycle</span>
+          </div>
+          <h3 class="card__title">三级缓存解循环依赖：为什么非要第三级 ObjectFactory？</h3>
+          <p class="card__lead">A 依赖 B、B 又依赖 A。如果只有两级缓存直接暴露半成品对象，遇上 AOP 代理，B 拿到的竟是未代理的裸对象！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-bean-scope.html" data-ch="m5ch2" data-search="44 spring-bean-scope 单例 bean prototype objectprovider 线程安全 串单 lab.beanscope">
+          <div class="card__top">
+            <span class="card__num">#44</span>
+            <span class="card__pkg">lab.beanscope</span>
+          </div>
+          <h3 class="card__title">单例 Bean 里注入 Prototype 或成员变量，并发怎么串单了？</h3>
+          <p class="card__lead">Spring Bean 默认是单例。在 Service 里写个成员变量暂存 userId，或者直接注入 Prototype Bean，多线程一来全串单！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-bean-lifecycle.html" data-ch="m5ch2" data-search="45 spring-bean-lifecycle bean 生命周期 postconstruct beanpostprocessor aop 代理时机 lab.lifecycle">
+          <div class="card__top">
+            <span class="card__num">#45</span>
+            <span class="card__pkg">lab.lifecycle</span>
+          </div>
+          <h3 class="card__title">Bean 生命周期顺序：为什么 @PostConstruct 里事务代理还没生效？</h3>
+          <p class="card__lead">在 @PostConstruct 里调自己的 @Transactional 方法预热数据，或者在初始化前访问注入字段——不是 NPE 就是代理没包上！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-tx-multithread.html" data-ch="m5ch2" data-search="46 spring-tx-multithread 事务方法里开多线程 async threadlocal 回滚 lab.txthread">
+          <div class="card__top">
+            <span class="card__num">#46</span>
+            <span class="card__pkg">lab.txthread</span>
+          </div>
+          <h3 class="card__title">事务方法里开多线程 / @Async，子线程异常主线程怎么不回滚？</h3>
+          <p class="card__lead">@Transactional 方法里新开线程或调 @Async 写明细表，子线程报错了，主线程却照常 commit——订单有头无尾！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-boot-autowire.html" data-ch="m5ch2" data-search="47 spring-boot-autowire spring boot 自动装配 conditionalonmissingbean primary qualifier lab.autowire">
+          <div class="card__top">
+            <span class="card__num">#47</span>
+            <span class="card__pkg">lab.autowire</span>
+          </div>
+          <h3 class="card__title">Spring Boot 自动装配：@ConditionalOnMissingBean 为什么有时会失效？</h3>
+          <p class="card__lead">自己配了一个 Serializer Bean 想覆盖默认实现，结果要么启动直接报 NoUniqueBeanDefinitionException，要么默认实现抢先占坑！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>

@@ -153,6 +153,16 @@
 | 41 | **JDK 动态代理 vs CGLIB：强转就炸、final 就失效** | 有接口用 JDK 代理，强转实现类直接 ClassCastException；换成 CGLIB 子类代理，加个 final 切面就静默失效！ | `lab.proxykind` | [网页课件](./pages/spring-proxy-kind.html) · [JSON](./lessons/spring-proxy-kind.json) · [源码](./src/lab/proxykind/) |
 | 42 | **多个 @Aspect 切面叠在一起：锁、日志、事务谁先谁后？** | 下单方法同时挂了分布式锁切面和 @Transactional。如果锁在事务里面——锁都放开了事务还没提交，下一个线程直接读到旧余额！ | `lab.aoporder` | [网页课件](./pages/spring-aop-order.html) · [JSON](./lessons/spring-aop-order.json) · [源码](./src/lab/aoporder/) |
 
+### 模块五 · 第二章：IoC 容器、Bean 生命周期与自动装配（第 43～47 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 43 | **三级缓存解循环依赖：为什么非要第三级 ObjectFactory？** | A 依赖 B、B 又依赖 A。如果只有两级缓存直接暴露半成品对象，遇上 AOP 代理，B 拿到的竟是未代理的裸对象！ | `lab.ioccycle` | [网页课件](./pages/spring-ioc-cycle.html) · [JSON](./lessons/spring-ioc-cycle.json) · [源码](./src/lab/ioccycle/) |
+| 44 | **单例 Bean 里注入 Prototype 或成员变量，并发怎么串单了？** | Spring Bean 默认是单例。在 Service 里写个成员变量暂存 userId，或者直接注入 Prototype Bean，多线程一来全串单！ | `lab.beanscope` | [网页课件](./pages/spring-bean-scope.html) · [JSON](./lessons/spring-bean-scope.json) · [源码](./src/lab/beanscope/) |
+| 45 | **Bean 生命周期顺序：为什么 @PostConstruct 里事务代理还没生效？** | 在 @PostConstruct 里调自己的 @Transactional 方法预热数据，或者在初始化前访问注入字段——不是 NPE 就是代理没包上！ | `lab.lifecycle` | [网页课件](./pages/spring-bean-lifecycle.html) · [JSON](./lessons/spring-bean-lifecycle.json) · [源码](./src/lab/lifecycle/) |
+| 46 | **事务方法里开多线程 / @Async，子线程异常主线程怎么不回滚？** | @Transactional 方法里新开线程或调 @Async 写明细表，子线程报错了，主线程却照常 commit——订单有头无尾！ | `lab.txthread` | [网页课件](./pages/spring-tx-multithread.html) · [JSON](./lessons/spring-tx-multithread.json) · [源码](./src/lab/txthread/) |
+| 47 | **Spring Boot 自动装配：@ConditionalOnMissingBean 为什么有时会失效？** | 自己配了一个 Serializer Bean 想覆盖默认实现，结果要么启动直接报 NoUniqueBeanDefinitionException，要么默认实现抢先占坑！ | `lab.autowire` | [网页课件](./pages/spring-boot-autowire.html) · [JSON](./lessons/spring-boot-autowire.json) · [源码](./src/lab/autowire/) |
+
 
 ### 模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-06）
 
