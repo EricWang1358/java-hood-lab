@@ -243,7 +243,8 @@
 
 
 
-### 模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-20）
+
+### 模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-24）
 
 纯 JDK 零依赖仿真实验室：覆盖缓存高并发灾难与底层原理、分布式锁与看门狗、MQ 可靠幂等积压、微服务注册/重试/限流熔断。
 
@@ -269,6 +270,10 @@
 | M6-18 | **订单创建、支付、发货三条消息并发消费，怎么乱序了？** | MQ 默认把消息轮询分散到多个分区并由多线程并发消费，同一笔订单的「创建→支付→发货」落到不同分区或不同线程就会彻底乱序。按业务 Key 哈希路由 + 分区内串行（或局部有序缓冲）才能既保顺序又保吞吐。 | `lab.m6.mqorder` | [网页课件](./pages/m6-mq-order.html) · [JSON](./lessons/m6-mq-order.json) · [源码](./src/lab/m6/mqorder/) |
 | M6-19 | **30 分钟未支付自动关单：定时扫表、时间轮还是延迟队列+死信？** | 定时扫数据库全表会随订单膨胀把 DB 扫崩；为每个订单开一个睡眠线程会瞬间耗尽线程池。延迟消息底层靠时间轮/分层队列把扫描次数降到 O(1)，配合死信队列还能兜底异常消息。 | `lab.m6.mqdelay` | [网页课件](./pages/m6-mq-delay-dlq.html) · [JSON](./lessons/m6-mq-delay-dlq.json) · [源码](./src/lab/m6/mqdelay/) |
 | M6-20 | **百万消息积压在 MQ 里，为什么加机器反而可能把消费者打 OOM？** | 大促突发流量或下游故障恢复后，MQ 积压几十万条消息。盲目用无界线程池/无界队列狂拉消息会瞬间撑爆消费者内存 OOM；正确姿势是「扩容分区 + 临时 Topic 分片转移 + 有界批量拉取反压」。 | `lab.m6.mqbacklog` | [网页课件](./pages/m6-mq-backlog.html) · [JSON](./lessons/m6-mq-backlog.json) · [源码](./src/lab/m6/mqbacklog/) |
+| M6-21 | **注册中心心跳全超时，为什么 Eureka 死保旧列表而 Zookeeper 直接踢光？** | 微服务注册中心不是简单的心跳打卡表：网络抖动时如果不管三七二十一全踢掉，健康节点也会团灭；如果连本地快照都不缓存，注册中心一挂全网跟着瘫痪。 | `lab.m6.registry` | [网页课件](./pages/m6-registry-heartbeat.html) · [JSON](./lessons/m6-registry-heartbeat.json) · [源码](./src/lab/m6/registry/) |
+| M6-22 | **下游已经快被压垮了，为什么盲目重试 3 次会直接引发雪崩？** | RPC 超时重试是一把双刃剑：偶尔网络抖动时重试能救活请求；但如果下游本就过载，所有上游同时盲目同步重试 3 次，流量瞬间放大 3 倍把下游彻底打死！必须配合退避抖动、重试预算与接口幂等。 | `lab.m6.rpcretry` | [网页课件](./pages/m6-rpc-retry.html) · [JSON](./lessons/m6-rpc-retry.json) · [源码](./src/lab/m6/rpcretry/) |
+| M6-23 | **固定窗口限流明明设了 10 QPS，为什么边界一秒放过了 20 个请求？** | 限流算法不是随便计数就行：固定窗口在时间临界点会被「双倍突刺」打穿；滑动窗口精准统计最近区间却占内存；令牌桶（Guava RateLimiter）既能恒定速率放行又允许可控突发。 | `lab.m6.ratelimit` | [网页课件](./pages/m6-rate-limiter.html) · [JSON](./lessons/m6-rate-limiter.json) · [源码](./src/lab/m6/ratelimit/) |
+| M6-24 | **服务 A 慢查询卡死，为什么健康的服务 B 跟着全线崩溃？** | 微服务最怕「级联雪崩」：所有接口共用同一个 Tomcat 线程池时，慢服务 A 会把线程全占光，导致健康的服务 B 也拿不到线程！必须靠舱壁隔离（Bulkhead）、超时快速失败与熔断器状态机守住防线。 | `lab.m6.breaker` | [网页课件](./pages/m6-circuit-breaker.html) · [JSON](./lessons/m6-circuit-breaker.json) · [源码](./src/lab/m6/breaker/) |
 
 ## 本地动手运行实验代码
 
