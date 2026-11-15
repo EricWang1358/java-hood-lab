@@ -1,0 +1,249 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "jvm-gc-pause",
+  "course": "JVM 内存与 GC",
+  "title": "分代回收与 GC 停顿：为什么大对象直接进老年代更危险？",
+  "lead": "朝生夕灭的小对象在 Eden 秒收，大数组（Humongous）和过早晋升的老年代对象怎么把 GC 耗时与停顿拖垮？",
+  "minutes": 35,
+  "needs": ["知道弱分代假说", "知道 Minor GC vs Full GC", "知道 G1 Humongous 大对象"],
+  "after": [
+    "讲清 Minor GC（复制算法）与 Full/Mixed GC（标记-整理/混合回收）的停顿差异",
+    "理解大对象（如 > G1 Region 一半）绕过新生代直接进老年代引发的碎片与频繁 Full GC 风险",
+    "对比 Parallel / G1 / ZGC 三代垃圾收集器的核心目标与停顿数量级"
+  ],
+  "terms": {
+    "Minor GC (Young GC)": "只清理新生代（Eden + Survivor），基于「98% 对象朝生夕灭」的弱分代假说，复制存活对象极快。",
+    "Humongous 大对象": "G1 中超过单个 Region 一半（如 1MB+）的对象直接归为 Humongous 区（视同老年代管理），极易触发并发标记与空间碎片。",
+    "STW (Stop-The-World)": "GC 某些阶段必须暂停所有应用线程以保证对象图一致性；G1 控制在几十 ms，ZGC 通过染色指针+读屏障压到 1ms 以内。"
+  },
+  "experiments": {
+    "gcpause": {
+      "runner": "java",
+      "home": "lab.gcpause",
+      "variants": [
+        { "id": "ShortLivedEden", "code": "ShortLivedEden.java", "label": "朝生夕灭小对象（Eden）", "note": "每次分配 4KB 用完即丢，全部在 Young GC 复制阶段秒收，耗时极低。" },
+        { "id": "HumongousOldAlloc", "code": "HumongousOldAlloc.java", "label": "1MB 大数组直奔老年代", "note": "频繁分配 1MB 巨型数组（G1 Humongous），不断挤压老年代触发重量级回收，耗时暴涨！" },
+        { "id": "OldGenChurn", "code": "OldGenChurn.java", "label": "长寿存活窗口晋升老年代", "note": "环形队列兜住 16MB 活对象熬过 Young GC 晋升老年代后再淘汰，引发跨代引用与老年代回收。" },
+        { "id": "PreSizedPool", "code": "PreSizedPool.java", "label": "预分配复用缓冲", "note": "提前分配好 32KB 缓冲循环复用，零 GC 压力、零分配停顿。" }
+      ],
+      "knob": { "label": "批处理分配次数", "values": ["200", "400", "800", "1600"], "default": "800" },
+      "repeat": 20,
+      "metric": { "key": "processed", "expectKey": "expected", "label": "完成处理次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "分代回收与 GC 停顿：为什么大对象直接进老年代更危险？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**为什么总分配 1MB 字节数组的接口，哪怕没有内存泄漏，也会把服务毛刺（STW 停顿）拉高几十倍？**",
+          "say": "线上导出 Excel、读取整块大 JSON 报文时最容易踩中「大对象频繁晋升老年代导致 Mixed/Full GC」的坑。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：新生代和老年代到底差在哪？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先对齐分代收集的核心逻辑。",
+          "items": [
+            {
+              "have": "Young GC 算法",
+              "q": "新生代（Eden + S0/S1）为什么适合用「复制算法」而不是标记-清除？",
+              "options": ["因为新生代 98% 对象朝生夕灭，只需复制极少数存活对象，无碎片且极快", "因为新生代不能清除", "因为复制算法省一半内存"],
+              "answer": 0,
+              "why": "Young GC 的耗时主要取决于**存活对象**有多少，而不是总内存多大！"
+            },
+            {
+              "have": "大对象直入老年代",
+              "q": "为什么 JVM 不让大数组（或 G1 里的 Humongous 对象）在新生代 Eden/Survivor 来回复制？",
+              "options": ["避免在 Survivor 区发生大量大块内存拷贝，但也因此更容易挤满老年代触发重 GC", "因为新生代放不下任何数组", "为了更快回收"],
+              "answer": 0,
+              "why": "短命大对象直接进老年代是性能杀手：本来活 1ms 的对象却占了老年代的坑，只能等昂贵的老年代/并发标记回收。"
+            },
+            {
+              "have": "G1 vs ZGC",
+              "q": "G1 和 ZGC 的最大区别在于？",
+              "options": ["G1 仍需在 STW 阶段复制转移对象（停顿约几十 ms）；ZGC 用染色指针+读屏障把转移阶段并发化，停顿稳在 <1ms", "ZGC 不做 GC", "G1 只能用在单核"],
+              "answer": 0,
+              "why": "JDK 17/21 生产上大堆低延迟服务首选 ZGC（尤其是 JDK 21 分代 ZGC）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「办公楼垃圾桶」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["4KB 废纸(Eden)", "1MB 大箱子(Humongous)"], "shared": { "name": "楼层储藏室 (老年代)", "value": "大箱子直奔储藏室，很快爆仓" } },
+          "story": "4KB 小纸团（`ShortLivedEden`）随手扔进工位垃圾桶（Eden），保洁阿姨一秒倒空（Minor GC）；但如果你每隔几秒就往楼层贵重储藏室（老年代）塞一个 1MB 巨型空纸箱（`HumongousOldAlloc`），储藏室瞬间被塞爆，只能停掉整栋楼电梯做全楼大清扫（Mixed/Full GC）！",
+          "say": "「小对象进 Eden 死得快、收得快；大对象直入老年代占坑久、清得慢」。",
+          "map": [
+            { "scene": "工位垃圾桶秒倒", "on": "actors", "tag": "Eden 朝生夕灭", "code": "`new byte[4096]`", "say": "复制算法只搬存活对象，停顿极短。" },
+            { "scene": "巨型纸箱塞爆储藏室", "on": "shared", "tag": "大对象直入老年代", "code": "`new byte[1048576]`", "say": "触发 G1 Humongous 分配与老年代频繁回收。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：4KB 分配 vs 1MB 大数组分配",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "gcpause.HumongousOldAlloc",
+          "say": "看 `HumongousOldAlloc.java`：只是把每次分配的数组换成了 1MB（`1048576` 字节），看看耗时与 GC 压力会怎样。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：处理 800 次，四种分配模式耗时差多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "800 次操作下，`ShortLivedEden`、`HumongousOldAlloc`、`OldGenChurn`、`PreSizedPool` 谁耗时最高？",
+          "options": ["差不多", "HumongousOldAlloc 耗时最高（大对象分配+老年代回收），ShortLivedEden 和 PreSizedPool 极快", "ShortLivedEden 最慢"],
+          "answer": 1,
+          "say": "1MB 大数组不仅清零内存慢，还不断触发 G1 Humongous 回收。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测耗时：大对象冲击老年代 vs Eden/复用",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "gcpause",
+          "show": ["ShortLivedEden", "HumongousOldAlloc", "OldGenChurn", "PreSizedPool"],
+          "knob": "800",
+          "hand": "HumongousOldAlloc",
+          "focus": "ms",
+          "say": "看耗时对比：`ShortLivedEden` 和 `PreSizedPool` 仅需几毫秒，而 `HumongousOldAlloc` 耗时飙升数十倍！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "频繁分配大对象（尤其是短命大数组）会绕过新生代冲击老年代/Humongous 区，显著拉高 GC 开销与毛刺",
+          "say": "工程上遇到大报文/大导出，务必改用流式分块读写或池化复用固定缓冲（如 Netty ByteBuf）。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的 newarray 与内存压力",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "gcpause.HumongousOldAlloc",
+          "within": "main",
+          "from": "newarray",
+          "to": "bastore",
+          "say": "字节码里只是一条 `newarray byte`，但当长度达到 1MB（超过常见 G1 Region 的一半）时，运行时直接放弃 TLAB 和 Eden，走 Humongous 大对象分配路径。",
+          "walk": [
+            { "focus": ["newarray"], "label": "大数组分配", "say": "分配前必须清零整个 1MB 区域，且直接占用连续老年代 Region。" },
+            { "focus": ["bastore"], "label": "写入首字节", "say": "用完即丢，但空间却要等到老年代/并发标记周期才能回收。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "拉到 1600 次再看",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "gcpause",
+          "say": "把次数调到 1600，感受 `HumongousOldAlloc` 与 `OldGenChurn` 的压力曲线。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "GC 收集器与大对象治理怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "选对 GC 参数的同时，代码层消除「短命大对象」更治本。",
+          "options": [
+            { "name": "G1 GC（JDK 9+ 默认）", "solves": "把堆切成等大 Region，可设 `-XX:MaxGCPauseMillis` 预期停顿", "cost": "超过 Region 一半（默认 1MB~16MB）的大对象变 Humongous", "when": "4GB~32GB 常规微服务，注意适当调大 `-XX:G1HeapRegionSize`", "say": "如果业务确实有 2MB 对象，把 Region 调到 8MB 或 16MB 就能让它回到普通 Eden。" },
+            { "name": "ZGC（JDK 17/21 低延迟）", "solves": "染色指针 + 读屏障实现并发转移，停顿稳定 < 1ms", "cost": "CPU 略微多占一点，内存开销稍高", "when": "大堆（32GB+）或对 P999 毛刺极敏感的网关/交易系统", "say": "JDK 21 开启 `-XX:+UseZGC -XX:+ZGenerational` 表现极佳。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住分代回收与大对象坑",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "分代回收、Humongous 大对象与 GC 停顿",
+          "alias": "Minor GC vs Full GC / G1 vs ZGC",
+          "oneLine": "新生代用复制算法快收朝生夕灭小对象；大对象直入老年代/Humongous 易引发频繁重 GC；G1 兼顾吞吐停顿，ZGC 压低 STW 至亚毫秒。",
+          "asked": "Minor GC 和 Full GC 的触发条件与区别？G1 和 ZGC 的核心原理？",
+          "say": "按「弱分代假说 → 大对象直入老年代危害 → G1 Region/Humongous → ZGC 染色指针+读屏障」作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "G1 GC 下，一个 4GB 的堆默认 Region 大小是 2MB，如果业务代码频繁 `new byte[1500_000]`（约 1.4MB），会发生什么？",
+          "options": [
+            { "text": "超过 Region 一半（1MB），每次都被当成 Humongous 大对象直接占满连续老年代 Region，极易触发并发标记甚至 Full GC", "ok": true, "why": "正确！解法是：要么代码层分块/复用缓冲，要么把 `-XX:G1HeapRegionSize` 调大到 4MB/8MB 让它不再超过一半。" },
+            { "text": "自动放进栈上分配", "ok": false, "why": "1.4MB 根本放不进 1MB 的线程栈。" },
+            { "text": "完全没影响，G1 会把它切碎放进 TLAB", "ok": false, "why": "G1 不会把单个数组切碎进多个非连续小块。" }
+          ],
+          "say": "G1 下「对象大小 ≥ Region/2」即触发 Humongous 分配，这是线上排查 G1 频繁 Mixed GC 的必查项。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：分代 GC 原理、G1 与 ZGC",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：请讲一下 JVM 的分代收集，Minor GC 和 Full GC 的区别，以及 G1 和 ZGC 是怎么降低 STW 停顿的？",
+          "points": [
+            "分代与算法：基于弱分代假说，新生代（Eden+S0/S1）对象朝生夕灭采用复制算法，Minor GC 极快；老年代存活率高采用标记-整理或标记-清除，Full GC 停顿长",
+            "大对象隐患：过大的对象（如 G1 中 >= Region 一半的 Humongous 对象）直接进老年代，容易造成碎片和频繁触发重 GC",
+            "G1 与 ZGC 演进：G1 将堆划分为多个 Region，按垃圾最多（Garbage-First）的 Region 优先混合回收，满足预期停顿；ZGC 通过染色指针和读屏障实现并发标记与并发转移，把 STW 停顿压到 1ms 以内"
+          ],
+          "model": "JVM 分代回收建立在「绝大多数对象朝生夕灭」的假说上：新生代（Eden 和两个 Survivor 区）每次只复制极少数存活对象，所以 Minor GC 非常快；熬过多次 Minor GC 的对象或者大对象会进入老年代，老年代空间不足时会触发代价高昂的 Full GC，导致较长的 STW 停顿。尤其在 G1 中，超过单个 Region 一半的 Humongous 大对象会直接按老年代管理，如果频繁创建短命大数组极易引发频繁并发标记或 Full GC。为了降低 STW 停顿，G1 把整块堆切分成独立 Region，并在 STW 阶段优先回收垃圾比例最高的 Region（Garbage-First）来满足停顿时间目标；而新一代 ZGC 更进一步，利用染色指针和读屏障把最耗时的对象转移（Relocate）阶段也做成了与业务线程并发执行，从而将 STW 停顿稳定控制在亚毫秒级。",
+          "say": "把「分代算法」「大对象危害」「G1 Region 混合回收」「ZGC 并发转移」讲透。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "GC 分代与收集器三张卡收好。",
+          "items": [
+            { "front": "Minor GC 为什么快？", "back": "新生代用复制算法，98% 对象已死，只需拷贝极少数存活对象。" },
+            { "front": "G1 Humongous 陷阱", "back": "对象 ≥ Region/2 直接按老年代大对象分配，易致碎片与频繁 GC。" },
+            { "front": "G1 vs ZGC 核心差异", "back": "G1 转移阶段需 STW（几十 ms）；ZGC 染色指针+读屏障并发转移（<1ms）。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
