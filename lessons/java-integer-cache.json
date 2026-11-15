@@ -1,0 +1,207 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-integer-cache",
+  "course": "Java 工程语法与集合",
+  "title": "包装类缓存池与拆箱陷阱：为什么 Integer == Integer 127 对 128 错？",
+  "lead": "测试环境用户 ID 从 1 到 100 跑得好好的，一上线 ID 涨到 128 以上，用 == 判断两个 Integer 相等突然全变 false！",
+  "minutes": 25,
+  "needs": ["知道 int 与 Integer 的自动装箱/拆箱", "知道 == 比较引用地址而 equals 比较内容"],
+  "after": [
+    "说清 IntegerCache 默认缓存范围 [-128, 127] 及 valueOf() 底层机制",
+    "知道 new Integer() 绕过缓存与自动拆箱 NPE 的触发条件",
+    "养成包装类一律用 Objects.equals() 或判空后拆箱比较的习惯"
+  ],
+  "terms": {
+    "IntegerCache": "`Integer` 内部静态类，在类加载时预先创建 `-128 ~ 127` 共 256 个 `Integer` 对象数组；`Integer.valueOf(int)` 命中范围直接返回缓存对象。",
+    "自动装箱 (Autoboxing)": "编译器把 `Integer a = 128;` 改写成 `Integer.valueOf(128)`；超出 127 就会在堆上 `new Integer(128)`。",
+    "拆箱 NPE": "当 `Integer x = null` 参与算术运算、条件比较 `x == 1` 或三元表达式拆箱时，编译器插入 `x.intValue()` 直接抛出 `NullPointerException`。"
+  },
+  "experiments": {
+    "intcache": {
+      "runner": "java",
+      "home": "lab.intcache",
+      "variants": [
+        { "id": "BoxedDoubleEqBug", "code": "BoxedDoubleEqBug.java", "label": "Integer 直接 == 比较（128 起翻车）", "note": "仅 0~127 命中 IntegerCache 返回 true，128 及以上全部 false。" },
+        { "id": "NewIntegerBypass", "code": "NewIntegerBypass.java", "label": "new Integer() 绕过缓存", "note": "每次强制 new 新对象，连 0~127 也全部返回 false。" },
+        { "id": "EqualsSafeCompare", "code": "EqualsSafeCompare.java", "label": "Objects.equals() 安全比较", "note": "自动判空并调用 equals 比数值，全范围 100% 准确。" },
+        { "id": "IntValueUnboxGuard", "code": "IntValueUnboxGuard.java", "label": "判空后 intValue() 比较", "note": "显式判空后拆箱为基本类型 int == int，100% 准确。" }
+      ],
+      "knob": { "label": "测试数值上限 N (0..N-1)", "values": ["100", "200", "500", "1000"], "default": "500" },
+      "repeat": 20,
+      "metric": { "key": "correct", "expectKey": "expected", "label": "相等判断正确数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "包装类缓存池与拆箱陷阱",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天弄清一个最经典的线上隐形炸弹：**为什么 `Integer a = 127, b = 127; a == b` 是 `true`，把数字改成 `128` 就变成 `false`？**",
+          "say": "测试环境数据量小 ID 都在 127 以内测不出来，一上生产全线翻车。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：包装类缓存的三个细节",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先检验对包装类缓存的了解。",
+          "items": [
+            {
+              "have": "缓存范围",
+              "q": "默认情况下，`Integer.valueOf()` 缓存的整数范围是多少？",
+              "options": ["-128 到 127", "0 到 127", "-32768 到 32767"],
+              "answer": 0,
+              "why": "覆盖一个有符号 byte 的范围 [-128, 127]；上限可通过 `-XX:AutoBoxCacheMax=<size>` 调大。"
+            },
+            {
+              "have": "哪些有缓存",
+              "q": "以下哪个包装类**没有**常量缓存池？",
+              "options": ["Double / Float", "Byte / Short / Long", "Character (0~127)"],
+              "answer": 0,
+              "why": "整型系列（Byte/Short/Integer/Long/Character/Boolean）有缓存，浮点数 Double/Float 范围无穷大没有缓存。"
+            },
+            {
+              "have": "三元 NPE",
+              "q": "`Integer x = null; int y = true ? x : 0;` 会发生什么？",
+              "options": ["抛出 NullPointerException", "y 等于 0", "编译报错"],
+              "answer": 0,
+              "why": "三元运算符两侧分别为 `Integer` 和 `int` 时，会先对 `x` 做自动拆箱 `x.intValue()`，导致 NPE。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：== 比较 vs Objects.equals",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "intcache",
+          "variants": ["BoxedDoubleEqBug", "EqualsSafeCompare"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：从 0 到 499 逐个比较，== 能对几个？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "intcache",
+          "question": "用 `Integer.valueOf(i) == Integer.valueOf(i)` 比较 `i = 0..499`，一共能判断对多少个？",
+          "options": ["128 个（只有 0..127 对）", "500 个全对", "0 个全错"],
+          "answer": 0,
+          "why": "0 到 127 共 128 个数命中 `IntegerCache`，返回同一个对象引用；128 到 499 每次都 `new Integer`，`==` 全为 false。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：实测 100/200/500/1000 档位",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "intcache",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：if_acmpne 比的是对象地址",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "intcache",
+          "variant": "BoxedDoubleEqBug",
+          "explain": "字节码里 `a == b` 编译为 `if_acmpne`（比较两个引用地址是否相等），而 `Integer.valueOf(i)` 在 `i > 127` 时返回两个新堆地址，导致跳转失败。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：Objects.equals 与判空拆箱",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "intcache",
+          "variants": ["EqualsSafeCompare", "IntValueUnboxGuard"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：四种比较方式的耗时对比",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "intcache",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住一条铁律",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "所有包装类（`Integer`/`Long`/`Boolean` 等）之间比大小或相等，**一律用 `Objects.equals(a, b)`**；性能敏感热循环优先用基本类型 `int`/`long`。",
+          "say": "绝不要用 `==` 比较两个包装类。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再确认一个边界坑。",
+          "items": [
+            {
+              "have": "混合比较",
+              "q": "`Integer a = new Integer(500); int b = 500; System.out.println(a == b);` 输出什么？",
+              "options": ["true（因为和基本类型 int 用 == 时，a 会自动拆箱成 int 再比值）", "false", "编译报错"],
+              "answer": 0,
+              "why": "只要 `==` 有一侧是基本类型，包装类会自动拆箱成基本类型比值——前提是 `a` 不能为 `null`！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) IntegerCache 的缓存范围与原理；2) 为什么 127 对 128 错；3) 自动拆箱在什么场景会悄悄抛出 NPE，工程上怎么防。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "缓存范围", "v": "`Integer.valueOf()` 默认缓存 `-128 ~ 127`，Double/Float 无缓存。" },
+            { "k": "比较铁律", "v": "包装类之间一律用 `Objects.equals(a, b)`，禁止用 `==`。" },
+            { "k": "拆箱防空", "v": "数据库查出的 `Integer` 可能为 `null`，拆箱前必须判空。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

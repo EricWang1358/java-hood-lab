@@ -98,6 +98,18 @@
 | 31 | **换上虚拟线程，共享计数还需要锁吗** | 只把平台线程换成 Thread.ofVirtual()，百万次 count++ 会少掉吗？ | `lab.virtrace` | [网页课件](./pages/virtual-race.html) · [JSON](./lessons/virtual-race.json) · [源码](./src/lab/virtrace/) |
 | 32 | **库与缓存各用原子数组，为啥还会写反？** | 更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？ | `lab.txoutbox` | [网页课件](./pages/tx-outbox.html) · [JSON](./lessons/tx-outbox.json) · [源码](./src/lab/txoutbox/) |
 
+### 模块一 · 第一章：Java 值传递、包装类缓存与精度陷阱（M1-01～M1-05）
+
+用真实字节码与实测数据拆穿「对象引用传递」、Integer 128 翻车、BigDecimal 算钱三连坑、循环 `+` 拼接与浅拷贝污染。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M1-01 | **值传递与引用副本：方法里 swap 或重赋值为什么外面没变？** | 大家都说「Java 对象是引用传递」，可为什么在方法里写 box = new Box(99) 之后，调用方的 box.val 还是 0？ | `lab.passbyval` | [网页课件](./pages/java-pass-by-value.html) · [JSON](./lessons/java-pass-by-value.json) · [源码](./src/lab/passbyval/) |
+| M1-02 | **包装类缓存池与拆箱陷阱：为什么 Integer == Integer 127 对 128 错？** | 测试环境用户 ID 从 1 到 100 跑得好好的，一上线 ID 涨到 128 以上，用 == 判断两个 Integer 相等突然全变 false！ | `lab.intcache` | [网页课件](./pages/java-integer-cache.html) · [JSON](./lessons/java-integer-cache.json) · [源码](./src/lab/intcache/) |
+| M1-03 | **BigDecimal 算钱三连坑：double 构造、equals 标度与舍入模式** | 不用 double 算钱改用 BigDecimal 了，可为什么 new BigDecimal(0.1) 还是算不准，equals 比较 0.3 和 0.30 竟然返回 false？ | `lab.bigdecimal` | [网页课件](./pages/java-bigdecimal.html) · [JSON](./lessons/java-bigdecimal.json) · [源码](./src/lab/bigdecimal/) |
+| M1-04 | **String 不可变性与循环拼接：为什么循环里用 + 会把 CPU 拖死？** | 面经说 JDK 9+ 字符串 + 会优化成 invokedynamic，那在 for 循环里写 s += "a" 拼 2 万次，还会慢成 O(N²) 吗？ | `lab.strimmut` | [网页课件](./pages/java-string-immut.html) · [JSON](./lessons/java-string-immut.json) · [源码](./src/lab/strimmut/) |
+| M1-05 | **浅拷贝污染事故：改了副本，原对象的数组/列表怎么也跟着变了？** | 好不容易实现了 Cloneable 并调用 super.clone() 复制出一个用户副本，可一改副本的 scores[0]，原用户的分数竟然也被改掉了！ | `lab.deepcopy` | [网页课件](./pages/java-deep-copy.html) · [JSON](./lessons/java-deep-copy.json) · [源码](./src/lab/deepcopy/) |
+
 ### 模块二 · 第一章：类加载、初始化与栈堆分配（M2-01～M2-04）
 
 用真实 `ClassLoader` 隔离、`<clinit>` 死锁、栈帧深度爆栈与 Eden TLAB 并发分配实测 JVM 底层运行机制。

@@ -1,0 +1,207 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-bigdecimal",
+  "course": "Java 工程语法与集合",
+  "title": "BigDecimal 算钱三连坑：double 构造、equals 标度与舍入模式",
+  "lead": "不用 double 算钱改用 BigDecimal 了，可为什么 new BigDecimal(0.1) 还是算不准，equals 比较 0.3 和 0.30 竟然返回 false？",
+  "minutes": 25,
+  "needs": ["知道二进制浮点数无法精确表示 0.1", "知道金额计算必须使用 BigDecimal"],
+  "after": [
+    "说清 IEEE 754 浮点精度丢失原因与 new BigDecimal(double) 的坑",
+    "区分 BigDecimal.equals()（比值+标度）与 compareTo()（只比数值）",
+    "掌握除法/保留小数必须显式指定 RoundingMode 的生产规范"
+  ],
+  "terms": {
+    "new BigDecimal(double)": "把 `0.1` 在二进制里的真实近似值 `0.100000000000000005551115123...` 原封不动转成十进制，直接带入误差。",
+    "equals vs compareTo": "`BigDecimal.equals()` 要求数值和 `scale`（小数位数）都相同，所以 `0.3` 不等于 `0.30`；`compareTo()` 只比较数值大小。",
+    "RoundingMode.HALF_UP": "日常财务最常用的「四舍五入」模式；BigDecimal 做除法遇到除不尽时若不传舍入模式会直接抛 `ArithmeticException`。"
+  },
+  "experiments": {
+    "bigdecimal": {
+      "runner": "java",
+      "home": "lab.bigdecimal",
+      "variants": [
+        { "id": "DoubleFloatDrift", "code": "DoubleFloatDrift.java", "label": "double 直接算 0.1 + 0.2", "note": "二进制浮点精度漂移，0.1 + 0.2 == 0.30000000000000004，0 笔精确。" },
+        { "id": "BigDecimalFromDouble", "code": "BigDecimalFromDouble.java", "label": "new BigDecimal(double) 构造", "note": "把 double 的二进制误差带入 BigDecimal，compareTo 仍不等于 0.3。" },
+        { "id": "BigDecimalEqualsTrap", "code": "BigDecimalEqualsTrap.java", "label": "用 equals() 比较 0.3 与 0.30", "note": "数值虽对，但 scale=1 与 scale=2 不同，equals() 全部返回 false。" },
+        { "id": "BigDecimalStringCompare", "code": "BigDecimalStringCompare.java", "label": "String 构造 + compareTo（推荐）", "note": "用 String 构造并指定 RoundingMode，compareTo()==0 达到 100% 精确。" }
+      ],
+      "knob": { "label": "对账笔数", "values": ["1000", "5000", "10000", "20000"], "default": "5000" },
+      "repeat": 20,
+      "metric": { "key": "exactMatch", "expectKey": "expected", "label": "精确对账笔数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "BigDecimal 算钱三连坑",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "做订单、支付、优惠券系统，金额计算翻车是 P0 事故。今天一次扫清：**`double` 精度丢失、`new BigDecimal(0.1)` 传错参、`equals()` 标度翻车**这三连坑。",
+          "say": "金融与电商面试必考细节，一句话没答全就会被追问。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：关于算钱的三个直觉测试",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先测一下对 BigDecimal 坑点的敏感度。",
+          "items": [
+            {
+              "have": "构造陷阱",
+              "q": "以下哪种方式创建 0.1 的 `BigDecimal` 会引入精度误差？",
+              "options": ["new BigDecimal(0.1)", "new BigDecimal(\"0.1\")", "BigDecimal.valueOf(0.1)"],
+              "answer": 0,
+              "why": "`BigDecimal.valueOf(double)` 内部先调 `Double.toString(val)` 再转 String，所以能精确；`new BigDecimal(0.1)` 直接吃进二进制近似值。"
+            },
+            {
+              "have": "相等比较",
+              "q": "`new BigDecimal(\"1.0\").equals(new BigDecimal(\"1.00\"))` 的结果是？",
+              "options": ["false（scale 不同）", "true", "抛异常"],
+              "answer": 0,
+              "why": "`equals()` 既比数值也比 `scale`（1 vs 2），判断金额相等必须用 `compareTo() == 0`。"
+            },
+            {
+              "have": "除法异常",
+              "q": "`new BigDecimal(\"1\").divide(new BigDecimal(\"3\"))` 不传舍入模式会怎样？",
+              "options": ["抛出 ArithmeticException（无限循环小数）", "自动保留两位小数", "返回 0.33"],
+              "answer": 0,
+              "why": "遇到除不尽的十进制小数，必须显式传入精度和 `RoundingMode`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：三种常见错误写法",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "bigdecimal",
+          "variants": ["DoubleFloatDrift", "BigDecimalFromDouble", "BigDecimalEqualsTrap"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：5000 笔 0.1 + 0.2 对账，前三种写法能对几笔？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "bigdecimal",
+          "question": "`BigDecimalEqualsTrap` 用 `new BigDecimal(\"0.1\").add(new BigDecimal(\"0.2\")).equals(new BigDecimal(\"0.30\"))`，5000 笔能对几笔？",
+          "options": ["0 笔（全部 false）", "5000 笔全对", "随机对一半"],
+          "answer": 0,
+          "why": "`0.1 + 0.2` 算出来的 `scale` 是 1（`\"0.3\"`），而目标是 `scale = 2`（`\"0.30\"`），`equals` 全军覆没！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种写法精确对账对比",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "bigdecimal",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：equals 比的是 unscaledValue 与 scale",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "bigdecimal",
+          "variant": "BigDecimalEqualsTrap",
+          "explain": "`BigDecimal` 内部用「无标度整数 `intVal` + 标度 `scale`」表示数值；`equals` 先判断 `scale != x.scale` 就直接返回 false，而 `compareTo` 会对齐标度后再比大小。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：String 构造 + setScale + compareTo",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "bigdecimal",
+          "variants": ["BigDecimalStringCompare"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：精度与耗时对比",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "bigdecimal",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "金额计算三板斧",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "生产环境算钱固定三步：**① 用 `String` 或 `BigDecimal.valueOf()` 构造；② `divide`/`setScale` 显式传 `RoundingMode`；③ 比较一律用 `compareTo() == 0`。**（更高性能场景也可直接存「分」的 `long` 整数。）",
+          "say": "记住：禁止 `new BigDecimal(double)`，禁止用 `equals()` 判金额相等。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个细节。",
+          "items": [
+            {
+              "have": "HashSet 丢重",
+              "q": "把 `new BigDecimal(\"1.0\")` 和 `new BigDecimal(\"1.00\")` 放进 `HashSet`，`set.size()` 是多少？",
+              "options": ["2（因为 HashSet 依赖 equals 和 hashCode）", "1", "编译报错"],
+              "answer": 0,
+              "why": "放入 `HashSet`/`HashMap` 前，如果希望 1.0 和 1.00 等价，需先 `.stripTrailingZeros()` 去掉末尾零。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 为什么不能用 float/double 算钱；2) new BigDecimal(double) 和 BigDecimal.valueOf(double) 的区别；3) BigDecimal 的 equals 和 compareTo 差在哪。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "构造方式", "v": "用 `new BigDecimal(\"0.1\")` 或 `BigDecimal.valueOf()`，禁用 `new BigDecimal(double)`。" },
+            { "k": "比较规则", "v": "比大小/相等一律用 `compareTo() == 0`，`equals()` 会把 `0.3` 和 `0.30` 判为不等。" },
+            { "k": "不可变性", "v": "`BigDecimal` 不可变，`add`/`multiply` 必须接收返回值，除法必传 `RoundingMode`。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
