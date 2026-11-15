@@ -2,6 +2,9 @@
 
 本目录沉淀了 Java 后端入职线的两个核心实战工程，均基于 **Java 17 + Spring Boot 3.3.5 + Maven** 构建，默认支持零外部依赖一键运行 `mvn test`，同时提供 MySQL / Redis / Docker 生产配置与 JMeter 压测脚本。
 
+- **[20 节实战拆解工坊](./WORKSHOP.md)**：从空目录到上线压测的逐节手敲指南与避坑清单
+- **[简历 STAR 量化与面试追问](./RESUME_GUIDE.md)**：可直接改写进简历的量化话术与 Top 8 高频深挖题
+
 ## 项目总览
 
 1. **[`project-a-admin`](./project-a-admin/)（项目 A — 工程规范底座）**
