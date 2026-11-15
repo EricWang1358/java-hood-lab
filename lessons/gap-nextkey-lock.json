@@ -1,0 +1,321 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "gap-nextkey-lock",
+  "course": "MySQL 索引、事务与锁",
+  "title": "表里根本没有 id=7，为什么插入 id=7 却被别人卡死？间隙锁与临键锁",
+  "lead": "别人只是用 `FOR UPDATE` 查了一个根本不存在的 `id=7`，为什么你去 `INSERT id=7` 甚至 `id=8` 全被阻塞了？",
+  "minutes": 35,
+  "needs": [
+    "知道 B+ 树叶子节点有序、RR 隔离级别"
+  ],
+  "after": [
+    "分清 Record Lock、Gap Lock、Next-Key Lock 三把锁",
+    "掌握 RR 级别下唯一索引命中 vs 未命中时的加锁退化规则",
+    "理解为什么调成 RC 能消除间隙锁"
+  ],
+  "terms": {
+    "Record Lock（记录锁）": "只锁住索引上**已存在**的那一条具体记录。",
+    "Gap Lock（间隙锁）": "锁住两条索引记录之间的**开区间空隙**，如 `(5, 10)`，只防插入，间隙锁之间互相兼容！",
+    "Next-Key Lock（临键锁）": "Record Lock + Gap Lock 的组合，前开后闭区间 `(5, 10]`，RR 默认加锁单位。"
+  },
+  "experiments": {
+    "gaplock": {
+      "runner": "java",
+      "home": "lab.gaplock",
+      "variants": [
+        {
+          "id": "RrUniqueMissGap",
+          "label": "RR 唯一索引查不存在行（id=7）",
+          "note": "Next-Key 退化为 Gap Lock (5,10)，阻塞区间插入！"
+        },
+        {
+          "id": "RrRangeNextKey",
+          "label": "RR 范围查询（5 <= id < 10）",
+          "note": "持 Next-Key Lock，区间内插入全阻塞！"
+        },
+        {
+          "id": "RrUniqueHit",
+          "label": "RR 唯一索引命中已有行（id=5）",
+          "note": "退化为精准 Record Lock，不锁间隙 (5,10)！"
+        },
+        {
+          "id": "RcRecordLockOnly",
+          "label": "RC 隔离级别（禁用 Gap Lock）",
+          "note": "只加 Record Lock，不阻塞任何间隙插入。"
+        }
+      ],
+      "knob": {
+        "label": "并发间隙插入探测数",
+        "values": [
+          "100",
+          "300",
+          "500",
+          "1000"
+        ],
+        "default": "500"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "blockedInserts",
+        "expectKey": "expected",
+        "label": "被间隙锁阻塞的插入数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "表里根本没有 id=7，为什么插入 id=7 却被别人卡死？间隙锁与临键锁",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "表里只有 `id=5` 和 `id=10`。线程 A 执行 `SELECT * FROM t WHERE id=7 FOR UPDATE`（查了个空），结果线程 B 插 `id=8` 也卡住了！这就是面试高频的「间隙锁与临键锁」。",
+          "say": "对比一下查已有行 `id=5` 和查不存在的 `id=7`，锁范围天差地别。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "查不到记录，难道不该加 0 把锁吗？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "为了防止当前读出现幻读，RR 下查一个不存在的 `id=7`，会把 `(5, 10)` 整个区间里的多少次并发插入拦下来？",
+          "say": "看 `RrUniqueMissGap` 和 `RrUniqueHit`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 RrUniqueMissGap 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "gaplock.RrUniqueMissGap",
+          "say": "`RrUniqueMissGap` 没找到 7，于是锁住左右相邻记录构成的开区间 `(5, 10)`；`RrUniqueHit` 命中了 5，退化为只锁 5 这一行。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmple"
+              ],
+              "say": "只要插入的 ID 落在 `(5, 10)` 间隙内，全部被 Gap Lock 拦在门外。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "表里只有 `id=5` 和 `id=10`，RR 下查 `id=7 FOR UPDATE`（未命中）后，并发插入 500 次 `id=6~9` 会被阻塞多少次？",
+          "options": [
+            "0 次",
+            "125 次",
+            "500 次"
+          ],
+          "answer": 2,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "gaplock",
+          "show": [
+            "RrUniqueMissGap"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `RrUniqueMissGap` 和 `RrRangeNextKey` 阻塞了全部 500 次！而 `RrUniqueHit`（命中已有主键）和 `RcRecordLockOnly` 全是 0 阻塞。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "gaplock.RrUniqueMissGap",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "RR 下 InnoDB 默认加 Next-Key Lock（前开后闭）。但**唯一索引等值查询**：1) **命中**记录时，退化为 Record Lock（不锁间隙）；2) **未命中**记录时，退化为 Gap Lock（只锁空隙）。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpne"
+              ],
+              "say": "`RrUniqueHit` 只把 `lockedRecord` 设为 5，间隙 `(5, 10)` 完全自由。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "gaplock",
+          "show": [
+            "RrUniqueMissGap",
+            "RrRangeNextKey",
+            "RrUniqueHit",
+            "RcRecordLockOnly"
+          ],
+          "select": "RrUniqueHit",
+          "say": "尽量避免用 `FOR UPDATE` 去查可能不存在的记录；如果业务不需要防止当前读幻读，很多大厂直接把隔离级别设为 **RC**（配合 `binlog_format=ROW`）来彻底消除间隙锁。"
+        },
+        {
+          "t": "chart",
+          "of": "gaplock",
+          "say": "未命中间隙和范围查询一路飙红；命中唯一键和 RC 模式稳居 0 阻塞。",
+          "walk": [
+            {
+              "focus": [
+                "RrUniqueMissGap",
+                "RrUniqueHit"
+              ],
+              "say": "Gap Lock 本意是防幻读，副作用是容易引发并发插入阻塞和死锁。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "根据业务对并发插入和隔离性的要求在 RR 与 RC 间权衡。",
+          "options": [
+            {
+              "name": "RR 查不存在行 / 范围 FOR UPDATE",
+              "solves": "防当前读幻读",
+              "cost": "锁住整个间隙，阻塞大量插入",
+              "when": "强防幻读当前读",
+              "say": "极易诱发死锁。"
+            },
+            {
+              "name": "RR 唯一索引精准命中",
+              "solves": "退化为单行 Record Lock",
+              "cost": "0 间隙阻塞：{ms:gaplock.RrUniqueHit} ms",
+              "when": "确定主键存在时的更新",
+              "say": "最安全高效。"
+            },
+            {
+              "name": "RC 隔离级别（ROW 模式）",
+              "solves": "禁用 Gap Lock，并发插入零阻塞",
+              "cost": "0 间隙阻塞：{ms:gaplock.RcRecordLockOnly} ms",
+              "when": "高并发互联网核心库",
+              "say": "阿里等大厂常用基线。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在 MySQL RR（可重复读）级别下，表里有 `id=5` 和 `id=10`，执行 `SELECT * FROM t WHERE id=5 FOR UPDATE`（唯一索引等值**命中**）会加什么锁？",
+          "options": [
+            {
+              "text": "退化为只加在 id=5 上的 Record Lock（记录锁），不加间隙锁",
+              "ok": true,
+              "why": "唯一索引等值命中时，不会有同值新行插入，因此 Next-Key Lock 退化为 Record Lock。"
+            },
+            {
+              "text": "锁住 (5, 10) 的 Gap Lock",
+              "ok": false,
+              "why": "只有查询「不存在」的记录（如 id=7）时，才会退化为 (5, 10) 的 Gap Lock。"
+            },
+            {
+              "text": "锁住整张表",
+              "ok": false,
+              "why": "走主键索引不会全表加锁。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "记录锁、间隙锁与临键锁",
+          "alias": "Record / Gap / Next-Key Lock",
+          "oneLine": "RR 默认加 ==Next-Key Lock==；唯一索引等值**命中**退化为 ==Record Lock==，**未命中**退化为 ==Gap Lock==。",
+          "asked": [
+            "什么是间隙锁和临键锁？为什么会有间隙锁？",
+            "RR 下唯一索引等值查询的加锁退化规则？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚 Record Lock、Gap Lock、Next-Key Lock 的区别，以及 RR 下唯一索引命中和未命中时的加锁规则。",
+          "points": [
+            "Record 锁单行；Gap 锁开区间空隙防插入；Next-Key = Record + Gap（前开后闭）",
+            "RR 默认用 Next-Key 锁防止当前读幻读",
+            "退化规则：唯一索引等值命中 -> 退化为 Record Lock；未命中 -> 退化为 Gap Lock"
+          ],
+          "model": "InnoDB 有三种行级锁：Record Lock 锁住已存在的单条记录；Gap Lock 锁住记录之间的开区间空隙，专门用来防止别的事务往空隙里插入新行；Next-Key Lock 则是前两者的组合，前开后闭。在 RR 级别下，默认加 Next-Key Lock 来防幻读，但如果走唯一索引等值查询：命中记录时会退化为 Record Lock；没命中记录时则会退化为 Gap Lock，锁住目标值所在的空隙。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "Next-Key Lock 的区间形态？",
+              "a": "前开后闭，例如 (5, 10]。"
+            },
+            {
+              "q": "Gap Lock 之间互相排斥吗？",
+              "a": "不排斥！Gap Lock 和 Gap Lock 兼容，它只排斥插入意向锁。"
+            },
+            {
+              "q": "哪个隔离级别没有 Gap Lock？",
+              "a": "Read Committed（RC，读已提交）。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

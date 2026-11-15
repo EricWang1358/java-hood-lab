@@ -1,0 +1,313 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "tx-nonrepeatable-read",
+  "course": "MySQL 索引、事务与锁",
+  "title": "同一事务里连读两次余额，怎么两次不一样？",
+  "lead": "同一个事务里先查余额是 100，隔了一秒再查一次竟然变成 200——这就是 RC 级别下的「不可重复读」！",
+  "minutes": 35,
+  "needs": [
+    "知道 RC 和 RR 概念"
+  ],
+  "after": [
+    "精准区分「每次新建 ReadView (RC)」与「复用首个 ReadView (RR)」",
+    "说出不可重复读与脏读的本质区别（对方已提交 vs 未提交）",
+    "知道什么业务场景必须保可重复读"
+  ],
+  "terms": {
+    "不可重复读": "同一个事务内两次读取同一行，期间另一个事务**已提交**了修改，导致两次读到不同值。",
+    "ReadView 复用": "RR 级别只在事务第一次快照读时生成 ReadView，后续一直复用它，保证看到同一张时间快照。"
+  },
+  "experiments": {
+    "nonrepeat": {
+      "runner": "java",
+      "home": "lab.nonrepeat",
+      "variants": [
+        {
+          "id": "RcNewReadView",
+          "label": "RC (每次新建 ReadView)",
+          "note": "每次 SELECT 重新拍照，看到中途已提交的新值 200。"
+        },
+        {
+          "id": "RrReuseReadView",
+          "label": "RR (复用首个 ReadView)",
+          "note": "整个事务共用首次快照，两次都读 100！"
+        },
+        {
+          "id": "RcWithLock",
+          "label": "RC + FOR UPDATE",
+          "note": "加行锁挡住并发修改，也能保一致但阻塞写。"
+        },
+        {
+          "id": "SerializableLock",
+          "label": "Serializable",
+          "note": "读加共享锁，彻底阻塞写。"
+        }
+      ],
+      "knob": {
+        "label": "并发事务轮数",
+        "values": [
+          "100",
+          "500",
+          "1000",
+          "2000"
+        ],
+        "default": "1000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "inconsistentReads",
+        "expectKey": "expected",
+        "label": "前后不一致次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "同一事务里连读两次余额，怎么两次不一样？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "很多从 Oracle 转 MySQL 的同学习惯把隔离级别改成 `RC`。但如果你在一个对账事务里先算总账、再逐笔核对，RC 会让你看到一个「前后自相矛盾」的数据库。",
+          "say": "今天看清楚 RC 和 RR 在底层到底只差了哪一行动作。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "两次 SELECT 之间，别人提交了 UPDATE",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "1000 轮对账事务中，每次两次查询之间都有别人提交更新。RC 下会不一致多少次？",
+          "say": "看看 `RcNewReadView` 和 `RrReuseReadView`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 RcNewReadView 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "nonrepeat.RcNewReadView",
+          "say": "差别的全部秘密就在于：**ReadView 是在每次 SELECT 时生成，还是只在第一次 SELECT 时生成**。",
+          "walk": [
+            {
+              "focus": [
+                "int secondRead = 200;"
+              ],
+              "say": "RC 每次重新生成 ReadView，把刚提交的 200 放了进来。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "同一事务内两次 `SELECT balance`，中间另一事务修改并 `COMMIT`。在 MySQL 默认的 `RR` 级别下，第二次读到的是？",
+          "options": [
+            "新值 200",
+            "旧值 100（与第一次完全一致）",
+            "报错"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "nonrepeat",
+          "show": [
+            "RcNewReadView"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "`RcNewReadView` 1000 次全部不一致；`RrReuseReadView` 0 次不一致，且全程不加锁！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "nonrepeat.RcNewReadView",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "RC 和 RR 的 MVCC 引擎代码几乎一模一样，唯一区别就是生成 ReadView 的时机：RC = 每条快照 SELECT 生成一次；RR = 整个事务第一次快照 SELECT 生成一次，之后复用。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpeq"
+              ],
+              "say": "复用 ReadView 让事务拥有了「时间静止」的一致性视图。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "nonrepeat",
+          "show": [
+            "RcNewReadView",
+            "RrReuseReadView",
+            "RcWithLock",
+            "SerializableLock"
+          ],
+          "select": "RrReuseReadView",
+          "say": "需要事务内多次读取一致（如导出报表、对账）就用默认的 RR；普通单条查询业务用 RC 也没问题。"
+        },
+        {
+          "t": "chart",
+          "of": "nonrepeat",
+          "say": "RR 零加锁实现 0 不一致，兼顾一致性与高并发。",
+          "walk": [
+            {
+              "focus": [
+                "RcNewReadView",
+                "RrReuseReadView"
+              ],
+              "say": "记住：RC vs RR 的本质区别就是 ReadView 的生成频率。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "在 MySQL 中，RR 是默认且强大的；只有当间隙锁导致的死锁过多时，大厂才会考虑切到 RC。",
+          "options": [
+            {
+              "name": "RC (每次新建 ReadView)",
+              "solves": "总能读到最新已提交数据，无间隙锁",
+              "cost": "存在不可重复读",
+              "when": "单条查询为主、高并发写入需减少间隙锁死锁",
+              "say": "注意需要 `binlog_format = ROW`。"
+            },
+            {
+              "name": "RR (复用首个 ReadView)",
+              "solves": "不加锁实现事务级一致快照",
+              "cost": "0 不一致：{ms:nonrepeat.RrReuseReadView} ms",
+              "when": "对账、报表导出、MySQL 默认",
+              "say": "开箱即用。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在 InnoDB 的 MVCC 中，RC 和 RR 两个隔离级别最核心的实现差异是？",
+          "options": [
+            {
+              "text": "RC 每次快照读都生成新的 ReadView，而 RR 只在第一次快照读时生成并复用",
+              "ok": true,
+              "why": "一针见血！"
+            },
+            {
+              "text": "RC 不用 Undo Log，RR 才用 Undo Log",
+              "ok": false,
+              "why": "两者都用 Undo Log 和 ReadView。"
+            },
+            {
+              "text": "RR 给所有普通 SELECT 都加了共享锁",
+              "ok": false,
+              "why": "RR 普通 SELECT 是无锁快照读。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "不可重复读与 ReadView 复用",
+          "alias": "Non-Repeatable Read",
+          "oneLine": "RC 每次快照读==新建 ReadView==导致同事务两次读不同；RR ==复用首个 ReadView==实现可重复读。",
+          "asked": [
+            "不可重复读和脏读有什么区别？",
+            "RC 和 RR 在底层实现上有什么区别？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "不可重复读是什么？为什么 MySQL 的 RR 能在不加锁的情况下解决它？",
+          "points": [
+            "不可重复读：同事务两次读同一行，中间有别的事务提交了修改，导致结果不同",
+            "与脏读区别：脏读是读到未提交，不可重复读是读到已提交",
+            "实现差异：RC 每次 SELECT 新建 ReadView；RR 只在首次 SELECT 生成 ReadView 并复用，因此读到同一时间点快照，不加锁也一致"
+          ],
+          "model": "不可重复读是指同一个事务里先后两次读取同一行数据，中间另一个事务修改并提交了这行数据，导致前后两次读到的结果不一样（和脏读的区别在于对方已经提交了）。MySQL 的 RR 级别之所以不加锁也能解决它，是因为 MVCC 机制下，RR 只在事务第一次执行快照读时生成一个 ReadView，后续所有快照读都复用这同一个 ReadView，顺着 Undo 版本链永远只看那个时间点的快照，从而保证了可重复读。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "脏读 vs 不可重复读？",
+              "a": "脏读是读到别人「未提交」的修改；不可重复读是读到别人「已提交」的修改。"
+            },
+            {
+              "q": "RC 和 RR 的 MVCC 区别？",
+              "a": "RC 每次快照读新建 ReadView；RR 仅首次快照读生成并复用同一个 ReadView。"
+            },
+            {
+              "q": "RR 的普通 SELECT 要加锁吗？",
+              "a": "不需要，走的是无锁快照读。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

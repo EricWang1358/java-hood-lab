@@ -17,7 +17,7 @@ public class AuditLog {
     @Column(nullable = false, length = 64)
     private String action;
 
-    @Column(nullable = false, length = 120)
+    @Column(name = "method_name", nullable = false, length = 120)
     private String methodName;
 
     @Column(nullable = false)
@@ -26,18 +26,32 @@ public class AuditLog {
     @Column(name = "duration_ms", nullable = false)
     private long durationMs;
 
+    @Column(name = "trace_id", length = 64)
+    private String traceId;
+
+    @Column(name = "error_msg", length = 255)
+    private String errorMessage;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
     protected AuditLog() {
     }
 
-    public AuditLog(String operator, String action, String methodName, boolean success, long durationMs) {
+    public AuditLog(String operator,
+                    String action,
+                    String methodName,
+                    boolean success,
+                    long durationMs,
+                    String traceId,
+                    String errorMessage) {
         this.operator = operator;
         this.action = action;
         this.methodName = methodName;
         this.success = success;
         this.durationMs = durationMs;
+        this.traceId = traceId;
+        this.errorMessage = errorMessage;
         this.createdAt = Instant.now();
     }
 
@@ -63,6 +77,14 @@ public class AuditLog {
 
     public long getDurationMs() {
         return durationMs;
+    }
+
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
     }
 
     public Instant getCreatedAt() {

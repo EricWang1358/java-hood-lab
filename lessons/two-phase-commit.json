@@ -1,0 +1,320 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "two-phase-commit",
+  "course": "MySQL 索引、事务与锁",
+  "title": "Redo 和 Binlog 拆开写，主从数据怎么就劈叉了？两阶段提交真相",
+  "lead": "InnoDB 有 Redo Log，Server 层有 Binlog。如果先写完一个就断电，主库和从库立刻出现幽灵数据或丢数据！",
+  "minutes": 35,
+  "needs": [
+    "知道 Redo Log 和 Binlog 的存在"
+  ],
+  "after": [
+    "看懂先写 Redo 或先写 Binlog 在宕机时各自怎么导致主从不一致",
+    "讲清两阶段提交（Prepare -> Binlog -> Commit）如何用 XID 对账",
+    "理解组提交对两阶段提交性能的优化"
+  ],
+  "terms": {
+    "Binlog": "MySQL Server 层的逻辑归档日志，用于**主从复制**和**时间点恢复**。",
+    "两阶段提交（2PC）": "把 Redo Log 写入拆成 Prepare 和 Commit 两步，中间夹着写 Binlog，用全局 XID 关联。"
+  },
+  "experiments": {
+    "twopc": {
+      "runner": "java",
+      "home": "lab.twopc",
+      "variants": [
+        {
+          "id": "RedoFirstCrash",
+          "label": "先写 Redo 再写 Binlog（中途宕机）",
+          "note": "主库有数据，从库没收到 Binlog，主从劈叉！"
+        },
+        {
+          "id": "BinlogFirstCrash",
+          "label": "先写 Binlog 再写 Redo（中途宕机）",
+          "note": "Binlog 传给从库了，主库却没提交，主库丢数据！"
+        },
+        {
+          "id": "TwoPhaseCommit",
+          "label": "两阶段提交（Prepare→Binlog→Commit）",
+          "note": "重启按 XID 对账，主从 100% 一致！"
+        },
+        {
+          "id": "SyncBinlogGroupCommit",
+          "label": "两阶段提交 + 组提交",
+          "note": "合并多次 fsync，一致且高吞吐。"
+        }
+      ],
+      "knob": {
+        "label": "模拟宕机恢复次数",
+        "values": [
+          "100",
+          "300",
+          "500",
+          "1000"
+        ],
+        "default": "500"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "inconsistentCount",
+        "expectKey": "expected",
+        "label": "主从不一致次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "Redo 和 Binlog 拆开写，主从数据怎么就劈叉了？两阶段提交真相",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "MySQL 分两层：Server 层有 Binlog（主从同步用），InnoDB 有 Redo Log（崩溃恢复用）。这两个日志如果各写各的，中间断一次电，主库和从库的数据就再也对不上了！",
+          "say": "看看不走两阶段提交，哪一边先写都会出事故。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "两边都必须写，先写谁都会出事？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "500 次事务在两份日志之间突然断电：`RedoFirstCrash` 和 `BinlogFirstCrash` 会有多少次主从不一致？",
+          "say": "看 `RedoFirstCrash` 与 `TwoPhaseCommit`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 RedoFirstCrash 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "twopc.RedoFirstCrash",
+          "say": "`TwoPhaseCommit` 在恢复时拿着 `redoPrepare` 里的 XID 去查 `binlogComplete`：Binlog 完整就补提交，不完整就回滚。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpeq"
+              ],
+              "say": "只有两份日志状态完全对齐，`masterHas == replicaHas` 才成立。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "先写 Redo 提交、还没写 Binlog 就断电（`RedoFirstCrash`），500 次里主从会出现多少次不一致？",
+          "options": [
+            "0 次",
+            "250 次",
+            "500 次"
+          ],
+          "answer": 2,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "twopc",
+          "show": [
+            "RedoFirstCrash"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `RedoFirstCrash` 和 `BinlogFirstCrash` 全是 500 次劈叉！而 `TwoPhaseCommit` 完美降到 0！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "twopc.RedoFirstCrash",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "两阶段提交把 Redo 拆成：1) 写 Redo 并标 `Prepare`（带 XID）；2) 写 Binlog 并刷盘；3) 把 Redo 标 `Commit`。崩溃恢复时只要发现 Redo 是 `Prepare` 态，就去核对 Binlog：有完整事务就提交，没有就回滚！",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpne"
+              ],
+              "say": "XID 就像快递单号，把 InnoDB 和 Server 层死死绑在一起。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "twopc",
+          "show": [
+            "RedoFirstCrash",
+            "BinlogFirstCrash",
+            "TwoPhaseCommit",
+            "SyncBinlogGroupCommit"
+          ],
+          "select": "TwoPhaseCommit",
+          "say": "MySQL 内部事务协调器默认启用两阶段提交，并配合 Group Commit 批量刷盘减少 fsync 次数。"
+        },
+        {
+          "t": "chart",
+          "of": "twopc",
+          "say": "前两种单阶段写法全是 500 次不一致；两阶段提交和组提交全为 0。",
+          "walk": [
+            {
+              "focus": [
+                "RedoFirstCrash",
+                "TwoPhaseCommit"
+              ],
+              "say": "面试必考：双写一致的基石就是 Prepare -> Binlog -> Commit。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "生产保证零丢数据经典配置是「双 1」：`innodb_flush_log_at_trx_commit = 1` 且 `sync_binlog = 1`。",
+          "options": [
+            {
+              "name": "单阶段先后写",
+              "solves": "省一步状态修改",
+              "cost": "宕机必主从不一致",
+              "when": "不可用",
+              "say": "主从劈叉灾难。"
+            },
+            {
+              "name": "两阶段提交（2PC）",
+              "solves": "Redo 与 Binlog 原子一致",
+              "cost": "0 劈叉：{ms:twopc.TwoPhaseCommit} ms",
+              "when": "MySQL 默认机制",
+              "say": "标准答案。"
+            },
+            {
+              "name": "2PC + 组提交",
+              "solves": "一致且合并 fsync",
+              "cost": "0 劈叉：{ms:twopc.SyncBinlogGroupCommit} ms",
+              "when": "高并发双 1 调优",
+              "say": "兼顾安全与吞吐。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "MySQL 崩溃恢复时，发现一条 Redo Log 处于 `Prepare` 状态，且对应的 Binlog **已经完整写入**，InnoDB 会怎么做？",
+          "options": [
+            {
+              "text": "直接提交（Commit）这条事务，保证主从一致",
+              "ok": true,
+              "why": "Binlog 已经写入并可能已发给从库，所以主库必须提交它。"
+            },
+            {
+              "text": "直接回滚（Rollback）这条事务",
+              "ok": false,
+              "why": "如果回滚，从库已经执行了 Binlog，主从就会不一致。"
+            },
+            {
+              "text": "删掉 Binlog",
+              "ok": false,
+              "why": "Binlog 是追加写的，不能随意删改已落盘记录。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Redo 与 Binlog 两阶段提交",
+          "alias": "2PC (Redo Prepare -> Binlog -> Redo Commit)",
+          "oneLine": "用 ==Prepare → Binlog → Commit== 配合 ==XID== 对账，防止主从在宕机瞬间产生数据劈叉。",
+          "asked": [
+            "为什么 Redo Log 和 Binlog 要两阶段提交？",
+            "崩溃恢复时 Redo 处于 Prepare 状态怎么处理？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚为什么要有两阶段提交，以及宕机恢复时发现 Redo 是 Prepare 状态怎么判断提交还是回滚？",
+          "points": [
+            "Redo（InnoDB）管崩溃恢复，Binlog（Server）管主从同步",
+            "先后单写只要在中间断电就会主从不一致",
+            "2PC：Redo Prepare(带XID) -> 写 Binlog -> Redo Commit；重启时 Binlog 完整就提交，否则回滚"
+          ],
+          "model": "Redo Log 负责主库崩溃恢复，Binlog 负责主从同步，如果各写各的，在两者之间宕机就会导致主从数据不一致。MySQL 通过两阶段提交把 Redo 拆成 Prepare 和 Commit 两步：先写 Redo Prepare 并带上 XID，再写 Binlog 刷盘，最后改 Redo 为 Commit。崩溃恢复时若发现 Redo 处于 Prepare，就去查 Binlog 是否完整：完整则提交，不完整则回滚，从而保证主从严格一致。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "2PC 的三个步骤顺序？",
+              "a": "Redo Prepare -> 写 Binlog -> Redo Commit。"
+            },
+            {
+              "q": "恢复时 Binlog 完整但 Redo 是 Prepare 怎么办？",
+              "a": "提交事务（Commit）。"
+            },
+            {
+              "q": "什么参数叫「双 1」配置？",
+              "a": "innodb_flush_log_at_trx_commit=1 和 sync_binlog=1。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

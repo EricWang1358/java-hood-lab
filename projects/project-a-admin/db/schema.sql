@@ -45,6 +45,9 @@ CREATE TABLE IF NOT EXISTS sys_audit_log (
     method_name VARCHAR(120) NOT NULL,
     success BOOLEAN NOT NULL,
     duration_ms BIGINT NOT NULL,
+    trace_id VARCHAR(64) NULL,
+    error_msg VARCHAR(255) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_audit_created (created_at)
+    INDEX idx_audit_created (created_at),
+    INDEX idx_audit_trace (trace_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

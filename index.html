@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>80</strong> 节循序渐进实验课</span>
-        <span><strong>320</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>105</strong> 节循序渐进实验课</span>
+        <span><strong>420</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -373,28 +373,29 @@
 
     <div class="controls">
       <div class="search-row">
-        <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 80 / 80 课</span>
+        <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
+        <span id="shownCount" class="count-note">显示 105 / 105 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (80)</button>
-      </div>
-      <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (64)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (105)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
         <button type="button" class="pill" data-filter="ch4">第四章 · 线程封闭与线程池 (6)</button>
         <button type="button" class="pill" data-filter="ch5">第五章 · 工程模式与新特性 (11)</button>
         <button type="button" class="pill" data-filter="m3ch1">网络 1 · TCP 与 Socket (5)</button>
+        <button type="button" class="pill" data-filter="m3ch2">网络 2 · HTTP 与认证 (4)</button>
         <button type="button" class="pill" data-filter="m4ch1">MySQL 1 · SQL 与深分页 (5)</button>
         <button type="button" class="pill" data-filter="m4ch2">MySQL 2 · B+ 树与索引 (7)</button>
         <button type="button" class="pill" data-filter="m4ch3">MySQL 3 · EXPLAIN 与失效 (5)</button>
+        <button type="button" class="pill" data-filter="m4ch4">MySQL 4 · MVCC 与隔离 (5)</button>
+        <button type="button" class="pill" data-filter="m4ch5">MySQL 5 · 日志与锁死锁 (6)</button>
         <button type="button" class="pill" data-filter="m5ch1">Spring 1 · 事务与 AOP (5)</button>
         <button type="button" class="pill" data-filter="m5ch2">Spring 2 · IoC 与自动装配 (5)</button>
-        <button type="button" class="pill" data-filter="m6">模块 6 · Redis / MQ / 微服务 (6)</button>
+        <button type="button" class="pill" data-filter="m5ch3">Spring 3 · MVC 与链路隔离 (5)</button>
 
         <button type="button" class="pill" data-filter="m8">模块 8 · 算法与 SQL (10)</button>
+        <button type="button" class="pill" data-filter="m6">模块 6 · Redis / MQ / 微服务 (11)</button>
       </div>
     </div>
 
@@ -897,6 +898,63 @@
         </div>
       </section>
 
+      <section class="chapter" data-ch="m3ch2">
+        <div class="chapter__head">
+          <h2>模块三 · 第二章：HTTP、HTTPS 与认证机制（M3-06～M3-09）</h2>
+          <p>实测 HTTP/1.1 Keep-Alive 与队头阻塞、TLS 非对称握手 vs 会话复用代价、CORS 预检翻倍往返与 Session/JWT 并发鉴权取舍。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/http-keepalive.html" data-ch="m3ch2" data-search="m3-06 http-keepalive 关掉 keep-alive，接口怎么慢了这么多？ 同样的 http/1.1 接口，每次带 connection: close 断开 vs 长连接复用，耗时差多少？ lab.keepalive">
+          <div class="card__top">
+            <span class="card__num">#M3-06</span>
+            <span class="card__pkg">lab.keepalive</span>
+          </div>
+          <h3 class="card__title">关掉 Keep-Alive，接口怎么慢了这么多？</h3>
+          <p class="card__lead">同样的 HTTP/1.1 接口，每次带 Connection: close 断开 vs 长连接复用，耗时差多少？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/https-tls.html" data-ch="m3ch2" data-search="m3-07 https-tls 换上 https，首包到底多花多少毫秒？ 非对称签名验签 + ecdh 密钥协商 + aes-gcm 加密，tls 握手到底贵在哪里，怎么加速？ lab.tlscost">
+          <div class="card__top">
+            <span class="card__num">#M3-07</span>
+            <span class="card__pkg">lab.tlscost</span>
+          </div>
+          <h3 class="card__title">换上 HTTPS，首包到底多花多少毫秒？</h3>
+          <p class="card__lead">非对称签名验签 + ECDH 密钥协商 + AES-GCM 加密，TLS 握手到底贵在哪里，怎么加速？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/http-cors.html" data-ch="m3ch2" data-search="m3-08 http-cors 发个 post 怎么先发一次 options？ 前端带个自定义头发跨域 post，后端日志怎么每次收到双倍请求？cors 预检与缓存实测。 lab.corspreflight">
+          <div class="card__top">
+            <span class="card__num">#M3-08</span>
+            <span class="card__pkg">lab.corspreflight</span>
+          </div>
+          <h3 class="card__title">发个 POST 怎么先发一次 OPTIONS？</h3>
+          <p class="card__lead">前端带个自定义头发跨域 POST，后端日志怎么每次收到双倍请求？CORS 预检与缓存实测。</p>
+          <div class="card__foot">
+            <span>13 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/auth-jwt.html" data-ch="m3ch2" data-search="m3-09 auth-jwt session 查表 vs 无状态 jwt，怎么选？ 全局锁 session 表、concurrenthashmap、无状态 hmac-sha256 验签与短效缓存黑名单，性能与扩展性差多少？ lab.authjwt">
+          <div class="card__top">
+            <span class="card__num">#M3-09</span>
+            <span class="card__pkg">lab.authjwt</span>
+          </div>
+          <h3 class="card__title">Session 查表 vs 无状态 JWT，怎么选？</h3>
+          <p class="card__lead">全局锁 Session 表、ConcurrentHashMap、无状态 HMAC-SHA256 验签与短效缓存黑名单，性能与扩展性差多少？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
       <section class="chapter" data-ch="m4ch1">
         <div class="chapter__head">
           <h2>模块四 · 第一章：SQL 必知必会、联表与深分页改写（第 33～37 课）</h2>
@@ -1104,6 +1162,75 @@
         </div>
       </section>
 
+      <section class="chapter" data-ch="m5ch3">
+        <div class="chapter__head">
+          <h2>模块五 · 第三章：Spring MVC 请求链路、参数校验与并发隔离（第 48～52 课）</h2>
+          <p>覆盖 Filter vs Interceptor、@Valid/BindingResult 陷阱、雪花 ID 与金额精度、全局异常转发及 Tomcat 线程池雪崩隔离。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/mvc-filter-interceptor.html" data-ch="m5ch3" data-search="48 mvc-filter-interceptor filter interceptor dispatcherservlet 请求链路 lab.mvcchain">
+          <div class="card__top">
+            <span class="card__num">#48</span>
+            <span class="card__pkg">lab.mvcchain</span>
+          </div>
+          <h3 class="card__title">Filter vs Interceptor：为什么跨域/静态资源在拦截器里漏掉了？</h3>
+          <p class="card__lead">同样是「拦截请求」：Filter 在 Servlet 容器外层，Interceptor 在 DispatcherServlet 内层。放错位置，CORS 预检或静态资源全漏掉！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/mvc-param-bind.html" data-ch="m5ch3" data-search="49 mvc-param-bind valid validated bindingresult 参数校验 lab.paramvalid">
+          <div class="card__top">
+            <span class="card__num">#49</span>
+            <span class="card__pkg">lab.paramvalid</span>
+          </div>
+          <h3 class="card__title">参数校验 @Valid 没生效，或 BindingResult 吞掉了全局异常？</h3>
+          <p class="card__lead">DTO 上贴满了 @NotNull/@Min，Controller 却忘了加 @Valid；或者顺手多写了个 BindingResult，结果全局异常处理器再也收不到报错！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/mvc-jackson-trap.html" data-ch="m5ch3" data-search="50 mvc-jackson-trap jackson 雪花 long 精度丢失 bigdecimal 金额 lab.jsontrap">
+          <div class="card__top">
+            <span class="card__num">#50</span>
+            <span class="card__pkg">lab.jsontrap</span>
+          </div>
+          <h3 class="card__title">前后端传 Long 主键与金额：为什么前端收到 ID 尾数全变 0 了？</h3>
+          <p class="card__lead">后端雪花算法生成 19 位 Long 主键，传到前端 JSON.parse 后最后三位全变成 0；用 double 算金额，0.1 + 0.2 竟不等于 0.3！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/mvc-global-exception.html" data-ch="m5ch3" data-search="51 mvc-global-exception restcontrolleradvice filter handlerexceptionresolver 全局异常 lab.exchandler">
+          <div class="card__top">
+            <span class="card__num">#51</span>
+            <span class="card__pkg">lab.exchandler</span>
+          </div>
+          <h3 class="card__title">全局异常 @RestControllerAdvice 为什么兜不住 Filter 抛出的异常？</h3>
+          <p class="card__lead">配了 @RestControllerAdvice 统一返回 JSON 错误码，可 JWT Filter 一抛过期异常，前端收到的竟还是 Tomcat 默认 500 网页！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/mvc-thread-pool.html" data-ch="m5ch3" data-search="52 mvc-thread-pool tomcat 线程池 deferredresult 舱壁隔离 雪崩 lab.mvcthread">
+          <div class="card__top">
+            <span class="card__num">#52</span>
+            <span class="card__pkg">lab.mvcthread</span>
+          </div>
+          <h3 class="card__title">Tomcat 线程全被慢接口堵死，连健康检查都挂了？</h3>
+          <p class="card__lead">一个导出报表慢接口拖垮了整个 Spring Boot 应用：所有核心下单接口和 /actuator/health 全部超时雪崩！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
       <section class="chapter" data-ch="m4ch2">
         <div class="chapter__head">
           <h2>模块四 · 第二章：InnoDB 页结构、B+ 树聚簇索引、回表与最左前缀（第 43～49 课）</h2>
@@ -1192,48 +1319,88 @@
         </a>
         </div>
       </section>
-
-      <section class="chapter" data-ch="m6">
+      <section class="chapter" data-ch="m4ch4">
         <div class="chapter__head">
-          <h2>模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-06）</h2>
-          <p>纯 JDK 零依赖仿真实验室：直击缓存穿透、击穿、雪崩、双写一致性、热点 Key 倾斜与 BigKey/Pipeline 代价。</p>
+          <h2>模块四 · 第四章：四大隔离级别、MVCC 版本链与 ReadView（第 55～59 课）</h2>
+          <p>用 ReadView 可见性算法与版本链实验，彻底打通脏读、不可重复读、快照读 vs 当前读、RR 幻读真相与长事务 Undo 膨胀。</p>
         </div>
         <div class="grid">
-        <a class="card" href="./pages/m6-cache-penetration.html" data-ch="m6" data-search="m6-01 m6-cache-penetration 不存在的 id 疯狂查库：缓存穿透怎么挡？ 恶意或异常请求专查根本不存在的 id，缓存与数据库双双未命中，每次都直穿到底层 db。 lab.m6.penetration">
-          <div class="card__top"><span class="card__num">#M6-01</span><span class="card__pkg">lab.m6.penetration</span></div>
-          <h3 class="card__title">不存在的 ID 疯狂查库：缓存穿透怎么挡？</h3>
-          <p class="card__lead">恶意或异常请求专查根本不存在的 ID，缓存与数据库双双未命中，每次都直穿到底层 DB。</p>
-          <div class="card__foot"><span>22 页 · 约 40 分钟</span><span class="card__go">进入实验 →</span></div>
+        <a class="card" href="./pages/tx-dirty-read.html" data-ch="m4ch4" data-search="55 tx-dirty-read 不加隔离，怎么读到了别人回滚掉的假数据？ 脏读 read uncommitted rc rr lab.dirtyread">
+          <div class="card__top"><span class="card__num">#55</span><span class="card__pkg">lab.dirtyread</span></div>
+          <h3 class="card__title">不加隔离，怎么读到了别人回滚掉的假数据？</h3>
+          <p class="card__lead">线程 A 把余额改成 900 还没提交，线程 B 读走 900 后发了货；接着线程 A 回滚成 100，钱货两空！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
         </a>
-        <a class="card" href="./pages/m6-cache-breakdown.html" data-ch="m6" data-search="m6-02 m6-cache-breakdown 热点 key 过期瞬间：互斥锁 vs 逻辑过期 某个爆款热点 key 到点过期的一瞬间，成百上千并发请求同时 miss 挤向数据库，到底该排队等锁还是直接返回旧值？ lab.m6.breakdown">
-          <div class="card__top"><span class="card__num">#M6-02</span><span class="card__pkg">lab.m6.breakdown</span></div>
-          <h3 class="card__title">热点 Key 过期瞬间：互斥锁 vs 逻辑过期</h3>
-          <p class="card__lead">某个爆款热点 Key 到点过期的一瞬间，成百上千并发请求同时 miss 挤向数据库，到底该排队等锁还是直接返回旧值？</p>
-          <div class="card__foot"><span>22 页 · 约 40 分钟</span><span class="card__go">进入实验 →</span></div>
+        <a class="card" href="./pages/tx-nonrepeatable-read.html" data-ch="m4ch4" data-search="56 tx-nonrepeatable-read 同一事务里连读两次余额，怎么两次不一样？ 不可重复读 rc rr readview lab.nonrepeat">
+          <div class="card__top"><span class="card__num">#56</span><span class="card__pkg">lab.nonrepeat</span></div>
+          <h3 class="card__title">同一事务里连读两次余额，怎么两次不一样？</h3>
+          <p class="card__lead">同一个事务里先查余额是 100，隔了一秒再查一次竟然变成 200——这就是 RC 级别下的「不可重复读」！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
         </a>
-        <a class="card" href="./pages/m6-cache-avalanche.html" data-ch="m6" data-search="m6-03 m6-cache-avalanche 整点批量过期：为什么缓存雪崩打垮库？ 初始化缓存时给大量 key 统一设死 ttl，到点集体失效，数据库峰值 qps 瞬间打穿安全线。 lab.m6.avalanche">
-          <div class="card__top"><span class="card__num">#M6-03</span><span class="card__pkg">lab.m6.avalanche</span></div>
-          <h3 class="card__title">整点批量过期：为什么缓存雪崩打垮库？</h3>
-          <p class="card__lead">初始化缓存时给大量 Key 统一设死 TTL，到点集体失效，数据库峰值 QPS 瞬间打穿安全线。</p>
-          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        <a class="card" href="./pages/mvcc-readview.html" data-ch="m4ch4" data-search="57 mvcc-readview 不加锁的快照读，怎么做到读写互不阻塞？ mvcc readview undo 快照读 当前读 lab.readview">
+          <div class="card__top"><span class="card__num">#57</span><span class="card__pkg">lab.readview</span></div>
+          <h3 class="card__title">不加锁的快照读，怎么做到读写互不阻塞？</h3>
+          <p class="card__lead">写事务正在改这一行并拿着 X 锁，为什么普通 SELECT 却一毫秒都不等直接返回旧值？掀开 ReadView 可见性算法！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
         </a>
-        <a class="card" href="./pages/m6-cache-consistency.html" data-ch="m6" data-search="m6-04 m6-cache-consistency 先删缓存还是先改库？并发读写脏数据现场 更新数据时先删缓存还是先改库？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。 lab.m6.consistency">
-          <div class="card__top"><span class="card__num">#M6-04</span><span class="card__pkg">lab.m6.consistency</span></div>
-          <h3 class="card__title">先删缓存还是先改库？并发读写脏数据现场</h3>
-          <p class="card__lead">更新数据时先删缓存还是先改库？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。</p>
-          <div class="card__foot"><span>22 页 · 约 45 分钟</span><span class="card__go">进入实验 →</span></div>
+        <a class="card" href="./pages/tx-phantom-read.html" data-ch="m4ch4" data-search="58 tx-phantom-read rr 级快照读防住了幻读，一 update 怎么又冒出新行？ 幻读 next-key lock 当前读 lab.phantom">
+          <div class="card__top"><span class="card__num">#58</span><span class="card__pkg">lab.phantom</span></div>
+          <h3 class="card__title">RR 级快照读防住了幻读，一 UPDATE 怎么又冒出新行？</h3>
+          <p class="card__lead">面试常问「MySQL RR 到底有没有彻底解决幻读？」答案是：没有！一旦混用快照读和当前读，幻影行立刻现身。</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
         </a>
-        <a class="card" href="./pages/m6-hotkey-split.html" data-ch="m6" data-search="m6-05 m6-hotkey-split 顶流热点 key 打爆单分片：本地二级缓存与 key 拆分 就算 redis 搭了 16 个分片集群，某一个顶流热搜 key 还是只会落到其中 1 个分片上，把单分片打满。 lab.m6.hotkey">
-          <div class="card__top"><span class="card__num">#M6-05</span><span class="card__pkg">lab.m6.hotkey</span></div>
-          <h3 class="card__title">顶流热点 Key 打爆单分片：本地二级缓存与 Key 拆分</h3>
-          <p class="card__lead">就算 Redis 搭了 16 个分片集群，某一个顶流热搜 Key 还是只会落到其中 1 个分片上，把单分片打满。</p>
-          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        <a class="card" href="./pages/mvcc-purge-longtx.html" data-ch="m4ch4" data-search="59 mvcc-purge-longtx 一个长事务挂着不提交，undo 日志怎么把磁盘撑爆？ 长事务 purge undo lab.longtrx">
+          <div class="card__top"><span class="card__num">#59</span><span class="card__pkg">lab.longtrx</span></div>
+          <h3 class="card__title">一个长事务挂着不提交，Undo 日志怎么把磁盘撑爆？</h3>
+          <p class="card__lead">线上突然告警 ibdata1 / undo 表空间暴涨几十 GB、所有查询变慢——罪魁祸首往往只是一个忘了 commit 的长事务！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
         </a>
-        <a class="card" href="./pages/m6-bigkey-pipeline.html" data-ch="m6" data-search="m6-06 m6-bigkey-pipeline bigkey 阻塞单线程 + pipeline 批量往返代价 一次查 40 条数据，循环单发和 pipeline 差多少？大 key 又是怎么把单线程卡死的？ lab.m6.bigkey">
-          <div class="card__top"><span class="card__num">#M6-06</span><span class="card__pkg">lab.m6.bigkey</span></div>
-          <h3 class="card__title">BigKey 阻塞单线程 + Pipeline 批量往返代价</h3>
-          <p class="card__lead">一次查 40 条数据，循环单发和 Pipeline 差多少？大 Key 又是怎么把单线程卡死的？</p>
-          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </div>
+      </section>
+      <section class="chapter" data-ch="m4ch5">
+        <div class="chapter__head">
+          <h2>模块四 · 第五章：日志两阶段提交、行锁/间隙锁死锁与乐观锁（第 60～65 课）</h2>
+          <p>打通 WAL Redo/Undo 协同、Redo+Binlog 两阶段提交、行锁退化全表锁、Gap/Next-Key Lock 阻塞、Gap+插入意向锁死锁与高并发扣库存方案。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/wal-redo-undo.html" data-ch="m4ch5" data-search="60 wal-redo-undo 写内存不立刻刷盘，断电怎么不丢数据？ wal redo undo 持久性 原子性 lab.walredo">
+          <div class="card__top"><span class="card__num">#60</span><span class="card__pkg">lab.walredo</span></div>
+          <h3 class="card__title">写内存不立刻刷盘，断电怎么不丢数据？WAL Redo 与 Undo 职责拆解</h3>
+          <p class="card__lead">每次改一行就随机刷 16KB 数据页慢如蜗牛；先写顺序 Redo 呢？那为什么还需要 Undo 日志？</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/two-phase-commit.html" data-ch="m4ch5" data-search="61 two-phase-commit redo 和 binlog 拆开写，主从数据怎么就劈叉了？ 两阶段提交 2pc xid prepare commit lab.twopc">
+          <div class="card__top"><span class="card__num">#61</span><span class="card__pkg">lab.twopc</span></div>
+          <h3 class="card__title">Redo 和 Binlog 拆开写，主从数据怎么就劈叉了？两阶段提交真相</h3>
+          <p class="card__lead">InnoDB 有 Redo Log，Server 层有 Binlog。如果先写完一个就断电，主库和从库立刻出现幽灵数据或丢数据！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/row-lock-index.html" data-ch="m4ch5" data-search="62 row-lock-index 明明只改一行，怎么把整张表都锁死了？ 行锁 索引 隐式转换 全表锁 lab.rowlock">
+          <div class="card__top"><span class="card__num">#62</span><span class="card__pkg">lab.rowlock</span></div>
+          <h3 class="card__title">明明只改一行，怎么把整张表都锁死了？行锁升级表锁现场</h3>
+          <p class="card__lead">很多人以为 InnoDB 的行锁就是「按行号加锁」，其实它是「加在索引记录上的」！一旦 WHERE 没走索引，整张表直接锁死。</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/gap-nextkey-lock.html" data-ch="m4ch5" data-search="63 gap-nextkey-lock 表里根本没有 id=7，为什么插入 id=7 却被别人卡死？ 间隙锁 临键锁 gap next-key record lock lab.gaplock">
+          <div class="card__top"><span class="card__num">#63</span><span class="card__pkg">lab.gaplock</span></div>
+          <h3 class="card__title">表里根本没有 id=7，为什么插入 id=7 却被别人卡死？间隙锁与临键锁</h3>
+          <p class="card__lead">别人只是用 FOR UPDATE 查了一个根本不存在的 id=7，为什么你去 INSERT id=7 甚至 id=8 全被阻塞了？</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/deadlock-insert-gap.html" data-ch="m4ch5" data-search="64 deadlock-insert-gap 两事务同时先查不存在再插入，怎么双双死锁报错？ gap 插入意向锁 死锁 deadlock lab.sqldeadlock">
+          <div class="card__top"><span class="card__num">#64</span><span class="card__pkg">lab.sqldeadlock</span></div>
+          <h3 class="card__title">两事务同时「先查不存在再插入」，怎么双双死锁报错？Gap 锁 + 插入意向锁</h3>
+          <p class="card__lead">生产最常见的神秘死锁 Deadlock found：两个并发请求都先 SELECT ... FOR UPDATE 查无此单，再各自 INSERT，直接双双撞死！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/optimistic-vs-pessimistic.html" data-ch="m4ch5" data-search="65 optimistic-vs-pessimistic 高并发扣库存 for update 乐观锁 cas 版本号 悲观锁 lab.optlock">
+          <div class="card__top"><span class="card__num">#65</span><span class="card__pkg">lab.optlock</span></div>
+          <h3 class="card__title">高并发扣库存：FOR UPDATE 排长队 vs CAS 版本号乐观锁怎么选？</h3>
+          <p class="card__lead">秒杀扣库存有四条路：不加锁直接扣、悲观 FOR UPDATE、版本号乐观锁、单条 SQL 条件原子扣减。高并发下谁超卖、谁最稳？</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        </div>
+      </section>
 
       <section class="chapter" data-ch="m8">
         <div class="chapter__head">
@@ -1300,6 +1467,81 @@
           <h3 class="card__title">高频分组排名 SQL 20 题：为什么窗口函数比相关子查询快一个数量级</h3>
           <p class="card__lead">求「每个部门工资前三高」：老式相关子查询在 3 万行表上跑出数百毫秒，窗口函数为什么只要几毫秒？</p>
           <div class="card__foot"><span>16 页 · 约 45 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m6">
+        <div class="chapter__head">
+          <h2>模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-11）</h2>
+          <p>纯 JDK 零依赖仿真实验室：覆盖缓存高并发灾难与底层原理、分布式锁与看门狗、MQ 可靠幂等积压、微服务注册/重试/限流熔断。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/m6-cache-penetration.html" data-ch="m6" data-search="m6-01 m6-cache-penetration 不存在的 id 疯狂查库：缓存穿透怎么挡？ 恶意或异常请求专查根本不存在的 id，缓存与数据库双双未命中，每次都直穿到底层 db。 lab.m6.penetration">
+          <div class="card__top"><span class="card__num">#M6-01</span><span class="card__pkg">lab.m6.penetration</span></div>
+          <h3 class="card__title">不存在的 ID 疯狂查库：缓存穿透怎么挡？</h3>
+          <p class="card__lead">恶意或异常请求专查根本不存在的 ID，缓存与数据库双双未命中，每次都直穿到底层 DB。</p>
+          <div class="card__foot"><span>22 页 · 约 40 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-cache-breakdown.html" data-ch="m6" data-search="m6-02 m6-cache-breakdown 热点 key 过期瞬间：互斥锁 vs 逻辑过期 某个爆款热点 key 到点过期的一瞬间，成百上千并发请求同时 miss 挤向数据库，到底该排队等锁还是直接返回旧值？ lab.m6.breakdown">
+          <div class="card__top"><span class="card__num">#M6-02</span><span class="card__pkg">lab.m6.breakdown</span></div>
+          <h3 class="card__title">热点 Key 过期瞬间：互斥锁 vs 逻辑过期</h3>
+          <p class="card__lead">某个爆款热点 Key 到点过期的一瞬间，成百上千并发请求同时 miss 挤向数据库，到底该排队等锁还是直接返回旧值？</p>
+          <div class="card__foot"><span>22 页 · 约 40 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-cache-avalanche.html" data-ch="m6" data-search="m6-03 m6-cache-avalanche 整点批量过期：为什么缓存雪崩打垮库？ 初始化缓存时给 1 万个 key 统一设了 `ttl = 3600s`，一小时后整点瞬间全员失效，数据库峰值 qps 瞬间翻倍宕机。 lab.m6.avalanche">
+          <div class="card__top"><span class="card__num">#M6-03</span><span class="card__pkg">lab.m6.avalanche</span></div>
+          <h3 class="card__title">整点批量过期：为什么缓存雪崩打垮库？</h3>
+          <p class="card__lead">初始化缓存时给 1 万个 Key 统一设了 `TTL = 3600s`，一小时后整点瞬间全员失效，数据库峰值 QPS 瞬间翻倍宕机。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-cache-consistency.html" data-ch="m6" data-search="m6-04 m6-cache-consistency 先删缓存还是先改库？并发读写脏数据现场 更新数据时到底「先删缓存再改库」还是「先改库再删缓存」？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。 lab.m6.consistency">
+          <div class="card__top"><span class="card__num">#M6-04</span><span class="card__pkg">lab.m6.consistency</span></div>
+          <h3 class="card__title">先删缓存还是先改库？并发读写脏数据现场</h3>
+          <p class="card__lead">更新数据时到底「先删缓存再改库」还是「先改库再删缓存」？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。</p>
+          <div class="card__foot"><span>22 页 · 约 45 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-hotkey-split.html" data-ch="m6" data-search="m6-05 m6-hotkey-split 顶流热点 key 打爆单分片：本地二级缓存与 key 拆分 就算 redis 搭了 16 个分片集群，某一个顶流热搜 key 还是只会落到其中 1 个分片上，把单核单分片打到 cpu 100%。 lab.m6.hotkey">
+          <div class="card__top"><span class="card__num">#M6-05</span><span class="card__pkg">lab.m6.hotkey</span></div>
+          <h3 class="card__title">顶流热点 Key 打爆单分片：本地二级缓存与 Key 拆分</h3>
+          <p class="card__lead">就算 Redis 搭了 16 个分片集群，某一个顶流热搜 Key 还是只会落到其中 1 个分片上，把单核单分片打到 CPU 100%。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-bigkey-pipeline.html" data-ch="m6" data-search="m6-06 m6-bigkey-pipeline bigkey 阻塞单线程 + pipeline 批量往返代价 一次查 40 条数据，用 `for` 循环调 40 次 `get` 和用 pipeline 差多少？大 key 又是怎么把 redis 单线程卡死的？ lab.m6.bigkey">
+          <div class="card__top"><span class="card__num">#M6-06</span><span class="card__pkg">lab.m6.bigkey</span></div>
+          <h3 class="card__title">BigKey 阻塞单线程 + Pipeline 批量往返代价</h3>
+          <p class="card__lead">一次查 40 条数据，用 `for` 循环调 40 次 `get` 和用 Pipeline 差多少？大 Key 又是怎么把 Redis 单线程卡死的？</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-redis-encoding.html" data-ch="m6" data-search="m6-07 m6-redis-encoding hash 存 100 字段还是 1000 字段？底层编码跳变代价 把用户属性拆成独立 string key 还是塞进 hash？当 hash 字段数超过 512 或单值超 64b，底层从 listpack 跳变成 hashtable 内存直接翻几倍。 lab.m6.encoding">
+          <div class="card__top"><span class="card__num">#M6-07</span><span class="card__pkg">lab.m6.encoding</span></div>
+          <h3 class="card__title">Hash 存 100 字段还是 1000 字段？底层编码跳变代价</h3>
+          <p class="card__lead">把用户属性拆成独立 String Key 还是塞进 Hash？当 Hash 字段数超过 512 或单值超 64B，底层从 listpack 跳变成 hashtable 内存直接翻几倍。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-zset-skiplist.html" data-ch="m6" data-search="m6-08 m6-zset-skiplist 排行榜为什么用跳表不用红黑树？范围查询实测 redis zset 底层选了跳表（skiplist）而不是红黑树或 b+ 树。对比线性扫描、红黑树与跳表在范围查询上的表现，看清它为什么又快又好写。 lab.m6.skiplist">
+          <div class="card__top"><span class="card__num">#M6-08</span><span class="card__pkg">lab.m6.skiplist</span></div>
+          <h3 class="card__title">排行榜为什么用跳表不用红黑树？范围查询实测</h3>
+          <p class="card__lead">Redis ZSet 底层选了跳表（SkipList）而不是红黑树或 B+ 树。对比线性扫描、红黑树与跳表在范围查询上的表现，看清它为什么又快又好写。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-rdb-cow.html" data-ch="m6" data-search="m6-09 m6-rdb-cow fork 生成 rdb 快照时，写放大与阻塞怎么来的？ redis 执行 `bgsave` 会 `fork` 出子进程生成 rdb。虽然号称异步不阻塞，但主进程 `fork` 瞬间和写入触发的 copy-on-write（写时复制）依然可能造成内存翻倍与延迟毛刺。 lab.m6.rdbcow">
+          <div class="card__top"><span class="card__num">#M6-09</span><span class="card__pkg">lab.m6.rdbcow</span></div>
+          <h3 class="card__title">fork 生成 RDB 快照时，写放大与阻塞怎么来的？</h3>
+          <p class="card__lead">Redis 执行 `BGSAVE` 会 `fork` 出子进程生成 RDB。虽然号称异步不阻塞，但主进程 `fork` 瞬间和写入触发的 Copy-on-Write（写时复制）依然可能造成内存翻倍与延迟毛刺。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-aof-fsync.html" data-ch="m6" data-search="m6-10 m6-aof-fsync aof 三种刷盘策略：always、everysec、no 的吞吐与丢数账 redis aof 日志写进内核 pagecache 并不等于落盘。对比 `no`、`always`、`everysec` 与组提交在崩溃丢数与吞吐上的真实代价。 lab.m6.aoffsync">
+          <div class="card__top"><span class="card__num">#M6-10</span><span class="card__pkg">lab.m6.aoffsync</span></div>
+          <h3 class="card__title">AOF 三种刷盘策略：always、everysec、no 的吞吐与丢数账</h3>
+          <p class="card__lead">Redis AOF 日志写进内核 PageCache 并不等于落盘。对比 `no`、`always`、`everysec` 与组提交在崩溃丢数与吞吐上的真实代价。</p>
+          <div class="card__foot"><span>22 页 · 约 30 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-eviction-lfu.html" data-ch="m6" data-search="m6-11 m6-eviction-lfu 内存满时随机淘汰 vs 近似 lru vs lfu 命中率对比 redis 内存触顶 `maxmemory` 时，选 `noeviction` 直接报错、`random` 随机乱删、`allkeys-lru` 还是 `allkeys-lfu`？用真实二八热点负载跑出命中率差距。 lab.m6.eviction">
+          <div class="card__top"><span class="card__num">#M6-11</span><span class="card__pkg">lab.m6.eviction</span></div>
+          <h3 class="card__title">内存满时随机淘汰 vs 近似 LRU vs LFU 命中率对比</h3>
+          <p class="card__lead">Redis 内存触顶 `maxmemory` 时，选 `noeviction` 直接报错、`random` 随机乱删、`allkeys-lru` 还是 `allkeys-lfu`？用真实二八热点负载跑出命中率差距。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
         </a>
         </div>
       </section>

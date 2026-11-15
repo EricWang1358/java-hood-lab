@@ -1,6 +1,7 @@
 package com.javahood.admin.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -31,7 +32,12 @@ public class SysUser {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    /**
+     * Foundation note: LAZY + @BatchSize avoids N+1 queries during paginated user queries
+     * while preserving SQL-level LIMIT/OFFSET (unlike collection JOIN FETCH with pagination).
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @BatchSize(size = 50)
     @JoinTable(
             name = "sys_user_role",
             joinColumns = @JoinColumn(name = "user_id"),

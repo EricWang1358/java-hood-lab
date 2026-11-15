@@ -1,0 +1,319 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "deadlock-insert-gap",
+  "course": "MySQL 索引、事务与锁",
+  "title": "两事务同时「先查不存在再插入」，怎么双双死锁报错？Gap 锁 + 插入意向锁",
+  "lead": "生产最常见的神秘死锁 `Deadlock found when trying to get lock`：两个并发请求都先 `SELECT ... FOR UPDATE` 查无此单，再各自 `INSERT`，直接双双撞死！",
+  "minutes": 35,
+  "needs": [
+    "知道 Gap Lock 和死锁成因"
+  ],
+  "after": [
+    "彻底复现「Gap 锁兼容 + 插入意向锁互斥」导致的经典死锁",
+    "复现「交叉顺序更新多行」的经典死锁",
+    "掌握按序加锁和「直接 INSERT 靠唯一键兜底」两种工程解法"
+  ],
+  "terms": {
+    "插入意向锁（Insert Intention Lock）": "事务准备往某个间隙里 `INSERT` 新行前申请的特殊间隙锁，它与已有的 Gap Lock **互斥**！"
+  },
+  "experiments": {
+    "sqldeadlock": {
+      "runner": "java",
+      "home": "lab.sqldeadlock",
+      "variants": [
+        {
+          "id": "GapPlusInsertIntention",
+          "label": "先查不存在(Gap) + 再 INSERT",
+          "note": "两事务同时拿到兼容的 Gap Lock，再申请插入意向锁互相卡死！"
+        },
+        {
+          "id": "TwoOrderUpdateReverse",
+          "label": "交叉顺序更新两行（1→2 vs 2→1）",
+          "note": "经典 AB-BA 环路等待死锁！"
+        },
+        {
+          "id": "OrderedLockAcquire",
+          "label": "统一按主键升序加锁（1→2）",
+          "note": "打破循环等待，0 死锁！"
+        },
+        {
+          "id": "InsertIgnoreOrRc",
+          "label": "直接 INSERT 靠唯一键兜底 / RC",
+          "note": "跳过先查加间隙锁步骤，0 死锁！"
+        }
+      ],
+      "knob": {
+        "label": "并发事务对数",
+        "values": [
+          "50",
+          "100",
+          "200",
+          "400"
+        ],
+        "default": "200"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "deadlocks",
+        "expectKey": "expected",
+        "label": "死锁次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "两事务同时「先查不存在再插入」，怎么双双死锁报错？Gap 锁 + 插入意向锁",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "很多幂等插入代码这样写：`开启事务 -> SELECT ... FOR UPDATE 查订单 -> 没查到 -> INSERT`。看似很严谨，一上高并发就狂报 `Deadlock found`，原因就在于 Gap Lock 是兼容的，但插入意向锁和 Gap Lock 互斥！",
+          "say": "亲手跑一下这组并发死锁现场。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "两个事务同时拿同一个间隙的锁，会互相堵住吗？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "200 对并发事务同时对不存在的 `id=7` 先 `FOR UPDATE` 再 `INSERT`，会发生多少次死锁？",
+          "say": "看 `GapPlusInsertIntention` 和 `OrderedLockAcquire`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 GapPlusInsertIntention 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "sqldeadlock.GapPlusInsertIntention",
+          "say": "`GapPlusInsertIntention` 里 `t1` 和 `t2` 在 `CountDownLatch` 处双双先拿到了 Gap Lock（因为 Gap 锁互相兼容），紧接着双方都要申请插入意向锁，结果被对方的 Gap Lock 死死卡住！",
+          "walk": [
+            {
+              "focus": [
+                "bothHoldGap"
+              ],
+              "say": "这就是「先锁空隙、再各自申请插入」引发的双向互等死锁。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "200 对并发事务都执行「先 `SELECT id=7 FOR UPDATE`（不存在）再 `INSERT id=7`」，会出现多少次死锁？",
+          "options": [
+            "0 次",
+            "约 100 次",
+            "200 次"
+          ],
+          "answer": 2,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "sqldeadlock",
+          "show": [
+            "GapPlusInsertIntention"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `GapPlusInsertIntention` 和 `TwoOrderUpdateReverse` 100% 发生死锁（200 次）！而 `OrderedLockAcquire` 和 `InsertIgnoreOrRc` 全是 0 死锁！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "sqldeadlock.GapPlusInsertIntention",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "Gap Lock 的设计初衷是阻止别人插入，但多个事务自己都只读间隙时**互不排斥**。于是两事务同时拿到同一段 `(5, 10)` 的 Gap Lock，随后两人都想往里面 `INSERT`，各自向对方等待释放 Gap Lock——InnoDB 死锁检测（wait-for graph）立刻发现环路并回滚其中一个。",
+          "walk": [
+            {
+              "focus": [
+                "row1.lock()"
+              ],
+              "say": "多行更新时统一按主键升序拿锁，彻底消除环路等待条件。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "sqldeadlock",
+          "show": [
+            "GapPlusInsertIntention",
+            "TwoOrderUpdateReverse",
+            "OrderedLockAcquire",
+            "InsertIgnoreOrRc"
+          ],
+          "select": "OrderedLockAcquire",
+          "say": "两条黄金法则：1) 幂等插入别「先查后插」，直接 `INSERT` 靠唯一索引冲突捕获（或 `INSERT IGNORE` / `ON DUPLICATE KEY UPDATE`）；2) 批量更新多行前先按主键排序再加锁。"
+        },
+        {
+          "t": "chart",
+          "of": "sqldeadlock",
+          "say": "前两种写法每对必死锁；升序加锁和直接唯一键插入稳稳为 0。",
+          "walk": [
+            {
+              "focus": [
+                "GapPlusInsertIntention",
+                "OrderedLockAcquire"
+              ],
+              "say": "遇到死锁日志 `SHOW ENGINE INNODB STATUS`，重点看 `HOLDS THE LOCK(S)` 和 `WAITING FOR THIS LOCK`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "代码规范里直接禁止「先 FOR UPDATE 判空再 INSERT」的幂等写法。",
+          "options": [
+            {
+              "name": "先 FOR UPDATE 判空再 INSERT",
+              "solves": "试图防重",
+              "cost": "高并发 100% 死锁",
+              "when": "生产严禁",
+              "say": "典型反模式。"
+            },
+            {
+              "name": "统一按主键升序加锁",
+              "solves": "消除 AB-BA 多行更新死锁",
+              "cost": "0 死锁：{ms:sqldeadlock.OrderedLockAcquire} ms",
+              "when": "批量扣款/转账多行更新",
+              "say": "破坏环路等待。"
+            },
+            {
+              "name": "直接 INSERT + 唯一键冲突兜底",
+              "solves": "消除 Gap 锁 + 插入意向锁死锁",
+              "cost": "0 死锁：{ms:sqldeadlock.InsertIgnoreOrRc} ms",
+              "when": "防重幂等插入首选",
+              "say": "最干净的工程解法。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么两个事务同时执行 `SELECT * FROM t WHERE id=7 FOR UPDATE`（不存在）后再 `INSERT id=7` 会死锁？",
+          "options": [
+            {
+              "text": "Gap Lock 之间互相兼容，但随后的 Insert Intention Lock 被对方的 Gap Lock 阻塞，形成环路等待",
+              "ok": true,
+              "why": "双方都先持有了兼容的 Gap Lock，然后互相等待对方释放 Gap Lock 才能拿到插入意向锁。"
+            },
+            {
+              "text": "InnoDB 不允许并发执行 INSERT",
+              "ok": false,
+              "why": "InnoDB 插入意向锁之间是兼容的，并发插入不同行完全没问题。"
+            },
+            {
+              "text": "SELECT FOR UPDATE 把整张表锁死了",
+              "ok": false,
+              "why": "走主键索引只锁间隙，不锁整张表。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "间隙锁 + 插入意向锁死锁",
+          "alias": "Gap + Insert Intention Deadlock",
+          "oneLine": "==Gap Lock 互相兼容==，但随后的==插入意向锁被对方 Gap Lock 阻塞==；用**升序加锁**或**直接 INSERT 唯一键兜底**破局。",
+          "asked": [
+            "生产遇到过哪些 MySQL 死锁？怎么排查和解决？",
+            "先 SELECT FOR UPDATE 判空再 INSERT 为什么会死锁？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚「先查不存在再插入」为什么会死锁，以及工程上怎么避免 MySQL 死锁？",
+          "points": [
+            "两个事务同时对不存在行加 Gap Lock（Gap 锁之间兼容，都能拿到）",
+            "接着双方都执行 INSERT，需要申请插入意向锁，互相被对方的 Gap Lock 阻塞导致死锁",
+            "解法：1) 直接 INSERT 靠唯一索引冲突兜底；2) 多行更新按主键升序加锁；3) 业务允许时用 RC 隔离级别"
+          ],
+          "model": "高并发下最经典的 MySQL 死锁是两个事务同时对不存在的记录先做 SELECT FOR UPDATE 再做 INSERT。因为 Gap Lock 之间是兼容的，两个事务都能同时拿到同一段间隙的 Gap Lock；但紧接着双方都要执行 INSERT 申请插入意向锁时，都会被对方的 Gap Lock 阻塞，形成循环等待而死锁。工程上可以通过直接 INSERT 靠唯一键兜底（避免先加间隙锁），以及多行更新统一按主键升序加锁来彻底避免。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "Gap Lock 和插入意向锁兼容吗？",
+              "a": "不兼容！插入意向锁会被已有的 Gap Lock 阻塞。"
+            },
+            {
+              "q": "两个插入意向锁之间兼容吗？",
+              "a": "兼容，只要不插入同一条唯一键，多线程可以并发往同一间隙插入。"
+            },
+            {
+              "q": "排查 MySQL 最近一次死锁的命令？",
+              "a": "SHOW ENGINE INNODB STATUS;"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

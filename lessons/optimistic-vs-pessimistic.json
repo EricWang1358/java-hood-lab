@@ -1,0 +1,320 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "optimistic-vs-pessimistic",
+  "course": "MySQL 索引、事务与锁",
+  "title": "高并发扣库存：FOR UPDATE 排长队 vs CAS 版本号乐观锁怎么选？",
+  "lead": "秒杀扣库存有四条路：不加锁直接扣、悲观 `FOR UPDATE`、版本号乐观锁、单条 SQL 条件原子扣减。高并发下谁超卖、谁最稳？",
+  "minutes": 35,
+  "needs": [
+    "知道悲观锁和 CAS 乐观锁概念"
+  ],
+  "after": [
+    "复现「先查后改」在并发下必然超卖",
+    "对比悲观锁 FOR UPDATE、CAS 版本号乐观锁与单条 SQL 原子条件扣减的取舍",
+    "掌握高并发扣库存的数据库层终极写法"
+  ],
+  "terms": {
+    "悲观锁（Pessimistic Lock）": "假设一定会冲突，先用 `SELECT ... FOR UPDATE` 拿排他锁再改，事务结束才释放。",
+    "乐观锁（Optimistic Lock）": "假设大概率不冲突，不加数据库长锁，改数据时用 `WHERE version = oldVersion` 做 CAS 校验。"
+  },
+  "experiments": {
+    "optlock": {
+      "runner": "java",
+      "home": "lab.optlock",
+      "variants": [
+        {
+          "id": "NoLockOversell",
+          "label": "先查后改无锁校验",
+          "note": "并发读到同一个 stock=1 后一起减，严重超卖！"
+        },
+        {
+          "id": "PessimisticForUpdate",
+          "label": "悲观锁 FOR UPDATE 排队",
+          "note": "0 超卖，但长事务锁持有期间并发线程全阻塞排队。"
+        },
+        {
+          "id": "OptimisticVersionCas",
+          "label": "乐观锁 version CAS 重试",
+          "note": "0 超卖，但高并发抢同一行时大量请求 CAS 失败空转！"
+        },
+        {
+          "id": "DirectSqlAtomicCheck",
+          "label": "单条 SQL 原子条件扣减",
+          "note": "WHERE stock >= 1，InnoDB 自动加短行锁且零重试，又快又稳！"
+        }
+      ],
+      "knob": {
+        "label": "并发抢购线程数",
+        "values": [
+          "4",
+          "8",
+          "16",
+          "32"
+        ],
+        "default": "16"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "oversell",
+        "expectKey": "expected",
+        "label": "超卖件数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "高并发扣库存：FOR UPDATE 排长队 vs CAS 版本号乐观锁怎么选？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "库存还有 1 件，16 个线程同时来抢。如果先 `SELECT stock` 查出 1，再在 Java 里算 `1 - 1 = 0` 写回数据库，库存瞬间变 `-15`！今天把 4 种扣库存方案拉到同一起跑线实测。",
+          "say": "先看无锁先查后改怎么超卖，再比三种安全方案。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "100 件库存，16 线程并发抢购会超卖多少？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "每个线程抢 20 次（总需求 320 次，库存只有 100），`NoLockOversell` 会把库存扣成负数吗？",
+          "say": "看 `NoLockOversell` 和 `DirectSqlAtomicCheck`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 NoLockOversell 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "optlock.NoLockOversell",
+          "say": "`NoLockOversell` 在 `if (stock > 0)` 和 `stock = stock - 1` 之间没有原子性保护；`DirectSqlAtomicCheck` 把判断和扣减合进一条原子操作。",
+          "walk": [
+            {
+              "focus": [
+                "stock = stock - 1;"
+              ],
+              "say": "典型 Check-Then-Act 竞态：多个线程同时通过 `stock > 0` 检查，然后一起扣减！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "100 件库存被 16 个线程并发抢购，使用先查后改的 `NoLockOversell` 最终结果是？",
+          "options": [
+            "绝不超卖（0 件）",
+            "经常出现超卖（oversell > 0）",
+            "直接死锁"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "optlock",
+          "show": [
+            "NoLockOversell"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `NoLockOversell` 每次都会扣穿 0 发生超卖！而悲观锁、版本号乐观锁、单条 SQL 原子扣减全部 0 超卖。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "optlock.NoLockOversell",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "版本号乐观锁适合**读多写少**的表单防覆盖；但在**热点单行高并发扣库存**场景下，版本号 CAS 会导致 90% 的请求版本冲突失败重试。而 `UPDATE t SET stock = stock - 1 WHERE id = ? AND stock >= 1` 利用了 InnoDB 单条语句的隐式 X 锁 + 条件判断，既不超卖，又省去了前置 SELECT 和版本重试！",
+          "walk": [
+            {
+              "focus": [
+                "updateAndGet"
+              ],
+              "say": "把「校验 `cur > 0`」和「减 1」融合成一条不可分割的原子指令。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "optlock",
+          "show": [
+            "NoLockOversell",
+            "PessimisticForUpdate",
+            "OptimisticVersionCas",
+            "DirectSqlAtomicCheck"
+          ],
+          "select": "DirectSqlAtomicCheck",
+          "say": "读多写少用 `version` 乐观锁；跨多步复杂业务校验用 `FOR UPDATE`；纯扣减库存直接用单条 SQL `WHERE stock >= n`（甚至 Redis Lua 预扣 + DB 兜底）。"
+        },
+        {
+          "t": "chart",
+          "of": "optlock",
+          "say": "`NoLockOversell` 出现超卖；其余三种方案超卖严格为 0。",
+          "walk": [
+            {
+              "focus": [
+                "NoLockOversell",
+                "DirectSqlAtomicCheck"
+              ],
+              "say": "记住：单条 SQL 条件更新往往比「先查再版本号 CAS」更适合秒杀扣库存。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "面试被问到「乐观锁和悲观锁怎么选」时，把这三种场景对号入座就行。",
+          "options": [
+            {
+              "name": "悲观锁 FOR UPDATE",
+              "solves": "强一致，适合复杂多步校验",
+              "cost": "0 超卖：{ms:optlock.PessimisticForUpdate} ms",
+              "when": "写冲突极高、需先查再做多表计算",
+              "say": "注意控制事务尽量短。"
+            },
+            {
+              "name": "乐观锁 version CAS",
+              "solves": "无长事务锁等待",
+              "cost": "0 超卖：{ms:optlock.OptimisticVersionCas} ms",
+              "when": "读多写少、防并发覆盖（如改配置/审批）",
+              "say": "高冲突时失败率高。"
+            },
+            {
+              "name": "单条 SQL 条件原子扣减",
+              "solves": "零重试浪费 + 极短行锁",
+              "cost": "0 超卖：{ms:optlock.DirectSqlAtomicCheck} ms",
+              "when": "高并发扣库存/余额首选",
+              "say": "利用受影响行数判断成功。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "高并发热点商品扣库存，为什么 `UPDATE t SET stock=stock-1 WHERE id=1 AND stock>=1` 通常比 `version` 乐观锁更合适？",
+          "options": [
+            {
+              "text": "单条 SQL 原子更新无需先查版本号，不会因为其他请求扣成功导致自己版本号过期而无谓失败",
+              "ok": true,
+              "why": "只要库存还够，每个请求都能直接扣减成功，不存在版本号 CAS 误伤。"
+            },
+            {
+              "text": "单条 SQL 不需要加任何锁",
+              "ok": false,
+              "why": "InnoDB 执行 UPDATE 依然会加行锁，只是锁持有时间极短（语句执行完或事务提交即释放）。"
+            },
+            {
+              "text": "version 乐观锁会超卖",
+              "ok": false,
+              "why": "version 乐观锁不会超卖，只是高冲突下失败重试率太高。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "悲观锁、乐观锁与原子扣减",
+          "alias": "Pessimistic vs Optimistic vs Atomic SQL",
+          "oneLine": "读多写少用 ==version 乐观锁==，复杂多步强互斥用 ==FOR UPDATE==，热点扣库存首选 ==WHERE stock >= 1 原子 SQL==。",
+          "asked": [
+            "悲观锁和乐观锁的区别？扣库存怎么选？",
+            "为什么高并发扣库存不建议用 version 乐观锁？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "对比悲观锁 FOR UPDATE、version 乐观锁、单条 SQL 条件原子扣减的适用场景和优缺点。",
+          "points": [
+            "先查后改无锁必超卖（Check-Then-Act 竞态）",
+            "悲观锁 FOR UPDATE 适合写冲突极高或复杂多步校验，但注意缩短事务防排队",
+            "version 乐观锁适合读多写少防覆盖；热点扣库存用 version 会大量误伤重试，直接用单条 SQL `WHERE stock >= 1` 原子扣减更稳"
+          ],
+          "model": "并发扣库存如果先在内存查再写回必然超卖。工程上有三种稳妥方案：悲观锁 FOR UPDATE 先拿行锁再操作，适合复杂多步校验且写冲突高的场景；version 版本号乐观锁通过 CAS 更新，无长锁等待，适合读多写少防并发覆盖，但在热点商品扣库存时会因为版本号频繁变化导致大量请求失败；因此纯扣库存最推荐单条 SQL 原子更新 WHERE stock >= 1，既能防超卖又不会因版本号冲突无谓失败。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "乐观锁在 MySQL 里怎么实现？",
+              "a": "加 version 字段：UPDATE ... SET version=version+1 WHERE id=? AND version=?。"
+            },
+            {
+              "q": "为什么热点扣库存不适合用 version 乐观锁？",
+              "a": "只要有别人扣成功，版本号就变，导致大量还有库存的请求误判失败。"
+            },
+            {
+              "q": "单条 SQL 扣库存怎么防止超卖？",
+              "a": "UPDATE t SET stock=stock-1 WHERE id=? AND stock>=1，看 affected_rows 是否为 1。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

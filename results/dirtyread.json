@@ -1,0 +1,871 @@
+{
+ "id": "dirtyread",
+ "variants": {
+  "ReadUncommitted": {
+   "hash": "2afe279678db7563",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "dirtyReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 100,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "dirtyReads": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 500,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "dirtyReads": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 1000,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "dirtyReads": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 2000,
+      "expected": 0,
+      "ms": 2
+     }
+    ]
+   },
+   "inside": "Compiled from \"ReadUncommitted.java\"\npublic class lab.dirtyread.ReadUncommitted {\n  public lab.dirtyread.ReadUncommitted();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     52\n      23: bipush        100\n      25: istore        6\n      27: sipush        900\n      30: istore        7\n      32: iload         7\n      34: istore        8\n      36: iload         8\n      38: iload         6\n      40: if_icmpeq     46\n      43: iinc          4, 1\n      46: iinc          5, 1\n      49: goto          17\n      52: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      55: lload_2\n      56: lsub\n      57: ldc2_w        #19                 // long 1000000l\n      60: ldiv\n      61: lstore        5\n      63: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      66: iload         4\n      68: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      73: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      76: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      79: ldc           #35                 // String expected=0\n      81: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      84: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      87: lload         5\n      89: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      94: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      97: return\n}"
+  },
+  "ReadCommitted": {
+   "hash": "1343bc7847e5b45d",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"ReadCommitted.java\"\npublic class lab.dirtyread.ReadCommitted {\n  public lab.dirtyread.ReadCommitted();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     47\n      23: bipush        100\n      25: istore        6\n      27: iload         6\n      29: istore        7\n      31: iload         7\n      33: iload         6\n      35: if_icmpeq     41\n      38: iinc          4, 1\n      41: iinc          5, 1\n      44: goto          17\n      47: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      50: lload_2\n      51: lsub\n      52: ldc2_w        #19                 // long 1000000l\n      55: ldiv\n      56: lstore        5\n      58: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      61: iload         4\n      63: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      68: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      71: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      74: ldc           #35                 // String expected=0\n      76: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      79: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      82: lload         5\n      84: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      89: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      92: return\n}"
+  },
+  "RepeatableRead": {
+   "hash": "ad34e3041b3ba372",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"RepeatableRead.java\"\npublic class lab.dirtyread.RepeatableRead {\n  public lab.dirtyread.RepeatableRead();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     43\n      23: bipush        100\n      25: istore        6\n      27: iload         6\n      29: bipush        100\n      31: if_icmpeq     37\n      34: iinc          4, 1\n      37: iinc          5, 1\n      40: goto          17\n      43: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      46: lload_2\n      47: lsub\n      48: ldc2_w        #19                 // long 1000000l\n      51: ldiv\n      52: lstore        5\n      54: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      57: iload         4\n      59: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      64: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      67: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      70: ldc           #35                 // String expected=0\n      72: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      75: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      78: lload         5\n      80: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      85: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      88: return\n}"
+  },
+  "Serializable": {
+   "hash": "ffc3d3c13d98e156",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "dirtyReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"Serializable.java\"\npublic class lab.dirtyread.Serializable {\n  public lab.dirtyread.Serializable();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     43\n      23: bipush        100\n      25: istore        6\n      27: iload         6\n      29: bipush        100\n      31: if_icmpeq     37\n      34: iinc          4, 1\n      37: iinc          5, 1\n      40: goto          17\n      43: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      46: lload_2\n      47: lsub\n      48: ldc2_w        #19                 // long 1000000l\n      51: ldiv\n      52: lstore        5\n      54: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      57: iload         4\n      59: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      64: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      67: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      70: ldc           #35                 // String expected=0\n      72: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      75: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      78: lload         5\n      80: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      85: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      88: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

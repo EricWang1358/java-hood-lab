@@ -110,6 +110,17 @@
 | M3-04 | **连发 100 条消息，怎么粘成一坨还缺半截？** | TCP 是无边界的字节流，连发 100 条 `"MSG-i"`，为什么接收方按 `read(buf)` 读出来个数不对？ | `lab.sticky` | [网页课件](./pages/tcp-sticky.html) · [JSON](./lessons/tcp-sticky.json) · [源码](./src/lab/sticky/) |
 | M3-05 | **小包发得越勤反而越慢？** | 连续发送小数据包并等待确认时，为什么 Nagle 算法撞上延迟 ACK 会让耗时暴涨？ | `lab.nagle` | [网页课件](./pages/tcp-nagle.html) · [JSON](./lessons/tcp-nagle.json) · [源码](./src/lab/nagle/) |
 
+### 模块三 · 第二章：HTTP、HTTPS 与认证机制（M3-06～M3-09）
+
+实测 HTTP/1.1 Keep-Alive 与队头阻塞、TLS 非对称握手 vs 会话复用代价、CORS 预检翻倍往返与 Session/JWT 并发鉴权取舍。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M3-06 | **关掉 Keep-Alive，接口怎么慢了这么多？** | 同样的 HTTP/1.1 接口，每次带 `Connection: close` 断开 vs 长连接复用，耗时差多少？ | `lab.keepalive` | [网页课件](./pages/http-keepalive.html) · [JSON](./lessons/http-keepalive.json) · [源码](./src/lab/keepalive/) |
+| M3-07 | **换上 HTTPS，首包到底多花多少毫秒？** | 非对称签名验签 + ECDH 密钥协商 + AES-GCM 加密，TLS 握手到底贵在哪里，怎么加速？ | `lab.tlscost` | [网页课件](./pages/https-tls.html) · [JSON](./lessons/https-tls.json) · [源码](./src/lab/tlscost/) |
+| M3-08 | **发个 POST 怎么先发一次 OPTIONS？** | 前端带个自定义头发跨域 POST，后端日志怎么每次收到双倍请求？CORS 预检与缓存实测。 | `lab.corspreflight` | [网页课件](./pages/http-cors.html) · [JSON](./lessons/http-cors.json) · [源码](./src/lab/corspreflight/) |
+| M3-09 | **Session 查表 vs 无状态 JWT，怎么选？** | 全局锁 Session 表、`ConcurrentHashMap`、无状态 HMAC-SHA256 验签与短效缓存黑名单，性能与扩展性差多少？ | `lab.authjwt` | [网页课件](./pages/auth-jwt.html) · [JSON](./lessons/auth-jwt.json) · [源码](./src/lab/authjwt/) |
+
 ### 模块四 · 第一章：SQL 必知必会、联表与深分页改写（第 33～37 课）
 
 | # | 课程标题 | 一句话引子 | 代码包 | 入口 |
@@ -142,6 +153,27 @@
 | 53 | **范围查询后面的联合索引列，怎么突然失效了？** | 建了 (a, b, c) 联合索引，查 a=1 AND b>10 AND c=2。明明三列全在条件里，为什么 key_len 显示只用到了 (a, b)？ | `lab.rangebreak` | [网页课件](./pages/index-range-break.html) · [JSON](./lessons/index-range-break.json) · [源码](./src/lab/rangebreak/) |
 | 54 | **ORDER BY 和 GROUP BY 混用，Extra 怎么冒出 Using filesort？** | 明明只取 LIMIT 20，为什么 EXPLAIN 里出现了 Using filesort，慢到把 Sort Buffer 打满甚至落盘归并？ | `lab.filesort` | [网页课件](./pages/filesort-temp-table.html) · [JSON](./lessons/filesort-temp-table.json) · [源码](./src/lab/filesort/) |
 
+### 模块四 · 第四章：四大隔离级别、MVCC 版本链与 ReadView（第 55～59 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 55 | **不加隔离，怎么读到了别人回滚掉的假数据？** | 线程 A 把余额改成 900 还没提交，线程 B 读走 900 后发了货；接着线程 A 回滚成 100，钱货两空！ | `lab.dirtyread` | [网页课件](./pages/tx-dirty-read.html) · [JSON](./lessons/tx-dirty-read.json) · [源码](./src/lab/dirtyread/) |
+| 56 | **同一事务里连读两次余额，怎么两次不一样？** | 同一个事务里先查余额是 100，隔了一秒再查一次竟然变成 200——这就是 RC 级别下的「不可重复读」！ | `lab.nonrepeat` | [网页课件](./pages/tx-nonrepeatable-read.html) · [JSON](./lessons/tx-nonrepeatable-read.json) · [源码](./src/lab/nonrepeat/) |
+| 57 | **不加锁的快照读，怎么做到读写互不阻塞？** | 写事务正在改这一行并拿着 X 锁，为什么普通 SELECT 却一毫秒都不等直接返回旧值？掀开 ReadView 可见性算法！ | `lab.readview` | [网页课件](./pages/mvcc-readview.html) · [JSON](./lessons/mvcc-readview.json) · [源码](./src/lab/readview/) |
+| 58 | **RR 级快照读防住了幻读，一 UPDATE 怎么又冒出新行？** | 面试常问「MySQL RR 到底有没有彻底解决幻读？」答案是：没有！一旦混用快照读和当前读，幻影行立刻现身。 | `lab.phantom` | [网页课件](./pages/tx-phantom-read.html) · [JSON](./lessons/tx-phantom-read.json) · [源码](./src/lab/phantom/) |
+| 59 | **一个长事务挂着不提交，Undo 日志怎么把磁盘撑爆？** | 线上突然告警 ibdata1 / undo 表空间暴涨几十 GB、所有查询变慢——罪魁祸首往往只是一个忘了 commit 的长事务！ | `lab.longtrx` | [网页课件](./pages/mvcc-purge-longtx.html) · [JSON](./lessons/mvcc-purge-longtx.json) · [源码](./src/lab/longtrx/) |
+
+### 模块四 · 第五章：日志两阶段提交、行锁/间隙锁死锁与乐观锁（第 60～65 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 60 | **写内存不立刻刷盘，断电怎么不丢数据？WAL Redo 与 Undo 职责拆解** | 每次改一行就随机刷 16KB 数据页慢如蜗牛；先写顺序 Redo 呢？那为什么还需要 Undo 日志？ | `lab.walredo` | [网页课件](./pages/wal-redo-undo.html) · [JSON](./lessons/wal-redo-undo.json) · [源码](./src/lab/walredo/) |
+| 61 | **Redo 和 Binlog 拆开写，主从数据怎么就劈叉了？两阶段提交真相** | InnoDB 有 Redo Log，Server 层有 Binlog。如果先写完一个就断电，主库和从库立刻出现幽灵数据或丢数据！ | `lab.twopc` | [网页课件](./pages/two-phase-commit.html) · [JSON](./lessons/two-phase-commit.json) · [源码](./src/lab/twopc/) |
+| 62 | **明明只改一行，怎么把整张表都锁死了？行锁升级表锁现场** | 很多人以为 InnoDB 的行锁就是「按行号加锁」，其实它是「加在索引记录上的」！一旦 WHERE 没走索引，整张表直接锁死。 | `lab.rowlock` | [网页课件](./pages/row-lock-index.html) · [JSON](./lessons/row-lock-index.json) · [源码](./src/lab/rowlock/) |
+| 63 | **表里根本没有 id=7，为什么插入 id=7 却被别人卡死？间隙锁与临键锁** | 别人只是用 FOR UPDATE 查了一个根本不存在的 id=7，为什么你去 INSERT id=7 甚至 id=8 全被阻塞了？ | `lab.gaplock` | [网页课件](./pages/gap-nextkey-lock.html) · [JSON](./lessons/gap-nextkey-lock.json) · [源码](./src/lab/gaplock/) |
+| 64 | **两事务同时「先查不存在再插入」，怎么双双死锁报错？Gap 锁 + 插入意向锁** | 生产最常见的神秘死锁 Deadlock found：两个并发请求都先 SELECT ... FOR UPDATE 查无此单，再各自 INSERT，直接双双撞死！ | `lab.sqldeadlock` | [网页课件](./pages/deadlock-insert-gap.html) · [JSON](./lessons/deadlock-insert-gap.json) · [源码](./src/lab/sqldeadlock/) |
+| 65 | **高并发扣库存：FOR UPDATE 排长队 vs CAS 版本号乐观锁怎么选？** | 秒杀扣库存有四条路：不加锁直接扣、悲观 FOR UPDATE、版本号乐观锁、单条 SQL 条件原子扣减。高并发下谁超卖、谁最稳？ | `lab.optlock` | [网页课件](./pages/optimistic-vs-pessimistic.html) · [JSON](./lessons/optimistic-vs-pessimistic.json) · [源码](./src/lab/optlock/) |
+
 ### 模块五 · 第一章：Spring 事务失效、动态代理与 AOP 切面（第 38～42 课）
 
 用纯 JDK 动态代理与字节码证据，亲手复现同类自调用、异常吞没、传播行为连坐回滚、JDK/CGLIB 代理坑与多切面洋葱错序。
@@ -164,19 +196,35 @@
 | 46 | **事务方法里开多线程 / @Async，子线程异常主线程怎么不回滚？** | @Transactional 方法里新开线程或调 @Async 写明细表，子线程报错了，主线程却照常 commit——订单有头无尾！ | `lab.txthread` | [网页课件](./pages/spring-tx-multithread.html) · [JSON](./lessons/spring-tx-multithread.json) · [源码](./src/lab/txthread/) |
 | 47 | **Spring Boot 自动装配：@ConditionalOnMissingBean 为什么有时会失效？** | 自己配了一个 Serializer Bean 想覆盖默认实现，结果要么启动直接报 NoUniqueBeanDefinitionException，要么默认实现抢先占坑！ | `lab.autowire` | [网页课件](./pages/spring-boot-autowire.html) · [JSON](./lessons/spring-boot-autowire.json) · [源码](./src/lab/autowire/) |
 
+### 模块五 · 第三章：Spring MVC 请求链路、参数校验与并发隔离（第 48～52 课）
 
-### 模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-06）
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 48 | **Filter vs Interceptor：为什么跨域/静态资源在拦截器里漏掉了？** | 同样是「拦截请求」：Filter 在 Servlet 容器外层，Interceptor 在 DispatcherServlet 内层。放错位置，CORS 预检或静态资源全漏掉！ | `lab.mvcchain` | [网页课件](./pages/mvc-filter-interceptor.html) · [JSON](./lessons/mvc-filter-interceptor.json) · [源码](./src/lab/mvcchain/) |
+| 49 | **参数校验 @Valid 没生效，或 BindingResult 吞掉了全局异常？** | DTO 上贴满了 @NotNull/@Min，Controller 却忘了加 @Valid；或者顺手多写了个 BindingResult，结果全局异常处理器再也收不到报错！ | `lab.paramvalid` | [网页课件](./pages/mvc-param-bind.html) · [JSON](./lessons/mvc-param-bind.json) · [源码](./src/lab/paramvalid/) |
+| 50 | **前后端传 Long 主键与金额：为什么前端收到 ID 尾数全变 0 了？** | 后端雪花算法生成 19 位 Long 主键，传到前端 JSON.parse 后最后三位全变成 0；用 double 算金额，0.1 + 0.2 竟不等于 0.3！ | `lab.jsontrap` | [网页课件](./pages/mvc-jackson-trap.html) · [JSON](./lessons/mvc-jackson-trap.json) · [源码](./src/lab/jsontrap/) |
+| 51 | **全局异常 @RestControllerAdvice 为什么兜不住 Filter 抛出的异常？** | 配了 @RestControllerAdvice 统一返回 JSON 错误码，可 JWT Filter 一抛过期异常，前端收到的竟还是 Tomcat 默认 500 网页！ | `lab.exchandler` | [网页课件](./pages/mvc-global-exception.html) · [JSON](./lessons/mvc-global-exception.json) · [源码](./src/lab/exchandler/) |
+| 52 | **Tomcat 线程全被慢接口堵死，连健康检查都挂了？** | 一个导出报表慢接口拖垮了整个 Spring Boot 应用：所有核心下单接口和 /actuator/health 全部超时雪崩！ | `lab.mvcthread` | [网页课件](./pages/mvc-thread-pool.html) · [JSON](./lessons/mvc-thread-pool.json) · [源码](./src/lab/mvcthread/) |
 
-纯 JDK 零依赖仿真实验室：直击缓存穿透、击穿、雪崩、双写一致性、热点 Key 倾斜与 BigKey/Pipeline 代价。
+
+
+### 模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-11）
+
+纯 JDK 零依赖仿真实验室：覆盖缓存高并发灾难与底层原理、分布式锁与看门狗、MQ 可靠幂等积压、微服务注册/重试/限流熔断。
 
 | # | 课程标题 | 一句话引子 | 代码包 | 入口 |
 |---|---|---|---|---|
 | M6-01 | **不存在的 ID 疯狂查库：缓存穿透怎么挡？** | 恶意或异常请求专查根本不存在的 ID，缓存与数据库双双未命中，每次都直穿到底层 DB。 | `lab.m6.penetration` | [网页课件](./pages/m6-cache-penetration.html) · [JSON](./lessons/m6-cache-penetration.json) · [源码](./src/lab/m6/penetration/) |
 | M6-02 | **热点 Key 过期瞬间：互斥锁 vs 逻辑过期** | 某个爆款热点 Key 到点过期的一瞬间，成百上千并发请求同时 miss 挤向数据库，到底该排队等锁还是直接返回旧值？ | `lab.m6.breakdown` | [网页课件](./pages/m6-cache-breakdown.html) · [JSON](./lessons/m6-cache-breakdown.json) · [源码](./src/lab/m6/breakdown/) |
-| M6-03 | **整点批量过期：为什么缓存雪崩打垮库？** | 初始化缓存时给大量 Key 统一设死 TTL，到点集体失效，数据库峰值 QPS 瞬间打穿安全线。 | `lab.m6.avalanche` | [网页课件](./pages/m6-cache-avalanche.html) · [JSON](./lessons/m6-cache-avalanche.json) · [源码](./src/lab/m6/avalanche/) |
-| M6-04 | **先删缓存还是先改库？并发读写脏数据现场** | 更新数据时先删缓存还是先改库？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。 | `lab.m6.consistency` | [网页课件](./pages/m6-cache-consistency.html) · [JSON](./lessons/m6-cache-consistency.json) · [源码](./src/lab/m6/consistency/) |
-| M6-05 | **顶流热点 Key 打爆单分片：本地二级缓存与 Key 拆分** | 就算 Redis 搭了 16 个分片集群，某一个顶流热搜 Key 还是只会落到其中 1 个分片上，把单分片打满。 | `lab.m6.hotkey` | [网页课件](./pages/m6-hotkey-split.html) · [JSON](./lessons/m6-hotkey-split.json) · [源码](./src/lab/m6/hotkey/) |
-| M6-06 | **BigKey 阻塞单线程 + Pipeline 批量往返代价** | 一次查 40 条数据，循环单发和 Pipeline 差多少？大 Key 又是怎么把单线程卡死的？ | `lab.m6.bigkey` | [网页课件](./pages/m6-bigkey-pipeline.html) · [JSON](./lessons/m6-bigkey-pipeline.json) · [源码](./src/lab/m6/bigkey/) |
+| M6-03 | **整点批量过期：为什么缓存雪崩打垮库？** | 初始化缓存时给 1 万个 Key 统一设了 `TTL = 3600s`，一小时后整点瞬间全员失效，数据库峰值 QPS 瞬间翻倍宕机。 | `lab.m6.avalanche` | [网页课件](./pages/m6-cache-avalanche.html) · [JSON](./lessons/m6-cache-avalanche.json) · [源码](./src/lab/m6/avalanche/) |
+| M6-04 | **先删缓存还是先改库？并发读写脏数据现场** | 更新数据时到底「先删缓存再改库」还是「先改库再删缓存」？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。 | `lab.m6.consistency` | [网页课件](./pages/m6-cache-consistency.html) · [JSON](./lessons/m6-cache-consistency.json) · [源码](./src/lab/m6/consistency/) |
+| M6-05 | **顶流热点 Key 打爆单分片：本地二级缓存与 Key 拆分** | 就算 Redis 搭了 16 个分片集群，某一个顶流热搜 Key 还是只会落到其中 1 个分片上，把单核单分片打到 CPU 100%。 | `lab.m6.hotkey` | [网页课件](./pages/m6-hotkey-split.html) · [JSON](./lessons/m6-hotkey-split.json) · [源码](./src/lab/m6/hotkey/) |
+| M6-06 | **BigKey 阻塞单线程 + Pipeline 批量往返代价** | 一次查 40 条数据，用 `for` 循环调 40 次 `get` 和用 Pipeline 差多少？大 Key 又是怎么把 Redis 单线程卡死的？ | `lab.m6.bigkey` | [网页课件](./pages/m6-bigkey-pipeline.html) · [JSON](./lessons/m6-bigkey-pipeline.json) · [源码](./src/lab/m6/bigkey/) |
+| M6-07 | **Hash 存 100 字段还是 1000 字段？底层编码跳变代价** | 把用户属性拆成独立 String Key 还是塞进 Hash？当 Hash 字段数超过 512 或单值超 64B，底层从 listpack 跳变成 hashtable 内存直接翻几倍。 | `lab.m6.encoding` | [网页课件](./pages/m6-redis-encoding.html) · [JSON](./lessons/m6-redis-encoding.json) · [源码](./src/lab/m6/encoding/) |
+| M6-08 | **排行榜为什么用跳表不用红黑树？范围查询实测** | Redis ZSet 底层选了跳表（SkipList）而不是红黑树或 B+ 树。对比线性扫描、红黑树与跳表在范围查询上的表现，看清它为什么又快又好写。 | `lab.m6.skiplist` | [网页课件](./pages/m6-zset-skiplist.html) · [JSON](./lessons/m6-zset-skiplist.json) · [源码](./src/lab/m6/skiplist/) |
+| M6-09 | **fork 生成 RDB 快照时，写放大与阻塞怎么来的？** | Redis 执行 `BGSAVE` 会 `fork` 出子进程生成 RDB。虽然号称异步不阻塞，但主进程 `fork` 瞬间和写入触发的 Copy-on-Write（写时复制）依然可能造成内存翻倍与延迟毛刺。 | `lab.m6.rdbcow` | [网页课件](./pages/m6-rdb-cow.html) · [JSON](./lessons/m6-rdb-cow.json) · [源码](./src/lab/m6/rdbcow/) |
+| M6-10 | **AOF 三种刷盘策略：always、everysec、no 的吞吐与丢数账** | Redis AOF 日志写进内核 PageCache 并不等于落盘。对比 `no`、`always`、`everysec` 与组提交在崩溃丢数与吞吐上的真实代价。 | `lab.m6.aoffsync` | [网页课件](./pages/m6-aof-fsync.html) · [JSON](./lessons/m6-aof-fsync.json) · [源码](./src/lab/m6/aoffsync/) |
+| M6-11 | **内存满时随机淘汰 vs 近似 LRU vs LFU 命中率对比** | Redis 内存触顶 `maxmemory` 时，选 `noeviction` 直接报错、`random` 随机乱删、`allkeys-lru` 还是 `allkeys-lfu`？用真实二八热点负载跑出命中率差距。 | `lab.m6.eviction` | [网页课件](./pages/m6-eviction-lfu.html) · [JSON](./lessons/m6-eviction-lfu.json) · [源码](./src/lab/m6/eviction/) |
 
 ### 模块八：笔试算法 + SQL 手撕（M8-01～M8-10 · 10 组专题 · 101 题）
 

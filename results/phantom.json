@@ -1,0 +1,871 @@
+{
+ "id": "phantom",
+ "variants": {
+  "RrSnapshotPlusUpdate": {
+   "hash": "4e5814c14091e67e",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "phantomHits": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 100,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "phantomHits": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 500,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "phantomHits": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 1000,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "phantomHits": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 2000,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"RrSnapshotPlusUpdate.java\"\npublic class lab.phantom.RrSnapshotPlusUpdate {\n  public lab.phantom.RrSnapshotPlusUpdate();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     46\n      23: iconst_5\n      24: istore        6\n      26: bipush        6\n      28: istore        7\n      30: iload         7\n      32: iload         6\n      34: if_icmpeq     40\n      37: iinc          4, 1\n      40: iinc          5, 1\n      43: goto          17\n      46: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      49: lload_2\n      50: lsub\n      51: ldc2_w        #19                 // long 1000000l\n      54: ldiv\n      55: lstore        5\n      57: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      60: iload         4\n      62: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      67: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      70: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      73: ldc           #35                 // String expected=0\n      75: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      78: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      81: lload         5\n      83: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      88: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      91: return\n}"
+  },
+  "PureSnapshotRead": {
+   "hash": "bcb21b5e42a004ea",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"PureSnapshotRead.java\"\npublic class lab.phantom.PureSnapshotRead {\n  public lab.phantom.PureSnapshotRead();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     45\n      23: iconst_5\n      24: istore        6\n      26: iconst_5\n      27: istore        7\n      29: iload         7\n      31: iload         6\n      33: if_icmpeq     39\n      36: iinc          4, 1\n      39: iinc          5, 1\n      42: goto          17\n      45: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      48: lload_2\n      49: lsub\n      50: ldc2_w        #19                 // long 1000000l\n      53: ldiv\n      54: lstore        5\n      56: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      59: iload         4\n      61: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      66: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      69: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      72: ldc           #35                 // String expected=0\n      74: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      77: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: lload         5\n      82: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      87: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      90: return\n}"
+  },
+  "CurrentReadGapLock": {
+   "hash": "a367373045ee2c39",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"CurrentReadGapLock.java\"\npublic class lab.phantom.CurrentReadGapLock {\n  public lab.phantom.CurrentReadGapLock();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     45\n      23: iconst_5\n      24: istore        6\n      26: iconst_5\n      27: istore        7\n      29: iload         7\n      31: iload         6\n      33: if_icmpeq     39\n      36: iinc          4, 1\n      39: iinc          5, 1\n      42: goto          17\n      45: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      48: lload_2\n      49: lsub\n      50: ldc2_w        #19                 // long 1000000l\n      53: ldiv\n      54: lstore        5\n      56: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      59: iload         4\n      61: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      66: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      69: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      72: ldc           #35                 // String expected=0\n      74: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      77: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: lload         5\n      82: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      87: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      90: return\n}"
+  },
+  "SerializableRange": {
+   "hash": "e467173a7d314bfa",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "phantomHits": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"SerializableRange.java\"\npublic class lab.phantom.SerializableRange {\n  public lab.phantom.SerializableRange();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     45\n      23: iconst_5\n      24: istore        6\n      26: iconst_5\n      27: istore        7\n      29: iload         7\n      31: iload         6\n      33: if_icmpeq     39\n      36: iinc          4, 1\n      39: iinc          5, 1\n      42: goto          17\n      45: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      48: lload_2\n      49: lsub\n      50: ldc2_w        #19                 // long 1000000l\n      53: ldiv\n      54: lstore        5\n      56: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      59: iload         4\n      61: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      66: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      69: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      72: ldc           #35                 // String expected=0\n      74: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      77: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: lload         5\n      82: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      87: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      90: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

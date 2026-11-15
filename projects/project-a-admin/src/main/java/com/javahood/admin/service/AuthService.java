@@ -2,13 +2,11 @@ package com.javahood.admin.service;
 
 import com.javahood.admin.common.BizException;
 import com.javahood.admin.common.ErrorCode;
-import com.javahood.admin.security.AdminUserDetailsService;
-import com.javahood.admin.security.JwtProperties;
-import com.javahood.admin.security.JwtService;
-import com.javahood.admin.security.TokenStore;
+import com.javahood.admin.security.*;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -28,23 +26,34 @@ public class AuthService {
     private final JwtService jwtService;
     private final TokenStore tokenStore;
     private final JwtProperties jwtProperties;
+    private final LoginAttemptGuard loginAttemptGuard;
 
     public AuthService(AuthenticationManager authenticationManager,
                        AdminUserDetailsService userDetailsService,
                        JwtService jwtService,
                        TokenStore tokenStore,
-                       JwtProperties jwtProperties) {
+                       JwtProperties jwtProperties,
+                       LoginAttemptGuard loginAttemptGuard) {
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
         this.tokenStore = tokenStore;
         this.jwtProperties = jwtProperties;
+        this.loginAttemptGuard = loginAttemptGuard;
     }
 
     public TokenPair login(String username, String password) {
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password)
-        );
+        loginAttemptGuard.checkAllowed(username);
+        Authentication auth;
+        try {
+            auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password)
+            );
+        } catch (BadCredentialsException ex) {
+            loginAttemptGuard.recordFailure(username);
+            throw ex;
+        }
+        loginAttemptGuard.reset(username);
         List<String> authorities = auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();

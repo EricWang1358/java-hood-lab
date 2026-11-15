@@ -1,6 +1,7 @@
 package com.javahood.admin.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -18,7 +19,13 @@ public class SysRole {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    /**
+     * Foundation note: Use LAZY + @BatchSize instead of FetchType.EAGER.
+     * FetchType.EAGER triggers hidden N+1 queries whenever roles are listed;
+     * LAZY + @BatchSize (or @EntityGraph on targeted queries) keeps SQL predictable.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @BatchSize(size = 50)
     @JoinTable(
             name = "sys_role_permission",
             joinColumns = @JoinColumn(name = "role_id"),

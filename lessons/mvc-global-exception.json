@@ -1,0 +1,106 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "mvc-global-exception",
+  "course": "Spring 全家桶与持久层",
+  "title": "全局异常 @RestControllerAdvice 为什么兜不住 Filter 抛出的异常？",
+  "lead": "配了 @RestControllerAdvice 统一返回 JSON 错误码，可 JWT Filter 一抛过期异常，前端收到的竟还是 Tomcat 默认 500 网页！",
+  "minutes": 25,
+  "needs": ["知道 Filter 在 DispatcherServlet 之外", "了解 @RestControllerAdvice 作用范围"],
+  "after": ["讲清 @RestControllerAdvice 只包裹 DispatcherServlet 内部异常的原因", "掌握 Filter 中通过 HandlerExceptionResolver 转发异常的写法", "建立 BizException + ErrorCode 统一错误码体系"],
+  "terms": {
+    "@RestControllerAdvice": "Spring MVC 全局异常处理器：只能捕获 DispatcherServlet 内部（Interceptor、Controller、Service）抛出的异常。",
+    "HandlerExceptionResolver": "Spring MVC 异常解析器：在 Filter 里注入它可以把异常手动转交给 @RestControllerAdvice 统一渲染 JSON。"
+  },
+  "experiments": {
+    "exchandler": {
+      "runner": "java",
+      "home": "lab.exchandler",
+      "variants": [
+        { "id": "FilterThrowsDirect", "label": "Filter 直接抛异常", "note": "在 DispatcherServlet 外层，Advice 抓不到，直接吐 500 HTML。" },
+        { "id": "CatchInController", "label": "Controller 到处 try-catch", "note": "业务代码各写各的返回字符串，错误码格式全乱。" },
+        { "id": "ResolverDelegate", "label": "Filter 委托 Resolver", "note": "Filter 注入 HandlerExceptionResolver 转发给 Advice，100% 统一 JSON。" },
+        { "id": "UnifiedErrorCode", "label": "BizException 全局收口", "note": "业务直接抛 BizException，由 Advice 统一输出 JSON + traceId。" }
+      ],
+      "knob": { "label": "异常请求(千)", "values": ["1", "2", "4", "8"], "default": "2" },
+      "repeat": 20,
+      "metric": { "key": "unified_json", "expectKey": "expected", "label": "返回统一 JSON 次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "全局异常 @RestControllerAdvice 为什么兜不住 Filter 抛出的异常？",
+      "blocks": [{ "t": "text", "md": "很多项目的 JWT 鉴权写在 `Filter` 里，一旦校验失败直接 `throw new AuthException()`，结果前端炸出 **500 Whitelabel Error Page**。", "say": "因为 `@RestControllerAdvice` 根本管不到 `DispatcherServlet` 外面的 `Filter`。" }]
+    },
+    {
+      "beat": "hook",
+      "title": "2000 次鉴权异常，统一返回 JSON 的有几次？",
+      "bridge": "预期 `unified_json = 2000`。",
+      "blocks": [{ "t": "text", "md": "看 `FilterThrowsDirect` 与 `ResolverDelegate` 的对比。", "say": "看代码。" }]
+    },
+    {
+      "beat": "code",
+      "title": "看清 Filter 怎么把异常转交给 Advice",
+      "bridge": "在 Filter 里注入 `HandlerExceptionResolver`（如 `handlerExceptionResolver` Bean）。",
+      "blocks": [{ "t": "code", "of": "exchandler.ResolverDelegate", "say": "看第 12 行。", "walk": [{ "focus": ["return globalAdvice(e);"], "say": "调用 `handlerExceptionResolver.resolveException(req, res, null, e)`，就能把 Filter 异常无缝导进 `@RestControllerAdvice`。", "key": "Filter 异常通过 HandlerExceptionResolver 转发给 @RestControllerAdvice" }] }]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：`FilterThrowsDirect` 能返回统一 JSON 吗？",
+      "bridge": "跑之前下注。",
+      "blocks": [{ "t": "predict", "id": "ex_guess", "q": "运行 `FilterThrowsDirect`（2000 次），返回统一 JSON 的次数是？", "options": ["2000", "0"], "answer": 1, "say": "选出你的判断。" }]
+    },
+    {
+      "beat": "run",
+      "title": "四种异常处理方式实测对比",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        { "t": "experiment", "lab": "exchandler", "show": ["FilterThrowsDirect", "CatchInController", "ResolverDelegate", "UnifiedErrorCode"], "select": "FilterThrowsDirect", "say": "`FilterThrowsDirect` 和 `CatchInController` 全是 0；`ResolverDelegate` 和 `UnifiedErrorCode` 全是 2000。" },
+        { "t": "reveal", "of": "ex_guess", "say": "业务代码不要到处 `try-catch`，统一抛 `BizException`；Filter 异常转发给 `HandlerExceptionResolver`。", "key": "业务抛 BizException + Filter 转发 Resolver = 全链路统一 JSON" },
+        { "t": "try", "say": "切换挡位 4 和 8 观察。" }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "耗时对比",
+      "bridge": "四种写法耗时折线。",
+      "blocks": [{ "t": "chart", "of": "exchandler", "say": "统一收口既干净又高效。", "walk": [{ "focus": "UnifiedErrorCode", "say": "异常体系清晰。" }] }]
+    },
+    {
+      "beat": "choose",
+      "title": "异常处理规范",
+      "layout": "split",
+      "bridge": "不同层级的异常怎么处理？",
+      "blocks": [
+        { "t": "decide", "q": "异常出现在哪一层？", "branches": [{ "when": "Service / Controller 业务校验失败", "pick": "直接 throw new BizException(ErrorCode)", "eg": "由 @RestControllerAdvice 统一接管" }, { "when": "Filter 层鉴权/限流异常", "pick": "HandlerExceptionResolver.resolveException", "eg": "转交 Advice 渲染 JSON" }], "say": "业务不吞异常，Filter 会转交异常。" },
+        { "t": "cases", "tools": ["直接 throw BizException", "HandlerExceptionResolver 转发", "兜底 Exception 打印 error 日志"], "say": "三个场景选做法。", "items": [{ "text": "库存不足需要返回 `{code: 4001, msg: \"库存不足\"}`。", "answer": 0, "why": "直接抛 `BizException`，不要在 Controller 里写 `try-catch`。" }, { "text": "JWT 校验写在 `OncePerRequestFilter`，过期时要返回统一 JSON 401。", "answer": 1, "why": "注入 `@Qualifier(\"handlerExceptionResolver\")` 转发异常。" }, { "text": "线上发生未知 `NullPointerException`。", "answer": 2, "why": "Advice 里用 `@ExceptionHandler(Exception.class)` 记录完整堆栈并向前端返回通用「系统繁忙」提示（脱敏）。" }] }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频提问。",
+      "blocks": [{ "t": "name", "term": "全局异常处理机制", "alias": "@RestControllerAdvice · @ExceptionHandler · HandlerExceptionResolver", "oneLine": "`@RestControllerAdvice` 基于 `DispatcherServlet` 的异常解析链，抓不到 `Filter` 异常；`Filter` 需委托==HandlerExceptionResolver==转发。", "asked": ["@RestControllerAdvice 原理是什么？能捕获 Filter 的异常吗？"], "say": "一针见血。" }]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "快速检验。",
+      "blocks": [{ "t": "quiz", "q": "`@RestControllerAdvice` 默认**抓不到**哪一层的异常？", "options": [{ "text": "Servlet Filter 层", "ok": true, "why": "正确！Filter 在 DispatcherServlet 之外。" }, { "text": "HandlerInterceptor 层", "ok": false, "why": "Interceptor 在 DispatcherServlet 内部，能抓到。" }], "say": "选出抓不到的那一层。" }]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "一分钟脱稿复述。",
+      "blocks": [{ "t": "say", "prompt": "@RestControllerAdvice 能捕获 Filter 和 Interceptor 的异常吗？Filter 异常怎么统一返回 JSON？", "points": ["@RestControllerAdvice 在 DispatcherServlet 内部生效，能抓 Controller、Service 和 Interceptor 异常", "Filter 在 DispatcherServlet 之外，抛出的异常它抓不到", "解决：在 Filter 里注入 HandlerExceptionResolver 调用 resolveException() 转发给全局异常处理器"], "model": "`@RestControllerAdvice` 底层依托 Spring MVC 的 `HandlerExceptionResolver` 链在 `DispatcherServlet` 内部工作，因此可以捕获 `Controller`、`Service` 以及 `HandlerInterceptor` 抛出的异常，但捕获不到站在 `DispatcherServlet` 外面的 `Filter` 异常。工程上要在 `Filter` 中捕获异常并注入 `HandlerExceptionResolver`（指定 `handlerExceptionResolver` Bean）调用 `resolveException()`，把异常无缝转交给 `@RestControllerAdvice` 统一输出 JSON。", "say": "点击开始自述。" }]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [{ "t": "cards", "items": [{ "q": "`@RestControllerAdvice` 能抓 `Interceptor` 异常吗？", "a": "能，因为 `Interceptor` 在 `DispatcherServlet` 内部。" }, { "q": "`@RestControllerAdvice` 能抓 `Filter` 异常吗？", "a": "不能，`Filter` 在 `DispatcherServlet` 之外。" }, { "q": "怎么让 `Filter` 异常也走全局 JSON 响应？", "a": "在 `Filter` 里注入 `HandlerExceptionResolver` 并调用 `resolveException()`。" }], "say": "三张卡收好。" }]
+    }
+  ]
+}

@@ -1,0 +1,314 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "mvcc-purge-longtx",
+  "course": "MySQL 索引、事务与锁",
+  "title": "一个长事务挂着不提交，Undo 日志怎么把磁盘撑爆？",
+  "lead": "线上突然告警 ibdata1 / undo 表空间暴涨几十 GB、所有查询变慢——罪魁祸首往往只是一个忘了 commit 的长事务！",
+  "minutes": 35,
+  "needs": [
+    "知道 Undo Log 版本链"
+  ],
+  "after": [
+    "讲清长事务卡住全局 min_read_view 导致 Purge 线程无法回收 Undo 的机制",
+    "知道为什么长事务还会让普通查询遍历长版本链变慢、且容易锁等待超时",
+    "掌握大事务拆批、慢报表分流从库、监控 `information_schema.innodb_trx` 的排查手段"
+  ],
+  "terms": {
+    "Purge 线程": "InnoDB 后台负责清理不再被任何 ReadView 需要的旧 Undo Log 和标记删除记录的线程。",
+    "长事务": "开启后长时间（几分钟甚至几小时）不提交或回滚的事务，比如调试断点卡住、事务里调外部 HTTP 接口。"
+  },
+  "experiments": {
+    "longtrx": {
+      "runner": "java",
+      "home": "lab.longtrx",
+      "variants": [
+        {
+          "id": "LongTxHoldingView",
+          "label": "长事务挂起不提交",
+          "note": "死死攥着旧 ReadView，5 万次更新的 Undo 全堆在磁盘无法回收！"
+        },
+        {
+          "id": "ShortTxPurge",
+          "label": "短事务及时提交",
+          "note": "没有旧 ReadView 卡位，Purge 线程随时清理，0 滞留！"
+        },
+        {
+          "id": "BatchCommit",
+          "label": "大事务拆小批提交",
+          "note": "每次只改 1000 行并提交，让 Purge 喘息前进。"
+        },
+        {
+          "id": "ReadOnlyReplica",
+          "label": "慢查询分流只读库",
+          "note": "BI/导出走只读从库，不拖累主库 Undo 回收。"
+        }
+      ],
+      "knob": {
+        "label": "期间并发修改数",
+        "values": [
+          "5000",
+          "20000",
+          "50000",
+          "100000"
+        ],
+        "default": "50000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "unpurgedUndo",
+        "expectKey": "expected",
+        "label": "滞留未回收 Undo 版本数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "一个长事务挂着不提交，Undo 日志怎么把磁盘撑爆？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "生产常见诡异故障：没人动表结构，也没怎么写新数据，数据库磁盘却以每分钟几个 G 的速度狂涨，同时所有接口越跑越慢。",
+          "say": "排查 `SELECT * FROM information_schema.innodb_trx`，十有八九能揪出一个挂了半小时的未提交事务。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "仅仅挂着一个只读事务，5 万次更新的 Undo 全删不掉？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "只要那个长事务的 ReadView 还在，后台 Purge 线程哪怕干瞪眼，也不敢删掉这 **50,000** 个历史版本中的任何一个。",
+          "say": "看 `LongTxHoldingView`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 LongTxHoldingView 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "longtrx.LongTxHoldingView",
+          "say": "Purge 线程只能清理「比系统里最老活跃 ReadView 还要老」的 Undo 版本；长事务把最老水位线死死钉在了半小时前。",
+          "walk": [
+            {
+              "focus": [
+                "int unpurgedUndo = updates;"
+              ],
+              "say": "5 万个历史版本全部被迫留在 Undo 表空间里，版本链越拉越长！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "一个只读长事务开启并查询一次后一直不提交，期间其他业务对某热点行更新了 5 万次。这些旧版本 Undo Log 会被后台 Purge 线程清理吗？",
+          "options": [
+            "会，因为长事务只是只读",
+            "不会，因为长事务拿着旧 ReadView，Purge 不敢清理任何它可能需要回溯的版本"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "longtrx",
+          "show": [
+            "LongTxHoldingView"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "`LongTxHoldingView` 滞留了整整 5 万个 Undo 版本！短事务模式下滞留为 0。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "longtrx.LongTxHoldingView",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "长事务的三大危害：1）阻断 Undo Purge 撑爆磁盘；2）热点行版本链拉成几万节，别人快照读顺链查找慢如蜗牛；3）如果它还拿着锁，直接引发大面积锁等待超时；甚至一旦它回滚，要反向撤销海量 Undo 耗时极久。",
+          "walk": [
+            {
+              "focus": [
+                "return"
+              ],
+              "say": "哪怕长事务自己什么都不干，光占着 ReadView 就足以拖垮主库。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "longtrx",
+          "show": [
+            "LongTxHoldingView",
+            "ShortTxPurge",
+            "BatchCommit",
+            "ReadOnlyReplica"
+          ],
+          "select": "ShortTxPurge",
+          "say": "严禁在 `@Transactional` 里调外部 HTTP/RPC 接口、严禁大批量循环全放一个事务、慢报表走只读从库！"
+        },
+        {
+          "t": "chart",
+          "of": "longtrx",
+          "say": "长事务存在时滞留 Undo 线性暴涨；短事务与拆批提交始终贴地为 0。",
+          "walk": [
+            {
+              "focus": [
+                "LongTxHoldingView",
+                "ShortTxPurge"
+              ],
+              "say": "Part 4 收官！记住：事务要像快餐一样，越短越好。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "日常开发守住三条底线：不跨网络 IO 开事务、大清洗拆批提交、监控长事务告警。",
+          "options": [
+            {
+              "name": "短事务及时提交",
+              "solves": "不阻塞 Purge，锁持有时间极短",
+              "cost": "0 滞留：{ms:longtrx.ShortTxPurge} ms",
+              "when": "所有在线 OLTP 接口（RPC/Redis 操作移出事务外）",
+              "say": "编程式事务 `TransactionTemplate` 缩小事务粒度是神器。"
+            },
+            {
+              "name": "大事务拆批 / 走从库",
+              "solves": "避免单事务产生巨量 Undo 或卡住主库",
+              "cost": "0 滞留：{ms:longtrx.BatchCommit} ms",
+              "when": "百万行数据订正、BI 导出报表",
+              "say": "每批 500～1000 行提交一次。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么线上规范严禁在 `@Transactional` 数据库事务内部调用耗时的第三方 HTTP 接口？",
+          "options": [
+            {
+              "text": "HTTP 耗时会导致数据库长事务，占用连接池、死死卡住行锁并阻塞 Undo Purge 回收",
+              "ok": true,
+              "why": "三大致命伤全中！"
+            },
+            {
+              "text": "因为 Spring 不允许在事务里发 HTTP 请求",
+              "ok": false,
+              "why": "语法允许，只是架构大忌。"
+            },
+            {
+              "text": "因为 HTTP 请求会自动回滚数据库事务",
+              "ok": false,
+              "why": "不会自动回滚，只会拖长事务生命周期。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "长事务与 Undo Purge 阻塞",
+          "alias": "Long Transaction & Undo Bloat",
+          "oneLine": "长事务死占旧 ReadView 会==阻塞后台 Purge 线程回收 Undo==，导致==磁盘暴涨、版本链变长与锁等待==。",
+          "asked": [
+            "长事务有什么危害？",
+            "怎么排查和治理线上的长事务？",
+            "为什么事务里不能包含远程 RPC/HTTP 调用？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "线上出现长事务会带来哪些危害？日常开发怎么避免和排查？",
+          "points": [
+            "危害 1：卡住最老 ReadView，阻塞 Purge 回收，Undo 空间暴涨",
+            "危害 2：版本链被拉得很长，拖慢所有并发快照读",
+            "危害 3：长期占着数据库连接池和行锁，引发大面积阻塞超时",
+            "治理：RPC/HTTP 移出事务外（用 TransactionTemplate 缩粒度）、大清洗拆批提交、慢报表走从库、查 information_schema.innodb_trx 告警"
+          ],
+          "model": "长事务有三大危害：第一，只要它不提交就会一直占着一个老的 ReadView，导致后台 Purge 线程不敢清理这期间产生的所有旧 Undo 版本，严重时会撑爆 Undo 表空间；第二，热点行上的 Undo 版本链会被拉得特别长，拖慢其他事务的快照读；第三，它还占着数据库连接池和行锁不放，极易引发连锁锁等待超时。治理方法就是严格控制事务粒度，绝对不在事务内调外部 HTTP/RPC（可用 TransactionTemplate 精准包裹写库），大批量订正分批提交，慢报表走从库，并通过监控 innodb_trx 表及时告警。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "长事务为什么会撑爆 Undo 空间？",
+              "a": "它占着旧 ReadView，导致 Purge 线程不敢回收这之后的任何旧 Undo 版本。"
+            },
+            {
+              "q": "怎么快速查出当前正在跑的长事务？",
+              "a": "查 information_schema.innodb_trx，看 trx_started 持续时间最长的事务。"
+            },
+            {
+              "q": "事务里调外部 HTTP 怎么改？",
+              "a": "先查数据→调 HTTP（事务外）→再用 TransactionTemplate 短事务写库。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

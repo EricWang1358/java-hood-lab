@@ -1,0 +1,107 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "mvc-filter-interceptor",
+  "course": "Spring 全家桶与持久层",
+  "title": "Filter vs Interceptor：为什么跨域/静态资源在拦截器里漏掉了？",
+  "lead": "同样是「拦截请求」：Filter 在 Servlet 容器外层，Interceptor 在 DispatcherServlet 内层。放错位置，CORS 预检或静态资源全漏掉！",
+  "minutes": 30,
+  "needs": ["知道 HTTP 请求先到 Servlet 容器再到 Spring MVC", "了解 Filter 和 HandlerInterceptor 基本职责"],
+  "after": ["画出 Filter -> DispatcherServlet -> Interceptor -> Controller 完整链路", "区分 Filter（容器级）与 Interceptor（Spring MVC 级）的能力边界", "正确分配 CORS、TraceId、登录鉴权各自的归属层级"],
+  "terms": {
+    "Filter": "Servlet 规范过滤器：在 DispatcherServlet 之前执行，可拦截所有 HTTP 请求，但不方便直接注入 Spring MVC 上下文信息。",
+    "HandlerInterceptor": "Spring MVC 拦截器：只在 DispatcherServlet 分发给 Controller 时触发，能拿到 HandlerMethod 注解，也能直接注入 Spring Bean。",
+    "chain.doFilter()": "放行请求到下一层 Filter 或 Servlet；如果忘了调用，请求会直接卡死返回空白。"
+  },
+  "experiments": {
+    "mvcchain": {
+      "runner": "java",
+      "home": "lab.mvcchain",
+      "variants": [
+        { "id": "InterceptorOnly", "label": "只配 Interceptor", "note": "进 DispatcherServlet 之前的静态资源/CORS 预检绕过了拦截器。" },
+        { "id": "SwallowInFilter", "label": "Filter 忘了放行", "note": "Filter 忘了调 chain.doFilter()，请求半路直接消失。" },
+        { "id": "FilterAndInterceptor", "label": "Filter+Interceptor 分层", "note": "Filter 管全局 CORS/TraceId，Interceptor 管 Controller 鉴权，100% 覆盖。" },
+        { "id": "GlobalAdviceChain", "label": "全链路+Advice收口", "note": "Filter -> Interceptor -> Controller -> GlobalAdvice 完整闭环。" }
+      ],
+      "knob": { "label": "请求数(千)", "values": ["1", "2", "4", "8"], "default": "2" },
+      "repeat": 20,
+      "metric": { "key": "protected_ok", "expectKey": "expected", "label": "正确保护并放行请求数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "Filter vs Interceptor：请求链路到底谁先谁后？",
+      "blocks": [{ "t": "text", "md": "面试必问：**Filter 和 Interceptor 有什么区别？** 本质就一句话：Filter 站在 **Tomcat/Servlet 门口**，Interceptor 站在 **Spring MVC DispatcherServlet 门里**。", "say": "位置不同，能管到的请求范围和能拿到的 Spring 上下文完全不同。" }]
+    },
+    {
+      "beat": "hook",
+      "title": "2000 个混合请求，Interceptor 漏掉了一半？",
+      "bridge": "预期 `protected_ok = 2000`。",
+      "blocks": [{ "t": "text", "md": "看 `InterceptorOnly` 为什么只护住一半请求。", "say": "查看代码。" }]
+    },
+    {
+      "beat": "code",
+      "title": "看清 Filter 与 Interceptor 的边界",
+      "bridge": "注意 `FilterAndInterceptor.java` 的两层嵌套。",
+      "blocks": [{ "t": "code", "of": "mvcchain.FilterAndInterceptor", "say": "Filter 包在最外层，Interceptor 包在 Controller 外层。", "walk": [{ "focus": ["runFilterChain(() -> runInterceptor(() -> ok[0]++));"], "say": "Filter 管全局（CORS、TraceId、编码），Interceptor 管业务 Controller（登录态、接口权限注解）。", "key": "Filter 在外管全局，Interceptor 在内管 Controller" }] }]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：`InterceptorOnly` 能护住多少？",
+      "bridge": "跑之前押一个答案。",
+      "blocks": [{ "t": "predict", "id": "mvc_guess", "q": "运行 `InterceptorOnly`（2000 次），成功保护的请求数是？", "options": ["2000", "1000（绕过 DispatcherServlet 的全漏了）"], "answer": 1, "say": "选出你的判断。" }]
+    },
+    {
+      "beat": "run",
+      "title": "四种链路实测对比",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        { "t": "experiment", "lab": "mvcchain", "show": ["InterceptorOnly", "SwallowInFilter", "FilterAndInterceptor", "GlobalAdviceChain"], "select": "InterceptorOnly", "say": "`InterceptorOnly` 漏一半，`SwallowInFilter` 全丢；`FilterAndInterceptor` 和 `GlobalAdviceChain` 全对。" },
+        { "t": "reveal", "of": "mvc_guess", "say": "各司其职才不漏不乱。", "key": "CORS/TraceId 放 Filter；业务鉴权放 Interceptor" },
+        { "t": "try", "say": "切换挡位 4 和 8 观察。" }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "耗时对比",
+      "bridge": "四种写法耗时折线。",
+      "blocks": [{ "t": "chart", "of": "mvcchain", "say": "分层链路几乎零额外开销。", "walk": [{ "focus": "GlobalAdviceChain", "say": "全链路清晰可观测。" }] }]
+    },
+    {
+      "beat": "choose",
+      "title": "职责分配",
+      "layout": "split",
+      "bridge": "什么逻辑放 Filter，什么放 Interceptor？",
+      "blocks": [
+        { "t": "decide", "q": "新加一个横切请求逻辑放哪？", "branches": [{ "when": "跨域 CORS、TraceId、请求体加解密", "pick": "Filter", "eg": "OncePerRequestFilter" }, { "when": "登录校验、@RequireRole 注解解析", "pick": "HandlerInterceptor", "eg": "HandlerMethod 拿注解" }], "say": "看要不要拿 `HandlerMethod`。" },
+        { "t": "cases", "tools": ["Filter", "HandlerInterceptor"], "say": "两个场景选位置。", "items": [{ "text": "给每个 HTTP 请求入口生成 `traceId` 放进 MDC，并在响应结束清理。", "answer": 0, "why": "放 `OncePerRequestFilter`，连 404/静态资源都能带上 `traceId`。" }, { "text": "校验 Controller 方法上的自定义 `@RequirePermission(\"order:create\")` 注解。", "answer": 1, "why": "放 `HandlerInterceptor`，`preHandle` 的 `handler` 参数可直接强转为 `HandlerMethod` 读注解。" }] }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频提问。",
+      "blocks": [{ "t": "name", "term": "Servlet Filter vs Spring Interceptor", "alias": "DispatcherServlet · HandlerMethod", "oneLine": "执行顺序：==Filter.before -> DispatcherServlet -> Interceptor.preHandle -> Controller -> postHandle -> afterCompletion -> Filter.after==。", "asked": ["Filter 和 Interceptor 的区别？", "请求进 Spring MVC 的完整执行顺序？"], "say": "把执行顺序倒背如流。" }]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "检验顺序。",
+      "blocks": [{ "t": "quiz", "q": "一个正常请求进入 Controller 之前，谁先执行？", "options": [{ "text": "Filter", "ok": true, "why": "正确！Filter 在 Servlet 容器层，先于 DispatcherServlet 和 Interceptor。" }, { "text": "HandlerInterceptor", "ok": false, "why": "Interceptor 在 DispatcherServlet 内部。" }], "say": "选出先执行的一方。" }]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [{ "t": "say", "prompt": "Filter 和 Spring MVC Interceptor 有什么区别？请求完整链路是怎样的？", "points": ["Filter 基于 Servlet 规范，在 DispatcherServlet 之外；Interceptor 属于 Spring MVC", "Filter 能拦截所有请求（含静态资源），Interceptor 只拦进入 Controller 的请求且能拿到 HandlerMethod", "顺序：Filter -> DispatcherServlet -> Interceptor.preHandle -> Controller -> postHandle -> afterCompletion -> Filter"], "model": "Filter 是 Servlet 规范的，站在 `DispatcherServlet` 外面，能拦截所有进 Tomcat 的请求，适合做全局编码、CORS、TraceId；Interceptor 是 Spring MVC 的，站在 `DispatcherServlet` 里面，只拦截分发到 Controller 的请求，但能直接注入 Spring Bean 并通过 `HandlerMethod` 拿到方法注解，适合做登录鉴权。完整链路是先过 Filter，再进 `DispatcherServlet` 调 `Interceptor.preHandle`、执行 Controller，然后倒序退出 `postHandle`、`afterCompletion`，最后回到 Filter 收尾。", "say": "点击开始自述。" }]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [{ "t": "cards", "items": [{ "q": "Filter 和 Interceptor 谁先执行？", "a": "Filter 先执行（Servlet 容器层），然后才是 DispatcherServlet 与 Interceptor。" }, { "q": "需要读 Controller 方法注解放哪？", "a": "放 `HandlerInterceptor`，`preHandle` 可以拿到 `HandlerMethod`。" }, { "q": "全局 TraceId / CORS 放哪？", "a": "放 `Filter`（如 `OncePerRequestFilter`），覆盖全部请求。" }], "say": "三张卡收好。" }]
+    }
+  ]
+}
