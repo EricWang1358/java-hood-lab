@@ -1,0 +1,578 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-mq-backlog",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "百万消息积压在 MQ 里，为什么加机器反而可能把消费者打 OOM？",
+  "lead": "大促突发流量或下游故障恢复后，MQ 积压几十万条消息。盲目用无界线程池/无界队列狂拉消息会瞬间撑爆消费者内存 OOM；正确姿势是「扩容分区 + 临时 Topic 分片转移 + 有界批量拉取反压」。",
+  "minutes": 35,
+  "needs": [
+    "了解 MQ 分区与消费者组（ConsumerGroup）的对应关系",
+    "知道无界队列 OOM 风险"
+  ],
+  "after": [
+    "复现单线程拉取太慢与无界内存队列狂拉导致内存峰值飙升的现场",
+    "掌握有界批量拉取（背压窗口）与临时 Topic 扩分区应急削峰的做法",
+    "能条理清晰地回答线上百万消息积压的三步应急方案"
+  ],
+  "terms": {
+    "背压窗口 (Backpressure)": "消费者按自身处理能力设定有界拉取窗口（如每次最多拉 32 条、内存上限 150 条），消化完再拉下一批。",
+    "临时Topic扩容": "当原 Topic 分区数小于想要扩容的消费者机器数时，新建一个多分区临时 Topic 让现有消费者只做极速转发，再起多倍消费者并行消费。"
+  },
+  "experiments": {
+    "m6_mqbacklog": {
+      "runner": "java",
+      "home": "lab.m6.mqbacklog",
+      "knob": {
+        "name": "threads",
+        "label": "消费者并发线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "backlogPeak",
+        "expectKey": "expected",
+        "label": "内存积压峰值(条)",
+        "expect": "不超过安全水位150"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "SingleThreadPull",
+          "label": "单线程慢速拉取",
+          "code": "SingleThreadPull.java",
+          "note": "不管外面加多少消费者线程，单分区单线程积压峰值 600 纹丝不动，消费速度严重不足。"
+        },
+        {
+          "id": "UnboundedPoolOom",
+          "label": "无界队列全量狂拉",
+          "code": "UnboundedPoolOom.java",
+          "note": "一口气把 600 条带大对象的消息全拉进无界内存队列，峰值飙到 600 远超安全水位 150，极易 OOM。"
+        },
+        {
+          "id": "BoundedBatchPull",
+          "label": "有界批量拉取(背压)",
+          "code": "BoundedBatchPull.java",
+          "note": "每次批量拉 32 条并受限于 150 的有界内存窗口，内存峰值稳稳压在安全线以内。"
+        },
+        {
+          "id": "ShardedTempTopic",
+          "label": "临时多分区Topic分片",
+          "code": "ShardedTempTopic.java",
+          "note": "把积压消息打散到 16 个临时分区由多线程并行消化，内存峰值极低且吞吐成倍提升。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "百万消息积压在 MQ 里，为什么加机器反而可能把消费者打 OOM？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "面试高频场景题：**「线上突然积压了 100 万条 MQ 消息，你怎么紧急处理？」** 很多人张口就说「加消费者机器」——如果 Topic 只有 4 个分区，你加到 40 台机器也只有 4 台在干活，剩下 36 台全在空转！",
+          "say": "更要命的是，如果消费者里用了无界线程池或无界拉取缓冲，瞬间就能把 JVM 内存拉爆 OOM。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "消费者与分区数关系",
+              "q": "一个 Kafka Topic 有 4 个 Partition，同一个 ConsumerGroup 里最多能同时有几台消费者实例在干活？",
+              "options": [
+                "最多 4 台，多余的实例处于空闲等待",
+                "40 台都能平均分到消息",
+                "只有 1 台"
+              ],
+              "answer": 0,
+              "why": "同一个消费组内，一个分区同一时刻只能被一个消费者占用。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：上游突发灌入 600 条消息，安全内存水位线只有 150 条",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "每条消息在内存里占 4KB 载荷，我们需要在尽快排空积压的同时，把消费者 JVM 内的消息峰值控制在安全水位 150 条以内。",
+            "actors": [
+              "无界狂拉 (OOM 风险)",
+              "临时多分区 + 有界拉取"
+            ],
+            "shared": "JVM 内存水位"
+          },
+          "say": "每条消息在内存里占 4KB 载荷，我们需要在尽快排空积压的同时，把消费者 JVM 内的消息峰值控制在安全水位 150 条以内。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `SingleThreadPull`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_mqbacklog.SingleThreadPull",
+          "say": "这就是最常见的基线写法 `SingleThreadPull`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`SingleThreadPull` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`UnboundedPoolOom` 不设上限一口气把积压消息全拉进内存队列，结果会怎样？",
+          "options": [
+            "内存峰值稳在 150 以内",
+            "内存峰值瞬间冲到 600（安全水位的 4 倍），生产上直接 OOM 崩溃",
+            "消费速度变慢 10 倍"
+          ],
+          "answer": 1,
+          "say": "把磁盘里堆积的百万消息全搬进 JVM 堆内存，不 OOM 才怪。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`SingleThreadPull` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqbacklog",
+          "show": [
+            "SingleThreadPull"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "for (int i = 0; i < BURST; i++) {",
+            "unboundedHeapQueue.add(new byte[4096]);"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `SingleThreadPull` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_mqbacklog.SingleThreadPull",
+          "lines": [
+            "for (int i = 0; i < BURST; i++) {",
+            "unboundedHeapQueue.add(new byte[4096]);"
+          ],
+          "say": "Broker 磁盘能扛住百万积压，但无界拉取会把压力全部转嫁到消费者脆弱的堆内存上。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "积压Topic(少分区) -> 临时转发(16分区) -> 16倍并行消费",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "无界狂拉 (OOM 风险)",
+            "临时多分区 + 有界拉取"
+          ],
+          "shared": {
+            "name": "JVM 内存水位",
+            "start": "安全线 150"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "UnboundedPoolOom 一次性把 600 条消息全塞进内存队列",
+              "say": "内存瞬间冲破 150 警戒线，触发频繁 Full GC 甚至 OOM 重启，重启后消息重新投递恶性循环！"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "text": "ShardedTempTopic 把消息打散到 16 个临时分区",
+              "say": "突破原 Topic 分区数限制，让所有扩容机器都能吃满。"
+            },
+            {
+              "lane": 1,
+              "op": "calc",
+              "text": "BoundedBatchPull 每次只拉 32 条进有界窗口，消化完再拉",
+              "say": "内存水位稳稳压在安全线内，平稳排空百万积压。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `UnboundedPoolOom`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "为什么 `BoundedBatchPull` 既能稳住内存峰值不超过 150，又能加快排空速度？",
+          "options": [
+            "利用有界窗口做背压保护内存，同时每次批量拉 32 条减少网络交互次数",
+            "它把消息丢弃了",
+            "它把单条消息压缩成了 0 字节"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`SingleThreadPull` vs `UnboundedPoolOom`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqbacklog",
+          "show": [
+            "SingleThreadPull",
+            "UnboundedPoolOom"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `UnboundedPoolOom` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_mqbacklog.UnboundedPoolOom",
+          "within": "main(java.lang.String[])",
+          "from": "0: invokestatic",
+          "to": "return",
+          "say": "看 `UnboundedPoolOom.main`：在消费还没跟上之前先把所有 `new byte[4096]` 全塞进 `ConcurrentLinkedQueue`，峰值直接等于总积压量。",
+          "walk": [
+            {
+              "focus": [
+                "ConcurrentLinkedQueue",
+                "newarray"
+              ],
+              "label": "无界堆内存积压",
+              "say": "永远不要在异步消费端使用无界队列（如 Executors.newFixedThreadPool 默认的无界 LinkedBlockingQueue）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`BoundedBatchPull` 与 `ShardedTempTopic`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqbacklog",
+          "show": [
+            "SingleThreadPull",
+            "UnboundedPoolOom",
+            "BoundedBatchPull",
+            "ShardedTempTopic"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_mqbacklog",
+          "variants": [
+            "SingleThreadPull",
+            "UnboundedPoolOom",
+            "BoundedBatchPull",
+            "ShardedTempTopic"
+          ],
+          "notes": [
+            {
+              "focus": "UnboundedPoolOom",
+              "key": "内存峰值冲到 600，直接击穿安全水位",
+              "say": "调小 max.poll.records / 拉取批次大小是防 OOM 的关键。"
+            },
+            {
+              "focus": "ShardedTempTopic",
+              "key": "临时多分区把内存峰值压到个位数且并发拉满",
+              "say": "原 Topic 分区不够时，临时 Topic 转发是最快的破局手段。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `ShardedTempTopic` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_mqbacklog.ShardedTempTopic",
+          "within": "main(java.lang.String[])",
+          "from": "0: invokestatic",
+          "to": "return",
+          "say": "看 `ShardedTempTopic.main`：先路由到 16 个临时分区，再由工作线程各自认领分片并发消化，在途内存峰值只有几个单位。",
+          "walk": [
+            {
+              "focus": [
+                "tempTopics",
+                "ArrayBlockingQueue"
+              ],
+              "label": "临时扩分区 + 有界并发",
+              "key": "修 Bug -> 扩分区(临时 Topic) -> 批量消费/降级非核心",
+              "say": "这是大厂处理百万消息积压的标准救火流程。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "有界批量拉取 + 调大消费并发",
+              "solves": "原 Topic 分区充足时的快速平稳排空",
+              "cost": "约 {ms:m6_mqbacklog.BoundedBatchPull} ms，内存受控绝不 OOM",
+              "when": "消费者自身慢（如未批处理、单条写 DB）导致的积压",
+              "say": "把逐条 INSERT 改成批量 INSERT（Batch），往往比加机器提速 10 倍。"
+            },
+            {
+              "name": "临时多分区 Topic 转发扩容",
+              "solves": "原 Topic 分区数太少导致加机器无效",
+              "cost": "约 {ms:m6_mqbacklog.ShardedTempTopic} ms，需临时部署一套转发消费者",
+              "when": "百万级积压且原分区只有 4~8 个、业务允许短时并发消化",
+              "say": "等积压排空后，记得下线临时转发程序并复盘扩容原 Topic 分区。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "线上百万消息积压应急处理四步走？",
+          "branches": [
+            {
+              "when": "第 1 步：止血修因",
+              "pick": "先排查是消费者挂了、DB 慢了还是下游报错，修好 Bug 再放量",
+              "eg": "否则加再多机器也只是更快地报错或打挂 DB"
+            },
+            {
+              "when": "第 2 步：判断分区够不够",
+              "pick": "分区够就加消费者机器；分区不够就建临时多分区 Topic 极速转发",
+              "eg": "比如 4 分区扩成 32 分区"
+            },
+            {
+              "when": "第 3 步：提速与控内存",
+              "pick": "改批量消费/批量写库 + 限制单次拉取条数（防 OOM）+ 必要时降级非核心逻辑",
+              "eg": "注意下游 DB 连接池承受上限"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "直接加 20 台消费者（原 4 分区）",
+            "无界线程池异步狂拉",
+            "修 Bug + 临时多分区 Topic + 批量有界消费"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "Topic 只有 4 个分区，积压了 200 万条发券消息，需要 10 分钟内消化完。",
+              "answer": 2,
+              "why": "单靠加机器只能用到 4 台；必须用临时多分区 Topic 转发，再配 20~32 台消费者批量消费。"
+            },
+            {
+              "text": "消费者用了 `Executors.newFixedThreadPool(16)`，拉到消息直接扔进线程池异步处理并立刻 ACK。",
+              "answer": 1,
+              "why": "默认 LinkedBlockingQueue 无界！不仅容易 OOM，立刻 ACK 还会导致重启丢消息。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：MQ 消息积压治理",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "MQ 消息积压治理",
+          "alias": "Backlog Drain · Temp Topic · Bounded Backpressure",
+          "oneLine": "==先修故障防打挂下游== -> ==临时多分区 Topic 破除并发上限== -> ==有界批量拉取防 OOM==。",
+          "asked": [
+            "线上 MQ 突然积压了几百万条消息怎么处理？",
+            "消费端拉取消息太快导致 OOM 怎么解决？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Kafka Topic 有 6 个分区，当前积压严重，运维把消费组实例从 3 台扩容到 12 台，实际有效干活的最多有几台？",
+          "options": [
+            {
+              "text": "6 台（其余 6 台空转）",
+              "ok": true,
+              "why": "同组消费者并发度上限等于 Topic 分区数。"
+            },
+            {
+              "text": "12 台平均分担",
+              "ok": false,
+              "why": "除非把分区数也扩了，或者走临时多分区 Topic 转发。"
+            }
+          ],
+          "say": "分区数决定了同组消费者的并发天花板。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "处理积压时，为什么绝对不能让消费端把消息拉出来扔进 `Executors.newFixedThreadPool` 的无界队列然后立刻返回 ACK？",
+          "options": [
+            {
+              "text": "无界队列积压会导致 JVM OOM 崩溃，且已 ACK 的未处理消息会永久丢失",
+              "ok": true,
+              "why": "一举踩中「OOM」和「丢消息」两个大坑！"
+            },
+            {
+              "text": "FixedThreadPool 不支持多线程",
+              "ok": false,
+              "why": "问题出在它的默认任务队列无界和提前 ACK。"
+            }
+          ],
+          "say": "生产禁区，面试官非常爱挖这个细节。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在排空积压时，除了扩容消费者和临时 Topic，代码层面最立竿见影的提速手段往往是什么？",
+          "options": [
+            {
+              "text": "开启批量拉取与批量写库（如逐条 INSERT 改批量 INSERT），并临时降级非核心日志/推荐",
+              "ok": true,
+              "why": "减少网络 RTT 和 DB 事务提交次数，吞吐常能翻 5~10 倍，同时注意控制单批内存上限。"
+            },
+            {
+              "text": "把消费者日志级别改成 TRACE",
+              "ok": false,
+              "why": "狂打日志反而会拖慢 IO。"
+            }
+          ],
+          "say": "批处理 + 有界背压，兼顾速度与安全。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "线上 MQ 突然积压了几百万条消息，你打算怎么处理？加机器一定有效吗？",
+          "points": [
+            "先排查修复导致积压的根因（消费端 Bug、死锁或下游慢查询），防止盲目扩容打挂下游 DB",
+            "加机器受限于原 Topic 分区数；若分区数少，建一个多分区临时 Topic 让现有消费者极速转发，再起多倍机器并行消费",
+            "消费端开启批量拉取与批量写库提速，同时限制单次拉取大小和有界线程池做背压，防止内存 OOM"
+          ],
+          "model": "面对百万级 MQ 消息积压，我不会直接盲目加机器，而是分三步处理。第一步是先止血定位原因，看看是不是消费者代码有 Bug、或者下游数据库慢查询拖垮了消费速度，如果下游已经扛不住，盲目加消费者只会把数据库彻底打挂。第二步是解决并发度瓶颈，因为同消费组的最大并发受限于 Topic 的分区数，如果原分区数太少加机器会空转，这时可以新建一个 32 或 64 分区的临时 Topic，让原消费者只做极速转发，然后临时拉起多倍消费者集群并行消化。第三步是提升单机效率并防 OOM：把单条处理改成批量拉取和批量写库，必要时降级非核心逻辑，同时严格限制单次拉取条数并使用有界队列做背压，防止把堆内存拉爆。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "加消费者机器一定能加速排空吗？",
+              "a": "不一定！同消费组并发度受限于分区数，超出分区数的机器会空转。"
+            },
+            {
+              "q": "原分区数太少怎么应急？",
+              "a": "建临时多分区 Topic 极速转发，再起多倍消费者并行消费。"
+            },
+            {
+              "q": "排空时如何防消费者 OOM？",
+              "a": "限制单次批量拉取条数，严禁使用无界内存队列做异步缓冲。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

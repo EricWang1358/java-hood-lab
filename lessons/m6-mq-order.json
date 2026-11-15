@@ -1,0 +1,577 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-mq-order",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "订单创建、支付、发货三条消息并发消费，怎么乱序了？",
+  "lead": "MQ 默认把消息轮询分散到多个分区并由多线程并发消费，同一笔订单的「创建→支付→发货」落到不同分区或不同线程就会彻底乱序。按业务 Key 哈希路由 + 分区内串行（或局部有序缓冲）才能既保顺序又保吞吐。",
+  "minutes": 35,
+  "needs": [
+    "了解 Topic、Partition/Queue 与 Consumer 的关系",
+    "知道 Hash 取模路由的基本概念"
+  ],
+  "after": [
+    "复现随机分区并发消费导致的同一订单状态乱序事故",
+    "对比全局单队列、Key Hash 分区路由、局部有序缓冲三种方案的吞吐与顺序性",
+    "能讲清 RocketMQ/Kafka 局部顺序消息的实现原理与单分区热点瓶颈"
+  ],
+  "terms": {
+    "局部顺序消息": "不要求全局所有消息严格排队，只要求同一业务 Key（如同一 orderId）的消息进入同一分区并串行消费。",
+    "KeyHash路由": "通过 `Math.abs(orderId.hashCode()) % queueCount` 把同一订单的所有事件固定路由到同一个 Queue。"
+  },
+  "experiments": {
+    "m6_mqorder": {
+      "runner": "java",
+      "home": "lab.m6.mqorder",
+      "knob": {
+        "name": "threads",
+        "label": "消费者并发线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "outOfOrder",
+        "expectKey": "expected",
+        "label": "乱序事件次数",
+        "expect": "零乱序"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "RandomPartition",
+          "label": "随机分区并发消费",
+          "code": "RandomPartition.java",
+          "note": "同一订单的 3 个步骤分散到不同分区并发执行，发货跑在创建前面，乱序飙升。"
+        },
+        {
+          "id": "GlobalSingleQueue",
+          "label": "全局单队列串行",
+          "code": "GlobalSingleQueue.java",
+          "note": "所有订单挤进 1 个队列由 1 个线程消费，顺序对了但多核线程全闲置，吞吐暴跌。"
+        },
+        {
+          "id": "KeyHashPartition",
+          "label": "OrderId哈希分区",
+          "code": "KeyHashPartition.java",
+          "note": "同一订单固定路由到同一分区并串行处理，不同订单跨分区并行，零乱序且高吞吐。"
+        },
+        {
+          "id": "LocalOrderBuffer",
+          "label": "拉取后按Key局部串行",
+          "code": "LocalOrderBuffer.java",
+          "note": "即便底层多分区并行拉取，消费端按 orderId 哈希到内存有序队列，兼顾灵活性与零乱序。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "订单创建、支付、发货三条消息并发消费，怎么乱序了？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "很多同学以为「MQ 队列是 FIFO 先进先出的，所以消息天然有序」。**一旦 Topic 有多个分区、消费者开了多线程，FIFO 只在单分区单线程里成立**，同一笔订单的三条消息分分钟倒着执行。",
+          "say": "今天对比 4 种消费模型：怎么在不把整个系统拖成单线程的前提下，保住同一笔订单的顺序？"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "FIFO 作用域",
+              "q": "Kafka 的一个 Topic 有 4 个 Partition，同一订单的两条消息分别发到 P0 和 P1，消费端能保证先消费第一条吗？",
+              "options": [
+                "不能，不同 Partition 之间没有全局顺序保证",
+                "能，Kafka 会跨 Partition 自动排序",
+                "只要时间戳一样就能"
+              ],
+              "answer": 0,
+              "why": "Kafka 和 RocketMQ 都只保证单个 Partition/MessageQueue 内的严格有序。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：50 笔订单，每笔依次产生「创建(0)→支付(1)→发货(2)」三条消息",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "同一笔订单必须严格按 0→1→2 的顺序推进，如果出现 0 还没处理就先处理了 2，就记为一次乱序事故（`outOfOrder`）。",
+            "actors": [
+              "分区 0 (order=0,2,4...)",
+              "分区 1 (order=1,3,5...)"
+            ],
+            "shared": "订单状态"
+          },
+          "say": "同一笔订单必须严格按 0→1→2 的顺序推进，如果出现 0 还没处理就先处理了 2，就记为一次乱序事故（`outOfOrder`）。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `RandomPartition`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_mqorder.RandomPartition",
+          "say": "这就是最常见的基线写法 `RandomPartition`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`RandomPartition` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`RandomPartition` 把每条消息随机塞进 8 个分区并发消费，会发生什么？",
+          "options": [
+            "全部有序",
+            "大量订单发生乱序（outOfOrder > 100）",
+            "会死锁"
+          ],
+          "answer": 1,
+          "say": "同一订单的 0、1、2 散落到不同线程手里，谁先抢到 CPU 谁先执行。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`RandomPartition` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqorder",
+          "show": [
+            "RandomPartition"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "int part = (order * 3 + step) % PARTITIONS;",
+            "if (lastStep[order] != step - 1)"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `RandomPartition` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_mqorder.RandomPartition",
+          "lines": [
+            "int part = (order * 3 + step) % PARTITIONS;",
+            "if (lastStep[order] != step - 1)"
+          ],
+          "say": "每一步按 `(order*3 + step)` 轮询进不同分区，同一订单的三步被拆散到不同线程并发跑。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "orderId % N -> Partition[k] -> 同一线程串行",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "分区 0 (order=0,2,4...)",
+            "分区 1 (order=1,3,5...)"
+          ],
+          "shared": {
+            "name": "订单状态",
+            "start": "未创建(-1)"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "order=0 的 创建→支付→发货 全部路由到分区 0",
+              "say": "因为按 orderId 取模，同一订单的 3 条消息全进同一个队列。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "text": "order=1 的 创建→支付→发货 全部路由到分区 1",
+              "say": "不同订单落在不同分区，可以各自独立并发推进！"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "两个分区并行消费，互不干扰且各自严格有序",
+              "say": "这就是「局部有序」：既保了业务顺序，又吃满了多核并发。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `GlobalSingleQueue`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "`GlobalSingleQueue` 也能做到 `outOfOrder = 0`，为什么线上不用它？",
+          "options": [
+            "所有订单挤在 1 个队列串行，加再多消费者线程也用不上，吞吐太差",
+            "全局单队列会丢消息",
+            "全局单队列内存占用最大"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`RandomPartition` vs `GlobalSingleQueue`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqorder",
+          "show": [
+            "RandomPartition",
+            "GlobalSingleQueue"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `GlobalSingleQueue` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_mqorder.GlobalSingleQueue",
+          "within": "main(java.lang.String[])",
+          "from": "0: invokestatic",
+          "to": "return",
+          "say": "看 `GlobalSingleQueue.main`：不管命令行传几个并发线程，它只起一个单线程循环处理全局队列，多核资源完全浪费。",
+          "walk": [
+            {
+              "focus": [
+                "newThread",
+                "start"
+              ],
+              "label": "全局串行瓶颈",
+              "say": "全局有序的代价就是彻底放弃水平扩展能力。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`KeyHashPartition` 与 `LocalOrderBuffer`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqorder",
+          "show": [
+            "RandomPartition",
+            "GlobalSingleQueue",
+            "KeyHashPartition",
+            "LocalOrderBuffer"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_mqorder",
+          "variants": [
+            "RandomPartition",
+            "GlobalSingleQueue",
+            "KeyHashPartition",
+            "LocalOrderBuffer"
+          ],
+          "notes": [
+            {
+              "focus": "RandomPartition",
+              "key": "跨分区并发消费必乱序",
+              "say": "涉及状态先后顺序的消息千万别用默认轮询分区。"
+            },
+            {
+              "focus": "KeyHashPartition",
+              "key": "按 Key 哈希分区：零乱序且扩展性好",
+              "say": "如果单分区还是太慢，消费端可以把耗时的纯 IO 操作再按 Key 投递到内存子队列（LocalOrderBuffer）。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `LocalOrderBuffer` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_mqorder.KeyHashPartition",
+          "within": "route(int)",
+          "from": "0: iload_0",
+          "to": "ireturn",
+          "say": "看 `KeyHashPartition.route`：直接对 `orderId` 取模选择分区；同一订单永远由同一个分区线程顺序消费，零乱序且完美并行。",
+          "walk": [
+            {
+              "focus": [
+                "irem"
+              ],
+              "label": "按业务 Key 取模路由",
+              "key": "局部有序 = 同一 Key 同分区 + 分区内单线程消费",
+              "say": "RocketMQ 的 MessageQueueSelector 和 Kafka 指定 key 发消息都是这个原理。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "Key Hash 分区 + 单线程消费分区",
+              "solves": "同订单/同用户严格有序且不同订单高并发",
+              "cost": "约 {ms:m6_mqorder.KeyHashPartition} ms，消费端不能随便开无序并发线程池",
+              "when": "订单状态变更、MySQL Binlog 同步、IM 聊天消息",
+              "say": "Kafka 指定 ProducerRecord key、RocketMQ 传 OrderId 走 MessageQueueSelector 即可。"
+            },
+            {
+              "name": "消费端内存 Key 队列 (LocalOrderBuffer)",
+              "solves": "不依赖 Broker 分区数的局部有序并发",
+              "cost": "约 {ms:m6_mqorder.LocalOrderBuffer} ms，内存队列需注意异常停机时的位点提交顺序",
+              "when": "希望进一步提高单个大分区内部不同 Key 并发度的场景",
+              "say": "注意提交位点（offset）时需等内存中该批次都处理完，避免重启丢消息。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "顺序消息面试三大追问怎么答？",
+          "branches": [
+            {
+              "when": "怎么保证顺序？",
+              "pick": "按业务 Key（如 orderId）哈希到同一分区，消费端单线程顺序消费该分区",
+              "eg": "RocketMQ Orderly / Kafka Key Partitioner"
+            },
+            {
+              "when": "某一条消息消费失败卡住后面怎么办？",
+              "pick": "顺序消息不能跳过重试，需本地重试几次后转人工告警/死信，避免永久阻塞队列",
+              "eg": "防止队头阻塞拖垮整个分区"
+            },
+            {
+              "when": "某个大客户订单特别多导致单分区热点？",
+              "pick": "业务层面拆分更细粒度的 Key，或消费端接内存按更细 Key 派发",
+              "eg": "如从 tenantId 细化到 orderId"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "默认轮询分区",
+            "全局单队列",
+            "Key Hash 局部顺序"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "同步 MySQL Binlog 到 ES，同一行记录的 INSERT、UPDATE、DELETE 绝不能颠倒，但不同表/不同行可以并发。",
+              "answer": 2,
+              "why": "按表名+主键做 Key Hash 路由，既保单行严格有序，又保留高并发吞吐。"
+            },
+            {
+              "text": "发短信通知，各条短信之间没有任何先后依赖。",
+              "answer": 0,
+              "why": "无顺序要求时默认轮询分区并发消费吞吐最高。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：MQ 局部顺序消息",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "MQ 局部顺序消息",
+          "alias": "Key-Hash Partition Ordering",
+          "oneLine": "==同一业务 Key 哈希进同一分区== + ==分区内单线程串行消费==，同时保住顺序与多核吞吐。",
+          "asked": [
+            "MQ 如何保证消息的顺序性？",
+            "RocketMQ/Kafka 顺序消息有什么弊端（队头阻塞）？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Kafka 中保证同一笔订单的创建、支付、发货三条消息按顺序被消费的正确做法是？",
+          "options": [
+            {
+              "text": "发送时把 orderId 作为消息 Key，确保进入同一 Partition，且消费端单线程顺序处理该 Partition",
+              "ok": true,
+              "why": "生产端路由到同一分区 + 消费端该分区不并发乱序，两头都要守住。"
+            },
+            {
+              "text": "只把分区数设为 10 个，发送不传 Key",
+              "ok": false,
+              "why": "不传 Key 会粘性/轮询分散到多个分区，必乱序。"
+            }
+          ],
+          "say": "生产端和消费端必须配合。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在 RocketMQ 顺序消费模式（MessageListenerOrderly）下，如果某条消息一直消费失败重试，会发生什么？",
+          "options": [
+            {
+              "text": "当前 MessageQueue 的后续消息会被阻塞（队头阻塞），直到它成功或超过最大重试次数",
+              "ok": true,
+              "why": "为了保顺序不能跳过失败消息，所以失败处理要设上限和告警。"
+            },
+            {
+              "text": "自动跳过处理下一条",
+              "ok": false,
+              "why": "跳过就破坏顺序了。"
+            }
+          ],
+          "say": "这是顺序消息最常考的副作用：队头阻塞。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么不直接把所有 Topic 都设成 1 个分区（全局有序）？",
+          "options": [
+            {
+              "text": "单分区无法水平扩展，所有流量压在单个 Broker 队列和单个消费线程上，吞吐极低",
+              "ok": true,
+              "why": "绝大多数业务只需要「按业务 Key 局部有序」即可。"
+            },
+            {
+              "text": "MQ 不允许只建 1 个分区",
+              "ok": false,
+              "why": "技术上允许，但性能不可接受。"
+            }
+          ],
+          "say": "局部有序是性能与正确性的最佳平衡。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：如何保证 MQ 消息的顺序性？顺序消费会带来什么问题？",
+          "points": [
+            "业务一般只需要局部有序，生产端按业务 Key（如 orderId）哈希路由到同一个分区/队列",
+            "消费端对单个分区保持单线程串行消费，不同分区之间仍然并发",
+            "弊端是单分区失败会引发队头阻塞、以及热点 Key 倾斜；需限制重试次数转死信并细化路由 Key"
+          ],
+          "model": "在实际业务里我们通常只需要局部有序，也就是同一笔订单或同一个用户的数据有序，而不需要全局有序。实现方式分两步：生产端发送消息时按业务 Key（比如 orderId）做哈希取模，把同一订单的所有事件固定路由到同一个 Partition 或 MessageQueue；消费端保证单个分区内单线程串行消费，或者拉取后在内存按 Key 分发到对应的有序子队列中执行，这样不同订单依然可以多核并发。需要注意顺序消息的副作用是队头阻塞和热点倾斜：如果某条消息一直失败重试，会卡住整个分区后面的消息，所以要设置最大重试次数转入死信队列并及时告警。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "如何实现局部顺序消息？",
+              "a": "生产端按业务 Key（如 orderId）哈希进同一分区；消费端该分区内串行处理。"
+            },
+            {
+              "q": "顺序消息的两大隐患？",
+              "a": "1）单条失败引发队头阻塞；2）热点 Key 导致单分区压力过大。"
+            },
+            {
+              "q": "为什么不用全局单队列？",
+              "a": "吞吐卡死在单线程和单机节点上，无法水平扩展。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}
