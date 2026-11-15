@@ -1,0 +1,43 @@
+name: Module 7 Projects CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'projects/**'
+      - '.github/workflows/module7-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'projects/**'
+
+jobs:
+  test-project-a:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/project-a-admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Run Project A tests
+        run: mvn test -B
+
+  test-project-b:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/project-b-seckill
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Run Project B tests
+        run: mvn test -B
