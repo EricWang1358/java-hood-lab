@@ -1,0 +1,1671 @@
+{
+ "id": "tslru",
+ "variants": {
+  "UnsafeAccessLru": {
+   "hash": "92269b30495b03dd",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 13
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 12
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 14
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 13
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 14
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 13
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 15
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 12
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 13
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 12
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 13
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 15
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 13
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 14
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 13
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 13
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 18
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 12
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 15
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 16
+     }
+    ],
+    "2": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 16
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 15
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 22
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 17
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 21
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 20
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 16
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 22
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 17
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 18
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 22
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 18
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 24
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 18
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 15
+     }
+    ],
+    "4": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 24
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 25
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 33
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 25
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 30
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 29
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 32
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 27
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 31
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 25
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 23
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 27
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 29
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 24
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 22
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 27
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 36
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 32
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 29
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 28
+     }
+    ],
+    "8": [
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 58
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 57
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 53
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 47
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 53
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 55
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 54
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 59
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 58
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 49
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 51
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 61
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 60
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 46
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 55
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 38
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 54
+     },
+     {
+      "ok": 0,
+      "expected": 1,
+      "ms": 55
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 57
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 63
+     }
+    ]
+   },
+   "inside": "Compiled from \"UnsafeAccessLru.java\"\npublic class lab.tslru.UnsafeAccessLru {\n  public lab.tslru.UnsafeAccessLru();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: ldc           #13                 // int 100000\n       9: istore_2\n      10: new           #14                 // class lab/tslru/UnsafeAccessLru$1\n      13: dup\n      14: sipush        128\n      17: ldc           #16                 // float 0.75f\n      19: iconst_1\n      20: invokespecial #17                 // Method lab/tslru/UnsafeAccessLru$1.\"<init>\":(IFZ)V\n      23: astore_3\n      24: iconst_0\n      25: istore        4\n      27: iload         4\n      29: bipush        64\n      31: if_icmpge     57\n      34: aload_3\n      35: iload         4\n      37: invokestatic  #20                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      40: iload         4\n      42: invokestatic  #20                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      45: invokeinterface #24,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      50: pop\n      51: iinc          4, 1\n      54: goto          27\n      57: new           #30                 // class java/util/concurrent/atomic/AtomicInteger\n      60: dup\n      61: invokespecial #32                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      64: astore        4\n      66: iload_1\n      67: anewarray     #33                 // class java/lang/Thread\n      70: astore        5\n      72: invokestatic  #35                 // Method java/lang/System.nanoTime:()J\n      75: lstore        6\n      77: iconst_0\n      78: istore        8\n      80: iload         8\n      82: iload_1\n      83: if_icmpge     121\n      86: aload         5\n      88: iload         8\n      90: new           #33                 // class java/lang/Thread\n      93: dup\n      94: iload_2\n      95: aload_3\n      96: aload         4\n      98: invokedynamic #41,  0             // InvokeDynamic #0:run:(ILjava/util/Map;Ljava/util/concurrent/atomic/AtomicInteger;)Ljava/lang/Runnable;\n     103: invokespecial #45                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n     106: aastore\n     107: aload         5\n     109: iload         8\n     111: aaload\n     112: invokevirtual #48                 // Method java/lang/Thread.start:()V\n     115: iinc          8, 1\n     118: goto          80\n     121: aload         5\n     123: astore        8\n     125: aload         8\n     127: arraylength\n     128: istore        9\n     130: iconst_0\n     131: istore        10\n     133: iload         10\n     135: iload         9\n     137: if_icmpge     158\n     140: aload         8\n     142: iload         10\n     144: aaload\n     145: astore        11\n     147: aload         11\n     149: invokevirtual #51                 // Method java/lang/Thread.join:()V\n     152: iinc          10, 1\n     155: goto          133\n     158: invokestatic  #35                 // Method java/lang/System.nanoTime:()J\n     161: lload         6\n     163: lsub\n     164: ldc2_w        #54                 // long 1000000l\n     167: ldiv\n     168: lstore        8\n     170: aload         4\n     172: invokevirtual #56                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     175: ifne          193\n     178: aload_3\n     179: invokeinterface #60,  1           // InterfaceMethod java/util/Map.size:()I\n     184: bipush        64\n     186: if_icmpgt     193\n     189: iconst_1\n     190: goto          194\n     193: iconst_0\n     194: istore        10\n     196: getstatic     #63                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     199: iload         10\n     201: invokedynamic #67,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     206: invokevirtual #71                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     209: getstatic     #63                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     212: ldc           #77                 // String expected=1\n     214: invokevirtual #71                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     217: getstatic     #63                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     220: lload         8\n     222: invokedynamic #79,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     227: invokevirtual #71                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     230: return\n\n  private static void lambda$main$0(int, java.util.Map, java.util.concurrent.atomic.AtomicInteger);\n    Code:\n       0: iconst_0\n       1: istore_3\n       2: iload_3\n       3: iload_0\n       4: if_icmpge     65\n       7: iload_3\n       8: bipush        7\n      10: iand\n      11: ifne          35\n      14: aload_1\n      15: iload_3\n      16: bipush        127\n      18: iand\n      19: invokestatic  #20                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      22: iload_3\n      23: invokestatic  #20                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      26: invokeinterface #24,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      31: pop\n      32: goto          49\n      35: aload_1\n      36: iload_3\n      37: bipush        127\n      39: iand\n      40: invokestatic  #20                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      43: invokeinterface #82,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n      48: pop\n      49: goto          59\n      52: astore        4\n      54: aload_2\n      55: invokevirtual #87                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      58: pop\n      59: iinc          3, 1\n      62: goto          2\n      65: return\n    Exception table:\n       from    to  target type\n           7    49    52   Class java/lang/Throwable\n}\n"
+  },
+  "ReadLockBugLru": {
+   "hash": "bb25bce7b41fb3ae",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 23
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 20
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 20
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 18
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 27
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 21
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 24
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 20
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 22
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 20
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 21
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 21
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 22
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 22
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 21
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 20
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 22
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 21
+     }
+    ],
+    "2": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 38
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 29
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 31
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 38
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 34
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 26
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 34
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 25
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 27
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 43
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 31
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 30
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 30
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 33
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 43
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 34
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 35
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 30
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 28
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 28
+     }
+    ],
+    "4": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 40
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 38
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 48
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 43
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 45
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 40
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 37
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 41
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 43
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 40
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 36
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 35
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 43
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 36
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 37
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 37
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 44
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 43
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 43
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 40
+     }
+    ],
+    "8": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 56
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 69
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 66
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 66
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 62
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 65
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 69
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 63
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 60
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 64
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 64
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 66
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 61
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 54
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 58
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 61
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 60
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 67
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 57
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 59
+     }
+    ]
+   },
+   "inside": "Compiled from \"ReadLockBugLru.java\"\npublic class lab.tslru.ReadLockBugLru {\n  public lab.tslru.ReadLockBugLru();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: ldc           #13                 // int 100000\n       9: istore_2\n      10: new           #14                 // class java/util/concurrent/locks/ReentrantReadWriteLock\n      13: dup\n      14: invokespecial #16                 // Method java/util/concurrent/locks/ReentrantReadWriteLock.\"<init>\":()V\n      17: astore_3\n      18: new           #17                 // class lab/tslru/ReadLockBugLru$1\n      21: dup\n      22: sipush        128\n      25: ldc           #19                 // float 0.75f\n      27: iconst_1\n      28: invokespecial #20                 // Method lab/tslru/ReadLockBugLru$1.\"<init>\":(IFZ)V\n      31: astore        4\n      33: iconst_0\n      34: istore        5\n      36: iload         5\n      38: bipush        64\n      40: if_icmpge     67\n      43: aload         4\n      45: iload         5\n      47: invokestatic  #23                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      50: iload         5\n      52: invokestatic  #23                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      55: invokeinterface #27,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      60: pop\n      61: iinc          5, 1\n      64: goto          36\n      67: new           #33                 // class java/util/concurrent/atomic/AtomicInteger\n      70: dup\n      71: invokespecial #35                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      74: astore        5\n      76: iload_1\n      77: anewarray     #36                 // class java/lang/Thread\n      80: astore        6\n      82: invokestatic  #38                 // Method java/lang/System.nanoTime:()J\n      85: lstore        7\n      87: iconst_0\n      88: istore        9\n      90: iload         9\n      92: iload_1\n      93: if_icmpge     133\n      96: aload         6\n      98: iload         9\n     100: new           #36                 // class java/lang/Thread\n     103: dup\n     104: iload_2\n     105: aload_3\n     106: aload         4\n     108: aload         5\n     110: invokedynamic #44,  0             // InvokeDynamic #0:run:(ILjava/util/concurrent/locks/ReentrantReadWriteLock;Ljava/util/Map;Ljava/util/concurrent/atomic/AtomicInteger;)Ljava/lang/Runnable;\n     115: invokespecial #48                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n     118: aastore\n     119: aload         6\n     121: iload         9\n     123: aaload\n     124: invokevirtual #51                 // Method java/lang/Thread.start:()V\n     127: iinc          9, 1\n     130: goto          90\n     133: aload         6\n     135: astore        9\n     137: aload         9\n     139: arraylength\n     140: istore        10\n     142: iconst_0\n     143: istore        11\n     145: iload         11\n     147: iload         10\n     149: if_icmpge     170\n     152: aload         9\n     154: iload         11\n     156: aaload\n     157: astore        12\n     159: aload         12\n     161: invokevirtual #54                 // Method java/lang/Thread.join:()V\n     164: iinc          11, 1\n     167: goto          145\n     170: invokestatic  #38                 // Method java/lang/System.nanoTime:()J\n     173: lload         7\n     175: lsub\n     176: ldc2_w        #57                 // long 1000000l\n     179: ldiv\n     180: lstore        9\n     182: aload         5\n     184: invokevirtual #59                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     187: ifne          206\n     190: aload         4\n     192: invokeinterface #63,  1           // InterfaceMethod java/util/Map.size:()I\n     197: bipush        64\n     199: if_icmpgt     206\n     202: iconst_1\n     203: goto          207\n     206: iconst_0\n     207: istore        11\n     209: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     212: iload         11\n     214: invokedynamic #70,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     219: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     222: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     225: ldc           #80                 // String expected=1\n     227: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     230: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     233: lload         9\n     235: invokedynamic #82,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     240: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     243: return\n\n  private static void lambda$main$0(int, java.util.concurrent.locks.ReentrantReadWriteLock, java.util.Map, java.util.concurrent.atomic.AtomicInteger);\n    Code:\n       0: iconst_0\n       1: istore        4\n       3: iload         4\n       5: iload_0\n       6: if_icmpge     153\n       9: iload         4\n      11: bipush        7\n      13: iand\n      14: ifne          86\n      17: aload_1\n      18: invokevirtual #85                 // Method java/util/concurrent/locks/ReentrantReadWriteLock.writeLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$WriteLock;\n      21: invokevirtual #89                 // Method java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock.lock:()V\n      24: aload_2\n      25: iload         4\n      27: bipush        127\n      29: iand\n      30: invokestatic  #23                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      33: iload         4\n      35: invokestatic  #23                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      38: invokeinterface #27,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      43: pop\n      44: aload_1\n      45: invokevirtual #85                 // Method java/util/concurrent/locks/ReentrantReadWriteLock.writeLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$WriteLock;\n      48: invokevirtual #94                 // Method java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock.unlock:()V\n      51: goto          83\n      54: astore        5\n      56: aload_3\n      57: invokevirtual #99                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      60: pop\n      61: aload_1\n      62: invokevirtual #85                 // Method java/util/concurrent/locks/ReentrantReadWriteLock.writeLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$WriteLock;\n      65: invokevirtual #94                 // Method java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock.unlock:()V\n      68: goto          83\n      71: astore        6\n      73: aload_1\n      74: invokevirtual #85                 // Method java/util/concurrent/locks/ReentrantReadWriteLock.writeLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$WriteLock;\n      77: invokevirtual #94                 // Method java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock.unlock:()V\n      80: aload         6\n      82: athrow\n      83: goto          147\n      86: aload_1\n      87: invokevirtual #102                // Method java/util/concurrent/locks/ReentrantReadWriteLock.readLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$ReadLock;\n      90: invokevirtual #106                // Method java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock.lock:()V\n      93: aload_2\n      94: iload         4\n      96: bipush        127\n      98: iand\n      99: invokestatic  #23                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     102: invokeinterface #109,  2          // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     107: pop\n     108: aload_1\n     109: invokevirtual #102                // Method java/util/concurrent/locks/ReentrantReadWriteLock.readLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$ReadLock;\n     112: invokevirtual #112                // Method java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock.unlock:()V\n     115: goto          147\n     118: astore        5\n     120: aload_3\n     121: invokevirtual #99                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n     124: pop\n     125: aload_1\n     126: invokevirtual #102                // Method java/util/concurrent/locks/ReentrantReadWriteLock.readLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$ReadLock;\n     129: invokevirtual #112                // Method java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock.unlock:()V\n     132: goto          147\n     135: astore        7\n     137: aload_1\n     138: invokevirtual #102                // Method java/util/concurrent/locks/ReentrantReadWriteLock.readLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$ReadLock;\n     141: invokevirtual #112                // Method java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock.unlock:()V\n     144: aload         7\n     146: athrow\n     147: iinc          4, 1\n     150: goto          3\n     153: return\n    Exception table:\n       from    to  target type\n          24    44    54   Class java/lang/Throwable\n          24    44    71   any\n          54    61    71   any\n          71    73    71   any\n          93   108   118   Class java/lang/Throwable\n          93   108   135   any\n         118   125   135   any\n         135   137   135   any\n}\n"
+  },
+  "SyncNodeLru": {
+   "hash": "ee9917caa44ed3b3",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 12
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 10
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 11
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 12
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 11
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 11
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 11
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 12
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 11
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 12
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 16
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 11
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 11
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 12
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 16
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 14
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 12
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 10
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 11
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 12
+     }
+    ],
+    "2": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 22
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 22
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 24
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 30
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 29
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 24
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 31
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 24
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 24
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 24
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 25
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 31
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 31
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 30
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 33
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 35
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 21
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 21
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 33
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 28
+     }
+    ],
+    "4": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 62
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 68
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 61
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 52
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 73
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 39
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 40
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 56
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 41
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 50
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 47
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 51
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 48
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 53
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 54
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 68
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 55
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 49
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 55
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 68
+     }
+    ],
+    "8": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 97
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 98
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 113
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 87
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 158
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 96
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 68
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 128
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 128
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 116
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 60
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 128
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 95
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 71
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 66
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 106
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 138
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 100
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 169
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 179
+     }
+    ]
+   },
+   "inside": "Compiled from \"SyncNodeLru.java\"\npublic class lab.tslru.SyncNodeLru {\n  public lab.tslru.SyncNodeLru();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: ldc           #13                 // int 100000\n       9: istore_2\n      10: new           #14                 // class lab/tslru/SyncNodeLru$Lru\n      13: dup\n      14: bipush        64\n      16: invokespecial #16                 // Method lab/tslru/SyncNodeLru$Lru.\"<init>\":(I)V\n      19: astore_3\n      20: iconst_0\n      21: istore        4\n      23: iload         4\n      25: bipush        64\n      27: if_icmpge     44\n      30: aload_3\n      31: iload         4\n      33: iload         4\n      35: invokevirtual #19                 // Method lab/tslru/SyncNodeLru$Lru.put:(II)V\n      38: iinc          4, 1\n      41: goto          23\n      44: iload_1\n      45: anewarray     #23                 // class java/lang/Thread\n      48: astore        4\n      50: invokestatic  #25                 // Method java/lang/System.nanoTime:()J\n      53: lstore        5\n      55: iconst_0\n      56: istore        7\n      58: iload         7\n      60: iload_1\n      61: if_icmpge     97\n      64: aload         4\n      66: iload         7\n      68: new           #23                 // class java/lang/Thread\n      71: dup\n      72: iload_2\n      73: aload_3\n      74: invokedynamic #31,  0             // InvokeDynamic #0:run:(ILlab/tslru/SyncNodeLru$Lru;)Ljava/lang/Runnable;\n      79: invokespecial #35                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      82: aastore\n      83: aload         4\n      85: iload         7\n      87: aaload\n      88: invokevirtual #38                 // Method java/lang/Thread.start:()V\n      91: iinc          7, 1\n      94: goto          58\n      97: aload         4\n      99: astore        7\n     101: aload         7\n     103: arraylength\n     104: istore        8\n     106: iconst_0\n     107: istore        9\n     109: iload         9\n     111: iload         8\n     113: if_icmpge     134\n     116: aload         7\n     118: iload         9\n     120: aaload\n     121: astore        10\n     123: aload         10\n     125: invokevirtual #41                 // Method java/lang/Thread.join:()V\n     128: iinc          9, 1\n     131: goto          109\n     134: invokestatic  #25                 // Method java/lang/System.nanoTime:()J\n     137: lload         5\n     139: lsub\n     140: ldc2_w        #44                 // long 1000000l\n     143: ldiv\n     144: lstore        7\n     146: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     149: aload_3\n     150: invokevirtual #50                 // Method lab/tslru/SyncNodeLru$Lru.size:()I\n     153: bipush        64\n     155: if_icmpgt     162\n     158: iconst_1\n     159: goto          163\n     162: iconst_0\n     163: invokedynamic #54,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     168: invokevirtual #58                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     171: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     174: ldc           #64                 // String expected=1\n     176: invokevirtual #58                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     179: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     182: lload         7\n     184: invokedynamic #66,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     189: invokevirtual #58                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     192: return\n\n  private static void lambda$main$0(int, lab.tslru.SyncNodeLru$Lru);\n    Code:\n       0: iconst_0\n       1: istore_2\n       2: iload_2\n       3: iload_0\n       4: if_icmpge     41\n       7: iload_2\n       8: bipush        7\n      10: iand\n      11: ifne          26\n      14: aload_1\n      15: iload_2\n      16: bipush        127\n      18: iand\n      19: iload_2\n      20: invokevirtual #19                 // Method lab/tslru/SyncNodeLru$Lru.put:(II)V\n      23: goto          35\n      26: aload_1\n      27: iload_2\n      28: bipush        127\n      30: iand\n      31: invokevirtual #69                 // Method lab/tslru/SyncNodeLru$Lru.get:(I)I\n      34: pop\n      35: iinc          2, 1\n      38: goto          2\n      41: return\n}\n"
+  },
+  "SegmentedLru": {
+   "hash": "da56e49a3e0d7058",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 20
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 17
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 17
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 18
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 22
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 21
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 18
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 21
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 21
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 19
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 18
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 18
+     }
+    ],
+    "2": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 30
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 28
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 28
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 36
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 28
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 25
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 27
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 28
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 27
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 28
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 29
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 40
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 34
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 34
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 33
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 31
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 26
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 35
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 32
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 24
+     }
+    ],
+    "4": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 42
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 42
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 39
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 57
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 43
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 36
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 53
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 41
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 59
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 57
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 42
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 43
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 40
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 40
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 46
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 42
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 43
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 44
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 36
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 41
+     }
+    ],
+    "8": [
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 101
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 60
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 59
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 54
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 64
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 55
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 69
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 62
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 61
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 55
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 55
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 63
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 49
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 59
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 56
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 99
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 68
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 76
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 82
+     },
+     {
+      "ok": 1,
+      "expected": 1,
+      "ms": 70
+     }
+    ]
+   },
+   "inside": "Compiled from \"SegmentedLru.java\"\npublic class lab.tslru.SegmentedLru {\n  public lab.tslru.SegmentedLru();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: ldc           #13                 // int 100000\n       9: istore_2\n      10: bipush        16\n      12: anewarray     #14                 // class lab/tslru/SegmentedLru$Shard\n      15: astore_3\n      16: iconst_0\n      17: istore        4\n      19: iload         4\n      21: bipush        16\n      23: if_icmpge     44\n      26: aload_3\n      27: iload         4\n      29: new           #14                 // class lab/tslru/SegmentedLru$Shard\n      32: dup\n      33: iconst_4\n      34: invokespecial #16                 // Method lab/tslru/SegmentedLru$Shard.\"<init>\":(I)V\n      37: aastore\n      38: iinc          4, 1\n      41: goto          19\n      44: iconst_0\n      45: istore        4\n      47: iload         4\n      49: bipush        64\n      51: if_icmpge     74\n      54: aload_3\n      55: iload         4\n      57: bipush        15\n      59: iand\n      60: aaload\n      61: iload         4\n      63: iload         4\n      65: invokevirtual #19                 // Method lab/tslru/SegmentedLru$Shard.put:(II)V\n      68: iinc          4, 1\n      71: goto          47\n      74: iload_1\n      75: anewarray     #23                 // class java/lang/Thread\n      78: astore        4\n      80: invokestatic  #25                 // Method java/lang/System.nanoTime:()J\n      83: lstore        5\n      85: iconst_0\n      86: istore        7\n      88: iload         7\n      90: iload_1\n      91: if_icmpge     127\n      94: aload         4\n      96: iload         7\n      98: new           #23                 // class java/lang/Thread\n     101: dup\n     102: iload_2\n     103: aload_3\n     104: invokedynamic #31,  0             // InvokeDynamic #0:run:(I[Llab/tslru/SegmentedLru$Shard;)Ljava/lang/Runnable;\n     109: invokespecial #35                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n     112: aastore\n     113: aload         4\n     115: iload         7\n     117: aaload\n     118: invokevirtual #38                 // Method java/lang/Thread.start:()V\n     121: iinc          7, 1\n     124: goto          88\n     127: aload         4\n     129: astore        7\n     131: aload         7\n     133: arraylength\n     134: istore        8\n     136: iconst_0\n     137: istore        9\n     139: iload         9\n     141: iload         8\n     143: if_icmpge     164\n     146: aload         7\n     148: iload         9\n     150: aaload\n     151: astore        10\n     153: aload         10\n     155: invokevirtual #41                 // Method java/lang/Thread.join:()V\n     158: iinc          9, 1\n     161: goto          139\n     164: invokestatic  #25                 // Method java/lang/System.nanoTime:()J\n     167: lload         5\n     169: lsub\n     170: ldc2_w        #44                 // long 1000000l\n     173: ldiv\n     174: lstore        7\n     176: iconst_0\n     177: istore        9\n     179: aload_3\n     180: astore        10\n     182: aload         10\n     184: arraylength\n     185: istore        11\n     187: iconst_0\n     188: istore        12\n     190: iload         12\n     192: iload         11\n     194: if_icmpge     225\n     197: aload         10\n     199: iload         12\n     201: aaload\n     202: astore        13\n     204: iload         9\n     206: aload         13\n     208: getfield      #46                 // Field lab/tslru/SegmentedLru$Shard.map:Ljava/util/Map;\n     211: invokeinterface #50,  1           // InterfaceMethod java/util/Map.size:()I\n     216: iadd\n     217: istore        9\n     219: iinc          12, 1\n     222: goto          190\n     225: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     228: iload         9\n     230: bipush        64\n     232: if_icmpgt     239\n     235: iconst_1\n     236: goto          240\n     239: iconst_0\n     240: invokedynamic #60,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     245: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     248: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     251: ldc           #70                 // String expected=1\n     253: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     256: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     259: lload         7\n     261: invokedynamic #72,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     266: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     269: return\n\n  private static void lambda$main$0(int, lab.tslru.SegmentedLru$Shard[]);\n    Code:\n       0: iconst_0\n       1: istore_2\n       2: iload_2\n       3: iload_0\n       4: if_icmpge     50\n       7: iload_2\n       8: bipush        127\n      10: iand\n      11: istore_3\n      12: aload_1\n      13: iload_3\n      14: bipush        15\n      16: iand\n      17: aaload\n      18: astore        4\n      20: iload_2\n      21: bipush        7\n      23: iand\n      24: ifne          37\n      27: aload         4\n      29: iload_3\n      30: iload_2\n      31: invokevirtual #19                 // Method lab/tslru/SegmentedLru$Shard.put:(II)V\n      34: goto          44\n      37: aload         4\n      39: iload_3\n      40: invokevirtual #75                 // Method lab/tslru/SegmentedLru$Shard.get:(I)I\n      43: pop\n      44: iinc          2, 1\n      47: goto          2\n      50: return\n}\n"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

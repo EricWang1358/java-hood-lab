@@ -21,14 +21,15 @@
 
 ```text
 .
-├── index.html   # 32 节实验课总导航入口页（支持搜索、分章筛选与亮暗主题）
-├── pages/       # 32 份单文件交互式课件网页（双击即开，零外链依赖）
-├── lessons/     # 32 份课程结构与讲解数据（JSON）
-├── src/         # 128 份可独立编译运行的 Java 对照源码（每课 4 种变体）
-└── results/     # 实验台在本机实测沉淀的运行数据与 javap 输出记录（JSON）
+├── index.html   # 80 节实验课总导航入口页（支持搜索、分章筛选与亮暗主题）
+├── pages/       # 80 份单文件交互式课件网页（双击即开，零外链依赖）
+├── lessons/     # 80 份课程结构与讲解数据（JSON）
+├── src/         # 320 份可独立编译运行的 Java 对照源码（每课 4 种变体）+ SQL 20 题脚本
+├── results/     # 实验台在本机实测沉淀的运行数据与 javap 输出记录（JSON）
+└── docs/        # 模块 8 101 道高频笔试算法与 SQL 手撕刷题清单
 ```
 
-## 完整课表（共 32 课）
+## 完整课表（共 80 课）
 
 ### 第一章：竞态与并发容器（第 1～7 课）
 
@@ -186,6 +187,23 @@
 | M6-04 | **先删缓存还是先改库？并发读写脏数据现场** | 更新数据时先删缓存还是先改库？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。 | `lab.m6.consistency` | [网页课件](./pages/m6-cache-consistency.html) · [JSON](./lessons/m6-cache-consistency.json) · [源码](./src/lab/m6/consistency/) |
 | M6-05 | **顶流热点 Key 打爆单分片：本地二级缓存与 Key 拆分** | 就算 Redis 搭了 16 个分片集群，某一个顶流热搜 Key 还是只会落到其中 1 个分片上，把单分片打满。 | `lab.m6.hotkey` | [网页课件](./pages/m6-hotkey-split.html) · [JSON](./lessons/m6-hotkey-split.json) · [源码](./src/lab/m6/hotkey/) |
 | M6-06 | **BigKey 阻塞单线程 + Pipeline 批量往返代价** | 一次查 40 条数据，循环单发和 Pipeline 差多少？大 Key 又是怎么把单线程卡死的？ | `lab.m6.bigkey` | [网页课件](./pages/m6-bigkey-pipeline.html) · [JSON](./lessons/m6-bigkey-pipeline.json) · [源码](./src/lab/m6/bigkey/) |
+
+### 模块八：笔试算法 + SQL 手撕（M8-01～M8-10 · 10 组专题 · 101 题）
+
+覆盖笔试与一二面高频手撕题：先用实测数据与 `javap` 字节码打破直觉误区，再对照 [101 题高频刷题清单](./docs/module8-100-problems.md) 与 [SQL 20 题可执行脚本](./src/lab/sqlrank/queries.sql) 每日手敲。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M8-01 | **两数之和暴力跑了多久？哈希与双指针怎么省出 100 倍** | O(n²) 暴力在 6 万数据下直接慢成幻灯片，预分配 HashMap 怎么几乎 0 毫秒？ | `lab.hashtwo` | [网页课件](./pages/hash-twopointer.html) · [JSON](./lessons/hash-twopointer.json) · [源码](./src/lab/hashtwo/) |
+| M8-02 | **链表翻转与环检测：递归长链会爆栈，三指针怎么原地零分配** | 10 万节点链表递归直接 StackOverflowError，三指针与 dummy 哨兵怎么零分配稳过？ | `lab.linkedlist` | [网页课件](./pages/linked-list.html) · [JSON](./lessons/linked-list.json) · [源码](./src/lab/linkedlist/) |
+| M8-03 | **栈与单调队列：滑动窗口最大值怎么从 O(nk) 压到均摊 O(n)** | 窗口右移一格，为什么暴力扫和 TreeMap 都输给了 ArrayDeque 单调队列？ | `lab.stackqueue` | [网页课件](./pages/stack-queue.html) · [JSON](./lessons/stack-queue.json) · [源码](./src/lab/stackqueue/) |
+| M8-04 | **二叉树递归与层序：偏斜树为什么把递归打爆，队列 size 怎么锁死每一层** | 3 万层偏斜树下递归直接爆栈，显式栈与 Morris 怎么稳如磐石？ | `lab.bintree` | [网页课件](./pages/binary-tree.html) · [JSON](./lessons/binary-tree.json) · [源码](./src/lab/bintree/) |
+| M8-05 | **二分搜索与边界：为什么总写死循环，(l + r) / 2 怎么就溢出了** | 百万数据二分只需 20 步，差一个等号或右移符号怎么就漏解或死循环？ | `lab.binsearch` | [网页课件](./pages/binary-search.html) · [JSON](./lessons/binary-search.json) · [源码](./src/lab/binsearch/) |
+| M8-06 | **回溯排列与组合：忘掉撤销现场会全串，剪枝去重怎么省出 10 倍时间** | 每次拷贝路径慢如蜗牛，忘掉 remove 会全串，排序同层去重怎么提速？ | `lab.backtrack` | [网页课件](./pages/backtrack.html) · [JSON](./lessons/backtrack.json) · [源码](./src/lab/backtrack/) |
+| M8-07 | **动态规划与状态压缩：纯递归怎么指数级卡死，滚动变量怎么压到 O(1)** | 第 40 阶楼梯纯递归飙出数百毫秒，记忆化与滚动变量一万遍只要一眨眼？ | `lab.dpbasics` | [网页课件](./pages/dp-basics.html) · [JSON](./lessons/dp-basics.json) · [源码](./src/lab/dpbasics/) |
+| M8-08 | **手写线程安全 LRU（接第 7 课）：为什么 readLock 照样崩，分段锁怎么提速** | get() 也会改双向链表，加 readLock 照样崩；16 分段锁在 8 线程下怎么拉开差距？ | `lab.tslru` | [网页课件](./pages/threadsafe-lru.html) · [JSON](./lessons/threadsafe-lru.json) · [源码](./src/lab/tslru/) |
+| M8-09 | **多线程交替打印：wait 不包在 while 里怎么就乱序了，Condition 怎么精准接力** | 三线程交替打印 ABC：while 换成 if 立马乱套，Condition 与 Semaphore 怎么稳控？ | `lab.altprint` | [网页课件](./pages/alt-print.html) · [JSON](./lessons/alt-print.json) · [源码](./src/lab/altprint/) |
+| M8-10 | **高频分组排名 SQL 20 题：为什么窗口函数比相关子查询快一个数量级** | 部门工资前三高，相关子查询 O(n²) 慢爆，DENSE_RANK 怎么一趟搞定？ | `lab.sqlrank` | [网页课件](./pages/sql-ranking.html) · [JSON](./lessons/sql-ranking.json) · [源码](./src/lab/sqlrank/) |
 
 ## 本地动手运行实验代码
 

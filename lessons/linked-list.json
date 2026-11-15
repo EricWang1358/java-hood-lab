@@ -1,0 +1,507 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "linked-list",
+  "course": "模块 8 · 算法与 SQL 手撕",
+  "title": "链表翻转与环检测：递归长链会爆栈，三指针怎么原地零分配",
+  "lead": "同样把 10 万个节点的链表倒过来，为什么递归版直接 StackOverflowError，而三指针迭代版只需要 3 个局部引用？",
+  "minutes": 40,
+  "needs": [
+    "知道链表节点有 val 和 next",
+    "知道递归会占用调用栈"
+  ],
+  "after": [
+    "解释清递归反转在长链表下为什么会 StackOverflowError",
+    "闭眼写出 prev/curr/next 三指针反转与 dummy 哨兵模板",
+    "讲清 Floyd 快慢指针判环与找入环点的数学原理"
+  ],
+  "terms": {
+    "StackOverflowError": "方法递归太深把 JVM 虚拟机栈撑爆时抛出的错误。",
+    "dummy 哨兵": "在真实头节点前多挂一个假节点，用来消灭头节点为空或被改写的特判。",
+    "三指针反转": "用 prev、curr、next 三个引用在原地把每个节点的 next 指回前驱。",
+    "Floyd 判环": "快指针每次走 2 步、慢指针每次走 1 步，有环必在环内相遇。"
+  },
+  "experiments": {
+    "linkedlist": {
+      "runner": "java",
+      "home": "lab.linkedlist",
+      "variants": [
+        {
+          "id": "ArrayCopy",
+          "label": "转 ArrayList 重建",
+          "note": "O(n) 额外空间：全塞进数组再倒着连。"
+        },
+        {
+          "id": "RecursiveRev",
+          "label": "递归反转",
+          "note": "O(n) 栈帧：n 到 2 万+ 直接 StackOverflowError！"
+        },
+        {
+          "id": "IterPrevCurr",
+          "label": "三指针原地反转",
+          "note": "O(1) 空间：prev / curr / next 原地调转指针。"
+        },
+        {
+          "id": "DummyKGroup",
+          "label": "dummy 哨兵头插反转",
+          "note": "O(1) 空间：区间反转与 K 组翻转统一模板。"
+        }
+      ],
+      "knob": {
+        "label": "链表长度 n",
+        "values": [
+          "5000",
+          "20000",
+          "50000",
+          "100000"
+        ],
+        "default": "50000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "headVal",
+        "expectKey": "expected",
+        "label": "反转后头节点 val"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "链表翻转与环检测：递归长链会爆栈，三指针怎么原地零分配",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天是 **模块 8（笔试算法与 SQL 手撕）** 的第 #34 课：同样把 10 万个节点的链表倒过来，为什么递归版直接 StackOverflowError，而三指针迭代版只需要 3 个局部引用？",
+          "say": "同样把 10 万个节点的链表倒过来，为什么递归版直接 StackOverflowError，而三指针迭代版只需要 3 个局部引用？"
+        },
+        {
+          "t": "text",
+          "md": "不死背模板。我们先跑出真实耗时与报错现场，再拆 `javap` 字节码与复杂度曲线，最后带走本专题的高频刷题清单。",
+          "say": "先看现场、再拆底层、最后总结模板与高频题清单。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，确认前置基础",
+      "bridge": "快速过一遍这节课需要的三点前置知识。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "选完直接看解释，确认基础即可进入场景。",
+          "items": [
+            {
+              "have": "知道链表节点有 val 和 next",
+              "q": "你已经掌握「知道链表节点有 val 和 next」了吗？",
+              "options": [
+                "清楚",
+                "再看一眼提示"
+              ],
+              "answer": 0,
+              "why": "本课会直接用到「知道链表节点有 val 和 next」，接下来代码里也会标注解释。"
+            },
+            {
+              "have": "知道递归会占用调用栈",
+              "q": "你已经掌握「知道递归会占用调用栈」了吗？",
+              "options": [
+                "清楚",
+                "再看一眼提示"
+              ],
+              "answer": 0,
+              "why": "本课会直接用到「知道递归会占用调用栈」，接下来代码里也会标注解释。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先放一个日常画面",
+      "bridge": "把算法和数据结构放进生活场景里，后面每行代码都能对上号。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "三指针工人",
+              "递归包工头"
+            ],
+            "shared": {
+              "name": "一排手拉手的节车厢",
+              "value": "5 万节"
+            }
+          },
+          "story": "把 **5 万节**单向挂钩的车厢全部掉头。递归包工头要求「先叫后面一节掉完再通知我」，结果 5 万层电话同时占线直接爆线；三指针工人站在车头，记好前一节、当前节、下一节，一节一节原地改挂钩。",
+          "say": "先记住这个画面，再对照右边三处关键动作。",
+          "map": [
+            {
+              "scene": "先记好下一节再松手",
+              "on": "action",
+              "tag": "next = curr.next",
+              "code": "`Node next = curr.next;`",
+              "say": "不先存 next，一改 curr.next 就找不到后面的链表了。"
+            },
+            {
+              "scene": "5 万层电话同时占线",
+              "on": "actors",
+              "tag": "递归调用栈",
+              "code": "`reverse(head.next)`",
+              "say": "每层递归都要在虚拟机栈压一个栈帧，默认栈深扛不住几万层。"
+            },
+            {
+              "scene": "车头前面多加一个假车头",
+              "on": "shared",
+              "tag": "dummy 哨兵",
+              "code": "`Node dummy = new Node(-1);`",
+              "say": "不管第一节能不能变，dummy.next 永远稳稳指着新头节点。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "直觉上能过吗？",
+      "bridge": "平时写 10 个元素的小例子都能过，放到上万数据或多线程下呢？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "同样把 10 万个节点的链表倒过来，为什么递归版直接 StackOverflowError，而三指针迭代版只需要 3 个局部引用？",
+          "say": "这就是今天要实测验证的问题。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基准写法与优化写法",
+      "bridge": "先看清最容易踩坑或超时的写法长什么样。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "linkedlist.ArrayCopy",
+          "say": "这是基准实现 `ArrayCopy`，点击虚线术语可看大白话解释。",
+          "walk": [
+            {
+              "focus": [
+                "main"
+              ],
+              "say": "入口接收命令行参数作为规模或线程数，连续计时并输出校验结果与耗时。",
+              "focusLines": [
+                1,
+                2
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "跑之前，先押一注",
+      "bridge": "基于你的直觉猜一下实测结果，猜错完全正常。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "linkedlist-guess",
+          "q": "当链表长度 n = 50000 时，运行 `RecursiveRev`（递归反转）会发生什么？",
+          "options": [
+            "比迭代版慢一点，但能算对",
+            "直接抛出 StackOverflowError 失败",
+            "JVM 会自动优化成尾递归"
+          ],
+          "answer": 1,
+          "say": "选好你的预测，下一页直接放出 20 次实测结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "20 次实测散点对比",
+      "bridge": "以下是本机 JDK 真实编译运行 20 次的实测记录（实心点表示结果正确，空心点表示出错）。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "linkedlist",
+          "select": [
+            "ArrayCopy",
+            "DummyKGroup"
+          ],
+          "knob": "50000",
+          "show": "dots",
+          "hand": false,
+          "focus": "O(n) 额外空间：全塞进数组再倒着连。",
+          "say": "切换上方规模/线程数挡位，对比 `ArrayCopy` 与 `DummyKGroup` 的准确率与耗时差异。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：看真实字节码",
+      "bridge": "现象看清了，打开 `javap -c -p` 看底层指令到底在干什么。",
+      "blocks": [
+        {
+          "t": "reveal",
+          "of": "linkedlist.DummyKGroup",
+          "key": "看懂底层指令与复杂度来源",
+          "say": "对比 `ArrayCopy` 与 `DummyKGroup` 的核心代码与字节码，找出真正拉开差距的那几行。"
+        },
+        {
+          "t": "inside",
+          "of": "linkedlist.DummyKGroup",
+          "within": "main",
+          "from": 0,
+          "to": 40,
+          "say": "这是真实 `javap -c -p` 反编译出的字节码指令，确认没有魔法，每一步开销都在这里。",
+          "walk": [
+            {
+              "lines": [
+                0,
+                1
+              ],
+              "say": "方法入口先解析参数并初始化计时与数据结构。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "在代码里找关键一笔",
+      "bridge": "考考你：上面那段优化代码里，真正起决定性作用的是哪一处？",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "linkedlist.IterPrevCurr",
+          "q": "三指针迭代反转的循环体一共 4 句，哪一句保证了「改指针不断链」？",
+          "hint": "在修改 curr.next 之前必须先做什么？",
+          "answer": "Node next = curr.next;",
+          "found": "第一句 `Node next = curr.next;` 先把后继节点存住，然后才放心把 `curr.next = prev`。",
+          "say": "定位到那一行关键代码。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "4 种写法的实测耗时折线",
+      "bridge": "把 转 ArrayList 重建、递归反转、三指针原地反转、dummy 哨兵头插反转 放在同一张图上，看规模/线程数拉大后的走势。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "linkedlist",
+          "say": "横轴是规模/线程数，纵轴是实测耗时；空心点代表该写法出错或超时风险，实心点代表稳定正确。",
+          "walk": [
+            {
+              "focus": "ArrayCopy",
+              "say": "转 ArrayList 重建：O(n) 额外空间：全塞进数组再倒着连。"
+            },
+            {
+              "focus": "RecursiveRev",
+              "say": "递归反转：O(n) 栈帧：n 到 2 万+ 直接 StackOverflowError！"
+            },
+            {
+              "focus": "IterPrevCurr",
+              "say": "三指针原地反转：O(1) 空间：prev / curr / next 原地调转指针。"
+            },
+            {
+              "focus": "DummyKGroup",
+              "say": "dummy 哨兵头插反转：O(1) 空间：区间反转与 K 组翻转统一模板。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "把工具摆在一起比代价",
+      "bridge": "没有银弹，每种写法都有明确适用边界。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "对照每张卡片的适用场景与代价，面试被追问时就能按场景选型。",
+          "options": [
+            {
+              "name": "三指针迭代（IterPrevCurr）",
+              "solves": "整条链表原地反转",
+              "cost": "O(n) 时间，O(1) 空间，永不爆栈",
+              "when": "生产代码与面试手撕首选",
+              "say": "三指针迭代（IterPrevCurr）：整条链表原地反转，代价是O(n) 时间，O(1) 空间，永不爆栈。"
+            },
+            {
+              "name": "dummy + 头插法（DummyKGroup）",
+              "solves": "区间反转、K 个一组、合并有序链表",
+              "cost": "O(n) 时间，O(1) 空间",
+              "when": "头节点可能变化、需要局部拼接时",
+              "say": "dummy + 头插法（DummyKGroup）：区间反转、K 个一组、合并有序链表，代价是O(n) 时间，O(1) 空间。"
+            },
+            {
+              "name": "递归反转（RecursiveRev）",
+              "solves": "短链表、树形结构",
+              "cost": "O(n) 栈帧，长链会 StackOverflowError",
+              "when": "仅确认深度很小时用于思路推导",
+              "say": "递归反转（RecursiveRev）：短链表、树形结构，代价是O(n) 栈帧，长链会 StackOverflowError。"
+            }
+          ]
+        },
+        {
+          "t": "decide",
+          "q": "链表题最怕写错边界，先用什么稳住？",
+          "branches": [
+            {
+              "when": "头节点可能被删或换掉",
+              "pick": "dummy 哨兵节点",
+              "eg": "反转链表 II、合并有序链表、删除倒数第 N 个"
+            },
+            {
+              "when": "找中点 / 判环 / 倒数第 K 个",
+              "pick": "快慢双指针",
+              "eg": "环形链表 II、相交链表、排序链表"
+            },
+            {
+              "when": "整条原地翻转",
+              "pick": "prev/curr/next 三指针",
+              "eg": "反转链表、回文链表"
+            }
+          ],
+          "say": "顺着这棵决策树，看到题面关键词就能直接落到对应模板。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "练三道真实面试场景",
+      "bridge": "用刚才的决策树，当场给下面三个问题选出最优解法。",
+      "blocks": [
+        {
+          "t": "cases",
+          "tools": [
+            "三指针迭代",
+            "dummy 哨兵 + 头插",
+            "快慢双指针"
+          ],
+          "items": [
+            {
+              "text": "判断链表是否有环，并找出入环的第一个节点，要求 O(1) 空间。",
+              "answer": 2,
+              "why": "快慢指针相遇后，让一个指针回到 head，两指针同速每次走 1 步，再次相遇点即入环点。"
+            },
+            {
+              "text": "反转从位置 left 到 right 的链表部分，只扫描一遍。",
+              "answer": 1,
+              "why": "用 dummy 找到 left 前驱 pre，连续把 curr 后面的节点头插到 pre 后面。"
+            },
+            {
+              "text": "把 10 万个节点的单链表原地反转。",
+              "answer": 0,
+              "why": "三指针迭代 O(1) 空间，绝对不会像递归那样爆栈。"
+            }
+          ],
+          "say": "逐题点选工具，看解析是否和你想的一样。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记下面试官常问的标准叫法",
+      "bridge": "把刚才的实验现象还原成面试高频术语。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "原地指针重连 & 哨兵节点",
+          "alias": "专题 02 · 高频 9 题核心模型",
+          "oneLine": "链表操作不靠数组搬家，靠 ==先存 next 再改指向== 与 ==dummy 哨兵== 消除头节点特判；JVM 不做尾递归消除，长链必须迭代。",
+          "asked": [
+            "反转链表 / K 个一组翻转",
+            "环形链表 II 为什么同速再走一定在入环点相遇？",
+            "删除倒数第 N 个节点怎么一次遍历？"
+          ],
+          "say": "记住这句总结和下面三个高频问法。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "最后核对一道易错题",
+      "bridge": "确认核心坑点真的没踩进去。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "快慢指针在环内相遇后，为什么一个回到 head、两个每次走 1 步，下次相遇一定是入环点？",
+          "options": [
+            {
+              "text": "因为环的长度一定是偶数",
+              "ok": false,
+              "why": "环长可以是任意正整数。"
+            },
+            {
+              "text": "因为设起点到入环点距离为 a，相遇时慢指针走的距离满足 a = c + (k-1)L",
+              "ok": true,
+              "why": "快指针走 2(a+b) = a+b+kL，化简得 a = (k-1)L + c，正好等于从相遇点绕环走到入环点的距离。"
+            },
+            {
+              "text": "只是经验规律，没有数学证明",
+              "ok": false,
+              "why": "这是经典同余等式，面试二面常让现场推一遍。"
+            }
+          ],
+          "say": "选出唯一正确的结论。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口带走",
+      "bridge": "看懂不算会，对着屏幕脱稿讲一遍才算长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清为什么长链表不能用递归反转、三指针怎么写、以及快慢指针找入环点的推导。",
+          "points": [
+            "Java 不支持尾递归优化，n 过万会 StackOverflowError",
+            "三指针：先存 next，再 curr.next = prev，再双双前移",
+            "dummy 哨兵消灭头节点特判",
+            "Floyd 相遇后一指针回 head 同速走，由 2(a+b)=a+b+kL 得 a=(k-1)L+c"
+          ],
+          "model": "Java 虚拟机没有尾递归优化，链表长度到几万时递归反转会直接 StackOverflowError。正确写法是三指针迭代：循环里先用 next 暂存 curr.next，再把 curr.next 指回 prev，然后 prev 和 curr 同步前移，空间复杂度 O(1)。涉及区间反转或删除头节点时，加上 dummy 哨兵节点就不用写头节点特判。判环用快慢指针（步长 2 和 1），相遇后把其中一个放回 head 同速前进，由 2(a+b)=a+b+kL 推导出再次相遇点就是入环点。",
+          "say": "计时两分钟开口讲一遍，再对照参考回答查漏补缺。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张复习卡 & 本专题高频题清单",
+      "bridge": "复习卡 + 专题刷题清单，每天手敲 2～3 题稳步推进。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "为什么反转链表不能只靠递归？",
+              "a": "JVM 栈帧有限，单链上万层递归直接 `StackOverflowError`，生产必须用 O(1) 迭代。"
+            },
+            {
+              "q": "快慢指针每次差 1 步，会跳过吗？",
+              "a": "不会。在环里快指针相对慢指针每次只逼近 1 步，距离从 d 减到 0 必然踩中。"
+            },
+            {
+              "q": "专题 02 必刷 9 题清单",
+              "a": "反转链表、反转链表 II、K 个一组翻转、环形链表、环形链表 II、合并有序链表、删除倒数第 N 个、相交链表、排序链表。"
+            }
+          ],
+          "say": "第三张卡就是本专题的必刷题清单，完整 101 题汇总见仓库 `docs/module8-100-problems.md`。"
+        },
+        {
+          "t": "try",
+          "key": "javac -encoding UTF-8 -d out src/lab/linkedlist/*.java && java -cp out lab.linkedlist.DummyKGroup 50000",
+          "say": "在本地终端编译运行一遍，亲手改一改参数验证效果。"
+        }
+      ]
+    }
+  ]
+}
