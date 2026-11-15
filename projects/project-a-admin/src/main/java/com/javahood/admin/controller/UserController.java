@@ -1,5 +1,6 @@
 package com.javahood.admin.controller;
 
+import com.javahood.admin.audit.Audited;
 import com.javahood.admin.common.ApiResponse;
 import com.javahood.admin.common.PageResult;
 import com.javahood.admin.service.UserService;
@@ -56,6 +57,7 @@ public class UserController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('user:write')")
+    @Audited(action = "USER_CREATE")
     public ApiResponse<UserService.UserVO> create(@Valid @RequestBody CreateUserRequest req) {
         return ApiResponse.ok(userService.createUser(new UserService.CreateUserCmd(
                 req.username(), req.password(), req.displayName(), req.email(), req.roleCodes()
@@ -64,6 +66,7 @@ public class UserController {
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasAuthority('user:write')")
+    @Audited(action = "USER_STATUS_UPDATE")
     public ApiResponse<UserService.UserVO> updateStatus(@PathVariable Long id,
                                                         @RequestBody UpdateStatusRequest req) {
         return ApiResponse.ok(userService.updateStatus(id, req.enabled()));
@@ -71,6 +74,7 @@ public class UserController {
 
     @GetMapping("/export")
     @PreAuthorize("hasAuthority('user:export')")
+    @Audited(action = "USER_CSV_EXPORT")
     public void exportCsv(@RequestParam(required = false) String keyword,
                           @RequestParam(required = false) Boolean enabled,
                           HttpServletResponse response) throws IOException {

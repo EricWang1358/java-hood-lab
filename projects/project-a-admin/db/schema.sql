@@ -37,3 +37,14 @@ CREATE TABLE IF NOT EXISTS sys_user_role (
     CONSTRAINT fk_ur_user FOREIGN KEY (user_id) REFERENCES sys_user(id),
     CONSTRAINT fk_ur_role FOREIGN KEY (role_id) REFERENCES sys_role(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS sys_audit_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    operator VARCHAR(64) NOT NULL,
+    action VARCHAR(64) NOT NULL,
+    method_name VARCHAR(120) NOT NULL,
+    success BOOLEAN NOT NULL,
+    duration_ms BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_audit_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
