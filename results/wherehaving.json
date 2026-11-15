@@ -3,128 +3,68 @@
  "variants": {
   "HavingFilter": {
    "hash": "163c49ddf71afe06",
-   "repeat": 20,
+   "repeat": 10,
    "runs": {
     "50000": [
      {
       "groupedRows": 50000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 15
+      "ms": 37
      },
      {
       "groupedRows": 50000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 23
+      "ms": 39
      },
      {
       "groupedRows": 50000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 15
+      "ms": 45
      },
      {
       "groupedRows": 50000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 15
+      "ms": 42
      },
      {
       "groupedRows": 50000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 16
+      "ms": 60
      },
      {
       "groupedRows": 50000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 13
+      "ms": 27
      },
      {
       "groupedRows": 50000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 16
+      "ms": 32
      },
      {
       "groupedRows": 50000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 16
+      "ms": 53
      },
      {
       "groupedRows": 50000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 13
+      "ms": 50
      },
      {
       "groupedRows": 50000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 14
-     },
-     {
-      "groupedRows": 50000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 16
-     },
-     {
-      "groupedRows": 50000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 15
-     },
-     {
-      "groupedRows": 50000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 14
-     },
-     {
-      "groupedRows": 50000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 15
-     },
-     {
-      "groupedRows": 50000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 16
-     },
-     {
-      "groupedRows": 50000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 50000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 16
-     },
-     {
-      "groupedRows": 50000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 15
-     },
-     {
-      "groupedRows": 50000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 18
-     },
-     {
-      "groupedRows": 50000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 16
+      "ms": 24
      }
     ],
     "100000": [
@@ -132,121 +72,61 @@
       "groupedRows": 100000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 18
+      "ms": 37
      },
      {
       "groupedRows": 100000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 20
+      "ms": 52
      },
      {
       "groupedRows": 100000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 18
+      "ms": 29
      },
      {
       "groupedRows": 100000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 18
+      "ms": 57
      },
      {
       "groupedRows": 100000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 19
+      "ms": 47
      },
      {
       "groupedRows": 100000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 14
+      "ms": 49
      },
      {
       "groupedRows": 100000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 15
+      "ms": 61
      },
      {
       "groupedRows": 100000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 14
+      "ms": 40
      },
      {
       "groupedRows": 100000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 16
+      "ms": 44
      },
      {
       "groupedRows": 100000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 16
-     },
-     {
-      "groupedRows": 100000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 18
-     },
-     {
-      "groupedRows": 100000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 19
-     },
-     {
-      "groupedRows": 100000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 14
-     },
-     {
-      "groupedRows": 100000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 15
-     },
-     {
-      "groupedRows": 100000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 18
-     },
-     {
-      "groupedRows": 100000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 14
-     },
-     {
-      "groupedRows": 100000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 17
-     },
-     {
-      "groupedRows": 100000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 17
-     },
-     {
-      "groupedRows": 100000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 18
-     },
-     {
-      "groupedRows": 100000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 16
+      "ms": 43
      }
     ],
     "300000": [
@@ -254,121 +134,61 @@
       "groupedRows": 300000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 23
+      "ms": 63
      },
      {
       "groupedRows": 300000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 27
+      "ms": 56
      },
      {
       "groupedRows": 300000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 26
+      "ms": 70
      },
      {
       "groupedRows": 300000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 23
+      "ms": 53
      },
      {
       "groupedRows": 300000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 26
+      "ms": 60
      },
      {
       "groupedRows": 300000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 27
+      "ms": 141
      },
      {
       "groupedRows": 300000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 27
+      "ms": 84
      },
      {
       "groupedRows": 300000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 24
+      "ms": 91
      },
      {
       "groupedRows": 300000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 24
+      "ms": 73
      },
      {
       "groupedRows": 300000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 25
-     },
-     {
-      "groupedRows": 300000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 23
-     },
-     {
-      "groupedRows": 300000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 24
-     },
-     {
-      "groupedRows": 300000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 25
-     },
-     {
-      "groupedRows": 300000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 27
-     },
-     {
-      "groupedRows": 300000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 27
-     },
-     {
-      "groupedRows": 300000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 27
-     },
-     {
-      "groupedRows": 300000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 23
-     },
-     {
-      "groupedRows": 300000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 22
-     },
-     {
-      "groupedRows": 300000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 27
-     },
-     {
-      "groupedRows": 300000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 25
+      "ms": 64
      }
     ],
     "600000": [
@@ -376,121 +196,61 @@
       "groupedRows": 600000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 31
+      "ms": 99
      },
      {
       "groupedRows": 600000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 31
+      "ms": 120
      },
      {
       "groupedRows": 600000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 28
+      "ms": 67
      },
      {
       "groupedRows": 600000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 30
+      "ms": 129
      },
      {
       "groupedRows": 600000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 33
+      "ms": 75
      },
      {
       "groupedRows": 600000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 30
+      "ms": 87
      },
      {
       "groupedRows": 600000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 30
+      "ms": 85
      },
      {
       "groupedRows": 600000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 29
+      "ms": 82
      },
      {
       "groupedRows": 600000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 31
+      "ms": 73
      },
      {
       "groupedRows": 600000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 31
-     },
-     {
-      "groupedRows": 600000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 31
-     },
-     {
-      "groupedRows": 600000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 29
-     },
-     {
-      "groupedRows": 600000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 29
-     },
-     {
-      "groupedRows": 600000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 31
-     },
-     {
-      "groupedRows": 600000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 32
-     },
-     {
-      "groupedRows": 600000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 32
-     },
-     {
-      "groupedRows": 600000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 33
-     },
-     {
-      "groupedRows": 600000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 31
-     },
-     {
-      "groupedRows": 600000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 31
-     },
-     {
-      "groupedRows": 600000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 30
+      "ms": 83
      }
     ]
    },
@@ -498,128 +258,68 @@
   },
   "WhereBeforeGroup": {
    "hash": "cc5ae821d6ea86ca",
-   "repeat": 20,
+   "repeat": 10,
    "runs": {
     "50000": [
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 9
+      "ms": 14
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 8
+      "ms": 18
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 34
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 9
+      "ms": 33
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 9
+      "ms": 27
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 26
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 24
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 31
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 16
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 8
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 8
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 8
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 9
+      "ms": 12
      }
     ],
     "100000": [
@@ -627,121 +327,61 @@
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 11
+      "ms": 29
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 24
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 11
+      "ms": 38
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 14
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 11
+      "ms": 17
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 11
+      "ms": 27
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 22
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 8
+      "ms": 35
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 24
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 10
+      "ms": 18
      }
     ],
     "300000": [
@@ -749,121 +389,61 @@
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 23
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 13
+      "ms": 31
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 29
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 13
+      "ms": 50
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 14
+      "ms": 21
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 25
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 26
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 46
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 40
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 14
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 13
+      "ms": 38
      }
     ],
     "600000": [
@@ -871,121 +451,61 @@
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 36
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 21
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 13
+      "ms": 54
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 15
+      "ms": 32
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 38
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 13
+      "ms": 30
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 13
+      "ms": 23
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 13
+      "ms": 53
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 13
+      "ms": 42
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 16
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 13
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 13
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 14
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 16
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 14
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 13
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 14
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 13
+      "ms": 34
      }
     ]
    },
@@ -993,69 +513,9 @@
   },
   "IndexedWhere": {
    "hash": "11611b1749206930",
-   "repeat": 20,
+   "repeat": 10,
    "runs": {
     "50000": [
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
      {
       "groupedRows": 5000,
       "expected": 5000,
@@ -1134,7 +594,7 @@
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 5000,
-      "ms": 0
+      "ms": 2
      },
      {
       "groupedRows": 10000,
@@ -1164,7 +624,7 @@
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 5000,
-      "ms": 0
+      "ms": 4
      },
      {
       "groupedRows": 10000,
@@ -1176,67 +636,7 @@
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 5000,
-      "ms": 0
+      "ms": 1
      }
     ],
     "300000": [
@@ -1274,67 +674,7 @@
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 5000,
-      "ms": 0
+      "ms": 1
      },
      {
       "groupedRows": 30000,
@@ -1366,67 +706,13 @@
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 5000,
-      "ms": 0
+      "ms": 5
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 5000,
-      "ms": 0
+      "ms": 2
      },
      {
       "groupedRows": 60000,
@@ -1438,7 +724,7 @@
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 5000,
-      "ms": 0
+      "ms": 3
      },
      {
       "groupedRows": 60000,
@@ -1450,25 +736,19 @@
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 5000,
-      "ms": 0
+      "ms": 2
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 5000,
-      "ms": 1
+      "ms": 6
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 5000,
-      "ms": 0
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 5000,
-      "ms": 1
+      "ms": 3
      },
      {
       "groupedRows": 60000,
@@ -1488,128 +768,68 @@
   },
   "WherePlusHaving": {
    "hash": "b0ee7f85cf19585a",
-   "repeat": 20,
+   "repeat": 10,
    "runs": {
     "50000": [
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 24
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 9
+      "ms": 19
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 30
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 23
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 9
+      "ms": 23
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 11
+      "ms": 36
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 8
+      "ms": 24
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 9
+      "ms": 14
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 9
+      "ms": 14
      },
      {
       "groupedRows": 5000,
       "expected": 5000,
       "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 8
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 13
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 8
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 5000,
-      "expected": 5000,
-      "keptGroups": 500,
-      "ms": 9
+      "ms": 30
      }
     ],
     "100000": [
@@ -1617,121 +837,61 @@
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 8
+      "ms": 46
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 9
+      "ms": 30
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 11
+      "ms": 24
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 11
+      "ms": 20
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 7
+      "ms": 35
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 22
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 8
+      "ms": 20
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 22
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 11
+      "ms": 23
      },
      {
       "groupedRows": 10000,
       "expected": 10000,
       "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 10000,
-      "expected": 10000,
-      "keptGroups": 500,
-      "ms": 11
+      "ms": 30
      }
     ],
     "300000": [
@@ -1739,121 +899,61 @@
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 40
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 33
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 11
+      "ms": 44
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 11
+      "ms": 45
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 14
+      "ms": 35
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 10
+      "ms": 44
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 11
+      "ms": 28
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 25
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 31
      },
      {
       "groupedRows": 30000,
       "expected": 30000,
       "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 10
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 9
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 11
-     },
-     {
-      "groupedRows": 30000,
-      "expected": 30000,
-      "keptGroups": 500,
-      "ms": 11
+      "ms": 45
      }
     ],
     "600000": [
@@ -1861,121 +961,61 @@
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 16
+      "ms": 32
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 16
+      "ms": 40
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 25
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 14
+      "ms": 32
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 14
+      "ms": 19
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 16
+      "ms": 50
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 18
+      "ms": 38
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 13
+      "ms": 36
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 12
+      "ms": 44
      },
      {
       "groupedRows": 60000,
       "expected": 60000,
       "keptGroups": 500,
-      "ms": 15
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 13
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 13
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 14
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 16
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 13
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 12
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 13
-     },
-     {
-      "groupedRows": 60000,
-      "expected": 60000,
-      "keptGroups": 500,
-      "ms": 12
+      "ms": 36
      }
     ]
    },

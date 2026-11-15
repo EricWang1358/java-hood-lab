@@ -3,86 +3,44 @@
  "variants": {
   "LoopQuery": {
    "hash": "edc51f7c516dc78b",
-   "repeat": 20,
+   "repeat": 10,
    "runs": {
     "100": [
      {
       "roundTrips": 101,
       "expected": 1,
       "matched": 100,
-      "ms": 1
+      "ms": 3
      },
      {
       "roundTrips": 101,
       "expected": 1,
       "matched": 100,
-      "ms": 1
+      "ms": 4
      },
      {
       "roundTrips": 101,
       "expected": 1,
       "matched": 100,
-      "ms": 1
+      "ms": 4
      },
      {
       "roundTrips": 101,
       "expected": 1,
       "matched": 100,
-      "ms": 1
+      "ms": 6
      },
      {
       "roundTrips": 101,
       "expected": 1,
       "matched": 100,
-      "ms": 1
+      "ms": 8
      },
      {
       "roundTrips": 101,
       "expected": 1,
       "matched": 100,
-      "ms": 1
-     },
-     {
-      "roundTrips": 101,
-      "expected": 1,
-      "matched": 100,
-      "ms": 1
-     },
-     {
-      "roundTrips": 101,
-      "expected": 1,
-      "matched": 100,
-      "ms": 1
-     },
-     {
-      "roundTrips": 101,
-      "expected": 1,
-      "matched": 100,
-      "ms": 1
-     },
-     {
-      "roundTrips": 101,
-      "expected": 1,
-      "matched": 100,
-      "ms": 1
-     },
-     {
-      "roundTrips": 101,
-      "expected": 1,
-      "matched": 100,
-      "ms": 1
-     },
-     {
-      "roundTrips": 101,
-      "expected": 1,
-      "matched": 100,
-      "ms": 1
-     },
-     {
-      "roundTrips": 101,
-      "expected": 1,
-      "matched": 100,
-      "ms": 1
+      "ms": 5
      },
      {
       "roundTrips": 101,
@@ -94,31 +52,13 @@
       "roundTrips": 101,
       "expected": 1,
       "matched": 100,
-      "ms": 1
+      "ms": 7
      },
      {
       "roundTrips": 101,
       "expected": 1,
       "matched": 100,
-      "ms": 1
-     },
-     {
-      "roundTrips": 101,
-      "expected": 1,
-      "matched": 100,
-      "ms": 1
-     },
-     {
-      "roundTrips": 101,
-      "expected": 1,
-      "matched": 100,
-      "ms": 1
-     },
-     {
-      "roundTrips": 101,
-      "expected": 1,
-      "matched": 100,
-      "ms": 1
+      "ms": 3
      },
      {
       "roundTrips": 101,
@@ -132,121 +72,61 @@
       "roundTrips": 501,
       "expected": 1,
       "matched": 500,
-      "ms": 8
+      "ms": 30
      },
      {
       "roundTrips": 501,
       "expected": 1,
       "matched": 500,
-      "ms": 9
+      "ms": 22
      },
      {
       "roundTrips": 501,
       "expected": 1,
       "matched": 500,
-      "ms": 7
+      "ms": 27
      },
      {
       "roundTrips": 501,
       "expected": 1,
       "matched": 500,
-      "ms": 8
+      "ms": 16
      },
      {
       "roundTrips": 501,
       "expected": 1,
       "matched": 500,
-      "ms": 7
+      "ms": 31
      },
      {
       "roundTrips": 501,
       "expected": 1,
       "matched": 500,
-      "ms": 8
+      "ms": 16
      },
      {
       "roundTrips": 501,
       "expected": 1,
       "matched": 500,
-      "ms": 8
+      "ms": 21
      },
      {
       "roundTrips": 501,
       "expected": 1,
       "matched": 500,
-      "ms": 9
+      "ms": 23
      },
      {
       "roundTrips": 501,
       "expected": 1,
       "matched": 500,
-      "ms": 8
+      "ms": 20
      },
      {
       "roundTrips": 501,
       "expected": 1,
       "matched": 500,
-      "ms": 7
-     },
-     {
-      "roundTrips": 501,
-      "expected": 1,
-      "matched": 500,
-      "ms": 8
-     },
-     {
-      "roundTrips": 501,
-      "expected": 1,
-      "matched": 500,
-      "ms": 8
-     },
-     {
-      "roundTrips": 501,
-      "expected": 1,
-      "matched": 500,
-      "ms": 7
-     },
-     {
-      "roundTrips": 501,
-      "expected": 1,
-      "matched": 500,
-      "ms": 8
-     },
-     {
-      "roundTrips": 501,
-      "expected": 1,
-      "matched": 500,
-      "ms": 8
-     },
-     {
-      "roundTrips": 501,
-      "expected": 1,
-      "matched": 500,
-      "ms": 7
-     },
-     {
-      "roundTrips": 501,
-      "expected": 1,
-      "matched": 500,
-      "ms": 8
-     },
-     {
-      "roundTrips": 501,
-      "expected": 1,
-      "matched": 500,
-      "ms": 7
-     },
-     {
-      "roundTrips": 501,
-      "expected": 1,
-      "matched": 500,
-      "ms": 7
-     },
-     {
-      "roundTrips": 501,
-      "expected": 1,
-      "matched": 500,
-      "ms": 7
+      "ms": 35
      }
     ],
     "1000": [
@@ -254,121 +134,61 @@
       "roundTrips": 1001,
       "expected": 1,
       "matched": 1000,
-      "ms": 15
+      "ms": 63
      },
      {
       "roundTrips": 1001,
       "expected": 1,
       "matched": 1000,
-      "ms": 16
+      "ms": 46
      },
      {
       "roundTrips": 1001,
       "expected": 1,
       "matched": 1000,
-      "ms": 15
+      "ms": 49
      },
      {
       "roundTrips": 1001,
       "expected": 1,
       "matched": 1000,
-      "ms": 15
+      "ms": 38
      },
      {
       "roundTrips": 1001,
       "expected": 1,
       "matched": 1000,
-      "ms": 16
+      "ms": 65
      },
      {
       "roundTrips": 1001,
       "expected": 1,
       "matched": 1000,
-      "ms": 15
+      "ms": 25
      },
      {
       "roundTrips": 1001,
       "expected": 1,
       "matched": 1000,
-      "ms": 15
+      "ms": 36
      },
      {
       "roundTrips": 1001,
       "expected": 1,
       "matched": 1000,
-      "ms": 15
+      "ms": 51
      },
      {
       "roundTrips": 1001,
       "expected": 1,
       "matched": 1000,
-      "ms": 16
+      "ms": 39
      },
      {
       "roundTrips": 1001,
       "expected": 1,
       "matched": 1000,
-      "ms": 15
-     },
-     {
-      "roundTrips": 1001,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 15
-     },
-     {
-      "roundTrips": 1001,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 16
-     },
-     {
-      "roundTrips": 1001,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 15
-     },
-     {
-      "roundTrips": 1001,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 16
-     },
-     {
-      "roundTrips": 1001,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 18
-     },
-     {
-      "roundTrips": 1001,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 16
-     },
-     {
-      "roundTrips": 1001,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 16
-     },
-     {
-      "roundTrips": 1001,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 15
-     },
-     {
-      "roundTrips": 1001,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 16
-     },
-     {
-      "roundTrips": 1001,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 15
+      "ms": 32
      }
     ],
     "2000": [
@@ -376,121 +196,61 @@
       "roundTrips": 2001,
       "expected": 1,
       "matched": 2000,
-      "ms": 31
+      "ms": 70
      },
      {
       "roundTrips": 2001,
       "expected": 1,
       "matched": 2000,
-      "ms": 31
+      "ms": 65
      },
      {
       "roundTrips": 2001,
       "expected": 1,
       "matched": 2000,
-      "ms": 30
+      "ms": 110
      },
      {
       "roundTrips": 2001,
       "expected": 1,
       "matched": 2000,
-      "ms": 31
+      "ms": 92
      },
      {
       "roundTrips": 2001,
       "expected": 1,
       "matched": 2000,
-      "ms": 31
+      "ms": 87
      },
      {
       "roundTrips": 2001,
       "expected": 1,
       "matched": 2000,
-      "ms": 30
+      "ms": 74
      },
      {
       "roundTrips": 2001,
       "expected": 1,
       "matched": 2000,
-      "ms": 30
+      "ms": 75
      },
      {
       "roundTrips": 2001,
       "expected": 1,
       "matched": 2000,
-      "ms": 30
+      "ms": 90
      },
      {
       "roundTrips": 2001,
       "expected": 1,
       "matched": 2000,
-      "ms": 31
+      "ms": 99
      },
      {
       "roundTrips": 2001,
       "expected": 1,
       "matched": 2000,
-      "ms": 31
-     },
-     {
-      "roundTrips": 2001,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 30
-     },
-     {
-      "roundTrips": 2001,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 31
-     },
-     {
-      "roundTrips": 2001,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 38
-     },
-     {
-      "roundTrips": 2001,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 31
-     },
-     {
-      "roundTrips": 2001,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 30
-     },
-     {
-      "roundTrips": 2001,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 30
-     },
-     {
-      "roundTrips": 2001,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 30
-     },
-     {
-      "roundTrips": 2001,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 31
-     },
-     {
-      "roundTrips": 2001,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 31
-     },
-     {
-      "roundTrips": 2001,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 30
+      "ms": 63
      }
     ]
    },
@@ -498,14 +258,14 @@
   },
   "BatchIn": {
    "hash": "0f70b834b80d4615",
-   "repeat": 20,
+   "repeat": 10,
    "runs": {
     "100": [
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 100,
-      "ms": 0
+      "ms": 2
      },
      {
       "roundTrips": 2,
@@ -517,7 +277,19 @@
       "roundTrips": 2,
       "expected": 1,
       "matched": 100,
-      "ms": 0
+      "ms": 3
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 2
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 2
      },
      {
       "roundTrips": 2,
@@ -529,13 +301,7 @@
       "roundTrips": 2,
       "expected": 1,
       "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
+      "ms": 3
      },
      {
       "roundTrips": 2,
@@ -554,72 +320,6 @@
       "expected": 1,
       "matched": 100,
       "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
      }
     ],
     "500": [
@@ -627,19 +327,31 @@
       "roundTrips": 2,
       "expected": 1,
       "matched": 500,
-      "ms": 0
+      "ms": 4
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 500,
-      "ms": 1
+      "ms": 4
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 500,
-      "ms": 0
+      "ms": 8
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 5
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 5
      },
      {
       "roundTrips": 2,
@@ -657,91 +369,19 @@
       "roundTrips": 2,
       "expected": 1,
       "matched": 500,
-      "ms": 1
+      "ms": 3
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 3
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 500,
       "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 500,
-      "ms": 1
      }
     ],
     "1000": [
@@ -755,55 +395,31 @@
       "roundTrips": 2,
       "expected": 1,
       "matched": 1000,
-      "ms": 1
+      "ms": 4
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 1000,
-      "ms": 1
+      "ms": 6
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 1000,
-      "ms": 1
+      "ms": 4
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 1000,
-      "ms": 1
+      "ms": 5
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 1000,
-      "ms": 2
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 2
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 1
+      "ms": 8
      },
      {
       "roundTrips": 2,
@@ -815,55 +431,19 @@
       "roundTrips": 2,
       "expected": 1,
       "matched": 1000,
-      "ms": 1
+      "ms": 5
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 1000,
-      "ms": 1
+      "ms": 8
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 1000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 2
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 2
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 2
+      "ms": 6
      }
     ],
     "2000": [
@@ -871,121 +451,61 @@
       "roundTrips": 2,
       "expected": 1,
       "matched": 2000,
-      "ms": 1
+      "ms": 15
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 2000,
-      "ms": 1
+      "ms": 5
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 2000,
-      "ms": 1
+      "ms": 5
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 2000,
-      "ms": 1
+      "ms": 8
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 2000,
-      "ms": 2
+      "ms": 13
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 2000,
-      "ms": 1
+      "ms": 4
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 2000,
-      "ms": 2
+      "ms": 12
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 2000,
-      "ms": 1
+      "ms": 7
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 2000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 2
+      "ms": 12
      },
      {
       "roundTrips": 2,
       "expected": 1,
       "matched": 2000,
       "ms": 3
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 2
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 2
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 1
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 2
-     },
-     {
-      "roundTrips": 2,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 1
      }
     ]
    },
@@ -993,56 +513,50 @@
   },
   "HashJoin": {
    "hash": "0f1aa21d418b461a",
-   "repeat": 20,
+   "repeat": 10,
    "runs": {
     "100": [
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 100,
-      "ms": 2
+      "ms": 8
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 100,
-      "ms": 3
+      "ms": 18
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 100,
-      "ms": 2
+      "ms": 8
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 100,
-      "ms": 2
+      "ms": 9
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 100,
-      "ms": 2
+      "ms": 9
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 100,
-      "ms": 2
+      "ms": 11
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 100,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 3
+      "ms": 10
      },
      {
       "roundTrips": 1,
@@ -1054,67 +568,13 @@
       "roundTrips": 1,
       "expected": 1,
       "matched": 100,
-      "ms": 2
+      "ms": 7
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 100,
-      "ms": 4
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 2
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 2
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 2
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 4
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 2
+      "ms": 6
      }
     ],
     "500": [
@@ -1122,121 +582,61 @@
       "roundTrips": 1,
       "expected": 1,
       "matched": 500,
-      "ms": 4
+      "ms": 12
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 500,
-      "ms": 2
+      "ms": 17
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 500,
-      "ms": 3
+      "ms": 6
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 500,
-      "ms": 3
+      "ms": 10
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 500,
-      "ms": 2
+      "ms": 11
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 500,
-      "ms": 5
+      "ms": 11
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 500,
-      "ms": 3
+      "ms": 6
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 500,
-      "ms": 4
+      "ms": 13
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 500,
-      "ms": 3
+      "ms": 6
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 500,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 2
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 2
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 2
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 2
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 2
+      "ms": 8
      }
     ],
     "1000": [
@@ -1244,25 +644,13 @@
       "roundTrips": 1,
       "expected": 1,
       "matched": 1000,
-      "ms": 2
+      "ms": 9
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 1000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 2
+      "ms": 10
      },
      {
       "roundTrips": 1,
@@ -1274,37 +662,31 @@
       "roundTrips": 1,
       "expected": 1,
       "matched": 1000,
-      "ms": 8
+      "ms": 11
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 1000,
-      "ms": 4
+      "ms": 14
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 1000,
-      "ms": 4
+      "ms": 7
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 1000,
-      "ms": 3
+      "ms": 10
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 1000,
-      "ms": 4
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 3
+      "ms": 7
      },
      {
       "roundTrips": 1,
@@ -1316,49 +698,7 @@
       "roundTrips": 1,
       "expected": 1,
       "matched": 1000,
-      "ms": 2
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 5
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 2
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 2
+      "ms": 7
      }
     ],
     "2000": [
@@ -1366,37 +706,7 @@
       "roundTrips": 1,
       "expected": 1,
       "matched": 2000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 4
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 4
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 3
+      "ms": 11
      },
      {
       "roundTrips": 1,
@@ -1408,79 +718,49 @@
       "roundTrips": 1,
       "expected": 1,
       "matched": 2000,
-      "ms": 3
+      "ms": 12
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 2000,
-      "ms": 3
+      "ms": 5
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 2000,
-      "ms": 4
+      "ms": 10
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 2000,
-      "ms": 3
+      "ms": 13
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 2000,
-      "ms": 3
+      "ms": 6
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 2000,
-      "ms": 3
+      "ms": 8
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 2000,
-      "ms": 3
+      "ms": 5
      },
      {
       "roundTrips": 1,
       "expected": 1,
       "matched": 2000,
-      "ms": 4
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 4
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 3
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 3
+      "ms": 7
      }
     ]
    },
@@ -1488,69 +768,9 @@
   },
   "IndexJoin": {
    "hash": "9a9a9522dc8acc21",
-   "repeat": 20,
+   "repeat": 10,
    "runs": {
     "100": [
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 100,
-      "ms": 0
-     },
      {
       "roundTrips": 1,
       "expected": 1,
@@ -1672,66 +892,6 @@
       "expected": 1,
       "matched": 500,
       "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 500,
-      "ms": 0
      }
     ],
     "1000": [
@@ -1794,129 +954,9 @@
       "expected": 1,
       "matched": 1000,
       "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 1000,
-      "ms": 0
      }
     ],
     "2000": [
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 0
-     },
-     {
-      "roundTrips": 1,
-      "expected": 1,
-      "matched": 2000,
-      "ms": 0
-     },
      {
       "roundTrips": 1,
       "expected": 1,
