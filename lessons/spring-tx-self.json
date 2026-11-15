@@ -1,0 +1,375 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "spring-tx-self",
+  "course": "Spring 全家桶与持久层",
+  "title": "同类自调用，@Transactional 为什么没回滚？",
+  "lead": "外层方法没加事务，内部直接 this.payAndRecord() 调了加 @Transactional 的方法。抛异常后，库存却没回滚！",
+  "minutes": 35,
+  "needs": ["知道接口与实现类的调用", "知道 @Transactional 靠代理开启和回滚事务", "知道 try-catch 与 RuntimeException"],
+  "after": ["讲清同类自调用绕过代理对象的本质，并拿出字节码证据", "说明为什么连 CGLIB 委托模式也挡不住 this 自调用", "对比 self-injection 与拆分 Service 两种修法的取舍"],
+  "terms": {
+    "Proxy.newProxyInstance": "JDK 动态代理 API：在运行期生成实现指定接口的代理对象，把每次方法调用先交给 InvocationHandler。",
+    "@Transactional": "Spring 声明式事务注解：本质是在代理对象外层包一层 try/catch，成功提交，抛 RuntimeException 自动回滚。",
+    "this": "当前对象的引用：在目标类内部写 this.方法()，直接调用裸对象自身，不会经过外面的代理对象。",
+    "invokevirtual": "JVM 字节码指令：直接按对象类型分派调用实例方法，不经过代理接口拦截。",
+    "invokeinterface": "JVM 字节码指令：通过接口引用调用方法，实际会落到代理对象重写的方法上。",
+    "CGLIB": "通过生成目标类的子类来做代理，但 Spring 默认仍把非增强方法委托给原始 target 执行。"
+  },
+  "experiments": {
+    "txself": {
+      "runner": "java",
+      "home": "lab.txself",
+      "variants": [
+        { "id": "Plain", "label": "this 直接自调用", "note": "placeOrder() 内部写 this.payAndRecord()，直接绕过代理。" },
+        { "id": "SubProxy", "label": "CGLIB 委托目标对象", "note": "模拟 Spring CGLIB 委托给原始 target，target 里的 this 仍不是代理。" },
+        { "id": "SelfInject", "label": "注入自身代理", "note": "通过 selfProxy.payAndRecord() 发起调用，重新走回代理链。" },
+        { "id": "SplitService", "label": "拆出独立 Service", "note": "把 payAndRecord 拆到 PaymentService，天然走代理且无循环依赖。" }
+      ],
+      "knob": { "label": "请求数(千)", "values": ["1", "2", "4", "8"], "default": "2" },
+      "repeat": 20,
+      "metric": { "key": "dirty", "expectKey": "expected", "label": "未回滚的脏扣减" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "同类自调用，@Transactional 为什么没回滚？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**为什么同一个类里调用加了 `@Transactional` 的方法，异常抛出来了，数据库却没回滚。**",
+          "say": "这是 Spring 面试高频第一坑。很多人以为方法头上贴了 `@Transactional` 就自带事务，结果上线一跑，扣了库存却没生成订单，事务根本没生效。"
+        },
+        {
+          "t": "text",
+          "md": "不靠背诵「自调用失效」五字口诀。我们用纯 JDK 的动态代理把现场复现出来，再用 `javap` 看清 `this` 到底绕过了谁。",
+          "say": "这节课我们用 JDK 自带的 `Proxy.newProxyInstance` 搭出一个最小事务代理，亲自跑出脏数据，再看字节码里的两条调用指令到底差在哪。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热个身：先确认三件事",
+      "bridge": "Spring 事务不是魔法，它靠代理对象和异常捕获工作。花半分钟确认前置概念。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题快速过一遍，确认你脑子里有「代理在外面包一层」的画面。",
+          "items": [
+            {
+              "have": "代理模式",
+              "q": "Spring 给 `OrderService` 生成事务代理后，调用方拿到的是谁？",
+              "options": ["原始 OrderService 对象", "外层包了事务逻辑的代理对象"],
+              "answer": 1,
+              "why": "注入进来的 Bean 是代理对象，只有穿过代理对象，切面里的「开启/回滚事务」代码才会执行。"
+            },
+            {
+              "have": "this 引用",
+              "q": "在 `OrderServiceImpl` 的方法里写 `this.payAndRecord()`，`this` 指的是谁？",
+              "options": ["外面的代理对象", "当前正在执行的原始 target 对象"],
+              "answer": 1,
+              "why": "一旦进了原始 target 内部，`this` 就是 target 自己，和外面的代理对象没有半点关系。"
+            },
+            {
+              "have": "事务回滚",
+              "q": "如果事务根本没开启（处于自动提交状态），扣完库存再抛异常会怎样？",
+              "options": ["自动回滚库存", "库存已提交，变成脏数据"],
+              "answer": 1,
+              "why": "没有事务边界保护时，每条 SQL 各自提交，后面的异常救不回前面的扣减。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景",
+      "bridge": "把代理和目标对象的关系，想成「门卫」和「办公室里的人」。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["调用方", "办公室同事"], "shared": { "name": "事务登记台(Proxy)", "value": "关闭" } },
+          "story": "进大楼办事必须经过**门口登记台（代理）**，登记台负责在出事时帮你撤回操作。但如果你已经绕进办公室，直接拍旁边工位同事（`this.payAndRecord()`）办事，登记台根本不知道你们干了什么。",
+          "say": "记住这个画面：只有从门口进，登记台才拦截得到。在屋里直接内部喊一声，登记台全程蒙在鼓里。",
+          "map": [
+            { "scene": "门口登记台", "on": "shared", "tag": "事务代理 Proxy", "code": "Proxy.newProxyInstance(...)", "say": "登记台对应 Spring 生成的事务代理对象，负责在方法前后开启和回滚事务。" },
+            { "scene": "外层方法进门", "on": "actors", "tag": "placeOrder()", "code": "proxy.placeOrder(true)", "say": "外部调用 `proxy.placeOrder()` 时确实过了门卫，但 `placeOrder` 自己没贴 `@Transactional`，门卫直接放行。" },
+            { "scene": "屋里直接喊同事", "on": "actors", "tag": "this.payAndRecord()", "code": "this.payAndRecord(fail)", "say": "关键出在这里：`placeOrder` 内部用 `this.` 调 `payAndRecord`，完全没再经过门卫，事务开关 `inTx` 一直是 `false`。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "异常明明抛出来了，库存怎么还是少了？",
+      "bridge": "如果 2000 个下单请求在扣完库存后全部模拟「支付异常」，最终未回滚的脏扣减数应该是 0。真的是 0 吗？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "2000 次下单全在扣完库存后抛出 `RuntimeException`。按理说有 `@Transactional`，脏扣减应该是 **0**。",
+          "say": "我们把它写成 60 行纯 JDK 程序直接跑，看看 `this.payAndRecord()` 到底漏了多少单。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "把代理与自调用写成代码",
+      "bridge": "看三处关键代码：代理怎么拦截、外层怎么调用、内层怎么检查事务开关。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "txself.Plain",
+          "say": "这就是全部复现代码。注意代理只对 `payAndRecord` 开启 `inTx`，而 `placeOrder` 内部写了 `this.payAndRecord(fail)`。",
+          "walk": [
+            { "focus": ["this.payAndRecord(fail);"], "say": "第一处：`placeOrder` 没开事务，直接用 `this.` 调用同类的 `payAndRecord`。", "key": "同类内部调用默认走 this，不经过代理" },
+            { "focus": ["if (inTx.get()) db.stock.set(before);"], "say": "第二处：`payAndRecord` 扣减库存后抛异常，只有 `inTx.get()` 为 true 时才会执行回滚。" },
+            { "focus": ["if (!method.getName().equals(\"payAndRecord\"))"], "say": "第三处：代理对象确实给 `payAndRecord` 写了开启事务的逻辑，但前提是调用必须先经过代理。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：2000 次异常下单，脏扣减是多少？",
+      "bridge": "代码看清了。在跑之前先押一个答案。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "txself_plain",
+          "q": "运行 `Plain`（2000 次全抛异常），最终未回滚的脏扣减 `dirty` 是？",
+          "options": ["0（全部回滚）", "大约一半（随机失效）", "2000（一次都没回滚）", "程序直接报错崩溃"],
+          "answer": 2,
+          "say": "想一想：`placeOrder` 每次都是通过 `this` 进去的，代理一次都没被触发过。先选一个答案。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "放出来看看：20 次全军覆没",
+      "bridge": "我们在本地真跑了 20 次，每次的结果都记录在这里。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "txself",
+          "show": ["Plain"],
+          "knob": false,
+          "hand": true,
+          "focus": ["this.payAndRecord(fail);"],
+          "say": "点「看第 1 次运行」，再放开全部 20 次。每次都是整整 2000 笔脏扣减，一次都没有回滚。"
+        },
+        {
+          "t": "reveal",
+          "of": "txself_plain",
+          "say": "20 次运行全部是 2000。只要通过 `this` 自调用，事务失效不是偶发 Bug，而是 100% 必现。",
+          "key": "this 自调用导致 @Transactional 100% 失效"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "出事的是哪一行？",
+      "bridge": "在 `Plain.java` 里点出导致代理被绕过的那一行。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "txself.Plain",
+          "q": "哪一行代码直接绕过了外层代理，导致 `inTx` 根本没被打开？",
+          "answer": ["this.payAndRecord(fail);"],
+          "hint": "找 `placeOrder` 方法里面调用 `payAndRecord` 的那一行。",
+          "found": "就是这句 `this.payAndRecord(fail);`，它直接把调用锁死在原始对象内部。",
+          "say": "直接在代码上点击那一行。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖看字节码",
+      "bridge": "为什么编译器和 JVM 不自动帮我们转给代理？用 `javap` 看编译出来的字节码指令。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "txself.Plain",
+          "inner": "$OrderServiceImpl",
+          "within": "placeOrder",
+          "from": "aload_0",
+          "to": "return",
+          "say": "用 `javap -c -p` 反编译 `OrderServiceImpl.placeOrder`，里面只有三条指令。",
+          "walk": [
+            { "focus": ["aload_0"], "label": "压入 this", "say": "`aload_0` 把当前方法的第 0 号局部变量——也就是 `this`（原始 `OrderServiceImpl` 实例）压入操作数栈。" },
+            { "focus": ["invokevirtual"], "label": "直接调目标方法", "say": "`invokevirtual` 直接向 `OrderServiceImpl.payAndRecord` 发起虚方法分派。整个过程完全没有经过 `$Proxy0`，代理拦截器一行都没机会跑！", "key": "this.xx 编译成 aload_0 + invokevirtual，彻底绕开代理" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "先猜：换成 CGLIB 子类代理能自动修好吗？",
+      "bridge": "有人说「Spring Boot 2 以后默认用 CGLIB 子类代理，不用接口了，是不是就不怕自调用了？」先猜再测。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "txself_cglib",
+          "q": "换成 Spring 风格的 CGLIB 代理（`SubProxy`），`placeOrder()` 内部 `this.payAndRecord()` 会回滚吗？",
+          "options": ["会，因为代理是子类，this 就是代理", "不会，因为 Spring CGLIB 仍委托给原始 target"],
+          "answer": 1,
+          "say": "这是一个经典面试追问。先押一个判断，下一页看四种写法的真实对照。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种写法同台对比",
+      "bridge": "把 `Plain`、`SubProxy`（CGLIB 委托）、`SelfInject`（注入自身代理）、`SplitService`（拆出独立 Bean）一起跑 20 次对比。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "txself",
+          "show": ["Plain", "SubProxy", "SelfInject", "SplitService"],
+          "select": "SubProxy",
+          "say": "点开 `SubProxy` 看它的结果：照样是 2000 笔脏扣减！因为 Spring 的 CGLIB 拦截器执行目标方法时，会把调用转发给内部持有的原始 `target` 对象。"
+        },
+        {
+          "t": "reveal",
+          "of": "txself_cglib",
+          "say": "CGLIB 救不了自调用。真正能修好的，是 `SelfInject` 和 `SplitService`——核心只有一条：**让调用重新从代理引用发出去**。",
+          "key": "CGLIB 也救不了自调用；必须通过代理引用发起调用"
+        },
+        {
+          "t": "try",
+          "say": "切换点击 `SelfInject` 和 `SplitService`，脏扣减立刻降为 0。再把请求数拨到 4 和 8 看看耗时。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修好了，两种方案怎么比？",
+      "bridge": "同样都修到 0 脏数据，看看它们在不同并发量下的耗时和工程代价。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "txself",
+          "say": "横轴是请求量，纵轴是耗时。实心点代表脏扣减为 0，空心点代表有未回滚脏数据。",
+          "walk": [
+            { "focus": "Plain", "say": "`Plain` 和 `SubProxy` 都是空心点，再快也是错的。" },
+            { "focus": "SelfInject", "say": "`SelfInject` 全是实心点（全回滚），但它需要自己注入自己，容易制造循环依赖，还要改字段装配。" },
+            { "focus": "SplitService", "say": "`SplitService` 同样全是实心点，耗时还更低，而且职责清晰、零循环依赖，是生产首选。", "key": "优先拆出独立 Service；临时救急才用自注入/AopContext" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "规则与选型",
+      "layout": "split",
+      "bridge": "把今天的选择浓缩成一棵决策树，再做三道实战判断。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "需要跨方法开启新事务或独立事务边界时怎么写？",
+          "branches": [
+            { "when": "正常业务设计，允许拆分职责", "pick": "拆出独立 Service Bean", "eg": "OrderService 调 PaymentService" },
+            { "when": "历史大类暂时拆不动", "pick": "注入自身代理 / AopContext", "eg": "selfProxy.payAndRecord()" },
+            { "when": "外层本身就该是一个大事务", "pick": "直接在入口方法加 @Transactional", "eg": "placeOrder 上直接加事务" }
+          ],
+          "say": "记住三条路：能合在外层入口就直接加；需要独立边界优先拆 Service；拆不动再自注入。"
+        },
+        {
+          "t": "cases",
+          "tools": ["拆独立 Service", "注入自身代理", "入口加 @Transactional"],
+          "say": "三个业务场景，选出最稳妥的改法。",
+          "items": [
+            { "text": "下单入口做完参数校验后，调本类的 `saveOrderAndDeduct()` 入库，两者本就该同生共死。", "answer": 2, "why": "直接把 `@Transactional` 挪到外层入口方法，注意别把 RPC/HTTP 耗时操作包进事务即可。" },
+            { "text": "批量导入 1000 条数据，要求每条独立事务互不影响，当前都在一个 `ImportService` 里循环调用 `importOne()`。", "answer": 0, "why": "拆出 `ImportItemService.importOne()`，结构清晰且彻底避免自调用和循环依赖。" },
+            { "text": "老系统 3000 行的 `LegacyManager` 短期不敢大拆，只需把内部一个方法走代理事务。", "answer": 1, "why": "暂时注入自身代理（或 `AopContext.currentProxy()`）最小改动救急。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试官怎么问这件事",
+      "bridge": "现象和字节码都看过了，对上面试术语。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "同类自调用失效",
+          "alias": "Self-Invocation · Spring AOP 代理绕过",
+          "oneLine": "Spring 声明式事务基于动态代理；类内部 `this.method()` 直接==invokevirtual 目标对象==，绕过了代理拦截链。",
+          "asked": ["为什么同类方法互调 @Transactional 会失效？", "换成 CGLIB 代理就能解决自调用吗？", "生产上怎么优雅解决自调用问题？"],
+          "say": "这三个问题在二面几乎必问。你现在不仅能答出「绕过代理」，还能顺手说出 `invokevirtual` 和 CGLIB 委托 `target` 的原因。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "两道小题，检验有没有真正分清。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "外层方法 A（无 `@Transactional`）调用同类方法 B（有 `@Transactional`），为什么 B 抛异常不会回滚？",
+          "options": [
+            { "text": "因为 Spring 不支持同一个类里写两个方法", "ok": false, "why": "当然支持，只是内部互调默认不走代理。" },
+            { "text": "因为 A 内部用 this 调 B，绕过了事务代理对象", "ok": true, "why": "正确！`this` 指向原始 target，代理的开启/回滚逻辑根本没执行。" },
+            { "text": "因为方法 B 必须是 static 才能回滚", "ok": false, "why": "恰恰相反，static 方法不能被动态代理重写/拦截。" }
+          ],
+          "say": "选出真正的原因。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "再辨一个常见误区",
+      "bridge": "把 `exposeProxy=true` 和拆分 Service 放在一起比一比。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "以下哪种做法**不能**解决同类自调用导致 `@Transactional` 失效的问题？",
+          "options": [
+            { "text": "把 spring.aop.proxy-target-class 改成 true（强制用 CGLIB）", "ok": true, "why": "对！CGLIB 代理仍把外层方法委托给原始 target 执行，target 里的 this 依然绕过代理。" },
+            { "text": "把事务方法拆到另一个 Service Bean 中注入调用", "ok": false, "why": "这可以解决，因为注入的是另一个 Bean 的代理对象。" },
+            { "text": "通过 ApplicationContext 或自身代理引用去调用目标方法", "ok": false, "why": "这也走了代理引用，可以解决。" }
+          ],
+          "say": "注意题目问的是「不能」解决的。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，讲给自己听",
+      "bridge": "对着面试官的常见追问，自己脱稿讲一遍。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么同类自调用会导致 @Transactional 失效？换成 CGLIB 行不行？怎么修？",
+          "points": [
+            "Spring 事务靠动态代理在目标方法外层包 try/catch 开启和回滚",
+            "同类内部调用等价于 this.method()，编译为 invokevirtual，直接调原始 target",
+            "即使开启 CGLIB，Spring 默认也委托给原始 target 执行，this 仍不是代理",
+            "修法：优先拆出独立 Service Bean；其次自注入代理或 AopContext.currentProxy()"
+          ],
+          "model": "Spring 的 `@Transactional` 本质上是基于 AOP 动态代理实现的，只有通过代理对象调用方法，事务拦截器才会开启、提交或回滚事务。如果外层非事务方法直接调用同类的 `@Transactional` 方法，源码里的 `this.method()` 会编译成 `invokevirtual`，直接作用在原始目标对象上，彻底绕过了外层代理。即使换成 CGLIB 子类代理，Spring 拦截器默认也是委托给原始 target 去跑，target 内部的 `this` 依然不是代理。工程上最推荐把需要独立事务的方法拆到另一个 Service Bean 中；如果暂时拆不动，可以注入自身代理或通过 `AopContext.currentProxy()` 拿到代理后再调。",
+          "say": "点开始，对着屏幕口述两分钟，再对照要点核对。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "把这节课最硬的三句话装进口袋。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "同类自调用为什么 @Transactional 失效？", "a": "`this.method()` 直接调用原始目标对象，绕过了外层事务代理，拦截器根本没执行。" },
+            { "q": "开启 CGLIB 能解决自调用吗？", "a": "不能。Spring CGLIB 仍委托给原始 target 执行，target 里的 this 依旧不是代理。" },
+            { "q": "解决自调用最推荐的做法是什么？", "a": "优先拆出独立 Service Bean；其次注入自身代理（或 `AopContext.currentProxy()`）。" }
+          ],
+          "say": "这三张卡覆盖了自调用失效的原理、误区和解法。随时可以回来再跑一遍实验。"
+        }
+      ]
+    }
+  ]
+}

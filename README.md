@@ -21,14 +21,15 @@
 
 ```text
 .
-├── index.html   # 32 节实验课总导航入口页（支持搜索、分章筛选与亮暗主题）
-├── pages/       # 32 份单文件交互式课件网页（双击即开，零外链依赖）
-├── lessons/     # 32 份课程结构与讲解数据（JSON）
-├── src/         # 128 份可独立编译运行的 Java 对照源码（每课 4 种变体）
-└── results/     # 实验台在本机实测沉淀的运行数据与 javap 输出记录（JSON）
+├── index.html   # 64 节实验课总导航入口页（支持搜索、分章筛选与亮暗主题）
+├── pages/       # 64 份单文件交互式课件网页（双击即开，零外链依赖）
+├── lessons/     # 64 份课程结构与讲解数据（JSON）
+├── src/         # 256 份可独立编译运行的 Java 对照源码（每课 4 种变体）+ SQL 20 题脚本
+├── results/     # 实验台在本机实测沉淀的运行数据与 javap 输出记录（JSON）
+└── docs/        # 模块 8 101 道高频笔试算法与 SQL 手撕刷题清单
 ```
 
-## 完整课表（共 32 课）
+## 完整课表（共 64 课）
 
 ### 第一章：竞态与并发容器（第 1～7 课）
 
@@ -97,22 +98,68 @@
 | 31 | **换上虚拟线程，共享计数还需要锁吗** | 只把平台线程换成 Thread.ofVirtual()，百万次 count++ 会少掉吗？ | `lab.virtrace` | [网页课件](./pages/virtual-race.html) · [JSON](./lessons/virtual-race.json) · [源码](./src/lab/virtrace/) |
 | 32 | **库与缓存各用原子数组，为啥还会写反？** | 更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？ | `lab.txoutbox` | [网页课件](./pages/tx-outbox.html) · [JSON](./lessons/tx-outbox.json) · [源码](./src/lab/txoutbox/) |
 
-### 模块 8：笔试算法 + SQL 手撕（第 33～42 课 · 10 组专题 · 101 题）
+### 模块三 · 第一章：TCP 传输与 Socket 底层（M3-01～M3-05）
+
+用真实 Socket 实测三次握手建连成本、`TIME_WAIT` 端口复用、全连接队列 `backlog` 拥堵、TCP 粘包拆包与 Nagle 延迟 ACK 撞车。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M3-01 | **短连接每次都要三次握手，有多慢？** | 同样发 200 次小请求，每次新建 Socket 挥手断开 vs 复用长连接，耗时差多少？ | `lab.tcphandshake` | [网页课件](./pages/tcp-handshake.html) · [JSON](./lessons/tcp-handshake.json) · [源码](./src/lab/tcphandshake/) |
+| M3-02 | **压测刚跑几千次就 BindException？** | 服务端或客户端频繁主动断开连接时，为什么端口很快被 `TIME_WAIT` 占满报错？ | `lab.timewait` | [网页课件](./pages/tcp-timewait.html) · [JSON](./lessons/tcp-timewait.json) · [源码](./src/lab/timewait/) |
+| M3-03 | **accept 慢了一拍，新连接怎么直接被拒？** | 服务端 `ServerSocket` 来不及 `accept()` 时，内核全连接队列 `backlog` 装满会发生什么？ | `lab.backlog` | [网页课件](./pages/tcp-backlog.html) · [JSON](./lessons/tcp-backlog.json) · [源码](./src/lab/backlog/) |
+| M3-04 | **连发 100 条消息，怎么粘成一坨还缺半截？** | TCP 是无边界的字节流，连发 100 条 `"MSG-i"`，为什么接收方按 `read(buf)` 读出来个数不对？ | `lab.sticky` | [网页课件](./pages/tcp-sticky.html) · [JSON](./lessons/tcp-sticky.json) · [源码](./src/lab/sticky/) |
+| M3-05 | **小包发得越勤反而越慢？** | 连续发送小数据包并等待确认时，为什么 Nagle 算法撞上延迟 ACK 会让耗时暴涨？ | `lab.nagle` | [网页课件](./pages/tcp-nagle.html) · [JSON](./lessons/tcp-nagle.json) · [源码](./src/lab/nagle/) |
+
+### 模块四 · 第一章：SQL 必知必会、联表与深分页改写（第 33～37 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 33 | **循环查库 N+1，接口怎么慢成蜗牛？** | 先查出 1000 条订单，再在 for 循环里一条条查下单人名字。每次只查 1 行，接口为什么还是慢到超时？ | `lab.sqljoin` | [网页课件](./pages/sql-join-nplus1.html) · [JSON](./lessons/sql-join-nplus1.json) · [源码](./src/lab/sqljoin/) |
+| 34 | **翻到第 10 万页，LIMIT 为啥突然卡死？** | 同样每页只取 20 条，LIMIT 0, 20 只要 1 毫秒，LIMIT 100000, 20 为什么突然变成慢查询？ | `lab.deeppage` | [网页课件](./pages/sql-deep-paging.html) · [JSON](./lessons/sql-deep-paging.json) · [源码](./src/lab/deeppage/) |
+| 35 | **COUNT(*) 到底比 COUNT(1) 慢多少？** | 面试常问 COUNT(*)、COUNT(1)、COUNT(列名) 谁最快。用错不仅慢，COUNT(列名) 还会把统计数算少！ | `lab.countstar` | [网页课件](./pages/sql-count-star.html) · [JSON](./lessons/sql-count-star.json) · [源码](./src/lab/countstar/) |
+| 36 | **WHERE 和 HAVING 混用，全表都被扫了一遍？** | 同样是筛选 status = 'PAID'，写在 WHERE 里只要 2 毫秒，写在 HAVING 里为什么把临时表撑爆？ | `lab.wherehaving` | [网页课件](./pages/sql-group-having.html) · [JSON](./lessons/sql-group-having.json) · [源码](./src/lab/wherehaving/) |
+| 37 | **字段允许 NULL，!= 怎么把数据全漏掉了？** | 用 WHERE id NOT IN (SELECT ...) 查黑名单外用户，子查询里只混进了一个 NULL，整条 SQL 竟然返回 0 行！ | `lab.nulltrap` | [网页课件](./pages/sql-null-trap.html) · [JSON](./lessons/sql-null-trap.json) · [源码](./src/lab/nulltrap/) |
+
+### 模块四 · 第二章：InnoDB 页结构、B+ 树聚簇索引、回表与最左前缀（第 43～49 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 43 | **UUID 当主键，插入怎么越插越慢？** | 用随机 UUID 当 InnoDB 主键，数据一上百万插入就抖动变慢；换成自增 ID 或有序 UUIDv7 为什么立刻稳了？ | `lab.pagesplit` | [网页课件](./pages/innodb-page-split.html) · [JSON](./lessons/innodb-page-split.json) · [源码](./src/lab/pagesplit/) |
+| 44 | **为什么 MySQL 索引选 B+ 树不选哈希或二叉树？** | 哈希查找明明是 O(1)，为什么 InnoDB 索引偏偏要用 B+ 树？做一次 BETWEEN 范围查询就全明白了。 | `lab.btreeio` | [网页课件](./pages/btree-vs-hash.html) · [JSON](./lessons/btree-vs-hash.json) · [源码](./src/lab/btreeio/) |
+| 45 | **走索引了，为什么还要回表再查一遍？** | 明明给 name 建了索引，EXPLAIN 也显示走了 idx_name，怎么查 2000 行还是要查 4000 次树？ | `lab.lookup` | [网页课件](./pages/clustered-lookup.html) · [JSON](./lessons/clustered-lookup.json) · [源码](./src/lab/lookup/) |
+| 46 | **把 SELECT * 改成两列，耗时怎么直接腰斩？** | 生产规范总说「禁止 SELECT *」。把 SELECT * 改成 SELECT id, name 后，EXPLAIN 多了句 Using index，发生了什么？ | `lab.covering` | [网页课件](./pages/covering-index.html) · [JSON](./lessons/covering-index.json) · [源码](./src/lab/covering/) |
+| 47 | **建了 (a, b, c) 联合索引，查 b 为啥不走索引？** | 明明建了联合索引 (a, b, c)，结果一查 WHERE b = 500 就变成了全表扫描，怎么回事？ | `lab.leftmost` | [网页课件](./pages/leftmost-prefix.html) · [JSON](./lessons/leftmost-prefix.json) · [源码](./src/lab/leftmost/) |
+| 48 | **联合索引范围后面的列，ICP 怎么少回一半表？** | 建了 (name, age) 联合索引，查 name LIKE '张%' AND age = 20。age 明明被范围截断了，为什么 MySQL 5.6 之后还是变快了？ | `lab.icp` | [网页课件](./pages/index-condition-pushdown.html) · [JSON](./lessons/index-condition-pushdown.json) · [源码](./src/lab/icp/) |
+| 49 | **字符串建前缀索引，ORDER BY 怎么还文件排序？** | 给长邮箱建了前缀索引 idx_email(email(8)) 省了不少空间，可不仅回表变多，ORDER BY email 竟然也用不上索引排序！ | `lab.prefixidx` | [网页课件](./pages/prefix-index-order.html) · [JSON](./lessons/prefix-index-order.json) · [源码](./src/lab/prefixidx/) |
+
+### 模块五 · 第一章：Spring 事务失效、动态代理与 AOP 切面（第 38～42 课）
+
+用纯 JDK 动态代理与字节码证据，亲手复现同类自调用、异常吞没、传播行为连坐回滚、JDK/CGLIB 代理坑与多切面洋葱错序。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 38 | **同类自调用，@Transactional 为什么没回滚？** | 外层方法没加事务，内部直接 this.payAndRecord() 调了加 @Transactional 的方法。抛异常后，库存却没回滚！ | `lab.txself` | [网页课件](./pages/spring-tx-self.html) · [JSON](./lessons/spring-tx-self.json) · [源码](./src/lab/txself/) |
+| 39 | **异常被吞或抛检查异常，事务怎么照样提交了？** | 明明加了 @Transactional，也确实出错了——但要么被 try-catch 吞掉，要么抛了 IOException，结果扣款照样 commit！ | `lab.txswallow` | [网页课件](./pages/spring-tx-swallow.html) · [JSON](./lessons/spring-tx-swallow.json) · [源码](./src/lab/txswallow/) |
+| 40 | **外层 catch 住内层异常，整个事务怎么还是全炸了？** | 主流程加了事务，调用「加积分」子方法时用 try-catch 兜住了异常——结果提交时竟抛出 UnexpectedRollbackException，连主订单一起回滚！ | `lab.txprop` | [网页课件](./pages/spring-tx-prop.html) · [JSON](./lessons/spring-tx-prop.json) · [源码](./src/lab/txprop/) |
+| 41 | **JDK 动态代理 vs CGLIB：强转就炸、final 就失效** | 有接口用 JDK 代理，强转实现类直接 ClassCastException；换成 CGLIB 子类代理，加个 final 切面就静默失效！ | `lab.proxykind` | [网页课件](./pages/spring-proxy-kind.html) · [JSON](./lessons/spring-proxy-kind.json) · [源码](./src/lab/proxykind/) |
+| 42 | **多个 @Aspect 切面叠在一起：锁、日志、事务谁先谁后？** | 下单方法同时挂了分布式锁切面和 @Transactional。如果锁在事务里面——锁都放开了事务还没提交，下一个线程直接读到旧余额！ | `lab.aoporder` | [网页课件](./pages/spring-aop-order.html) · [JSON](./lessons/spring-aop-order.json) · [源码](./src/lab/aoporder/) |
+
+### 模块八：笔试算法 + SQL 手撕（M8-01～M8-10 · 10 组专题 · 101 题）
 
 覆盖笔试与一二面高频手撕题：先用实测数据与 `javap` 字节码打破直觉误区，再对照 [101 题高频刷题清单](./docs/module8-100-problems.md) 与 [SQL 20 题可执行脚本](./src/lab/sqlrank/queries.sql) 每日手敲。
 
 | # | 课程标题 | 一句话引子 | 代码包 | 入口 |
 |---|---|---|---|---|
-| 33 | **两数之和暴力跑了多久？哈希与双指针怎么省出 100 倍** | O(n²) 暴力在 6 万数据下直接慢成幻灯片，预分配 HashMap 怎么几乎 0 毫秒？ | `lab.hashtwo` | [网页课件](./pages/hash-twopointer.html) · [JSON](./lessons/hash-twopointer.json) · [源码](./src/lab/hashtwo/) |
-| 34 | **链表翻转与环检测：递归长链会爆栈，三指针怎么原地零分配** | 10 万节点链表递归直接 StackOverflowError，三指针与 dummy 哨兵怎么零分配稳过？ | `lab.linkedlist` | [网页课件](./pages/linked-list.html) · [JSON](./lessons/linked-list.json) · [源码](./src/lab/linkedlist/) |
-| 35 | **栈与单调队列：滑动窗口最大值怎么从 O(nk) 压到均摊 O(n)** | 窗口右移一格，为什么暴力扫和 TreeMap 都输给了 ArrayDeque 单调队列？ | `lab.stackqueue` | [网页课件](./pages/stack-queue.html) · [JSON](./lessons/stack-queue.json) · [源码](./src/lab/stackqueue/) |
-| 36 | **二叉树递归与层序：偏斜树为什么把递归打爆，队列 size 怎么锁死每一层** | 3 万层偏斜树下递归直接爆栈，显式栈与 Morris 怎么稳如磐石？ | `lab.bintree` | [网页课件](./pages/binary-tree.html) · [JSON](./lessons/binary-tree.json) · [源码](./src/lab/bintree/) |
-| 37 | **二分搜索与边界：为什么总写死循环，(l + r) / 2 怎么就溢出了** | 百万数据二分只需 20 步，差一个等号或右移符号怎么就漏解或死循环？ | `lab.binsearch` | [网页课件](./pages/binary-search.html) · [JSON](./lessons/binary-search.json) · [源码](./src/lab/binsearch/) |
-| 38 | **回溯排列与组合：忘掉撤销现场会全串，剪枝去重怎么省出 10 倍时间** | 每次拷贝路径慢如蜗牛，忘掉 remove 会全串，排序同层去重怎么提速？ | `lab.backtrack` | [网页课件](./pages/backtrack.html) · [JSON](./lessons/backtrack.json) · [源码](./src/lab/backtrack/) |
-| 39 | **动态规划与状态压缩：纯递归怎么指数级卡死，滚动变量怎么压到 O(1)** | 第 40 阶楼梯纯递归飙出数百毫秒，记忆化与滚动变量一万遍只要一眨眼？ | `lab.dpbasics` | [网页课件](./pages/dp-basics.html) · [JSON](./lessons/dp-basics.json) · [源码](./src/lab/dpbasics/) |
-| 40 | **手写线程安全 LRU（接第 7 课）：为什么 readLock 照样崩，分段锁怎么提速** | get() 也会改双向链表，加 readLock 照样崩；16 分段锁在 8 线程下怎么拉开差距？ | `lab.tslru` | [网页课件](./pages/threadsafe-lru.html) · [JSON](./lessons/threadsafe-lru.json) · [源码](./src/lab/tslru/) |
-| 41 | **多线程交替打印：wait 不包在 while 里怎么就乱序了，Condition 怎么精准接力** | 三线程交替打印 ABC：while 换成 if 立马乱套，Condition 与 Semaphore 怎么稳控？ | `lab.altprint` | [网页课件](./pages/alt-print.html) · [JSON](./lessons/alt-print.json) · [源码](./src/lab/altprint/) |
-| 42 | **高频分组排名 SQL 20 题：为什么窗口函数比相关子查询快一个数量级** | 部门工资前三高，相关子查询 O(n²) 慢爆，DENSE_RANK 怎么一趟搞定？ | `lab.sqlrank` | [网页课件](./pages/sql-ranking.html) · [JSON](./lessons/sql-ranking.json) · [源码](./src/lab/sqlrank/) |
+| M8-01 | **两数之和暴力跑了多久？哈希与双指针怎么省出 100 倍** | O(n²) 暴力在 6 万数据下直接慢成幻灯片，预分配 HashMap 怎么几乎 0 毫秒？ | `lab.hashtwo` | [网页课件](./pages/hash-twopointer.html) · [JSON](./lessons/hash-twopointer.json) · [源码](./src/lab/hashtwo/) |
+| M8-02 | **链表翻转与环检测：递归长链会爆栈，三指针怎么原地零分配** | 10 万节点链表递归直接 StackOverflowError，三指针与 dummy 哨兵怎么零分配稳过？ | `lab.linkedlist` | [网页课件](./pages/linked-list.html) · [JSON](./lessons/linked-list.json) · [源码](./src/lab/linkedlist/) |
+| M8-03 | **栈与单调队列：滑动窗口最大值怎么从 O(nk) 压到均摊 O(n)** | 窗口右移一格，为什么暴力扫和 TreeMap 都输给了 ArrayDeque 单调队列？ | `lab.stackqueue` | [网页课件](./pages/stack-queue.html) · [JSON](./lessons/stack-queue.json) · [源码](./src/lab/stackqueue/) |
+| M8-04 | **二叉树递归与层序：偏斜树为什么把递归打爆，队列 size 怎么锁死每一层** | 3 万层偏斜树下递归直接爆栈，显式栈与 Morris 怎么稳如磐石？ | `lab.bintree` | [网页课件](./pages/binary-tree.html) · [JSON](./lessons/binary-tree.json) · [源码](./src/lab/bintree/) |
+| M8-05 | **二分搜索与边界：为什么总写死循环，(l + r) / 2 怎么就溢出了** | 百万数据二分只需 20 步，差一个等号或右移符号怎么就漏解或死循环？ | `lab.binsearch` | [网页课件](./pages/binary-search.html) · [JSON](./lessons/binary-search.json) · [源码](./src/lab/binsearch/) |
+| M8-06 | **回溯排列与组合：忘掉撤销现场会全串，剪枝去重怎么省出 10 倍时间** | 每次拷贝路径慢如蜗牛，忘掉 remove 会全串，排序同层去重怎么提速？ | `lab.backtrack` | [网页课件](./pages/backtrack.html) · [JSON](./lessons/backtrack.json) · [源码](./src/lab/backtrack/) |
+| M8-07 | **动态规划与状态压缩：纯递归怎么指数级卡死，滚动变量怎么压到 O(1)** | 第 40 阶楼梯纯递归飙出数百毫秒，记忆化与滚动变量一万遍只要一眨眼？ | `lab.dpbasics` | [网页课件](./pages/dp-basics.html) · [JSON](./lessons/dp-basics.json) · [源码](./src/lab/dpbasics/) |
+| M8-08 | **手写线程安全 LRU（接第 7 课）：为什么 readLock 照样崩，分段锁怎么提速** | get() 也会改双向链表，加 readLock 照样崩；16 分段锁在 8 线程下怎么拉开差距？ | `lab.tslru` | [网页课件](./pages/threadsafe-lru.html) · [JSON](./lessons/threadsafe-lru.json) · [源码](./src/lab/tslru/) |
+| M8-09 | **多线程交替打印：wait 不包在 while 里怎么就乱序了，Condition 怎么精准接力** | 三线程交替打印 ABC：while 换成 if 立马乱套，Condition 与 Semaphore 怎么稳控？ | `lab.altprint` | [网页课件](./pages/alt-print.html) · [JSON](./lessons/alt-print.json) · [源码](./src/lab/altprint/) |
+| M8-10 | **高频分组排名 SQL 20 题：为什么窗口函数比相关子查询快一个数量级** | 部门工资前三高，相关子查询 O(n²) 慢爆，DENSE_RANK 怎么一趟搞定？ | `lab.sqlrank` | [网页课件](./pages/sql-ranking.html) · [JSON](./lessons/sql-ranking.json) · [源码](./src/lab/sqlrank/) |
 
 ## 本地动手运行实验代码
 

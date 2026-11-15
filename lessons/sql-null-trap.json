@@ -1,0 +1,216 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "sql-null-trap",
+  "course": "MySQL 索引、事务与锁",
+  "title": "字段允许 NULL，!= 怎么把数据全漏掉了？",
+  "lead": "用 WHERE id NOT IN (SELECT ...) 查黑名单外用户，子查询里只混进了一个 NULL，整条 SQL 竟然返回 0 行！",
+  "minutes": 30,
+  "needs": ["写过 != 或 NOT IN 查询"],
+  "after": [
+    "讲清 SQL 的三值逻辑（TRUE / FALSE / UNKNOWN）",
+    "解释为什么 NOT IN 遇到一个 NULL 就全军覆没",
+    "用 NOT EXISTS、显式 IS NOT NULL 或 NOT NULL DEFAULT 彻底避坑"
+  ],
+  "terms": {
+    "三值逻辑": "SQL 里的布尔运算有三种结果：TRUE、FALSE 和 UNKNOWN。NULL 参与普通比较（=、!=、IN）永远得到 UNKNOWN。",
+    "NOT IN": "等价于 x != a AND x != b AND ...，只要列表中有一个 NULL，整个 AND 表达式就变成 UNKNOWN。",
+    "NOT EXISTS": "只关心子查询有没有返回行，不受 NULL 值导致的三值逻辑污染。",
+    "NOT NULL DEFAULT": "建表规范：给字段设非空和默认值，从根源上消灭三值逻辑和额外空值开销。"
+  },
+  "experiments": {
+    "nulltrap": {
+      "runner": "java",
+      "home": "lab.nulltrap",
+      "variants": [
+        { "id": "NotInWithNull", "label": "NOT IN 含一个 NULL", "note": "子查询列表里混入一个 NULL，结果直接变 0 行！" },
+        { "id": "NotEqualNull", "label": "status != 'CANCELLED'", "note": "把 status IS NULL 的未支付订单全部漏掉！" },
+        { "id": "NotExistsSafe", "label": "改用 NOT EXISTS", "note": "关联判存在，安全忽略子查询中的 NULL。" },
+        { "id": "NotNullDefault", "label": "建表 NOT NULL DEFAULT", "note": "表结构消灭 NULL，普通 != 也能精准全中。" }
+      ],
+      "knob": { "label": "数据总行数", "values": ["1000", "10000", "50000", "100000"], "default": "10000" },
+      "repeat": 20,
+      "metric": { "key": "returned", "expectKey": "expected", "label": "查出的有效行数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "字段允许 NULL，!= 怎么把数据全漏掉了？",
+      "blocks": [
+        { "t": "text", "md": "生产环境一条很常见的需求：查出「不在黑名单里的所有用户」或「状态不是已取消的订单」。一旦字段里允许 `NULL`，结果集经常莫名其妙少一半甚至变成空集。", "say": "这不是 MySQL 的 Bug，而是 SQL 标准里的三值逻辑在起作用。" }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "黑名单子查询里只混进了 1 个 NULL",
+      "blocks": [
+        { "t": "text", "md": "表里有 10000 个用户，黑名单子查询返回 `[1, 2, NULL]`。执行 `NOT IN`，到底能查出多少个用户？", "say": "很多人直觉是 9998 个。我们看代码里 SQL 引擎是怎么算的。" }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 SQL 引擎怎么算 NOT IN",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "nulltrap.NotInWithNull",
+          "say": "注意看 `sqlNotIn` 的返回值：`WHERE` 子句只放行严格等于 `Tri.TRUE` 的行，`Tri.UNKNOWN` 直接被丢弃。",
+          "walk": [
+            { "focus": ["if (v == null)", "sawUnknown = true;"], "say": "只要列表里碰到一个 `null`，`sawUnknown` 就被置为 true。", "focusLines": [8, 9] },
+            { "focus": ["return sawUnknown ? Tri.UNKNOWN : Tri.TRUE;"], "say": "哪怕没命中 1 和 2，最终返回的也是 `UNKNOWN` 而不是 `TRUE`！", "focusLines": [13] }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "res",
+          "q": "10000 个用户执行 `NotInWithNull`（黑名单 `[1, 2, null]`），最终 `returned` 是多少？",
+          "options": ["9998", "10000", "2", "0"],
+          "answer": 3,
+          "say": "选出你算出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看：整整 1 万行变 0 行",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "nulltrap",
+          "show": ["NotInWithNull", "NotEqualNull"],
+          "knob": false,
+          "hand": false,
+          "say": "`NotInWithNull` 返回 `0`！再切换看 `NotEqualNull`：原本应查出 9000 行非取消订单，也因为 `NULL != 'CANCELLED'` 是 `UNKNOWN` 而漏掉了 1000 行。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：为什么 3 != NULL 是 UNKNOWN？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "nulltrap.NotInWithNull",
+          "within": "static Tri sqlNotIn",
+          "from": "0: iconst_0",
+          "to": "47: ireturn",
+          "say": "在 SQL 里，NULL 不代表「空字符串」或「0」，它代表「不知道是多少」。问「3 不等于一个不知道的数吗？」答案只能是「不知道（UNKNOWN）」。而 `TRUE AND UNKNOWN` 永远等于 `UNKNOWN`，于是所有行全军覆没。",
+          "walk": [
+            { "focus": ["if_icmpne", "sawUnknown"], "say": "只要任意一项为 NULL，整个 `NOT IN` 就返回 `UNKNOWN`。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "怎么修：NOT EXISTS 或 建表禁止 NULL",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "nulltrap",
+          "show": ["NotInWithNull", "NotEqualNull", "NotExistsSafe", "NotNullDefault"],
+          "select": "NotExistsSafe",
+          "say": "`NotExistsSafe` 和 `NotNullDefault` 都精准返回了全部有效行，一分不差。"
+        },
+        {
+          "t": "chart",
+          "of": "nulltrap",
+          "say": "重点不是耗时，而是结果集正确性：`NotInWithNull` 永远在 0 线上，一旦上线就是 P0 级数据丢失事故。",
+          "walk": [
+            { "focus": ["NotExistsSafe", "NotNullDefault"], "say": "用 `NOT EXISTS` 或 `NOT NULL DEFAULT` 才能拿回全部正确数据。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "遇到 NULL 怎么写才安全？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "记住三条防线：建表尽量 `NOT NULL`、子查询排除改用 `NOT EXISTS`、条件判不等加上 `IS NULL`。",
+          "options": [
+            { "name": "NOT IN (子查询)", "solves": "写法直观，仅当明确非空列时安全", "cost": "易全军覆没：查出 0 行", "when": "必须确保子查询加了 `WHERE col IS NOT NULL`", "say": "不加判空就上 NOT IN，等于埋雷。" },
+            { "name": "NOT EXISTS", "solves": "不触发三值逻辑陷阱，且能更好利用关联索引", "cost": "安全命中：{ms:nulltrap.NotExistsSafe} ms", "when": "所有「排除某子查询集合」的场景", "say": "关联条件写 `WHERE b.id = a.id`，安全又快。" },
+            { "name": "NOT NULL DEFAULT", "solves": "彻底消灭 NULL，!=、COUNT、索引都省心", "cost": "无额外开销：{ms:nulltrap.NotNullDefault} ms", "when": "所有新表设计（阿里规范明确要求字段尽量 NOT NULL）", "say": "InnoDB 存 NULL 还要占额外 null 位图空间，不如给默认值。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "订单表 `status` 允许 NULL，要查出所有「不是已取消（CANCELLED）」的订单，下面哪个写法不会漏数据？",
+          "options": [
+            { "text": "`WHERE status != 'CANCELLED'`", "ok": false, "why": "`status` 为 NULL 的行算出来是 UNKNOWN，会被漏掉。" },
+            { "text": "`WHERE status != 'CANCELLED' OR status IS NULL`（或用 `<=>` 安全等于取反）", "ok": true, "why": "显式把 NULL 的情况也包含进来，或者建表时就把 `status` 设为 `NOT NULL`。" },
+            { "text": "`WHERE status != 'CANCELLED' AND status != NULL`", "ok": false, "why": "`status != NULL` 对所有行都是 UNKNOWN，结果直接变 0 行！" }
+          ],
+          "say": "注意第三个选项里的 `!= NULL` 也是经典坑！"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "SQL 三值逻辑与 NULL 陷阱",
+          "alias": "Three-Valued Logic (TRUE / FALSE / UNKNOWN)",
+          "oneLine": "NULL 参与普通比较永远返回 `UNKNOWN`，导致==`!=` 漏行、`NOT IN` 全军覆没返回空集==。",
+          "asked": [
+            "为什么 WHERE col != NULL 查不到任何数据？",
+            "NOT IN 和 NOT EXISTS 的区别是什么？",
+            "为什么建表规范建议字段尽量设 NOT NULL？"
+          ],
+          "say": "Part 1（SQL 必知必会、联表与深分页）到此收官，接下来我们掀开 InnoDB B+ 树的机盖！"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么说 MySQL 里尽量不要让字段允许 NULL？NOT IN 遇到 NULL 会发生什么？",
+          "points": [
+            "SQL 是三值逻辑：TRUE、FALSE、UNKNOWN，NULL 参与 =/!= 永远是 UNKNOWN",
+            "NOT IN 等价于多个 != 用 AND 连接，混入一个 NULL 就会让整条条件变成 UNKNOWN，返回 0 行",
+            "普通 != 也会把 NULL 行漏掉，必须用 IS NULL 或 NOT EXISTS",
+            "建表设为 NOT NULL DEFAULT 既防三值逻辑坑，也省 InnoDB null 位图空间、方便走索引"
+          ],
+          "model": "SQL 采用的是三值逻辑，除了 TRUE 和 FALSE 还有 UNKNOWN。任何值和 NULL 做 =、!= 比较，结果都是 UNKNOWN，而 WHERE 只放行 TRUE 的行。这就导致如果用 WHERE status != 'CANCELLED' 会漏掉 NULL 行；更致命的是 NOT IN 子查询里只要混进一个 NULL，整个 AND 链条就变成 UNKNOWN，直接返回 0 行。工程上应该用 NOT EXISTS 或显式 IS NOT NULL 来防，更好的做法是建表时尽量设为 NOT NULL 并给默认值。",
+          "say": "用自己的话顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "NOT IN 子查询里有 NULL 会怎样？", "a": "整个条件变成 UNKNOWN，结果集直接返回 0 行。" },
+            { "q": "怎么安全判空与排除集合？", "a": "判空只能用 IS NULL / IS NOT NULL（或 <=>）；排除子查询优先用 NOT EXISTS。" },
+            { "q": "为什么推荐 NOT NULL DEFAULT？", "a": "消灭三值逻辑丢数据坑，节省行格式里的 NULL 标志位，并让索引统计和查询更干净。" }
+          ],
+          "say": "Part 1 全部完成！"
+        }
+      ]
+    }
+  ]
+}

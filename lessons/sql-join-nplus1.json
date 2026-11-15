@@ -1,0 +1,247 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "sql-join-nplus1",
+  "course": "MySQL 索引、事务与锁",
+  "title": "循环查库 N+1，接口怎么慢成蜗牛？",
+  "lead": "先查出 1000 条订单，再在 for 循环里一条条查下单人名字。每次只查 1 行，接口为什么还是慢到超时？",
+  "minutes": 35,
+  "needs": ["知道 SQL SELECT 查询", "写过 for 循环", "知道数据库和程序不在同一个进程"],
+  "after": [
+    "一眼认出代码里的 N+1 查询陷阱",
+    "算清 1 次慢网络往返和 1001 次往返的延迟差距",
+    "说清 IN 批量查和 SQL JOIN 各自的适用边界"
+  ],
+  "terms": {
+    "N+1 查询": "先用 1 条 SQL 查出 N 条主记录，再循环发 N 条 SQL 查关联数据，一共发了 N+1 次请求。",
+    "RTT": "Round-Trip Time，网络往返时间：请求从应用发到数据库、再等结果回来的来回耗时。",
+    "IN 批量查询": "把循环里的 N 个 id 攒成一个集合，用 WHERE id IN (...) 一次发给数据库。",
+    "JOIN": "在数据库内部把两张表按关联键拼在一起，一次请求把主表和关联字段全带回来。",
+    "Hash Join": "MySQL 8.0 在没有合适索引时的联表方式：把小表建成内存哈希表，再扫大表匹配。",
+    "Nested-Loop Join": "嵌套循环连接：驱动表每拿一行，去被驱动表通过索引定位匹配行。"
+  },
+  "experiments": {
+    "sqljoin": {
+      "runner": "java",
+      "home": "lab.sqljoin",
+      "variants": [
+        { "id": "LoopQuery", "label": "循环 N+1 查库", "note": "先查 N 条订单，再 for 循环每次发一条 SQL 查用户。" },
+        { "id": "BatchIn", "label": "IN 批量查+内存组装", "note": "先查订单，收集 userId 去重后用 IN (...) 一次查回所有用户。" },
+        { "id": "HashJoin", "label": "SQL Hash Join", "note": "一条 JOIN SQL，数据库内建小表哈希再匹配。" },
+        { "id": "IndexJoin", "label": "SQL 索引 Join", "note": "一条 JOIN SQL，驱动表走被驱动表主键索引直连。" }
+      ],
+      "knob": { "label": "订单数 N", "values": ["100", "500", "1000", "2000"], "default": "1000" },
+      "repeat": 20,
+      "metric": { "key": "roundTrips", "expectKey": "expected", "label": "数据库往返次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "循环查库 N+1，接口怎么慢成蜗牛？",
+      "blocks": [
+        { "t": "text", "md": "今天弄明白一个后端线上最常踩的慢接口元凶：**N+1 查询**。", "say": "很多同学写业务接口时，单条 SQL 在命令行跑只要 0.1 毫秒，觉得稳了，结果一上线接口直接拖到几百毫秒甚至超时。根子往往就在 for 循环里查库。" },
+        { "t": "text", "md": "我们用程序把 **1000 条订单配用户名** 的 4 种写法真实跑一遍，对比往返次数和耗时。", "say": "不靠猜，先看场景，再写出来实测。" }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，热个身",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "两道小题，确认一下前置直觉。",
+          "items": [
+            {
+              "have": "网络往返",
+              "q": "程序和 MySQL 之间每次发 SQL 都要走一次网络来回（哪怕内网只要 0.5ms）。发 1000 次一共光等网络就要多久？",
+              "options": ["还是 0.5ms", "大约 500ms", "大约 5ms"],
+              "answer": 1,
+              "why": "串行发 1000 次，1000 × 0.5ms = 500ms，半秒钟全花在路上等回包。"
+            },
+            {
+              "have": "SQL 组装",
+              "q": "要查 1000 个用户的信息，能不能把 1000 个 id 放进一条 SQL？",
+              "options": ["不能，SQL 每次只能查一个 id", "可以，用 WHERE id IN (...) 或 JOIN"],
+              "answer": 1,
+              "why": "数据库擅长批量集合操作，一次给它一批 id，往返次数直接从 1000 降到 1。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "每次查询只要 0.015ms，循环 1000 次会怎样？",
+      "blocks": [
+        { "t": "text", "md": "先查出 **1000** 条订单（1 次），再在循环里按 `user_id` 查用户名（1000 次）。", "say": "哪怕把单次网络往返压到极低的 0.015 毫秒，1001 次往返叠加起来会怎样？" }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看循环查库的代码",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "sqljoin.LoopQuery",
+          "say": "重点看两处：循环外查了一次订单，循环里又按每个订单的 uid 发起一次往返。",
+          "walk": [
+            { "focus": ["networkRtt();", "roundTrips++;"], "say": "第 1 次查库：把 1000 条订单拉回来。", "focusLines": [22, 23] },
+            { "focus": ["for (int uid : orderUserIds)", "networkRtt();"], "say": "接下来进了 for 循环：有 1000 个订单就再发 1000 次请求，一共 1001 次。", "focusLines": [26, 27] }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "rtt",
+          "q": "1000 条订单用 `LoopQuery` 跑完，一共会向数据库发几次请求？",
+          "options": ["1 次", "2 次", "1000 次", "1001 次"],
+          "answer": 3,
+          "say": "先查订单列表算 1 次，循环查用户算 N 次，选一个你算出来的数。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看：1001 次往返",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "sqljoin",
+          "show": ["LoopQuery"],
+          "knob": false,
+          "hand": false,
+          "say": "看实测结果：`roundTrips` 稳稳落在 1001，光等网络往返就花了十多毫秒（真实内网 0.5ms RTT 时就是 500ms+）。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里藏着两层代价",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "sqljoin.LoopQuery",
+          "within": "static void main",
+          "from": "74: invokestatic",
+          "to": "106: goto",
+          "say": "看循环体字节码：每一次迭代都要调用一次 `networkRtt()` 走网络通信、解析 SQL、建执行计划、返包，成本全乘了 N 倍。",
+          "walk": [
+            { "focus": ["invokestatic", "networkRtt"], "say": "循环外调用一次 `networkRtt`（那次「+1」）。" },
+            { "focus": ["goto"], "say": "随后进入循环体，反复调用 `networkRtt`，直到 N 条订单全部跑完。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "怎么修：把 N+1 压成 2 次甚至 1 次",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "sqljoin",
+          "show": ["LoopQuery", "BatchIn", "HashJoin", "IndexJoin"],
+          "select": "BatchIn",
+          "say": "切到 `BatchIn`：先查订单，再把去重后的 `user_id` 打包成一条 `IN (...)`，往返立刻从 1001 次降到 2 次！`HashJoin` 和 `IndexJoin` 更进一步，1 次搞定。"
+        },
+        {
+          "t": "chart",
+          "of": "sqljoin",
+          "say": "看折线随订单数 N 增长的斜率：`LoopQuery` 线性飙升，而 `BatchIn`、`HashJoin`、`IndexJoin` 几乎贴着 0ms 横着走。",
+          "walk": [
+            { "focus": ["LoopQuery"], "say": "`LoopQuery` 随着订单数翻倍，耗时成倍暴涨。" },
+            { "focus": ["BatchIn", "IndexJoin"], "say": "批量 `IN` 和 `JOIN` 把网络往返压成常数 2 次或 1 次，N 再大也不怕。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "BatchIn 还是 JOIN，工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "四种方式放一起对比，工程上主要在「应用层 IN 组装」和「SQL JOIN」之间做权衡。",
+          "options": [
+            { "name": "LoopQuery (N+1)", "solves": "写法最顺手，ORM 懒加载默认容易踩", "cost": "N+1 次往返：{ms:sqljoin.LoopQuery} ms", "when": "严禁在生产列表接口出现", "say": "任何列表查询看到循环查库，直接重构。" },
+            { "name": "BatchIn (2次+组装)", "solves": "避免跨库/大表 JOIN，SQL 简单易分库分表", "cost": "固定 2 次往返：{ms:sqljoin.BatchIn} ms", "when": "微服务跨表、分库分表、或阿里面试推荐的「避免超过 3 张表 JOIN」场景", "say": "IN 列表注意分批（如每批 500 个），防止 SQL 过长。" },
+            { "name": "IndexJoin (1次)", "solves": "单库内一次往返完成关联，无需应用层拼 Map", "cost": "1 次往返：{ms:sqljoin.IndexJoin} ms", "when": "同库 2～3 张小中表关联，且被驱动表关联字段有索引", "say": "有索引走 Index Nested-Loop Join 最快；没索引会退化成 Hash Join 或 Block Nested-Loop。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "订单表和用户表以后要拆分到两个微服务库，当前怎么消除 N+1 最合适？",
+          "options": [
+            { "text": "继续用 SQL `JOIN` 跨库关联", "ok": false, "why": "分库或微服务后无法直接跨库 SQL JOIN。" },
+            { "text": "先查订单列表，提取 `userId` 去重后用 `IN (...)` 批量查用户再内存组装", "ok": true, "why": "固定 2 次请求，完全不依赖跨库 JOIN，性能几乎和 JOIN 一样快。" },
+            { "text": "给 `user_id` 加个索引后继续在 for 循环里一条条查", "ok": false, "why": "加索引只能降低单次查询耗时，消除不了 N 次网络往返的 RTT 放大。" }
+          ],
+          "say": "选出最贴合分库/微服务演进的改法。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "N+1 查询问题",
+          "alias": "N+1 Query Problem",
+          "oneLine": "1 次查主列表 + N 次循环查详情，导致==网络往返（RTT）和 SQL 解析次数放大 N 倍==。",
+          "asked": [
+            "MyBatis / JPA 里怎么触发和排查 N+1？",
+            "为什么阿里规范不建议超过三张表 JOIN？改用什么替代？",
+            "WHERE id IN (...) 一次最多传多少个？"
+          ],
+          "say": "下次面试官问「接口慢怎么排查」，N+1 和慢 SQL 一定是头两张牌。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "什么是 N+1 查询？为什么它会拖垮接口？怎么优化？",
+          "points": [
+            "1 次查主列表 N 条，再循环发 N 次查关联表，共 N+1 次 RTT",
+            "单条 SQL 很快，但网络往返乘以 N 后延迟成倍放大",
+            "同库小表（2~3 张）且有索引可用 JOIN（1 次往返）",
+            "跨库/高并发首选 IN 批量查 + 内存 Map 组装（2 次往返，注意分批）"
+          ],
+          "model": "N+1 是指先用 1 条 SQL 查出 N 条主记录，然后在循环里对每条记录再发 1 条 SQL 查关联数据，总共产生 N+1 次数据库往返。虽然单条 SQL 走主键很快，但网络 RTT 和连接开销被放大了 N 倍。优化有两种：同库 2~3 张表且关联列有索引时，直接用 JOIN 一次拉齐；如果是大表或后续要分库分表，就把关联 ID 收集去重，用 WHERE id IN (...) 批量查一次回内存用 HashMap 组装，把往返压到固定 2 次。",
+          "say": "按着这四点，自己开口顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "N+1 查询慢在哪里？", "a": "慢在 N 次串行网络往返（RTT）与重复的 SQL 解析开销，而不是单条 SQL 本身。" },
+            { "q": "消除 N+1 的两大手段是什么？", "a": "1）同库有索引：SQL JOIN（1 次往返）；2）跨库/通用：收集 ID 去重后 IN 批量查 + 内存 Map 组装（2 次往返）。" },
+            { "q": "用 IN 批量查询要注意什么？", "a": "要做去重、判空（空列表直接返回不发 SQL），且超大集合要分批（如每批 500 条）。" }
+          ],
+          "say": "这三张卡收好，我们进入下一课：翻到第 10 万页为什么会卡死。"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,315 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "covering-index",
+  "course": "MySQL 索引、事务与锁",
+  "title": "把 SELECT * 改成两列，耗时怎么直接腰斩？",
+  "lead": "生产规范总说「禁止 SELECT *」。把 SELECT * 改成 SELECT id, name 后，EXPLAIN 多了句 Using index，发生了什么？",
+  "minutes": 35,
+  "needs": [
+    "知道回表概念"
+  ],
+  "after": [
+    "亲眼看到多查一个未索引列如何瞬间触发几千次回表",
+    "学会用联合索引把高频查询做成覆盖索引",
+    "看懂 EXPLAIN Extra 中的 Using index"
+  ],
+  "terms": {
+    "覆盖索引（Covering Index）": "索引本身就已经包含了查询需要的所有字段，无需回表查聚簇索引。",
+    "Using index": "EXPLAIN 中 Extra 字段出现它，代表触发了覆盖索引优化，0 回表。"
+  },
+  "experiments": {
+    "covering": {
+      "runner": "java",
+      "home": "lab.covering",
+      "variants": [
+        {
+          "id": "SelectStarLookup",
+          "label": "SELECT * (必回表)",
+          "note": "需要整行所有字段，每一条都必须回表。"
+        },
+        {
+          "id": "CoveringIndex",
+          "label": "SELECT id, name (覆盖)",
+          "note": "id 和 name 全在 idx_name 里，0 回表！"
+        },
+        {
+          "id": "ExtraColLookup",
+          "label": "多查一列 phone (退化)",
+          "note": "多查一个不在索引里的列，覆盖索引立刻失效！"
+        },
+        {
+          "id": "CompositeCovering",
+          "label": "联合索引(name, phone)",
+          "note": "把 phone 也放进联合索引，重新实现 0 回表。"
+        }
+      ],
+      "knob": {
+        "label": "查询行数",
+        "values": [
+          "500",
+          "2000",
+          "5000",
+          "10000"
+        ],
+        "default": "5000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "backToTable",
+        "expectKey": "expected",
+        "label": "回表次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "把 SELECT * 改成两列，耗时怎么直接腰斩？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "规范里常写的「禁止 `SELECT *`」，很多人以为只是为了省点网络传输带宽。其实它更致命的杀伤力在于：**直接打断了覆盖索引，把零回表变成全回表**。",
+          "say": "今天我们把 `SELECT *` 和 `SELECT id, name` 拉出来跑一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "查 5000 条记录，多写一个字段会多多少次回表？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "同样走 `idx_name` 索引，只查 `id, name` 是 0 次回表；一旦写成 `SELECT *` 或多加一个 `phone`，回表次数直接变成 **5000** 次。",
+          "say": "先看 `SelectStarLookup` 的源码。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 SelectStarLookup 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "covering.SelectStarLookup",
+          "say": "只要查询列表里出现任何一个不在当前二级索引里的列，引擎就必须去聚簇索引 `Arrays.binarySearch` 捞整行。",
+          "walk": [
+            {
+              "focus": [
+                "int pos = Arrays.binarySearch(pkIds, pk);"
+              ],
+              "say": "每一次循环都在做聚簇索引回表查找。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "查询 5000 行时，如果只是在 `SELECT id, name` 后面多加了一个未索引的 `phone` 列，回表次数会从 0 变成多少？",
+          "options": [
+            "还是 0 次",
+            "变成 5000 次",
+            "变成 1 次"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "covering",
+          "show": [
+            "SelectStarLookup"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `SelectStarLookup` 和 `ExtraColLookup` 都是整整 5000 次回表！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "covering.SelectStarLookup",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "覆盖索引不是一种新的索引类型，而是一种「查询刚好被已有索引全部覆盖」的执行状态。只要少一列在索引里，就覆盖不住。",
+          "walk": [
+            {
+              "focus": [
+                "Arrays.binarySearch"
+              ],
+              "say": "覆盖索引时这段回表代码根本不会执行。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "covering",
+          "show": [
+            "SelectStarLookup",
+            "CoveringIndex",
+            "ExtraColLookup",
+            "CompositeCovering"
+          ],
+          "select": "CoveringIndex",
+          "say": "只取需要的列（`CoveringIndex`），或者把高频一起查的列放进联合索引（`CompositeCovering`），回表次数直接归零！"
+        },
+        {
+          "t": "chart",
+          "of": "covering",
+          "say": "覆盖索引的耗时曲线几乎贴着 0ms，和动辄几千次回表的写法拉开数量级差距。",
+          "walk": [
+            {
+              "focus": [
+                "SelectStarLookup",
+                "CoveringIndex"
+              ],
+              "say": "把 `SELECT *` 改成按需取列，是成本最低的性能翻倍手段。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "能按需写列名绝不写 `SELECT *`；极高频的核心查询可以用联合索引刻意凑出覆盖索引。",
+          "options": [
+            {
+              "name": "SELECT *",
+              "solves": "图省事",
+              "cost": "100% 触发回表：{ms:covering.SelectStarLookup} ms",
+              "when": "仅按主键 id 查单行时无妨，其余列表查询严禁",
+              "say": "还会增加网络带宽和反序列化开销。"
+            },
+            {
+              "name": "覆盖索引 (Using index)",
+              "solves": "0 回表，二级索引体积小缓冲池命中高",
+              "cost": "0 回表：{ms:covering.CoveringIndex} ms",
+              "when": "所有高频列表、延迟关联子查询、COUNT/EXISTS",
+              "say": "EXPLAIN Extra 看到 Using index 就是它。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "现有表 `users(id PK, name, age, bio)`，建了联合索引 `idx_name_age(name, age)`。下面哪条 SQL 能触发覆盖索引（Using index）？",
+          "options": [
+            {
+              "text": "`SELECT id, name, age FROM users WHERE name = 'Tom'`",
+              "ok": true,
+              "why": "二级索引叶子上已经存了 `name`、`age` 和主键 `id`，完全不用回表！"
+            },
+            {
+              "text": "`SELECT * FROM users WHERE name = 'Tom'`",
+              "ok": false,
+              "why": "`bio` 不在索引里，必须回表。"
+            },
+            {
+              "text": "`SELECT id, name, bio FROM users WHERE age = 20`",
+              "ok": false,
+              "why": "不仅 `bio` 不在索引里，而且 `age` 跳过最左列 `name`。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "覆盖索引",
+          "alias": "Covering Index (Using index)",
+          "oneLine": "查询所需的所有列都已包含在二级索引叶子节点中，==无需回表即可直接返回结果==。",
+          "asked": [
+            "什么是覆盖索引？",
+            "EXPLAIN 的 Extra 出现 Using index 代表什么？",
+            "为什么不建议写 SELECT *？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "什么是覆盖索引？为什么禁止 SELECT * 能让很多慢查询直接提速？",
+          "points": [
+            "二级索引叶子存了索引列和主键 id",
+            "如果 SELECT 的字段全在其中，就无需回表查聚簇索引，EXPLAIN 显示 Using index",
+            "SELECT * 会引入未索引字段，强迫引擎对每条命中记录回表",
+            "工程上按需写列名，或把高频组合列放进联合索引"
+          ],
+          "model": "覆盖索引是指一个索引包含了查询所需的所有字段，引擎直接从二级索引的叶子节点就能拿到全部结果，不需要再拿主键回表查聚簇索引，EXPLAIN 的 Extra 列会显示 Using index。禁止 SELECT * 的核心原因就是：哪怕你只多查一个不在索引里的列，覆盖索引也会立刻失效，迫使数据库对每一条命中的行都做一次随机回表，I/O 代价翻倍。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "什么是覆盖索引？",
+              "a": "二级索引叶子节点已包含 SELECT 所需的全部列（含主键 id），无需回表。"
+            },
+            {
+              "q": "怎么在 EXPLAIN 里认出它？",
+              "a": "Extra 列出现 Using index。"
+            },
+            {
+              "q": "为什么禁止 SELECT *？",
+              "a": "容易破坏覆盖索引导致大量回表，且浪费网络 I/O 与内存。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}
