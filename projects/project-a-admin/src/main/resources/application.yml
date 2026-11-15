@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: project-a-admin
+  datasource:
+    url: jdbc:h2:mem:admin_db;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+
+app:
+  jwt:
+    # Base64-encoded 256-bit+ secret for local dev; override via APP_JWT_SECRET in production
+    secret: ZGV2LW9ubHktMjU2LWJpdC1zZWNyZXQta2V5LWZvci1qYXZhLWhvb2QtbGFiLXByb2plY3QtYS0yMDI2
+    access-ttl-seconds: 900
+    refresh-ttl-seconds: 604800
+  redis:
+    enabled: false
+
+server:
+  port: 8080
