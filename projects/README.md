@@ -1,26 +1,26 @@
-# 模块 7：简历实战项目 × 2（工程拆解工坊）
+# 模块 7：简历实战项目 × 2（地基夯实 + 20 节交互拆解工坊）
 
-本目录沉淀了 Java 后端入职线的两个核心实战工程，均基于 **Java 17 + Spring Boot 3.3.5 + Maven** 构建，默认支持零外部依赖一键运行 `mvn test`，同时提供 MySQL / Redis / Docker 生产配置与 JMeter 压测脚本。
+本目录提供从**底层原理串讲 → 正反踩坑对照演练 → 生产级完整工程 → 2 分钟脱稿面试答辩**的完整闭环，均基于 **Java 17 + Spring Boot 3.3.5 + Maven** 构建，默认支持**零外部依赖**一键运行 `mvn test`，同时配备真实 MySQL 8 / Redis 7 / Docker / Nginx 生产编排与 JMeter 压测脚本。
 
-- **[20 节实战拆解工坊](./WORKSHOP.md)**：从空目录到上线压测的逐节手敲指南与避坑清单
-- **[简历 STAR 量化与面试追问](./RESUME_GUIDE.md)**：可直接改写进简历的量化话术与 Top 8 高频深挖题
+---
 
-## 项目总览
+## 四步把地基打牢（强烈推荐学习顺序）
 
-1. **[`project-a-admin`](./project-a-admin/)（项目 A — 工程规范底座）**
-   - **技术栈**：Spring Boot 3 + Spring Security + JPA + MySQL/H2 + Redis + JJWT + Docker
-   - **核心能力**：JWT 双 Token 轮换与黑名单吊销、RBAC 三级权限模型、动态分页检索、UTF-8 BOM + 防公式注入流式 CSV 导出。
-2. **[`project-b-seckill`](./project-b-seckill/)（项目 B — 高并发核心亮点）**
-   - **技术栈**：Spring Boot 3 + 分片原子预扣（本地 CAS / Redis Lua）+ 有界线程池反压 + `tx-outbox` 本地消息表 + CAS 订单状态机 + JMeter
-   - **核心能力**：把模块 0（32 节并发实验课）中的**分段防超卖、按人限领、线程池反压、发件箱最终一致、订单状态机 CAS**串成完整高并发工程，并内置吞吐量对比测试。
+1. **第一步：读透底层桥梁图谱（告别「看框架像黑盒」）**
+   - 精读 [`FOUNDATIONS_MAP.md`](./FOUNDATIONS_MAP.md)：一次串通 Tomcat 工作线程池、`OncePerRequestFilter`、`ThreadLocal`/`MDC`、Spring CGLIB 动态代理洋葱圈、JPA `open-in-view: false` + `LAZY + @BatchSize` 与秒杀五道防线。
+2. **第二步：打开零依赖交互式实训工作台（边猜边看机盖底下）**
+   - 本地双击打开 [`workshop-lab.html`](./workshop-lab.html)：内置**项目 A / B 请求全链路拦截模拟器** + **20 节逐节直觉快测、正反代码对照、破坏实验指引与 120 秒开口倒计时器**。
+3. **第三步：在 IDE 单步 Debug 10 组「踩坑 vs 修复」实证测试**
+   - 项目 A 演练：[`FoundationPitfallDrillsTest.java`](./project-a-admin/src/test/java/com/javahood/admin/drills/FoundationPitfallDrillsTest.java) + 逐节手册 [`WORKSHOP_A.md`](./project-a-admin/WORKSHOP_A.md)（第 01～10 节）
+   - 项目 B 演练：[`SeckillFoundationDrillsTest.java`](./project-b-seckill/src/test/java/com/javahood/seckill/drills/SeckillFoundationDrillsTest.java) + 逐节手册 [`WORKSHOP_B.md`](./project-b-seckill/WORKSHOP_B.md)（第 11～20 节）
+4. **第四步：量化上简历与二面连环追问脱稿演练**
+   - 对照 [`WORKSHOP.md`](./WORKSHOP.md) 与 [`RESUME_GUIDE.md`](./RESUME_GUIDE.md)（含 STAR 量化话术与 Top 12 二面连环深挖满分答法）。
 
-## 20 节拆解工坊推进路线
+---
 
-| 阶段 | 节次 | 对应工程任务 | 验收标准 |
+## 两大实战工程概览
+
+| 工程目录 | 定位 | 核心工程与底层亮点 | 自动化验证（零外置依赖） |
 |---|---|---|---|
-| **工坊 1～4** | 第 1～4 节 | 脚手架、统一响应体、全局异常、MySQL Schema | `mvn test` 启动成功 |
-| **工坊 5～8** | 第 5～8 节 | JWT 双 Token 签发/轮换/吊销、RBAC 权限拦截 | `AuthFlowIntegrationTest` 通过 |
-| **工坊 9～10** | 第 9～10 节 | JPA 动态分页、流式 CSV 导出与 Docker 编排 | `RbacAndExportIntegrationTest` 通过 |
-| **工坊 11～14** | 第 11～14 节 | 秒杀活动建模、16 分片 CAS / Redis Lua 预扣、按人限领 | 高并发零超卖、零重领 |
-| **工坊 15～18** | 第 15～18 节 | 有界线程池反压、`tx-outbox` 同事务落盘与中继、CAS 状态机 | `SeckillConcurrencyBenchmarkTest` 通过 |
-| **工坊 19～20** | 第 19～20 节 | JMeter 压测前后 QPS 对比与简历 STAR 量化沉淀 | 输出真实 QPS / P99 指标 |
+| **[`project-a-admin`](./project-a-admin/)** | **项目 A：企业级 RBAC 后台底座** | `TraceIdFilter` 防复用串号、JWT 双 Token 轮换 + `type` 防混淆 + 剩余 TTL 黑名单、`LoginAttemptGuard` 原子防爆破、三级 RBAC、关 OSIV + `LAZY/@BatchSize/@EntityGraph` 灭 N+1、防公式注入流式 CSV、`REQUIRES_NEW` 独立事务保失败审计日志、Docker/Nginx | `mvn test` **8/8** 通过 |
+| **[`project-b-seckill`](./project-b-seckill/)** | **项目 B：高并发秒杀与履约系统** | 详情页 SingleFlight + 空哨兵 + 随机 TTL、16 分片 CAS / Redis Lua 原子限购预扣、有界池满队回滚预扣 + 跨线程 `MDC` 快照、同事务 `tx-outbox` + 下游 `uk_coupon_order_no` 幂等发券、支付 vs 关单 CAS 互斥 + `afterCommit` 安全回补库存、JMeter + Docker | `mvn test` **9/9** 通过（峰值吞吐 `50,000+ req/s`） |
