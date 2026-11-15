@@ -1,0 +1,632 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "binary-search",
+  "course": "模块 8 · 算法与 SQL 手撕",
+  "title": "二分搜索与边界：为什么总写死循环，(l + r) / 2 怎么就溢出了",
+  "lead": "一百万数据里找目标左边界，线性扫描要扫几十万次，二分只要 20 步；可为什么只差一个等号或右移符号，二分就会漏解或死循环？",
+  "minutes": 35,
+  "needs": [
+    "知道数组下标从 0 开始",
+    "知道整除 / 2 会向下取整"
+  ],
+  "after": [
+    "讲清 (l + r) / 2 在大下标下的整数溢出风险，以及 >>> 1 的原理",
+    "熟练掌握「闭区间 [l, r]」与「左闭右开 [l, r)」两套不变量模板",
+    "看懂「答案二分」如何解决爱吃香蕉的珂珂等最大化最小值问题"
+  ],
+  "terms": {
+    "循环不变量": "每次循环开始前都严格成立的区间约定（如答案一定还在 [l, r] 里）。",
+    "整数溢出": "当 l + r 超过 Integer.MAX_VALUE (2147483647) 时变成负数，导致数组越界。",
+    ">>> 1": "无符号右移 1 位：等价于除以 2 向下取整，且高位补 0 永远不会变成负数。",
+    "答案二分": "不对数组下标二分，而是对「可能的答案范围」二分，用 check(mid) 判断可行性。"
+  },
+  "experiments": {
+    "binsearch": {
+      "runner": "java",
+      "home": "lab.binsearch",
+      "variants": [
+        {
+          "id": "LinearScan",
+          "label": "线性扫描 O(n)",
+          "note": "从头一个个比，百万数据耗时随 n 线性暴涨。"
+        },
+        {
+          "id": "WrongLoopBug",
+          "label": "边界漏等号 bug",
+          "note": "while(l < r) 却写 r = mid - 1，经常跳过正确答案！"
+        },
+        {
+          "id": "ClosedBound",
+          "label": "闭区间 [l, r] 找左边界",
+          "note": "while (l <= r)，命中后记 res 并继续 r = mid - 1。"
+        },
+        {
+          "id": "HalfOpenBound",
+          "label": "左闭右开 [l, r) 模板",
+          "note": "while (l < r)，nums[mid] >= target 时 r = mid。"
+        }
+      ],
+      "knob": {
+        "label": "数组长度 n",
+        "values": [
+          "10000",
+          "100000",
+          "500000",
+          "1000000"
+        ],
+        "default": "500000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "idx",
+        "expectKey": "expected",
+        "label": "找到的左边界下标"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "二分搜索与边界：为什么总写死循环，(l + r) / 2 怎么就溢出了",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "一百万数据里找目标左边界，线性扫描要扫几十万次，二分只要 20 步；可为什么只差一个等号或右移符号，二分就会漏解或死循环？",
+          "say": "今天这节课核心只搞透一件事：二分搜索与边界：为什么总写死循环，(l + r) / 2 怎么就溢出了"
+        },
+        {
+          "t": "text",
+          "md": "不死背结论。先用直觉场景建模，再看代码和 `javap` 字节码，最后在你的机器上跑出 20 次实测对比。",
+          "say": "按看现象、拆字节码、比代价、开口讲四步走完。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，3 道诊断热身",
+      "bridge": "先花一分钟自测三个前置基础点，看看哪一块容易含糊。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题直接点选，选完立刻出解析。",
+          "items": [
+            {
+              "have": "二分防溢出",
+              "q": "当 `l = 1_500_000_000`、`r = 2_000_000_000` 时，写 `int mid = (l + r) / 2` 会怎样？",
+              "options": [
+                "正常算出 17.5 亿",
+                "l + r 超过 Integer.MAX_VALUE 溢出变成负数，数组下标越界！",
+                "自动转成 long"
+              ],
+              "answer": 1,
+              "why": "两个 `int` 相加还是 `int`，溢出成负数后除以 2 仍是负数，直接 `ArrayIndexOutOfBoundsException`。"
+            },
+            {
+              "have": "闭区间条件",
+              "q": "在左闭右闭区间 `[l, r]` 里做二分，循环条件和右边界收缩应该怎么写？",
+              "options": [
+                "`while (l < r)`，收缩 `r = mid`",
+                "`while (l <= r)`，收缩 `r = mid - 1`",
+                "`while (l <= r)`，收缩 `r = mid`"
+              ],
+              "answer": 1,
+              "why": "闭区间里 `l == r` 时区间 `[l, l]` 还有一个元素未检查，所以用 `l <= r`；且 `mid` 检查过了所以用 `mid - 1`。"
+            },
+            {
+              "have": "二分前提",
+              "q": "二分查找只能用于「完全有序的数组」吗？",
+              "options": [
+                "是的，无序绝对不能用",
+                "不是，只要存在「二段性」（某点左侧全不满足、右侧全满足）就能二分"
+              ],
+              "answer": 1,
+              "why": "旋转数组、峰值元素、二分答案（如爱吃香蕉的珂珂）都是利用「二段性」而非严格全局有序。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先在脑子里放一个场景",
+      "bridge": "把算法复杂度和数据结构对应到生活画面，后面所有代码都能往上套。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "闭区间巡逻兵 [l, r]",
+              "半开区间巡逻兵 [l, r)"
+            ],
+            "shared": {
+              "name": "100 万格有序走廊",
+              "value": "找第一个 >= target 的门"
+            }
+          },
+          "story": "在 **100 万扇**排好序的门里找第一扇满足条件的门。两个巡逻兵都只花 20 步就能锁定目标；但只要有一个巡逻兵在 `l == r` 时提前下班，或者没记牢自己的巡逻范围，就会和正确答案擦肩而过。",
+          "say": "先记住这个对照画面，右侧每一条都能一一映射到真实代码。",
+          "map": [
+            {
+              "scene": "两端都算在巡逻范围内",
+              "on": "actors",
+              "tag": "闭区间 [l, r]",
+              "code": "`while (l <= r)`",
+              "say": "l == r 时还有一个元素没查，必须继续进循环。"
+            },
+            {
+              "scene": "右边那一格永远不算在内",
+              "on": "actors",
+              "tag": "左闭右开 [l, r)",
+              "code": "`while (l < r)`",
+              "say": "l == r 时区间为空，循环结束时 l 就是答案。"
+            },
+            {
+              "scene": "用减法算中点防相加爆表",
+              "on": "action",
+              "tag": "防溢出中点",
+              "code": "`int mid = l + ((r - l) >>> 1);`",
+              "say": "就算 l 和 r 都接近 20 亿，相减再右移也绝不会溢出。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "核心矛盾：为什么直觉写法会崩？",
+      "bridge": "小数据看不出毛病，一旦把规模或并发拉上来，差距立刻暴露。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "本节实验对比 4 种写法：**线性扫描 O(n)、边界漏等号 bug、闭区间 [l, r] 找左边界、左闭右开 [l, r) 模板**。",
+          "say": "把 线性扫描 O(n)、边界漏等号 bug、闭区间 [l, r] 找左边界、左闭右开 [l, r) 模板 放到同一套基准里实测 20 次，看谁快、谁慢、谁直接报错。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看直觉/问题写法：`LinearScan`",
+      "bridge": "先看最容易想到的基线写法，记住关键三处。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "binsearch.LinearScan",
+          "say": "这是 `LinearScan` 的完整可运行代码，重点看标亮的三处。",
+          "walk": [
+            {
+              "focus": [
+                "int ans = -1;"
+              ],
+              "say": "最朴素的线性扫描，从 0 走到找到第一个大于等于 target 的位置。"
+            },
+            {
+              "focus": [
+                "for (int i = 0; i < n; i++)"
+              ],
+              "say": "没有利用数组单调性，n=200 万时每次查询最坏走上百万步。",
+              "key": "O(n) 扫表浪费有序性质"
+            },
+            {
+              "focus": [
+                "if (nums[i] >= target)"
+              ],
+              "say": "一旦数组有序，这句条件本身就具备了单调二段性，可以折半跳过。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：实测结果会怎样？",
+      "bridge": "动手跑之前先押一个答案，印象会深一倍。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "result",
+          "q": "当 n = 1000000 时，连续查 200 次左边界，线性扫描和二分搜索各大约需要多少步对比？",
+          "options": [
+            "线性约 1.5 亿次，二分约 4000 次",
+            "只差 10 倍左右",
+            "二分也要扫几十万次"
+          ],
+          "answer": 0,
+          "say": "凭直觉选一个最可能的结论。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一次一次放出 `LinearScan` 的 20 次实测",
+      "bridge": "以下结果是在当前 JDK 17 环境真实跑了 20 次并保存的记录。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "binsearch",
+          "show": [
+            "LinearScan"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "for (int i = 0; i < n; i++)"
+          ],
+          "say": "逐次点击放出运行结果，观察结果是否正确以及单次耗时。"
+        },
+        {
+          "t": "reveal",
+          "of": "result",
+          "say": "对照你刚才的预测，看直觉写法在真实规模下发生了什么。",
+          "key": "从头一个个比，百万数据耗时随 n 线性暴涨。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拉大挡位，对比最优解",
+      "bridge": "把 `LinearScan` 和 `ClosedBound` 放在一起，切换上方挡位开关看走势。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "binsearch",
+          "show": [
+            "LinearScan",
+            "ClosedBound"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换上方 `数组长度 n` 挡位，感受两种写法随规模拉大后的差距。"
+        },
+        {
+          "t": "try",
+          "key": "切换不同 数组长度 n 挡位",
+          "say": "从小挡位切到最大挡位，观察实心点（正确）与空心点（失败/异常）的变化。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "在代码里点出关键一笔",
+      "bridge": "找出真正决定成败或拉开数量级差距的那一行。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "binsearch.ClosedBound",
+          "q": "在 `ClosedBound` 里找到一个 `nums[mid] >= target` 后，为什么要写 `res = mid; r = mid - 1;` 而不是直接 `return mid`？",
+          "hint": "数组里可能有重复元素，我们要找的是「第一个」出现的位置。",
+          "answer": [
+            "res = mid;"
+          ],
+          "found": "可能有多个相同的 `target`，先记下当前可行解 `res = mid`，再把右边界左移 `r = mid - 1` 继续逼近最左侧。",
+          "say": "在左侧代码里点击你认为最关键的那一行。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "再看进阶/修复写法：`ClosedBound`",
+      "bridge": "把优化或修复后的代码也逐行拆开，看它改了哪三处。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "binsearch.ClosedBound",
+          "say": "对照刚才的基线版本，看 `ClosedBound` 是怎么解决问题的。",
+          "walk": [
+            {
+              "focus": [
+                "int l = 0, r = n - 1, res = -1;"
+              ],
+              "say": "闭区间 `[l, r]` 模板，同时用 `res` 记录当前合法候选。",
+              "key": "记录候选 res 防边界绕晕"
+            },
+            {
+              "focus": [
+                "int mid = l + ((r - l) >>> 1);"
+              ],
+              "say": "防溢出的同时用无符号右移 `>>> 1` 替代除以 2。"
+            },
+            {
+              "focus": [
+                "if (nums[mid] >= target) {"
+              ],
+              "say": "求「第一个 ≥ target」：命中时先记下 `res = mid`，再大胆往左收缩 `r = mid - 1` 找更靠左的解。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：看真实 `javap -c -p` 字节码",
+      "bridge": "不靠猜，直接看 javac 编译出来的底层 JVM 指令。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "binsearch.ClosedBound",
+          "within": "main(",
+          "from": "isub",
+          "to": "iushr",
+          "say": "这是真实 `javap -c -p` 反编译出的热点指令片段。",
+          "walk": [
+            {
+              "focus": [
+                "isub"
+              ],
+              "label": "先减后加",
+              "say": "先算 `r - l` 保证差值不溢出，再无符号右移 1 位。",
+              "key": "彻底消除 (l+r) 溢出隐患"
+            },
+            {
+              "focus": [
+                "iushr"
+              ],
+              "label": "无符号右移",
+              "say": "`>>> 1` 对应 `iushr` 字节码指令，1 个周期完成除以 2。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "4 种写法的全量耗时折线",
+      "bridge": "把 线性扫描 O(n)、边界漏等号 bug、闭区间 [l, r] 找左边界、左闭右开 [l, r) 模板 放到同一张折线图上横向对比。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "binsearch",
+          "say": "实心点代表正确通过，空心点代表报错或结果不对；注意纵轴耗时变化。",
+          "walk": [
+            {
+              "focus": "LinearScan",
+              "say": "线性扫描 O(n)：从头一个个比，百万数据耗时随 n 线性暴涨。"
+            },
+            {
+              "focus": "WrongLoopBug",
+              "say": "边界漏等号 bug：while(l < r) 却写 r = mid - 1，经常跳过正确答案！"
+            },
+            {
+              "focus": "ClosedBound",
+              "say": "闭区间 [l, r] 找左边界：while (l <= r)，命中后记 res 并继续 r = mid - 1。"
+            },
+            {
+              "focus": "HalfOpenBound",
+              "say": "左闭右开 [l, r) 模板：while (l < r)，nums[mid] >= target 时 r = mid。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "把方案摆在一起比代价",
+      "bridge": "括号里的毫秒数是本机默认挡位的真实实测耗时。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "面试被追问方案选型时，直接按适用场景、时间/空间代价来答。",
+          "options": [
+            {
+              "name": "闭区间 [l, r] + res 记录",
+              "solves": "所有二分查找与左右边界题",
+              "cost": "O(log n)（闭区间实测 {ms:binsearch.ClosedBound} ms，开区间 {ms:binsearch.HalfOpenBound} ms，线性扫描 {ms:binsearch.LinearScan} ms）",
+              "when": "面试手撕最稳推荐模板",
+              "say": "闭区间 [l, r] + res 记录：所有二分查找与左右边界题，代价是O(log n)（闭区间实测 {ms:binsearch.ClosedBound} ms，开区间 {ms:binsearch.HalfOpenBound} ms，线性扫描 {ms:binsearch.LinearScan} ms）。"
+            },
+            {
+              "name": "左闭右开 [l, r)",
+              "solves": "找第一个 >= target 的位置",
+              "cost": "O(log n) 搜数值范围（HalfOpenBound 实测 {ms:binsearch.HalfOpenBound} ms）",
+              "when": "熟悉区间不变量时代码最精简",
+              "say": "左闭右开 [l, r)：找第一个 >= target 的位置，代价是O(log n) 搜数值范围（HalfOpenBound 实测 {ms:binsearch.HalfOpenBound} ms）。"
+            },
+            {
+              "name": "答案二分",
+              "solves": "求「最小的最大值」或「最大的最小值」",
+              "cost": "O(n log M)",
+              "when": "数组没排序但答案具有单调性",
+              "say": "答案二分：求「最小的最大值」或「最大的最小值」，代价是O(n log M)。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "决策树 + 4 道真实面试场景",
+      "layout": "split",
+      "bridge": "顺着左侧决策树，给右侧 4 道高频变体题选出最优解法。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "二分题怎么保证不写死循环？",
+          "branches": [
+            {
+              "when": "用 while (l <= r)",
+              "pick": "两边都跳过 mid：l = mid + 1, r = mid - 1",
+              "eg": "标准二分、左右边界"
+            },
+            {
+              "when": "用 while (l < r)",
+              "pick": "一侧保留 mid（r = mid），另一侧必须跳过（l = mid + 1）",
+              "eg": "左闭右开找下界"
+            },
+            {
+              "when": "局部无序但有折半性质",
+              "pick": "判断哪半边有序或往哪边爬坡",
+              "eg": "旋转排序数组、寻找峰值"
+            }
+          ],
+          "say": "看到题面关键词就顺着对应分支往下走。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "闭区间左右边界",
+            "旋转数组分类讨论",
+            "答案二分"
+          ],
+          "items": [
+            {
+              "text": "珂珂每小时吃 K 根香蕉，要在 H 小时内吃完所有堆，求最小速度 K。",
+              "answer": 2,
+              "why": "速度越快越容易吃完，具有单调性，在 [1, maxPile] 上做答案二分。"
+            },
+            {
+              "text": "升序数组在未知位置旋转过一次，在里面找目标值 target。",
+              "answer": 1,
+              "why": "每次 mid 把数组分成两半，至少有一半是有序的，看 target 在不在有序那半边里。"
+            },
+            {
+              "text": "在有重复元素的有序数组里，找出 target 第一次和最后一次出现的下标。",
+              "answer": 0,
+              "why": "两次闭区间二分，分别收缩 r 和收缩 l。"
+            },
+            {
+              "text": "已知整数数组被旋转过一次（如 `[4,5,6,7,0,1,2]`），无重复元素，在 O(log n) 内找 target。",
+              "answer": 0,
+              "why": "每次取 `mid` 后，`[l, mid]` 和 `[mid, r]` 必有一半是完全有序的，先判断 target 是否落在有序那半边即可。"
+            }
+          ],
+          "say": "逐题点选工具，核对解析里的关键原因。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记下面试官常问的标准叫法",
+      "bridge": "把刚才的实验现象还原成一二面高频术语。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "循环不变量 & 答案二分",
+          "alias": "专题 05 · 高频 9 题核心模型",
+          "oneLine": "死循环只发生在区间不缩小时；守住 ==闭区间全跳过 mid==、中点用 ==l + ((r - l) >>> 1)==，二分就再也不会写挂。",
+          "asked": [
+            "为什么 (l + r) / 2 会有 bug？",
+            "怎么找左边界和右边界？",
+            "什么是答案二分？"
+          ],
+          "say": "记住这句总结和下面三个高频追问。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "检查一：核心原理与复杂度",
+      "bridge": "核对第一道易混坑点。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果写 `while (l < r)` 且 `mid = (l + r) / 2`（向下取整），分支里写了 `l = mid;`，会发生什么？",
+          "options": [
+            {
+              "text": "完全正常",
+              "ok": false,
+              "why": "当 r == l + 1 时，mid == l，执行 l = mid 区间根本没变！"
+            },
+            {
+              "text": "当只剩两个元素时陷入死循环",
+              "ok": true,
+              "why": "l = mid 没缩小区间，必须配合上取整 mid = (l + r + 1) >>> 1 或改用闭区间。"
+            },
+            {
+              "text": "会数组越界",
+              "ok": false,
+              "why": "不会越界，但会卡死。"
+            }
+          ],
+          "say": "选出唯一正确的结论。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "检查二：面试边界陷阱",
+      "bridge": "再过一道二面最爱追问的边界细节题。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "用 `while (l < r)` 写左闭右开 `[l, r)` 查找第一个 ≥ target 的位置时，循环结束后的 `l` 是什么？",
+          "options": [
+            {
+              "text": "一定是 -1",
+              "ok": false,
+              "why": "区间收敛到 `l == r` 时停下。"
+            },
+            {
+              "text": "第一个 ≥ target 的插入下标（若全小于 target 则等于初始 r 即数组长度 n）",
+              "ok": true,
+              "why": "`l == r` 是唯一收敛点；注意写 `Arrays.binarySearch` 或手写时，若 `l == n` 说明全员小于 target。"
+            },
+            {
+              "text": "最后一个 ≤ target 的下标",
+              "ok": false,
+              "why": "那是找右边界的逻辑，且收缩方向不同。"
+            }
+          ],
+          "say": "仔细看边界条件，选出正确答案。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，2 分钟开口讲一遍",
+      "bridge": "看懂不算会，对着屏幕脱稿讲顺才算长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清二分的整数溢出坑、闭区间与半开区间的区别，以及答案二分的套路。",
+          "points": [
+            "(l+r)/2 在大下标会溢出，应写 l + ((r - l) >>> 1)",
+            "闭区间 while(l<=r) 每次 l=mid+1 或 r=mid-1，绝不死循环",
+            "答案二分：对单调的答案域二分，写 check(mid) 判定可行性"
+          ],
+          "model": "二分查找最常见的两个坑是中点溢出和边界死循环。中点如果写 (l+r)/2，下标很大时会溢出成负数，必须写成 l + ((r - l) >>> 1)。边界方面我最推荐闭区间模板 while (l <= r)：命中时先用 res 记下候选答案，找左边界就 r = mid - 1，找右边界就 l = mid + 1，因为每次区间至少缩 1，绝不会死循环。遇到「最小化最大值」这类题时，还可以直接对答案范围做答案二分，配合 O(n) 的 check 函数解决。",
+          "say": "计时两分钟开口讲一遍，再对照要点与参考回答查漏补缺。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 4 张卡 & 本地手撕自测套件",
+      "bridge": "复习卡 + 18 道可运行断言自测模板，每天手敲 2～3 题。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "闭区间找左边界模板怎么写？",
+              "a": "`while (l <= r)`，若 `nums[mid] >= target` 则 `res = mid; r = mid - 1;` 否则 `l = mid + 1;`。"
+            },
+            {
+              "q": "为什么 `>>> 1` 比 `/ 2` 更好？",
+              "a": "无符号右移既等价于非负数除以 2，又不会在溢出时产生负下标。"
+            },
+            {
+              "q": "专题 05 必刷 9 题清单",
+              "a": "二分查找、搜索插入位置、查找首尾位置、旋转排序数组、旋转数组最小值、x 的平方根、寻找峰值、爱吃香蕉的珂珂、分割数组最大值。"
+            },
+            {
+              "q": "二分求「左边界（第一个 ≥ target）」和「右边界（最后一个 ≤ target）」口诀？",
+              "a": "都用闭区间 + `res`：左边界命中 `>=` 记 `res=mid` 并 `r=mid-1`；右边界命中 `<=` 记 `res=mid` 并 `l=mid+1`。"
+            }
+          ],
+          "say": "完整 101 题路线见 `docs/module8-100-problems.md`，核心 18 题模板在 `src/lab/m8practice/M8PracticeTest.java`。"
+        },
+        {
+          "t": "try",
+          "key": "javac -encoding UTF-8 -d out src/lab/m8practice/M8PracticeTest.java && java -ea -cp out lab.m8practice.M8PracticeTest",
+          "say": "在本地终端直接运行 18 题断言自测，也可单独跑本课实验 `java -cp out lab.binsearch.ClosedBound 500000`。"
+        }
+      ]
+    }
+  ]
+}

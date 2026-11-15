@@ -1,0 +1,269 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "spring-tx-prop",
+  "course": "Spring 全家桶与持久层",
+  "title": "外层 catch 住内层异常，整个事务怎么还是全炸了？",
+  "lead": "主流程加了事务，调用「加积分」子方法时用 try-catch 兜住了异常——结果提交时竟抛出 UnexpectedRollbackException，连主订单一起回滚！",
+  "minutes": 40,
+  "needs": ["知道线程用 ThreadLocal 绑定数据库连接/事务状态", "知道 try-catch 捕获异常", "了解数据库事务基本概念"],
+  "after": ["讲清 REQUIRED 共用物理事务与 rollbackOnly 传染机制", "区分 REQUIRED、REQUIRES_NEW、NESTED 三种传播行为的底层实现", "知道高并发下 REQUIRES_NEW 挂起连接可能引发连接池死锁的风险"],
+  "terms": {
+    "REQUIRED": "Spring 默认传播行为：当前有事务就加入（共用同一个连接和事务），没有就新建一个。",
+    "rollbackOnly": "物理事务上的全局回滚标记：只要参与其中的任意内层方法把它标为 true，外层提交时必报 UnexpectedRollbackException。",
+    "REQUIRES_NEW": "挂起外层事务，另开一个全新的物理连接与独立事务；内层回滚不影响外层提交。",
+    "NESTED": "在同一个物理事务里建数据库 Savepoint（保存点）；内层失败只回滚到保存点，不污染外层。",
+    "UnexpectedRollbackException": "内层已把共用事务标为 rollbackOnly，外层却还想 commit 时，Spring 抛出的异常。"
+  },
+  "experiments": {
+    "txprop": {
+      "runner": "java",
+      "home": "lab.txprop",
+      "variants": [
+        { "id": "RequiredCatch", "label": "REQUIRED + 外层 catch", "note": "共用同一事务，内层标 rollbackOnly，外层提交直接炸 UnexpectedRollbackException。" },
+        { "id": "NestedSavepoint", "label": "NESTED 保存点", "note": "同连接内建 Savepoint，内层异常回滚到保存点，主单正常提交。" },
+        { "id": "RequiresNew", "label": "REQUIRES_NEW 独立事务", "note": "挂起外层，另开独立事务，内层失败不连累外层。" },
+        { "id": "AsyncOutbox", "label": "主单提交后异步处理", "note": "主事务提交后再处理非核心逻辑，不占双倍连接池。" }
+      ],
+      "knob": { "label": "请求数(千)", "values": ["1", "2", "4", "8"], "default": "2" },
+      "repeat": 20,
+      "metric": { "key": "main_saved", "expectKey": "expected", "label": "成功保住的主订单数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "外层 catch 住内层异常，整个事务怎么还是全炸了？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "业务需求很常见：**下单必须成功，加积分失败就算了。** 于是你在下单方法里用 `try-catch` 包住 `addPoints()`。可上线后一到加积分报错，**主订单竟然也跟着一起回滚了！**",
+          "say": "这是事务传播行为最反直觉的一幕：你明明写了 `try-catch`，为什么还是保不住外层订单？"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热个身",
+      "bridge": "先确认事务在单线程里是怎么传递的。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "两道快速热身。",
+          "items": [
+            {
+              "have": "默认传播行为",
+              "q": "`@Transactional` 不写 `propagation` 参数时，默认值是什么？",
+              "options": ["REQUIRED", "REQUIRES_NEW", "NESTED"],
+              "answer": 0,
+              "why": "默认是 `REQUIRED`：外层有事务，内层就直接加入外层的同一个事务。"
+            },
+            {
+              "have": "ThreadLocal",
+              "q": "加入同一个事务意味着外层和内层共用什么？",
+              "options": ["各自独立的两个数据库连接", "同一个数据库连接和同一个 TxState"],
+              "answer": 1,
+              "why": "共用同一个物理事务，也就共用了同一个提交/回滚状态。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "2000 笔下单，积分全失败，主订单能保住几笔？",
+      "bridge": "外层 `try-catch` 兜住了积分异常，预期 2000 笔主订单全都能保住。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "2000 次下单，每次积分服务都抛 `RuntimeException` 并被外层 `catch`。预期 `main_saved = 2000`。",
+          "say": "跑起来看看真实结果。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看清共用事务上的 rollbackOnly",
+      "bridge": "注意 `RequiredCatch.java` 里 `TxState` 是外层和内层共用的唯一一份。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "txprop.RequiredCatch",
+          "say": "看 `runRequired` 的逻辑：外层和内层拿到的是 `current.get()` 同一个 `TxState`。",
+          "walk": [
+            { "focus": ["tx.rollbackOnly = true;"], "say": "内层抛异常时，即使外层马上 `catch` 住了，内层代理的 `catch` 已经顺手把共用 `TxState` 的 `rollbackOnly` 标成了 `true`！", "key": "内层在 catch 传播前，已把共用事务标红" },
+            { "focus": ["if (tx.rollbackOnly) {"], "say": "等外层代码正常走完准备 `commit` 时，发现 `rollbackOnly == true`，直接抛出 `UnexpectedRollbackException` 并全盘回滚！" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：主订单保住了多少？",
+      "bridge": "在释放数据前先押一个答案。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "prop_guess",
+          "q": "运行 `RequiredCatch`（2000 次），最终保住的主订单 `main_saved` 是？",
+          "options": ["2000（外层 catch 保住了主订单）", "0（全部连坐回滚）"],
+          "answer": 1,
+          "say": "选出你的判断。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测结果：一单不剩，全部 0",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "txprop",
+          "show": ["RequiredCatch"],
+          "knob": false,
+          "hand": true,
+          "focus": ["tx.rollbackOnly = true;"],
+          "say": "20 次运行全部是 `main_saved = 0`。外层的 `try-catch` 没能救回主订单。"
+        },
+        {
+          "t": "reveal",
+          "of": "prop_guess",
+          "say": "因为两个方法绑在同一个物理事务上，一荣俱荣、一损俱损。",
+          "key": "REQUIRED 下内层异常标红 rollbackOnly，外层 catch 也会连坐回滚"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "三种解法同台对比",
+      "bridge": "对比 `NestedSavepoint`（保存点）、`RequiresNew`（挂起新建）和 `AsyncOutbox`（提交后异步）。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "txprop",
+          "show": ["RequiredCatch", "NestedSavepoint", "RequiresNew", "AsyncOutbox"],
+          "select": "RequiresNew",
+          "say": "切到 `NestedSavepoint`、`RequiresNew`、`AsyncOutbox`，2000 笔主订单全部保住！"
+        },
+        {
+          "t": "try",
+          "say": "把请求数拨到 4 和 8，观察四种写法的耗时曲线。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "代价与隐患：为什么不无脑用 REQUIRES_NEW？",
+      "bridge": "三种都保住了主订单，但高并发下 `REQUIRES_NEW` 藏着一个连接池死锁大坑。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "txprop",
+          "say": "注意看 `RequiresNew` 和 `AsyncOutbox` 的对比。",
+          "walk": [
+            { "focus": "RequiresNew", "say": "`REQUIRES_NEW` 会把外层数据库连接**挂起占着不放**，再去连接池借第二个连接！如果连接池只有 10 个连接，同时来 10 个请求，每个都要借第 2 个连接，10 个线程全部互相卡死！", "key": "REQUIRES_NEW 同时占 2 个连接，高并发易打死连接池" },
+            { "focus": "NestedSavepoint", "say": "`NESTED` 只占 1 个连接，靠数据库 Savepoint 局部回滚，前提是外层如果也失败，内层会跟着一起回滚。" },
+            { "focus": "AsyncOutbox", "say": "主订单提交后再发事件/异步加积分，既不连坐回滚，也不占双倍连接，是高并发最优解。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "传播行为选型",
+      "layout": "split",
+      "bridge": "按场景挑传播策略。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "内层操作失败不能连累外层，怎么选？",
+          "branches": [
+            { "when": "允许异步/最终一致（如发券、加积分）", "pick": "主事务提交后发事件/MQ", "eg": "TransactionSynchronization / Outbox" },
+            { "when": "必须同步且外层失败时内层也要撤回", "pick": "NESTED（Savepoint）", "eg": "批量导入单条容错" },
+            { "when": "无论外层成败，内层审计日志必须落库", "pick": "REQUIRES_NEW（注意连接池大小）", "eg": "审计/风控落库" }
+          ],
+          "say": "按「是否需要外层挂起」「是否允许异步」来选。"
+        },
+        {
+          "t": "cases",
+          "tools": ["NESTED", "REQUIRES_NEW", "提交后异步事件"],
+          "say": "三个业务场景，选出最合适的。",
+          "items": [
+            { "text": "高并发下单成功后给用户加成长值，要求加成长值失败绝不能影响下单，且连接池紧张。", "answer": 2, "why": "主单提交后发事件异步处理，连接复用率最高，无死锁风险。" },
+            { "text": "风控拦截下单时，主订单必须回滚，但这条「风控拦截审计记录」必须独立落库留证。", "answer": 1, "why": "只有 `REQUIRES_NEW` 能在外层回滚时依然独立提交内层记录。" },
+            { "text": "导入一份包含 100 行的表格，单行校验失败跳过，但如果整张表最后校验不通过则全部撤销。", "answer": 0, "why": "`NESTED` 保存点既支持单行回滚，又服从外层总事务的最终回滚。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试怎么问",
+      "bridge": "对准高频八股。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "事务传播与 rollbackOnly 传染",
+          "alias": "REQUIRED · REQUIRES_NEW · NESTED · UnexpectedRollbackException",
+          "oneLine": "`REQUIRED` 共用同一物理事务，内层抛异常标红==rollbackOnly==后，外层即使 `catch` 住也会在提交时炸出 `UnexpectedRollbackException`。",
+          "asked": ["REQUIRED、REQUIRES_NEW、NESTED 有什么区别？", "为什么外层 try-catch 了内层异常还是全局回滚？", "用 REQUIRES_NEW 有什么线上风险？"],
+          "say": "把连接池死锁风险主动点出来，面试官会直接给你加分。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "检验传播行为的区别。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "外层事务（`REQUIRED`）调用内层方法，以下哪种配置在「内层成功提交后、外层随后抛异常」时，**内层数据依然会保留**？",
+          "options": [
+            { "text": "NESTED", "ok": false, "why": "`NESTED` 依附外层物理事务，外层回滚时内层一起回滚。" },
+            { "text": "REQUIRES_NEW", "ok": true, "why": "正确！`REQUIRES_NEW` 开了独立物理事务并已先提交，外层回滚不影响它。" },
+            { "text": "REQUIRED", "ok": false, "why": "`REQUIRED` 共用同一事务，外层回滚则全部回滚。" }
+          ],
+          "say": "区分 `NESTED` 和 `REQUIRES_NEW` 的关键考题。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "外层 try-catch 住内层 @Transactional 异常为什么还是全回滚？REQUIRED、REQUIRES_NEW、NESTED 怎么选？",
+          "points": [
+            "默认 REQUIRED 共用同一个物理事务，内层抛异常时已将全局状态标为 rollbackOnly",
+            "外层即使 catch 住，提交时检测到 rollbackOnly 仍抛 UnexpectedRollbackException 全回滚",
+            "REQUIRES_NEW 挂起外层另开连接，完全独立，但并发高时可能耗尽连接池",
+            "NESTED 基于 Savepoint，局部可回滚、外层回滚时跟着回滚，高并发非核心逻辑优先提交后异步"
+          ],
+          "model": "因为 Spring 默认传播行为是 `REQUIRED`，外层和内层共用同一个物理事务。内层抛出异常时，内层代理在把异常往外抛之前，已经先把当前共用事务标记为 `rollbackOnly = true`。外层就算用 `try-catch` 吞掉异常继续往下走，最后提交时 Spring 检测到 `rollbackOnly` 就会抛出 `UnexpectedRollbackException` 并全部回滚。要解耦可以用 `REQUIRES_NEW`（挂起外层、另开独立连接，适合审计日志，但要注意同时占两个连接可能打死连接池），或者用 `NESTED`（基于数据库 Savepoint，外层回滚时内层跟着撤），而在高并发场景下，非核心逻辑最推荐等主事务提交后发事件异步执行。",
+          "say": "点击开始自述。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "重点回顾。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "为什么 `REQUIRED` 下外层 `catch` 不住内层回滚？", "a": "共用同一个物理事务，内层异常已标记 `rollbackOnly`，外层提交时直接触发 `UnexpectedRollbackException`。" },
+            { "q": "`REQUIRES_NEW` 和 `NESTED` 核心区别？", "a": "`REQUIRES_NEW` 是两个独立物理连接/事务，互不连坐；`NESTED` 共用同一连接靠 Savepoint，外层回滚内层也撤。" },
+            { "q": "`REQUIRES_NEW` 在高并发下有什么坑？", "a": "外层挂起不释放连接，同时再借新连接，极易造成连接池耗尽死锁。" }
+          ],
+          "say": "收好这三张卡。"
+        }
+      ]
+    }
+  ]
+}

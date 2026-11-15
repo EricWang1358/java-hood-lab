@@ -1,0 +1,1644 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WHERE 和 HAVING 混用，全表都被扫了一遍？</title>
+<script>try{var t=localStorage.getItem("lesson-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>
+/* Lesson page. One stage, one teacher line at the bottom: every press brings one sentence and one visible change.
+   Colours follow StudyHub's paper tokens (ui/tokens.css). The accent means "look here, now" and nothing else;
+   green = came out as it should, plum = did not. No shadows beyond a hairline, no gradients, no decoration. */
+:root {
+  --canvas: #f1ede6; --surface: #faf8f4; --raised: #ffffff; --sunken: #e8e3da;
+  --ink: #1e1a15; --ink-2: #453e35; --muted: #635b51; --faint: #7b7368;
+  --rule: #2a1c0e24; --rule-strong: #2a1c0e52;
+  --accent: #c03a1f; --accent-text: #ad4025; --accent-ink: #fffaf5; --accent-wash: #c03a1f14;
+  --ok: #1c6c48; --ok-wash: #1c6c4817; --bad: #a23461; --bad-wash: #a2346114; --info: #346287; --ochre: #8a5a10;
+  --code-k: #8a3b1f;
+  --s1: #1c5cab; --s2: #e0703a; --s3: #16a37a; --s4: #8a5a10;
+  --font: "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --display: "Segoe UI Variable Display", "SF Pro Display", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Microsoft YaHei UI", monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { font-size: clamp(16px, .5vw + 10.5px, 19px); -webkit-text-size-adjust: 100%; }
+body { margin: 0; height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden;
+  background: var(--canvas); color: var(--ink); font-family: var(--font); line-height: 1.6; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--mono); }
+p code, li code, .opt code, .voice code { font-size: .9em; background: var(--sunken); padding: .08em .36em; border-radius: 5px; }
+mark { background: none; color: inherit; box-shadow: inset 0 -.5em 0 var(--accent-wash); font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* top: where this lesson is going */
+.top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 1rem; padding: .55rem 1.4rem; border-bottom: 1px solid var(--rule); }
+.top__title { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top__tools { display: flex; justify-content: flex-end; align-items: center; gap: .8rem; font-size: .8rem; color: var(--muted); }
+.beats { display: flex; align-items: center; }
+.beat { display: flex; align-items: center; gap: .4rem; padding: .3rem .55rem; border: 0; background: none; border-radius: 8px; font-size: .78rem; color: var(--faint); cursor: pointer; white-space: nowrap; }
+.beat::before { content: ""; width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid currentColor; }
+.beat:hover { color: var(--ink); }
+.beat.is-done { color: var(--muted); }
+.beat.is-done::before { background: currentColor; }
+.beat.is-now { color: var(--ink); font-weight: 650; }
+.beat.is-now::before { background: var(--accent); border-color: var(--accent); }
+.tool { border: 1px solid var(--rule); background: none; border-radius: 8px; padding: .25rem .6rem; cursor: pointer; }
+.tool:hover { border-color: var(--rule-strong); color: var(--ink); }
+
+/* stage */
+/* no top padding on the scroller itself: a sticky bar inside it must be able to reach the very top */
+.stage { overflow-x: hidden; overflow-y: auto; padding: 0 clamp(1rem, 4vw, 3.4rem) 2rem; }
+.slide { width: 100%; max-width: 68rem; margin: 0 auto; padding-top: clamp(1.4rem, 4vh, 2.8rem); }
+.slide__title { font-family: var(--display); font-size: clamp(1.5rem, 2.6vw, 2.3rem); line-height: 1.22; font-weight: 680; letter-spacing: -.01em; margin: 0 0 1.3rem; text-wrap: balance; }
+.slide__blocks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+.slide--split .slide__blocks { grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); column-gap: 2.4rem; align-items: start; }
+.slide--split .block:first-child { grid-row: 1 / span 4; }
+.block { transition: opacity .28s var(--ease), transform .28s var(--ease); }
+.block.is-waiting { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+.slide--hook .slide__title { font-size: clamp(2.2rem, 5vw, 4rem); line-height: 1.12; font-weight: 720; letter-spacing: -.02em; max-width: 13em; margin-top: clamp(.5rem, 7vh, 4.5rem); margin-bottom: 1.6rem; }
+.hook__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.4rem; margin-top: 2.4rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); max-width: 52rem; }
+.hook__meta h3 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .5rem; }
+.hook__meta ul { margin: 0; padding: 0; list-style: none; font-size: .92rem; color: var(--ink-2); }
+.hook__meta li { padding: .14rem 0; }
+
+.text { font-size: 1.18rem; line-height: 1.65; color: var(--ink-2); margin: 0; max-width: 34em; }
+.slide--hook .text { font-size: 1.4rem; color: var(--ink); }
+.points { margin: 0; padding: 0; list-style: none; display: grid; gap: .7rem; font-size: 1.08rem; line-height: 1.55; }
+.points li { display: grid; grid-template-columns: 1.1rem 1fr; }
+.points li::before { content: ""; width: 6px; height: 6px; margin-top: .62em; background: var(--ink-2); }
+.callout { border-left: 3px solid var(--info); padding: .1rem 0 .1rem 1rem; max-width: 36em; }
+.callout--pitfall { border-left-color: var(--bad); }
+.callout h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.callout p { margin: 0; color: var(--ink-2); }
+
+/* code */
+.code { background: var(--raised); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+.code__path { padding: .55rem 1rem .5rem; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: .68rem; color: var(--faint); }
+.code__scroll { overflow: auto; max-height: min(58vh, 31rem); padding: .5rem 0 .8rem; scrollbar-width: thin; }
+.code__line { display: grid; grid-template-columns: 3em minmax(0, 1fr); font-family: var(--mono); font-size: .78rem; line-height: 1.68; white-space: pre; padding-right: 1rem; border-left: 3px solid transparent; transition: opacity .3s, background-color .3s; }
+.code__no { text-align: right; padding-right: 1em; color: var(--faint); opacity: .7; user-select: none; }
+.code.has-focus .code__line { opacity: .4; }
+.code.has-focus .code__line.is-focus { opacity: 1; background: var(--accent-wash); border-left-color: var(--accent); }
+.code .code__line.is-changed { opacity: 1; background: var(--ok-wash); border-left-color: var(--ok); }
+.tk-k { color: var(--code-k); font-weight: 600; }
+.tk-s { color: var(--ok); }
+.tk-n { color: var(--info); }
+.tk-c { color: var(--faint); font-style: italic; }
+
+/* buttons and segmented choices */
+.btn { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 10px; padding: .5rem 1rem; cursor: pointer; }
+.btn:hover { border-color: var(--ink-2); }
+.btn--primary { background: var(--ink); border-color: var(--ink); color: var(--canvas); font-weight: 600; }
+.btn--primary:hover { border-color: var(--ink); opacity: .86; }
+.btn--quiet { border-color: transparent; background: none; color: var(--muted); padding: .2rem .5rem; font-size: .78rem; }
+.btn--quiet:hover { color: var(--ink); border-color: var(--rule); }
+.btn:disabled { opacity: .4; cursor: default; }
+.seg { display: inline-flex; align-items: center; gap: .6rem; font-size: .82rem; color: var(--muted); }
+.seg__set { display: inline-flex; padding: 3px; background: var(--sunken); border-radius: 10px; }
+.seg__set button { border: 0; background: none; padding: .32rem .8rem; border-radius: 8px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.seg__set button:hover { color: var(--ink); }
+.seg__set button[aria-pressed="true"] { background: var(--raised); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--rule), 0 1px 2px #0000001a; }
+
+/* experiment: the code on the left, what really happened on the right */
+.exp__bar { display: flex; justify-content: space-between; align-items: center; gap: .8rem 1.5rem; flex-wrap: wrap; margin-bottom: .4rem; padding: .5rem 0; position: sticky; top: 0; z-index: 2; background: var(--canvas); }
+.exp__body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 1.6rem; align-items: start; }
+.exp .code__scroll { max-height: min(34vh, 22rem); }
+.block:has(> .try) { display: none; }
+.exp.is-invited .seg__set { animation: invite 2.4s var(--ease); }
+@keyframes invite { 0%, 70% { box-shadow: 0 0 0 2px var(--accent); } }
+.exp__q { margin: .1rem 0 .7rem; font-size: .92rem; color: var(--ink-2); }
+.plot__row { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; align-items: center; gap: .8rem; width: 100%; padding: 0; border: 0; border-top: 1px solid var(--rule); background: none; text-align: left; cursor: pointer; }
+.plot__row[disabled] { cursor: default; }
+.plot__label { font-size: .86rem; color: var(--muted); }
+.plot__row.is-on .plot__label { color: var(--ink); font-weight: 650; }
+.plot__track { position: relative; height: 3.3rem; }
+.plot__track::before { content: ""; position: absolute; inset: 50% 0 auto 0; border-top: 1px solid var(--rule); }
+.plot__track::after { content: ""; position: absolute; top: 0; bottom: 0; left: var(--expect); border-left: 1.5px dashed var(--ok); opacity: .7; }
+.dot { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--bad); z-index: 1;
+  transition: left .55s var(--ease), transform .55s var(--ease), opacity .3s, background-color .3s; }
+.dot.is-ok { background: var(--ok); }
+.dot.is-waiting { opacity: 0; pointer-events: none; }
+.plot__row:not(.is-on) .dot { opacity: .5; }
+.plot__row:not(.is-on) .dot.is-waiting { opacity: 0; }
+.plot__sum { text-align: right; font-size: .8rem; color: var(--muted); line-height: 1.35; }
+.plot__sum b { display: block; font-size: .9rem; color: var(--bad); }
+.plot__sum b.is-ok { color: var(--ok); }
+.plot__axis { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; gap: .8rem; border-top: 1px solid var(--rule); font-size: .72rem; color: var(--faint); }
+.plot__ticks { position: relative; height: 1.6rem; }
+.plot__ticks span { position: absolute; top: .3rem; white-space: nowrap; }
+.plot__ticks .is-expect { left: var(--expect); transform: translateX(-100%); padding-right: .4rem; color: var(--ok); font-weight: 600; }
+.exp__finding { margin: .9rem 0 0; font-size: 1.04rem; line-height: 1.55; min-height: 3.2em; }
+.exp__finding b { font-variant-numeric: tabular-nums; }
+.exp__foot { margin-top: .5rem; display: flex; align-items: center; gap: .3rem .9rem; flex-wrap: wrap; font-size: .72rem; color: var(--faint); }
+.cmd { font-family: var(--mono); background: var(--sunken); color: var(--ink-2); padding: .15rem .5rem; border-radius: 6px; }
+
+/* lanes: two threads and the one thing they share; time runs downward */
+.lanes__expr { display: flex; align-items: center; gap: .6rem 1.4rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.lanes__code { font-family: var(--mono); font-size: 1.5rem; font-weight: 650; }
+.lanes__parts { display: flex; align-items: center; gap: .45rem; font-size: .84rem; color: var(--faint); }
+.part { padding: .2rem .7rem; border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); transition: color .25s, border-color .25s, background-color .25s; }
+.part.is-now { color: var(--accent-text); border-color: var(--accent); background: var(--accent-wash); font-weight: 600; }
+.lanes__grid { display: grid; grid-template-columns: minmax(0, 1fr) 5.4rem minmax(0, 1fr); max-width: 46rem; margin: 0; }
+.lanes__head { font-size: .82rem; color: var(--muted); padding-bottom: .5rem; border-bottom: 1px solid var(--rule); }
+.lanes__head--a { text-align: right; padding-right: 3.6rem; }
+.lanes__head--b { padding-left: 3.6rem; }
+.lanes__head--mid { text-align: center; font-family: var(--mono); color: var(--ink); font-weight: 600; }
+.lcell { min-height: 2.9rem; display: flex; align-items: center; transition: opacity .3s var(--ease); }
+.lcell--a { justify-content: flex-end; }
+.lcell--mid { justify-content: center; position: relative; }
+.lcell--mid::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid var(--rule-strong); }
+.lrow { display: contents; }
+.lrow.is-waiting .lcell > * { opacity: 0; }
+.lcell > * { transition: opacity .3s var(--ease); }
+.chip { font-size: .92rem; padding: .32rem .8rem; border-radius: 8px; background: var(--raised); border: 1px solid var(--rule); white-space: nowrap; }
+.lrow.is-now .chip { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.arrow { flex: 0 0 3rem; height: 0; border-top: 1.5px solid var(--ink-2); position: relative; margin: 0 .3rem; }
+.arrow::after { content: ""; position: absolute; top: -5px; border: 4.25px solid transparent; }
+.arrow--right::after { right: -2px; border-left: 7px solid var(--ink-2); border-right: 0; }
+.arrow--left::after { left: -2px; border-right: 7px solid var(--ink-2); border-left: 0; }
+.arrow--none { border-top-color: transparent; }
+.arrow--none::after { display: none; }
+.val { position: relative; z-index: 1; min-width: 2.7rem; text-align: center; font-family: var(--mono); font-size: .98rem; font-weight: 650; padding: .2rem .6rem; border-radius: 8px; background: var(--canvas); border: 1.5px solid var(--ink-2); }
+.val--write { border-color: var(--accent); color: var(--accent-text); }
+.lanes__verdict { max-width: 46rem; margin: .9rem 0 0; padding-top: .9rem; border-top: 1px solid var(--rule); font-size: 1.15rem; font-weight: 650; transition: opacity .3s; }
+.lanes__verdict.is-waiting { opacity: 0; }
+
+/* guess, then see */
+.predict__q, .quiz__q { font-size: 1.3rem; font-weight: 650; line-height: 1.4; margin: 0 0 1rem; }
+.opts { display: grid; gap: .55rem; max-width: 40rem; }
+.opt { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto; align-items: center; gap: .6rem; width: 100%; text-align: left; padding: .75rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--raised); cursor: pointer; font-size: 1.02rem; }
+.opt:hover { border-color: var(--ink-2); }
+.opt__key { font-family: var(--mono); font-size: .82rem; color: var(--faint); }
+.opt__tag { font-size: .74rem; font-weight: 600; }
+.opt.is-picked { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.opt.is-picked .opt__tag { color: var(--ink-2); }
+.opt.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); }
+.opt.is-right .opt__tag { color: var(--ok); }
+.opt.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
+.opt.is-wrong .opt__tag { color: var(--bad); }
+.opt__why { grid-column: 2 / -1; font-size: .88rem; color: var(--ink-2); }
+.reveal { display: flex; gap: .5rem 2.6rem; flex-wrap: wrap; padding-top: .8rem; border-top: 1px solid var(--rule); max-width: 46rem; }
+.reveal dl { margin: 0; }
+.reveal dt { font-size: .76rem; color: var(--muted); }
+.reveal dd { margin: .1rem 0 0; font-size: 1.02rem; font-weight: 600; }
+.reveal .is-ok { color: var(--ok); }
+.reveal .is-miss { color: var(--bad); }
+
+/* the name comes last */
+.name__term { font-family: var(--display); font-size: clamp(2.4rem, 5.4vw, 4.2rem); line-height: 1.1; font-weight: 720; letter-spacing: -.02em; margin: 0; }
+.name__alias { font-family: var(--mono); font-size: .92rem; color: var(--muted); margin: .5rem 0 0; }
+.name__line { font-size: 1.28rem; line-height: 1.55; margin: 1.1rem 0 0; max-width: 30em; }
+.name__asked { margin: 1.8rem 0 0; padding-top: 1rem; border-top: 1px solid var(--rule); max-width: 40rem; }
+.name__asked h4 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .4rem; }
+.name__asked ul { margin: 0; padding: 0; list-style: none; font-size: 1.02rem; color: var(--ink-2); }
+.name__asked li { padding: .2rem 0; }
+
+/* say it aloud, take three cards */
+.say__prompt { font-size: 1.5rem; font-weight: 650; line-height: 1.4; margin: 0 0 1.2rem; max-width: 26em; text-wrap: balance; }
+.say__row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.say__clock { font-family: var(--mono); font-size: 1.7rem; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 3.4em; }
+.say__points { margin: 1.4rem 0 0; padding: 1rem 0 0; border-top: 1px solid var(--rule); list-style: none; display: grid; gap: .5rem; max-width: 40rem; }
+.say__points label { display: grid; grid-template-columns: 1.4rem 1fr; gap: .5rem; align-items: start; cursor: pointer; font-size: 1.02rem; }
+.say__points input { width: 1.05rem; height: 1.05rem; margin-top: .32rem; accent-color: var(--ok); }
+.say__score { margin: .8rem 0 0; font-size: .92rem; color: var(--muted); }
+.cards { display: grid; gap: 0; max-width: 44rem; border-bottom: 1px solid var(--rule); }
+.card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem 1rem; align-items: baseline; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.card__q { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.card__a { grid-column: 1 / -1; margin: 0; color: var(--ink-2); }
+
+/* the teacher: what a person standing next to you would say right now. It leads; the stage shows. */
+.voice { border-top: 1px solid var(--rule); padding: 1rem clamp(1rem, 4vw, 3.4rem) 1.1rem; }
+.voice__inner { max-width: 68rem; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.6rem; align-items: end; }
+.voice__line { margin: 0; font-size: 1.2rem; line-height: 1.62; min-height: 4.86em; max-width: 43em; }
+.voice__line > span { display: block; }
+.voice__line.is-fresh > span { animation: line-in .32s var(--ease); }
+.voice__nav { display: flex; gap: .5rem; }
+@keyframes line-in { from { opacity: 0; transform: translateY(5px); } }
+
+.voice__key { margin: .4rem 0 0; font-size: .8rem; color: var(--muted); animation: line-in .32s var(--ease); }
+.tool.is-flash { animation: flash 1.2s var(--ease); }
+@keyframes flash { 0%, 40% { background: var(--accent-wash); border-color: var(--accent); color: var(--ink); } }
+
+/* reminders at the moment of need */
+.term { border-bottom: 1.5px dotted var(--ochre); cursor: help; border-radius: 2px; }
+.term:hover, .term:focus-visible { background: var(--accent-wash); }
+.tip { position: fixed; z-index: 20; max-width: 22rem; padding: .6rem .8rem; border-radius: 10px; background: var(--ink); color: var(--canvas); font-size: .86rem; line-height: 1.5; box-shadow: 0 8px 24px -10px #000000a0; }
+.tip b { display: block; font-size: .8rem; opacity: .75; margin-bottom: .1rem; }
+.tip code { background: none; padding: 0; }
+.notes { position: relative; }
+.notes__list { position: absolute; right: 0; top: calc(100% + .5rem); z-index: 15; width: min(22rem, 86vw); margin: 0; padding: .7rem 1rem .7rem 2rem; background: var(--raised); border: 1px solid var(--rule-strong); border-radius: 12px; font-size: .88rem; color: var(--ink); line-height: 1.5; box-shadow: 0 14px 34px -20px #000000a0; }
+.notes__list li { padding: .15rem 0; }
+.notes__list .is-empty { list-style: none; margin-left: -1rem; color: var(--muted); }
+
+.exp__note { margin: .5rem 0 0; font-size: .84rem; color: var(--muted); min-height: 1.4em; }
+button.plot__label { border: 0; background: none; padding: .3rem 0; text-align: left; cursor: pointer; line-height: 1.3; }
+button.plot__label:hover { color: var(--ink); }
+.plot__row { cursor: default; }
+.dot { cursor: pointer; }
+.dot::after { content: ""; position: absolute; inset: -5px; }
+.dot:hover { box-shadow: 0 0 0 3px var(--canvas), 0 0 0 4.5px currentColor; color: var(--ink-2); }
+.exp__probe { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.lrow-list { display: contents; }
+.lrow--controls .lcell { padding-top: .7rem; }
+.lrow--controls .lcell--a { padding-right: .8rem; }
+.lrow--controls .lcell--b { padding-left: .8rem; }
+.sched__bar { display: flex; align-items: center; justify-content: flex-start; gap: .6rem 1.2rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.goals { display: flex; gap: .5rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; font-size: .86rem; }
+.goal { display: flex; align-items: center; gap: .4rem; padding: .22rem .7rem; border: 1px solid var(--rule-strong); border-radius: 999px; color: var(--ink-2); }
+.goal::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid currentColor; }
+.goal.is-done { color: var(--ok); border-color: var(--ok); font-weight: 600; }
+.goal.is-done::before { background: var(--ok); border-color: var(--ok); }
+.sched__result { max-width: 46rem; margin: .9rem 0 0; min-height: 3.2em; font-size: 1.05rem; }
+
+.block > .code { max-width: 46rem; }
+.lrow--controls .btn { border-color: var(--ink-2); font-weight: 600; }
+.lrow--controls .btn:disabled { border-color: var(--rule-strong); font-weight: 400; }
+
+/* small answer buttons, shared by the warm-up, the lanes question and the cases */
+.picks { display: flex; gap: .45rem; flex-wrap: wrap; }
+.pick { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 9px; padding: .36rem .85rem; font-size: .95rem; cursor: pointer; }
+.pick:hover:not(:disabled) { border-color: var(--ink-2); }
+.pick:disabled { cursor: default; color: var(--muted); }
+.pick.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); color: var(--ok); font-weight: 600; }
+.pick.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); color: var(--bad); }
+.pick--tool { font-family: var(--mono); font-size: .86rem; }
+
+/* opening: what you already have, then a picture to hang the lesson on */
+.recall, .cases { max-width: 50rem; }
+.recall__item { display: grid; grid-template-columns: 7.4rem minmax(0, 1fr); gap: .4rem 1.2rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.recall__have { grid-row: 1 / span 3; font-size: .82rem; color: var(--muted); padding-top: .2rem; }
+.recall__q, .cases__text { margin: 0; font-size: 1.08rem; font-weight: 600; line-height: 1.5; }
+.recall__why, .cases__why { margin: 0; font-size: .92rem; color: var(--ink-2); }
+.recall__score, .cases__score { margin: 0; padding-top: .8rem; border-top: 1px solid var(--rule); font-size: .92rem; color: var(--muted); min-height: 2.4em; }
+.cases__item { display: grid; gap: .5rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.cases__text { font-weight: 400; }
+.scene__story { margin: 0 0 1.4rem; font-size: 1.28rem; line-height: 1.7; max-width: 33em; }
+.scene__map { max-width: 44rem; transition: opacity .3s var(--ease); }
+.scene__map.is-waiting, .scene__row.is-waiting { opacity: 0; }
+.scene__head, .scene__row { display: grid; grid-template-columns: minmax(0, 1fr) 2.6rem minmax(0, 1.1fr); align-items: center; }
+.scene__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; border-bottom: 1px solid var(--rule); }
+.scene__row { padding: .58rem 0; border-bottom: 1px solid var(--rule); font-size: 1.04rem; transition: opacity .3s var(--ease); }
+.scene__arrow { color: var(--faint); }
+.scene__row.is-now .scene__arrow { color: var(--accent); }
+.scene__to { font-weight: 600; }
+
+/* find the line; look inside */
+.inside { max-width: 46rem; }
+.spot { display: grid; grid-template-columns: minmax(0, 46rem) minmax(13rem, 19rem); gap: 0 2rem; align-items: start; }
+.spot__q { grid-column: 1 / -1; }
+.spot__how { margin: .2rem 0 .8rem; font-size: .92rem; color: var(--muted); }
+.spot__q { margin: 0 0 .8rem; font-size: 1.18rem; font-weight: 650; line-height: 1.45; }
+.spot .code__scroll { max-height: max(12rem, calc(100vh - 21.5rem)); }
+.code.is-pickable .code__line { cursor: pointer; }
+.code.is-pickable .code__line:hover { background: var(--sunken); }
+.code__line.is-wrong { background: var(--bad-wash); border-left-color: var(--bad); }
+.spot__out { margin: 0; font-size: 1rem; line-height: 1.7; color: var(--ink-2); }
+.spot__out.is-ok { color: var(--ok); font-weight: 600; }
+.inside__what { margin: 0 0 .6rem; font-size: .86rem; color: var(--muted); }
+.inside .code__line { position: relative; font-size: .88rem; line-height: 2.2; }
+.code__tag { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); font-family: var(--font); font-size: .78rem; font-weight: 600; line-height: 1.7; padding: 0 .7rem; border-radius: 999px; background: var(--raised); border: 1px solid var(--rule-strong); }
+.code__line.is-focus .code__tag { border-color: var(--accent); color: var(--accent-text); }
+
+/* lanes: a question between two steps; steps that touch nothing */
+.lanes--long .lcell { min-height: 2.5rem; }
+.chip--wait { border-style: dashed; color: var(--muted); }
+.chip--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.chip--ok { border-color: var(--ok); color: var(--ok); }
+.lanes__ask { max-width: 46rem; margin-top: .8rem; padding: .8rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--surface); display: grid; gap: .5rem; }
+.lanes__ask[hidden] { display: none; }
+.lanes__ask p { margin: 0; font-weight: 600; }
+.lanes__ask .ask__out { font-weight: 400; font-size: .9rem; color: var(--muted); min-height: 1.5em; }
+
+/* runs let out by hand; a reference answer after speaking */
+.exp__hand { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; }
+.exp__hand[hidden] { display: none; }
+.plot__sum.is-held > * { visibility: hidden; }
+.say__model { margin: 1rem 0 0; padding: .9rem 1.1rem; border-left: 3px solid var(--rule-strong); background: var(--surface); font-size: 1rem; line-height: 1.8; max-width: 42rem; }
+
+/* how to choose between the tools just met */
+.choose { max-width: 62rem; }
+.choose__head, .choose__row { display: grid; grid-template-columns: 9.6rem repeat(3, minmax(0, 1fr)); gap: 0 1.6rem; }
+.choose__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; }
+.choose__row { padding: .8rem 0; border-top: 1px solid var(--rule); font-size: .98rem; line-height: 1.5; color: var(--ink-2); }
+.choose__row { transition: opacity .3s var(--ease); }
+.choose.is-walking .choose__row:not(.is-now) { opacity: .42; }
+.choose__name { font-family: var(--mono); font-weight: 650; color: var(--ink); }
+.choose__rule.is-waiting { visibility: hidden; }
+.choose__rule { margin: 0; padding-top: .9rem; border-top: 1px solid var(--rule-strong); font-size: 1.12rem; font-weight: 600; }
+
+/* pictures: two actors and the thing they share. Drawn at a fixed size so every part has a known place. */
+.pic { position: relative; width: 300px; height: 300px; flex: none; font-size: 16px; line-height: 1.3; }
+.pic__lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.pic__arrow { opacity: 0; transition: opacity .25s var(--ease); }
+.pic__arrow.is-on { opacity: 1; }
+.pic__arrow line { stroke: var(--accent); stroke-width: 1.75; }
+.pic__arrow polygon { fill: var(--accent); }
+.pic--plain .pic__arrow line { stroke: var(--ink-2); }
+.pic--plain .pic__arrow polygon { fill: var(--ink-2); }
+.pic__over { position: absolute; left: 0; right: 0; bottom: calc(100% - 38px); display: grid; justify-items: center; gap: 3px; }
+.pic__name { font-size: 13px; color: var(--muted); }
+.pic__tags { display: grid; justify-items: center; gap: 3px; }
+.pic__tags span { font-family: var(--mono); font-size: 12.5px; font-weight: 650; color: var(--ink); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--rule-strong); background: var(--surface); white-space: nowrap; }
+.pic__board { position: absolute; left: 90px; top: 44px; width: 120px; height: 62px; display: grid; place-items: center; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .25s, box-shadow .25s; }
+.pic__board.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__value { font-family: var(--mono); font-size: 28px; font-weight: 650; line-height: 1; }
+.pic__board.is-now .pic__value { color: var(--accent-text); }
+.pic__hand { position: absolute; top: 146px; width: 64px; height: 38px; display: grid; place-items: center; border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--raised); font-family: var(--mono); font-size: 16px; transition: border-color .25s, box-shadow .25s; }
+.pic__hand--a { left: 50px; }
+.pic__hand--b { left: 186px; }
+.pic__hand small { position: absolute; left: 0; right: 0; top: -18px; text-align: center; font-family: var(--font); font-size: 11px; color: var(--faint); }
+.pic__hand.is-empty { border-style: dashed; background: none; }
+.pic__hand.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__actor { position: absolute; top: 196px; width: 110px; display: grid; justify-items: center; gap: 3px; }
+.pic__actor--a { left: 0; }
+.pic__actor--b { left: 190px; }
+.pic__figure { width: 44px; height: 40px; fill: var(--raised); stroke: var(--ink-2); stroke-width: 1.5; transition: stroke .25s; }
+.pic__actor.is-now .pic__figure { stroke: var(--accent); }
+.pic__note { font-size: 12.5px; padding: 2px 8px; border-radius: 7px; border: 1px solid var(--rule-strong); background: var(--raised); white-space: nowrap; }
+.pic__note:empty { display: none; }
+.pic__note--wait { border-style: dashed; color: var(--muted); }
+.pic__note--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.pic__note--ok { border-color: var(--ok); color: var(--ok); }
+.pic__note.is-now { box-shadow: 0 0 0 1px currentColor; }
+.pic__action { position: absolute; left: 0; right: 0; top: 138px; text-align: center; font-family: var(--mono); font-weight: 650; font-size: 14px; color: var(--ink); }
+.pic__action.is-now { color: var(--accent-text); }
+.pic__action:empty { display: none; }
+.scene__body.has-picture { display: grid; grid-template-columns: minmax(0, 44rem) 300px; gap: 0 2.4rem; align-items: start; }
+.lanes { display: grid; grid-template-columns: minmax(0, 46rem) 300px; gap: 0 2rem; align-items: start; }
+.lanes__side { position: sticky; top: .6rem; }
+.lanes__now { margin: 0 0 .1rem; font-size: .76rem; color: var(--muted); text-align: center; }
+@media (max-width: 1220px) { .lanes { grid-template-columns: minmax(0, 1fr); } .lanes__side { display: none; } }
+
+/* chart: the recorded runs as lines. Colour names the way of writing; a hollow point means that group came out wrong. */
+.chart { margin: 0; display: grid; grid-template-columns: minmax(0, 44rem) minmax(13rem, 1fr); gap: 0 2rem; align-items: start; }
+.chart__cap { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem 1rem; font-size: .84rem; color: var(--muted); margin-bottom: .5rem; }
+.chart__cap b { font-size: 1rem; color: var(--ink); }
+.chart__marks { display: inline-flex; align-items: center; gap: .4rem; }
+.chart__mark { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--ink-2); border: 2px solid var(--ink-2); }
+.chart__mark.is-wrong { background: transparent; margin-left: .7rem; }
+.chart__picks { display: grid; justify-items: start; gap: .4rem; margin-bottom: 1rem; }
+.chart__pick { display: inline-flex; align-items: center; gap: .5rem; padding: .26rem .75rem; border: 1px solid var(--rule-strong); border-radius: 999px; background: none; font-size: .86rem; color: var(--ink-2); cursor: pointer; }
+.chart__pick:hover { border-color: var(--ink-2); }
+.chart__pick[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); font-weight: 600; background: var(--raised); }
+.chart__key { flex: none; width: 18px; height: 0; border-top: 3px solid var(--s, var(--ink-2)); border-radius: 2px; }
+.chart__key--1, .chart__series--1 { --s: var(--s1); }
+.chart__key--2, .chart__series--2 { --s: var(--s2); }
+.chart__key--3, .chart__series--3 { --s: var(--s3); }
+.chart__key--4, .chart__series--4 { --s: var(--s4); }
+.chart__plot { position: relative; }
+.chart__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart__grid { stroke: var(--rule); stroke-width: 1; }
+.chart__base { stroke: var(--rule-strong); stroke-width: 1; }
+.chart__tick { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.chart__series { transition: opacity .25s var(--ease); }
+.chart__series.is-dim { opacity: .2; }
+.chart__line { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; transition: stroke-width .2s; }
+.chart__series.is-on .chart__line { stroke-width: 3.2; }
+.chart__lead { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 1; opacity: .55; }
+.chart__dot { fill: var(--s, var(--ink-2)); stroke: var(--canvas); stroke-width: 2; }
+.chart__dot.is-wrong { fill: var(--canvas); stroke: var(--s, var(--ink-2)); }
+.chart__name { font-size: 11.5px; fill: var(--ink-2); }
+.chart__end { font-weight: 650; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.chart__cross { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+.chart__cross.is-on { opacity: .7; }
+.chart__hit { fill: transparent; cursor: crosshair; outline: none; }
+.chart__hit:focus-visible { stroke: var(--ink-2); stroke-dasharray: 2 3; }
+.chart__tip { position: absolute; top: 4%; z-index: 2; min-width: 16rem; padding: .55rem .7rem; border-radius: 10px; background: var(--raised); border: 1px solid var(--rule-strong); box-shadow: 0 8px 22px -14px #000000a0; font-size: .8rem; display: grid; gap: .25rem; pointer-events: none; }
+.chart__tip[hidden] { display: none; }
+.chart__row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto 4.8em; gap: .5rem; align-items: center; }
+.chart__row.is-dim { opacity: .45; }
+.chart__row span:last-child { color: var(--muted); text-align: right; }
+.chart__row span.is-wrong { color: var(--bad); }
+.chart__read { margin: 0 0 .8rem; min-height: 6.4em; font-size: .98rem; line-height: 1.65; color: var(--ink-2); }
+.chart__table { font-size: .8rem; color: var(--muted); }
+.chart__table summary { cursor: pointer; width: max-content; }
+.chart__table table { border-collapse: collapse; margin-top: .4rem; font-variant-numeric: tabular-nums; }
+.chart__table th, .chart__table td { padding: .22rem .5rem; border-bottom: 1px solid var(--rule); text-align: right; font-weight: 400; white-space: nowrap; }
+.chart__table th:first-child { text-align: left; }
+
+/* decide: the rule for choosing, as a small tree */
+.decide { max-width: 19rem; padding: 1rem 1.1rem; border: 1px solid var(--rule-strong); border-radius: 12px; background: var(--surface); }
+.decide__q { margin: 0; font-weight: 650; font-size: 1.02rem; }
+.decide__list { list-style: none; margin: 0; padding: .5rem 0 0 .5rem; }
+.decide__branch { position: relative; display: grid; gap: .2rem; padding: .5rem 0 .6rem 1.4rem; border-left: 1.5px solid var(--ink-2); }
+.decide__branch:last-child { border-left-color: transparent; }
+.decide__branch::before { content: ""; position: absolute; left: -1.5px; top: 0; width: 1rem; height: 1.2rem; border-left: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2); border-bottom-left-radius: 9px; }
+.decide__when { font-size: .92rem; color: var(--ink-2); }
+.decide__pick { justify-self: start; font-family: var(--mono); font-weight: 650; font-size: .92rem; padding: .18rem .6rem; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .3s, color .3s; }
+.decide__eg { font-size: .78rem; color: var(--muted); }
+.decide__branch.is-used .decide__pick { border-color: var(--ok); color: var(--ok); }
+.decide__branch.is-hit .decide__pick { animation: hit 1.6s var(--ease); }
+@keyframes hit { 0%, 55% { box-shadow: 0 0 0 5px var(--ok-wash), 0 0 0 1.5px var(--ok); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr) 19rem; }
+.slide--split .block:has(> .decide) { grid-column: 2; position: sticky; top: .6rem; }
+.slide--split .block:has(> .decide) ~ .block { grid-column: 1; grid-row: 1; }
+
+@media (max-width: 860px) {
+  .top { grid-template-columns: minmax(0, 1fr) auto; padding: .5rem .9rem; }
+  .top__title, #count { display: none; }
+  .beat:not(.is-now) { font-size: 0; gap: 0; padding: .3rem .22rem; }
+  .stage { padding: 0 .9rem 1.4rem; }
+  .slide { padding-top: 1rem; }
+  .exp__bar { position: static; }
+  .slide--split .slide__blocks, .exp__body, .hook__meta { grid-template-columns: minmax(0, 1fr); }
+  .hook__meta { gap: 1.2rem; }
+  .slide--split .block:first-child { grid-row: auto; }
+  .code__scroll, .exp .code__scroll { max-height: 15rem; }
+  .seg, .seg__set { flex-wrap: wrap; }
+  .plot__label { font-size: .72rem; overflow-wrap: anywhere; }
+  .plot__sum { font-size: .72rem; }
+  .plot__sum b { font-size: .8rem; }
+  .lrow--controls .btn { padding: .45rem .5rem; font-size: .8rem; }
+  .lrow--controls .lcell--a { padding-right: .3rem; } .lrow--controls .lcell--b { padding-left: .3rem; }
+  .plot__row, .plot__axis { grid-template-columns: 5.8em minmax(0, 1fr) 4.4em; gap: .4rem; }
+  .lanes__grid { grid-template-columns: minmax(0, 1fr) 3.4rem minmax(0, 1fr); }
+  .lanes__head--a { padding-right: 1.4rem; } .lanes__head--b { padding-left: 1.4rem; }
+  .arrow { flex-basis: 1rem; margin: 0 .15rem; }
+  .chip { font-size: .78rem; padding: .28rem .45rem; }
+  .val { min-width: 2.2rem; padding: .2rem .3rem; font-size: .88rem; }
+  .voice { padding: .7rem .9rem .8rem; }
+  .voice__inner { gap: .7rem; }
+  .voice__line { font-size: 1rem; line-height: 1.55; min-height: 0; }
+  .exp__body > :first-child { order: 2; }
+  .choose__head { display: none; }
+  .recall__item { grid-template-columns: minmax(0, 1fr); }
+  .spot { grid-template-columns: minmax(0, 1fr); }
+  .spot .code__scroll { max-height: 46vh; }
+  .spot__side { margin-top: .7rem; }
+  .spot__how { display: none; }
+  .recall__have { grid-row: auto; }
+  .scene__body.has-picture, .chart { grid-template-columns: minmax(0, 1fr); }
+  .scene__body .pic { order: -1; justify-self: center; margin-bottom: .6rem; }
+  .chart__picks { display: flex; flex-wrap: wrap; margin: .6rem 0; }
+  .chart__pick { font-size: .8rem; padding: .22rem .6rem; }
+  .chart__tick, .chart__name { font-size: 19px; }
+  .chart__label { display: none; }
+  .chart__dot { r: 7px; }
+  .chart__line { stroke-width: 3; }
+  .scene__head, .scene__row { column-gap: .4rem; }
+  .chart__read { min-height: 0; }
+  .chart__tip { min-width: 13rem; }
+  .slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr); }
+  .slide--split .block:has(> .decide), .slide--split .block:has(> .decide) ~ .block { grid-column: auto; grid-row: auto; position: static; }
+  .decide { max-width: none; }
+  .code__tag { position: static; transform: none; grid-column: 2; justify-self: start; margin-bottom: .3rem; }
+  .choose__row { grid-template-columns: minmax(0, 1fr); gap: .2rem; }
+  .choose__row > [data-label]::before { content: attr(data-label) "："; color: var(--muted); font-size: .82em; }
+  .voice__nav .btn { padding: .5rem .7rem; }
+  .btn__label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+@media print { body { height: auto; overflow: visible; display: block; } .voice__nav, .top__tools { display: none; } }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top__title" id="title"></div>
+  <nav class="beats" id="beats" aria-label="这节课走到哪了"></nav>
+  <div class="top__tools">
+    <span class="num" id="count"></span>
+    <div class="notes"><button class="tool" id="notes" type="button">要点 0</button><ul class="notes__list" id="notes-list" hidden></ul></div>
+    <button class="tool" id="theme" type="button">深色</button>
+  </div>
+</header>
+<main class="stage" id="stage"></main>
+<footer class="voice" aria-label="老师的讲解">
+  <div class="voice__inner">
+    <div><p class="voice__line" id="line" aria-live="polite"></p><p class="voice__key" id="key" hidden></p></div>
+    <div class="voice__nav">
+      <button class="btn" id="prev" type="button" aria-label="上一步">←</button>
+      <button class="btn btn--primary" id="next" type="button"><span class="btn__label">下一步 </span>→</button>
+    </div>
+  </div>
+</footer>
+<script type="application/json" id="lesson-data">{"format":"studyhub-lesson/1","template":"experiment","id":"sql-group-having","course":"MySQL 索引、事务与锁","title":"WHERE 和 HAVING 混用，全表都被扫了一遍？","lead":"能用 WHERE 先过滤 90% 无关行，却放到 HAVING 里等 GROUP BY 分完组再丢掉，索引失效不说还白建巨大哈希表。","minutes":40,"needs":["写过包含 GROUP BY 的聚合 SQL"],"after":["背出 SQL 逻辑执行顺序（FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY）","分清 WHERE（分组前行级过滤）与 HAVING（分组后聚合过滤）的职责边界","掌握用 (WHERE等值列, GROUP BY列) 联合索引实现流式分组、消除 Using temporary"],"terms":{"WHERE":"行级过滤子句，在 GROUP BY 之前执行，可以利用索引缩减扫描行数，不能包含聚合函数。","HAVING":"组级过滤子句，在 GROUP BY 聚合之后执行，用于对 COUNT/SUM 等聚合结果做二次筛选。","流式分组":"当 GROUP BY 列在 WHERE 等值条件后刚好有序（命中联合索引前缀），引擎无需建临时表即可顺序累加计数。","Using temporary":"EXPLAIN Extra 中的警告，表示 MySQL 为完成分组或去重创建了内部临时表（数据量大时会落盘变慢）。"},"experiments":{"wherehaving":{"runner":"java","home":"lab.wherehaving","variants":[{"id":"HavingFilter","label":"用 HAVING 过滤状态","note":"先把 30 万行全塞进 GROUP BY 哈希表，最后再用 HAVING 扔掉 90%。"},{"id":"WhereBeforeGroup","label":"WHERE 先过滤再分组","note":"先用 WHERE 筛出 10% 的 PAID 行，再送进 GROUP BY。"},{"id":"IndexedWhere","label":"联合索引流式分组","note":"建 (status, user_id) 索引，直接定位 status=PAID 且按 user_id 有序流式计数。"},{"id":"WherePlusHaving","label":"WHERE+HAVING 各司其职","note":"WHERE 滤行状态，HAVING 滤聚合结果（如 COUNT(*) >= 3）。"}],"knob":{"label":"总订单行数","values":["50000","100000","300000","600000"],"default":"300000"},"repeat":10,"metric":{"key":"groupedRows","expectKey":"expected","label":"送进 GROUP BY 的行数"},"time":{"key":"ms","label":"耗时","unit":"ms"},"lang":"java","sources":{"HavingFilter":"package lab.wherehaving;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class HavingFilter {\n    public static void main(String[] args) {\n        int rows = Integer.parseInt(args[0]);\n        int[] userIds = new int[rows];\n        int[] status = new int[rows]; // 1 = PAID (10%), 0 = OTHER (90%)\n        for (int i = 0; i < rows; i++) {\n            userIds[i] = i % 5000;\n            status[i] = (i % 10 == 0) ? 1 : 0;\n        }\n\n        long start = System.nanoTime();\n        // GROUP BY (user_id, status) first, then HAVING status = 1\n        Map<Long, Integer> groupMap = new HashMap<>();\n        int groupedRows = 0;\n        for (int i = 0; i < rows; i++) {\n            groupedRows++;\n            long key = ((long) userIds[i] << 1) | status[i];\n            groupMap.merge(key, 1, Integer::sum);\n        }\n        int keptGroups = 0;\n        for (long key : groupMap.keySet()) {\n            if ((key & 1L) == 1L) keptGroups++;\n        }\n\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"groupedRows=\" + groupedRows);\n        System.out.println(\"expected=\" + (rows / 10));\n        System.out.println(\"keptGroups=\" + keptGroups);\n        System.out.println(\"ms=\" + ms);\n    }\n}\n","WhereBeforeGroup":"package lab.wherehaving;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class WhereBeforeGroup {\n    public static void main(String[] args) {\n        int rows = Integer.parseInt(args[0]);\n        int[] userIds = new int[rows];\n        int[] status = new int[rows];\n        for (int i = 0; i < rows; i++) {\n            userIds[i] = i % 5000;\n            status[i] = (i % 10 == 0) ? 1 : 0;\n        }\n\n        long start = System.nanoTime();\n        // WHERE status = 1 filters out 90% BEFORE GROUP BY\n        Map<Integer, Integer> groupMap = new HashMap<>();\n        int groupedRows = 0;\n        for (int i = 0; i < rows; i++) {\n            if (status[i] != 1) continue;\n            groupedRows++;\n            groupMap.merge(userIds[i], 1, Integer::sum);\n        }\n\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"groupedRows=\" + groupedRows);\n        System.out.println(\"expected=\" + (rows / 10));\n        System.out.println(\"keptGroups=\" + groupMap.size());\n        System.out.println(\"ms=\" + ms);\n    }\n}\n","IndexedWhere":"package lab.wherehaving;\n\npublic class IndexedWhere {\n    public static void main(String[] args) {\n        int rows = Integer.parseInt(args[0]);\n        int paidCount = rows / 10;\n        int[] paidUserIdsSorted = new int[paidCount];\n        for (int i = 0; i < paidCount; i++) {\n            paidUserIdsSorted[i] = i / Math.max(1, paidCount / 5000);\n        }\n\n        long start = System.nanoTime();\n        // Index (status, user_id): directly seek status=1 range, stream-group without HashMap\n        int groupedRows = 0;\n        int keptGroups = 0;\n        int prevUser = -1;\n        for (int uid : paidUserIdsSorted) {\n            groupedRows++;\n            if (uid != prevUser) {\n                keptGroups++;\n                prevUser = uid;\n            }\n        }\n\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"groupedRows=\" + groupedRows);\n        System.out.println(\"expected=\" + paidCount);\n        System.out.println(\"keptGroups=\" + keptGroups);\n        System.out.println(\"ms=\" + ms);\n    }\n}\n","WherePlusHaving":"package lab.wherehaving;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class WherePlusHaving {\n    public static void main(String[] args) {\n        int rows = Integer.parseInt(args[0]);\n        int[] userIds = new int[rows];\n        int[] status = new int[rows];\n        for (int i = 0; i < rows; i++) {\n            userIds[i] = i % 5000;\n            status[i] = (i % 10 == 0) ? 1 : 0;\n        }\n\n        long start = System.nanoTime();\n        // Best practice: WHERE filters rows, HAVING filters aggregated groups (COUNT(*) >= 3)\n        Map<Integer, Integer> groupMap = new HashMap<>();\n        int groupedRows = 0;\n        for (int i = 0; i < rows; i++) {\n            if (status[i] != 1) continue;\n            groupedRows++;\n            groupMap.merge(userIds[i], 1, Integer::sum);\n        }\n        int keptGroups = 0;\n        for (int cnt : groupMap.values()) {\n            if (cnt >= 3) keptGroups++;\n        }\n\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"groupedRows=\" + groupedRows);\n        System.out.println(\"expected=\" + (rows / 10));\n        System.out.println(\"keptGroups=\" + keptGroups);\n        System.out.println(\"ms=\" + ms);\n    }\n}\n"},"paths":{"HavingFilter":"src/lab/wherehaving/HavingFilter.java","WhereBeforeGroup":"src/lab/wherehaving/WhereBeforeGroup.java","IndexedWhere":"src/lab/wherehaving/IndexedWhere.java","WherePlusHaving":"src/lab/wherehaving/WherePlusHaving.java"},"shown":{"HavingFilter":"java -cp out lab.wherehaving.HavingFilter","WhereBeforeGroup":"java -cp out lab.wherehaving.WhereBeforeGroup","IndexedWhere":"java -cp out lab.wherehaving.IndexedWhere","WherePlusHaving":"java -cp out lab.wherehaving.WherePlusHaving"},"results":{"id":"wherehaving","variants":{"HavingFilter":{"hash":"163c49ddf71afe06","repeat":10,"runs":{"50000":[{"groupedRows":50000,"expected":5000,"keptGroups":500,"ms":37},{"groupedRows":50000,"expected":5000,"keptGroups":500,"ms":39},{"groupedRows":50000,"expected":5000,"keptGroups":500,"ms":45},{"groupedRows":50000,"expected":5000,"keptGroups":500,"ms":42},{"groupedRows":50000,"expected":5000,"keptGroups":500,"ms":60},{"groupedRows":50000,"expected":5000,"keptGroups":500,"ms":27},{"groupedRows":50000,"expected":5000,"keptGroups":500,"ms":32},{"groupedRows":50000,"expected":5000,"keptGroups":500,"ms":53},{"groupedRows":50000,"expected":5000,"keptGroups":500,"ms":50},{"groupedRows":50000,"expected":5000,"keptGroups":500,"ms":24}],"100000":[{"groupedRows":100000,"expected":10000,"keptGroups":500,"ms":37},{"groupedRows":100000,"expected":10000,"keptGroups":500,"ms":52},{"groupedRows":100000,"expected":10000,"keptGroups":500,"ms":29},{"groupedRows":100000,"expected":10000,"keptGroups":500,"ms":57},{"groupedRows":100000,"expected":10000,"keptGroups":500,"ms":47},{"groupedRows":100000,"expected":10000,"keptGroups":500,"ms":49},{"groupedRows":100000,"expected":10000,"keptGroups":500,"ms":61},{"groupedRows":100000,"expected":10000,"keptGroups":500,"ms":40},{"groupedRows":100000,"expected":10000,"keptGroups":500,"ms":44},{"groupedRows":100000,"expected":10000,"keptGroups":500,"ms":43}],"300000":[{"groupedRows":300000,"expected":30000,"keptGroups":500,"ms":63},{"groupedRows":300000,"expected":30000,"keptGroups":500,"ms":56},{"groupedRows":300000,"expected":30000,"keptGroups":500,"ms":70},{"groupedRows":300000,"expected":30000,"keptGroups":500,"ms":53},{"groupedRows":300000,"expected":30000,"keptGroups":500,"ms":60},{"groupedRows":300000,"expected":30000,"keptGroups":500,"ms":141},{"groupedRows":300000,"expected":30000,"keptGroups":500,"ms":84},{"groupedRows":300000,"expected":30000,"keptGroups":500,"ms":91},{"groupedRows":300000,"expected":30000,"keptGroups":500,"ms":73},{"groupedRows":300000,"expected":30000,"keptGroups":500,"ms":64}],"600000":[{"groupedRows":600000,"expected":60000,"keptGroups":500,"ms":99},{"groupedRows":600000,"expected":60000,"keptGroups":500,"ms":120},{"groupedRows":600000,"expected":60000,"keptGroups":500,"ms":67},{"groupedRows":600000,"expected":60000,"keptGroups":500,"ms":129},{"groupedRows":600000,"expected":60000,"keptGroups":500,"ms":75},{"groupedRows":600000,"expected":60000,"keptGroups":500,"ms":87},{"groupedRows":600000,"expected":60000,"keptGroups":500,"ms":85},{"groupedRows":600000,"expected":60000,"keptGroups":500,"ms":82},{"groupedRows":600000,"expected":60000,"keptGroups":500,"ms":73},{"groupedRows":600000,"expected":60000,"keptGroups":500,"ms":83}]},"inside":"Compiled from \"HavingFilter.java\"\npublic class lab.wherehaving.HavingFilter {\n  public lab.wherehaving.HavingFilter();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iload_1\n      12: newarray       int\n      14: astore_3\n      15: iconst_0\n      16: istore        4\n      18: iload         4\n      20: iload_1\n      21: if_icmpge     57\n      24: aload_2\n      25: iload         4\n      27: iload         4\n      29: sipush        5000\n      32: irem\n      33: iastore\n      34: aload_3\n      35: iload         4\n      37: iload         4\n      39: bipush        10\n      41: irem\n      42: ifne          49\n      45: iconst_1\n      46: goto          50\n      49: iconst_0\n      50: iastore\n      51: iinc          4, 1\n      54: goto          18\n      57: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      60: lstore        4\n      62: new           #19                 // class java/util/HashMap\n      65: dup\n      66: invokespecial #21                 // Method java/util/HashMap.\"<init>\":()V\n      69: astore        6\n      71: iconst_0\n      72: istore        7\n      74: iconst_0\n      75: istore        8\n      77: iload         8\n      79: iload_1\n      80: if_icmpge     129\n      83: iinc          7, 1\n      86: aload_2\n      87: iload         8\n      89: iaload\n      90: i2l\n      91: iconst_1\n      92: lshl\n      93: aload_3\n      94: iload         8\n      96: iaload\n      97: i2l\n      98: lor\n      99: lstore        9\n     101: aload         6\n     103: lload         9\n     105: invokestatic  #22                 // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;\n     108: iconst_1\n     109: invokestatic  #28                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     112: invokedynamic #31,  0             // InvokeDynamic #0:apply:()Ljava/util/function/BiFunction;\n     117: invokeinterface #35,  4           // InterfaceMethod java/util/Map.merge:(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;\n     122: pop\n     123: iinc          8, 1\n     126: goto          77\n     129: iconst_0\n     130: istore        8\n     132: aload         6\n     134: invokeinterface #41,  1           // InterfaceMethod java/util/Map.keySet:()Ljava/util/Set;\n     139: invokeinterface #45,  1           // InterfaceMethod java/util/Set.iterator:()Ljava/util/Iterator;\n     144: astore        9\n     146: aload         9\n     148: invokeinterface #51,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n     153: ifeq          186\n     156: aload         9\n     158: invokeinterface #57,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n     163: checkcast     #23                 // class java/lang/Long\n     166: invokevirtual #61                 // Method java/lang/Long.longValue:()J\n     169: lstore        10\n     171: lload         10\n     173: lconst_1\n     174: land\n     175: lconst_1\n     176: lcmp\n     177: ifne          183\n     180: iinc          8, 1\n     183: goto          146\n     186: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     189: lload         4\n     191: lsub\n     192: ldc2_w        #64                 // long 1000000l\n     195: ldiv\n     196: lstore        9\n     198: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     201: iload         7\n     203: invokedynamic #70,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     208: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     211: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     214: iload_1\n     215: bipush        10\n     217: idiv\n     218: invokedynamic #80,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     223: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     226: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     229: iload         8\n     231: invokedynamic #81,  0             // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n     236: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     239: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     242: lload         9\n     244: invokedynamic #82,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n     249: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     252: return\n}"},"WhereBeforeGroup":{"hash":"cc5ae821d6ea86ca","repeat":10,"runs":{"50000":[{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":14},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":18},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":34},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":33},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":27},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":26},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":24},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":31},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":16},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":12}],"100000":[{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":29},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":24},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":38},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":14},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":17},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":27},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":22},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":35},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":24},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":18}],"300000":[{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":23},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":31},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":29},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":50},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":21},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":25},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":26},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":46},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":40},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":38}],"600000":[{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":36},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":21},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":54},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":32},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":38},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":30},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":23},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":53},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":42},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":34}]},"inside":"Compiled from \"WhereBeforeGroup.java\"\npublic class lab.wherehaving.WhereBeforeGroup {\n  public lab.wherehaving.WhereBeforeGroup();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iload_1\n      12: newarray       int\n      14: astore_3\n      15: iconst_0\n      16: istore        4\n      18: iload         4\n      20: iload_1\n      21: if_icmpge     57\n      24: aload_2\n      25: iload         4\n      27: iload         4\n      29: sipush        5000\n      32: irem\n      33: iastore\n      34: aload_3\n      35: iload         4\n      37: iload         4\n      39: bipush        10\n      41: irem\n      42: ifne          49\n      45: iconst_1\n      46: goto          50\n      49: iconst_0\n      50: iastore\n      51: iinc          4, 1\n      54: goto          18\n      57: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      60: lstore        4\n      62: new           #19                 // class java/util/HashMap\n      65: dup\n      66: invokespecial #21                 // Method java/util/HashMap.\"<init>\":()V\n      69: astore        6\n      71: iconst_0\n      72: istore        7\n      74: iconst_0\n      75: istore        8\n      77: iload         8\n      79: iload_1\n      80: if_icmpge     127\n      83: aload_3\n      84: iload         8\n      86: iaload\n      87: iconst_1\n      88: if_icmpeq     94\n      91: goto          121\n      94: iinc          7, 1\n      97: aload         6\n      99: aload_2\n     100: iload         8\n     102: iaload\n     103: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     106: iconst_1\n     107: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     110: invokedynamic #26,  0             // InvokeDynamic #0:apply:()Ljava/util/function/BiFunction;\n     115: invokeinterface #30,  4           // InterfaceMethod java/util/Map.merge:(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;\n     120: pop\n     121: iinc          8, 1\n     124: goto          77\n     127: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     130: lload         4\n     132: lsub\n     133: ldc2_w        #36                 // long 1000000l\n     136: ldiv\n     137: lstore        8\n     139: getstatic     #38                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     142: iload         7\n     144: invokedynamic #42,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     149: invokevirtual #46                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     152: getstatic     #38                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     155: iload_1\n     156: bipush        10\n     158: idiv\n     159: invokedynamic #52,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     164: invokevirtual #46                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     167: getstatic     #38                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     170: aload         6\n     172: invokeinterface #53,  1           // InterfaceMethod java/util/Map.size:()I\n     177: invokedynamic #57,  0             // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n     182: invokevirtual #46                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     185: getstatic     #38                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     188: lload         8\n     190: invokedynamic #58,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n     195: invokevirtual #46                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     198: return\n}"},"IndexedWhere":{"hash":"11611b1749206930","repeat":10,"runs":{"50000":[{"groupedRows":5000,"expected":5000,"keptGroups":5000,"ms":0},{"groupedRows":5000,"expected":5000,"keptGroups":5000,"ms":0},{"groupedRows":5000,"expected":5000,"keptGroups":5000,"ms":0},{"groupedRows":5000,"expected":5000,"keptGroups":5000,"ms":0},{"groupedRows":5000,"expected":5000,"keptGroups":5000,"ms":0},{"groupedRows":5000,"expected":5000,"keptGroups":5000,"ms":0},{"groupedRows":5000,"expected":5000,"keptGroups":5000,"ms":0},{"groupedRows":5000,"expected":5000,"keptGroups":5000,"ms":0},{"groupedRows":5000,"expected":5000,"keptGroups":5000,"ms":0},{"groupedRows":5000,"expected":5000,"keptGroups":5000,"ms":0}],"100000":[{"groupedRows":10000,"expected":10000,"keptGroups":5000,"ms":0},{"groupedRows":10000,"expected":10000,"keptGroups":5000,"ms":0},{"groupedRows":10000,"expected":10000,"keptGroups":5000,"ms":2},{"groupedRows":10000,"expected":10000,"keptGroups":5000,"ms":0},{"groupedRows":10000,"expected":10000,"keptGroups":5000,"ms":0},{"groupedRows":10000,"expected":10000,"keptGroups":5000,"ms":0},{"groupedRows":10000,"expected":10000,"keptGroups":5000,"ms":0},{"groupedRows":10000,"expected":10000,"keptGroups":5000,"ms":4},{"groupedRows":10000,"expected":10000,"keptGroups":5000,"ms":0},{"groupedRows":10000,"expected":10000,"keptGroups":5000,"ms":1}],"300000":[{"groupedRows":30000,"expected":30000,"keptGroups":5000,"ms":0},{"groupedRows":30000,"expected":30000,"keptGroups":5000,"ms":0},{"groupedRows":30000,"expected":30000,"keptGroups":5000,"ms":0},{"groupedRows":30000,"expected":30000,"keptGroups":5000,"ms":0},{"groupedRows":30000,"expected":30000,"keptGroups":5000,"ms":0},{"groupedRows":30000,"expected":30000,"keptGroups":5000,"ms":1},{"groupedRows":30000,"expected":30000,"keptGroups":5000,"ms":0},{"groupedRows":30000,"expected":30000,"keptGroups":5000,"ms":0},{"groupedRows":30000,"expected":30000,"keptGroups":5000,"ms":0},{"groupedRows":30000,"expected":30000,"keptGroups":5000,"ms":0}],"600000":[{"groupedRows":60000,"expected":60000,"keptGroups":5000,"ms":5},{"groupedRows":60000,"expected":60000,"keptGroups":5000,"ms":2},{"groupedRows":60000,"expected":60000,"keptGroups":5000,"ms":1},{"groupedRows":60000,"expected":60000,"keptGroups":5000,"ms":3},{"groupedRows":60000,"expected":60000,"keptGroups":5000,"ms":0},{"groupedRows":60000,"expected":60000,"keptGroups":5000,"ms":2},{"groupedRows":60000,"expected":60000,"keptGroups":5000,"ms":6},{"groupedRows":60000,"expected":60000,"keptGroups":5000,"ms":3},{"groupedRows":60000,"expected":60000,"keptGroups":5000,"ms":0},{"groupedRows":60000,"expected":60000,"keptGroups":5000,"ms":1}]},"inside":"Compiled from \"IndexedWhere.java\"\npublic class lab.wherehaving.IndexedWhere {\n  public lab.wherehaving.IndexedWhere();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: bipush        10\n      10: idiv\n      11: istore_2\n      12: iload_2\n      13: newarray       int\n      15: astore_3\n      16: iconst_0\n      17: istore        4\n      19: iload         4\n      21: iload_2\n      22: if_icmpge     47\n      25: aload_3\n      26: iload         4\n      28: iload         4\n      30: iconst_1\n      31: iload_2\n      32: sipush        5000\n      35: idiv\n      36: invokestatic  #13                 // Method java/lang/Math.max:(II)I\n      39: idiv\n      40: iastore\n      41: iinc          4, 1\n      44: goto          19\n      47: invokestatic  #19                 // Method java/lang/System.nanoTime:()J\n      50: lstore        4\n      52: iconst_0\n      53: istore        6\n      55: iconst_0\n      56: istore        7\n      58: iconst_m1\n      59: istore        8\n      61: aload_3\n      62: astore        9\n      64: aload         9\n      66: arraylength\n      67: istore        10\n      69: iconst_0\n      70: istore        11\n      72: iload         11\n      74: iload         10\n      76: if_icmpge     109\n      79: aload         9\n      81: iload         11\n      83: iaload\n      84: istore        12\n      86: iinc          6, 1\n      89: iload         12\n      91: iload         8\n      93: if_icmpeq     103\n      96: iinc          7, 1\n      99: iload         12\n     101: istore        8\n     103: iinc          11, 1\n     106: goto          72\n     109: invokestatic  #19                 // Method java/lang/System.nanoTime:()J\n     112: lload         4\n     114: lsub\n     115: ldc2_w        #25                 // long 1000000l\n     118: ldiv\n     119: lstore        9\n     121: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     124: iload         6\n     126: invokedynamic #31,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     131: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     134: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     137: iload_2\n     138: invokedynamic #41,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     143: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     146: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     149: iload         7\n     151: invokedynamic #42,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     156: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     159: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     162: lload         9\n     164: invokedynamic #43,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     169: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     172: return\n}"},"WherePlusHaving":{"hash":"b0ee7f85cf19585a","repeat":10,"runs":{"50000":[{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":24},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":19},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":30},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":23},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":23},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":36},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":24},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":14},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":14},{"groupedRows":5000,"expected":5000,"keptGroups":500,"ms":30}],"100000":[{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":46},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":30},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":24},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":20},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":35},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":22},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":20},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":22},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":23},{"groupedRows":10000,"expected":10000,"keptGroups":500,"ms":30}],"300000":[{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":40},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":33},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":44},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":45},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":35},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":44},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":28},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":25},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":31},{"groupedRows":30000,"expected":30000,"keptGroups":500,"ms":45}],"600000":[{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":32},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":40},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":25},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":32},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":19},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":50},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":38},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":36},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":44},{"groupedRows":60000,"expected":60000,"keptGroups":500,"ms":36}]},"inside":"Compiled from \"WherePlusHaving.java\"\npublic class lab.wherehaving.WherePlusHaving {\n  public lab.wherehaving.WherePlusHaving();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iload_1\n      12: newarray       int\n      14: astore_3\n      15: iconst_0\n      16: istore        4\n      18: iload         4\n      20: iload_1\n      21: if_icmpge     57\n      24: aload_2\n      25: iload         4\n      27: iload         4\n      29: sipush        5000\n      32: irem\n      33: iastore\n      34: aload_3\n      35: iload         4\n      37: iload         4\n      39: bipush        10\n      41: irem\n      42: ifne          49\n      45: iconst_1\n      46: goto          50\n      49: iconst_0\n      50: iastore\n      51: iinc          4, 1\n      54: goto          18\n      57: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      60: lstore        4\n      62: new           #19                 // class java/util/HashMap\n      65: dup\n      66: invokespecial #21                 // Method java/util/HashMap.\"<init>\":()V\n      69: astore        6\n      71: iconst_0\n      72: istore        7\n      74: iconst_0\n      75: istore        8\n      77: iload         8\n      79: iload_1\n      80: if_icmpge     127\n      83: aload_3\n      84: iload         8\n      86: iaload\n      87: iconst_1\n      88: if_icmpeq     94\n      91: goto          121\n      94: iinc          7, 1\n      97: aload         6\n      99: aload_2\n     100: iload         8\n     102: iaload\n     103: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     106: iconst_1\n     107: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     110: invokedynamic #26,  0             // InvokeDynamic #0:apply:()Ljava/util/function/BiFunction;\n     115: invokeinterface #30,  4           // InterfaceMethod java/util/Map.merge:(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;\n     120: pop\n     121: iinc          8, 1\n     124: goto          77\n     127: iconst_0\n     128: istore        8\n     130: aload         6\n     132: invokeinterface #36,  1           // InterfaceMethod java/util/Map.values:()Ljava/util/Collection;\n     137: invokeinterface #40,  1           // InterfaceMethod java/util/Collection.iterator:()Ljava/util/Iterator;\n     142: astore        9\n     144: aload         9\n     146: invokeinterface #46,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n     151: ifeq          181\n     154: aload         9\n     156: invokeinterface #52,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n     161: checkcast     #8                  // class java/lang/Integer\n     164: invokevirtual #56                 // Method java/lang/Integer.intValue:()I\n     167: istore        10\n     169: iload         10\n     171: iconst_3\n     172: if_icmplt     178\n     175: iinc          8, 1\n     178: goto          144\n     181: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     184: lload         4\n     186: lsub\n     187: ldc2_w        #60                 // long 1000000l\n     190: ldiv\n     191: lstore        9\n     193: getstatic     #62                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     196: iload         7\n     198: invokedynamic #66,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     203: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     206: getstatic     #62                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     209: iload_1\n     210: bipush        10\n     212: idiv\n     213: invokedynamic #76,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     218: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     221: getstatic     #62                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     224: iload         8\n     226: invokedynamic #77,  0             // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n     231: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     234: getstatic     #62                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     237: lload         9\n     239: invokedynamic #78,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n     244: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     247: return\n}"}},"env":{"runtime":"JDK 17.0.21","cores":2,"os":"linux 6.12.105+","date":"2026-11-15"}}}},"slides":[{"beat":"open","title":"WHERE 和 HAVING 混用，全表都被扫了一遍？","bridge":"今天不背八股定义，先看一个真实工程场景，跑出数据后再拆底层机制。","blocks":[{"t":"text","md":"统计「已付款订单的用户下单数」时，把 `status = 'PAID'` 写在 `HAVING` 里跟写在 `WHERE` 里查出来的结果一模一样——但大表上一跑，写在 `HAVING` 里的那条直接把临时表内存打爆！","say":"今天用实验把送进 GROUP BY 哈希表的行数打出来，一眼看穿 WHERE 和 HAVING 的天壤之别。"}]},{"beat":"open","title":"开始前，热个身","bridge":"这节课会用到三个基础概念，咱们先花一分钟确认一下。忘了也没关系，选完当场给你补齐。","blocks":[{"t":"recall","say":"三道小题，每题点一个答案就行。选完马上告诉你对不对，下面那句话就是这节课要用到的前置底座。","items":[{"have":"SQL 顺序","q":"MySQL 执行一条 SQL 时，是先执行 `WHERE`、还是先执行 `GROUP BY`、还是先执行 `HAVING`？","options":["HAVING → GROUP BY → WHERE","WHERE → GROUP BY → HAVING","GROUP BY → WHERE → HAVING"],"answer":1,"why":"先 WHERE 筛选行，再 GROUP BY 分组聚合，最后 HAVING 筛选组。"},{"have":"索引利用","q":"把 `status = 'PAID'` 写在 `HAVING` 里时，还能利用 `status` 字段上的索引提前过滤掉 90% 无关行吗？","options":["不能！HAVING 在分组之后执行，全表 30 万行都得先进 GROUP BY","能，优化器会自动走索引"],"answer":0,"why":"HAVING 只能过滤分组后的结果，无法在扫描表阶段走索引剪枝。"},{"have":"HAVING 唯一用途","q":"什么时候必须用 `HAVING`，而不能用 `WHERE`？","options":["过滤普通状态列时","过滤 COUNT(*)、SUM(amount) 等聚合函数结果时","任何时候都能用 WHERE 替代"],"answer":1,"why":"分组前还没算出 COUNT/SUM，所以聚合结果条件只能放 HAVING。"}]}]},{"beat":"open","title":"先想象一个生活场景","bridge":"热身完了。看代码之前，先在脑子里放一个画面。后面所有的数据库和 Java 机制，都可以往这个画面上套。","blocks":[{"t":"scene","picture":{"kind":"share","actors":["30万人全进大厅分组再赶走90% (HAVING)","大门口先拦掉90%路人 (WHERE)"],"shared":{"name":"分组统计大厅","value":"30 万订单（仅 10% 已付款）"}},"story":"统计已付款客户消费：`WHERE` 是在大门口就把 90% 没付款的路人拦在门外，只放 10% 已付款的人进大厅分组；`HAVING` 却是先把全城 30 万人全放进大厅按姓名分好组，最后再把没付款的 90% 赶出去——大厅（临时表）早挤爆了！","say":"越早把无关数据挡在门外，后面的分组内存和排序开销就越小。","map":[{"scene":"没写 WHERE，全表 30 万行涌入","on":"actors","tag":"全量扫描","code":"`for (int i = 0; i < rows; i++)`","say":"90% 未付款的废数据也全部读了进来。"},{"scene":"全部塞进 GROUP BY 哈希表","on":"actors","tag":"临时表膨胀10倍","code":"`groupMap.merge(key, 1, ...)`","say":"30 万行全建哈希桶，内存和哈希冲突暴涨！"},{"scene":"最后 HAVING 扔掉 90%","on":"action","tag":"姗姗来迟","code":"`if ((key & 1L) == 1L)`","say":"白干 90% 的分组活之后才过滤掉，纯属浪费。"},{"scene":"WHERE + 联合索引流式分组","on":"action","tag":"免临时表","code":"`(status, user_id)`","say":"先筛出 10% 行且天然按 user_id 有序，连哈希表都不用建！"}]}]},{"beat":"hook","title":"结果一模一样，为什么 HAVING 过滤比 WHERE 慢 10 倍？","bridge":"直观感觉是一回事，高并发/异常真的撞上来时，结果往往完全相反。","blocks":[{"t":"text","md":"对比 `HavingFilter`、`WhereBeforeGroup`、`IndexedWhere` 送进 GROUP BY 的行数 `groupedRows`！","say":"先看 `HavingFilter` 把多少行塞进了 `groupMap`。"}]},{"beat":"code","title":"把场景写成程序：HavingFilter","bridge":"我们用纯 JDK 把这个底层过程真实模拟出来。重点看标出来的几行，不认识的词点一下虚线就有大白话解释。","blocks":[{"t":"code","of":"wherehaving.HavingFilter","say":"循环把 30 万行全部调用 `groupMap.merge(...)` 放进分组哈希表，直到第 27 行才按状态过滤！","walk":[{"focus":["for (int i = 0; i < rows; i++) {"],"say":"因为没有 WHERE 前置过滤，全量 30 万行都被读入。","focusLines":[11,20]},{"focus":["groupMap.merge(key, 1, Integer::sum);"],"say":"30 万行（含 90% 无效行）全被塞进 GROUP BY 哈希表！","focusLines":[23]},{"focus":["if ((key & 1L) == 1L) keptGroups++;"],"say":"全部分组算完后，HAVING 才过滤掉那 90% 的无效组。","focusLines":[27]}],"source":"package lab.wherehaving;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class HavingFilter {\n    public static void main(String[] args) {\n        int rows = Integer.parseInt(args[0]);\n        int[] userIds = new int[rows];\n        int[] status = new int[rows]; // 1 = PAID (10%), 0 = OTHER (90%)\n        for (int i = 0; i < rows; i++) {\n            userIds[i] = i % 5000;\n            status[i] = (i % 10 == 0) ? 1 : 0;\n        }\n\n        long start = System.nanoTime();\n        // GROUP BY (user_id, status) first, then HAVING status = 1\n        Map<Long, Integer> groupMap = new HashMap<>();\n        int groupedRows = 0;\n        for (int i = 0; i < rows; i++) {\n            groupedRows++;\n            long key = ((long) userIds[i] << 1) | status[i];\n            groupMap.merge(key, 1, Integer::sum);\n        }\n        int keptGroups = 0;\n        for (long key : groupMap.keySet()) {\n            if ((key & 1L) == 1L) keptGroups++;\n        }\n\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"groupedRows=\" + groupedRows);\n        System.out.println(\"expected=\" + (rows / 10));\n        System.out.println(\"keptGroups=\" + keptGroups);\n        System.out.println(\"ms=\" + ms);\n    }\n}\n","path":"src/lab/wherehaving/HavingFilter.java","lang":"java","focusLines":[]}]},{"beat":"predict","title":"先押一个答案","bridge":"代码看完了。先别急着看结果，按你刚才对场景的理解，先猜一猜程序跑完会打印出什么。","blocks":[{"t":"predict","id":"p1","q":"30 万行订单里只有 10%（3 万行）是 PAID，用 `HavingFilter` 时有多少行被送进了 GROUP BY 哈希表？","options":["30,000 行","300,000 行","10 行"],"answer":1,"say":"选一个你觉得最可能的，猜错完全没关系，猜过再看实测印象最深。"}]},{"beat":"run","title":"一次一次看真实运行结果","bridge":"你已经下注了。这组程序在本地 JDK 实测跑了多轮，现在把真实数据放出来核对。","blocks":[{"t":"experiment","lab":"wherehaving","show":["HavingFilter"],"hand":true,"focus":["for (int i = 0; i < rows; i++) {"],"say":"先点运行看看基准表现，留意指标和预期是不是对得上。"},{"t":"reveal","of":"p1","say":"实测 `groupedRows = 300000`！整整 27 万条无效订单陪跑建了哈希表又被扔掉。","key":"WHERE 与 HAVING 及流式分组"}]},{"beat":"run","title":"出事的是哪一行？","bridge":"结果摆在眼前了。现在回到代码里，把直接导致这个现象的关键一行找出来。","blocks":[{"t":"spot","of":"wherehaving.HavingFilter","q":"回到 `HavingFilter`，点击**把 90% 无效行也一并塞进分组哈希表**的那一行：","answer":["groupMap.merge(key, 1, Integer::sum);"],"hint":"找往 `groupMap` 里合并累加的那一行。","found":"就是它！因为 GROUP BY 在 HAVING 之前执行，所有未被 WHERE 淘汰的行都必须进入分组表。","say":"直接在代码上点你怀疑的那一行，点错了会给你提示。","source":"package lab.wherehaving;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class HavingFilter {\n    public static void main(String[] args) {\n        int rows = Integer.parseInt(args[0]);\n        int[] userIds = new int[rows];\n        int[] status = new int[rows]; // 1 = PAID (10%), 0 = OTHER (90%)\n        for (int i = 0; i < rows; i++) {\n            userIds[i] = i % 5000;\n            status[i] = (i % 10 == 0) ? 1 : 0;\n        }\n\n        long start = System.nanoTime();\n        // GROUP BY (user_id, status) first, then HAVING status = 1\n        Map<Long, Integer> groupMap = new HashMap<>();\n        int groupedRows = 0;\n        for (int i = 0; i < rows; i++) {\n            groupedRows++;\n            long key = ((long) userIds[i] << 1) | status[i];\n            groupMap.merge(key, 1, Integer::sum);\n        }\n        int keptGroups = 0;\n        for (long key : groupMap.keySet()) {\n            if ((key & 1L) == 1L) keptGroups++;\n        }\n\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"groupedRows=\" + groupedRows);\n        System.out.println(\"expected=\" + (rows / 10));\n        System.out.println(\"keptGroups=\" + keptGroups);\n        System.out.println(\"ms=\" + ms);\n    }\n}\n","path":"src/lab/wherehaving/HavingFilter.java","lang":"java","answerLines":[23]}]},{"beat":"why","title":"拆开字节码 / 底层指令看一眼","bridge":"光看表面现象还不够，用 JDK 自带的 `javap -c -p` 看一眼机器到底执行了什么。","blocks":[{"t":"inside","of":"wherehaving.HavingFilter","within":"static void main","from":"0:","to":"return","say":"看 `javap -c -p`：外层循环对全部 30 万行都调用了 `HashMap.merge` 分配节点和哈希计算；而先用 `WHERE` 过滤再配合 `(status, user_id)` 联合索引时，90% 的行根本不会进入分组阶段。","walk":[{"focus":["invokeinterface"],"label":"全量写入分组 Map","say":"30 万行无差别执行 `Map.merge`，引发大量对象分配与 GC。","focusLines":[67,74,75,78,81]},{"focus":["if_icmplt"],"label":"扫满全表才结束","say":"无法利用索引跳过非 PAID 行。","focusLines":[]}],"source":"       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iload_1\n      12: newarray       int\n      14: astore_3\n      15: iconst_0\n      16: istore        4\n      18: iload         4\n      20: iload_1\n      21: if_icmpge     57\n      24: aload_2\n      25: iload         4\n      27: iload         4\n      29: sipush        5000\n      32: irem\n      33: iastore\n      34: aload_3\n      35: iload         4\n      37: iload         4\n      39: bipush        10\n      41: irem\n      42: ifne          49\n      45: iconst_1\n      46: goto          50\n      49: iconst_0\n      50: iastore\n      51: iinc          4, 1\n      54: goto          18\n      57: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      60: lstore        4\n      62: new           #19                 // class java/util/HashMap\n      65: dup\n      66: invokespecial #21                 // Method java/util/HashMap.\"<init>\":()V\n      69: astore        6\n      71: iconst_0\n      72: istore        7\n      74: iconst_0\n      75: istore        8\n      77: iload         8\n      79: iload_1\n      80: if_icmpge     129\n      83: iinc          7, 1\n      86: aload_2\n      87: iload         8\n      89: iaload\n      90: i2l\n      91: iconst_1\n      92: lshl\n      93: aload_3\n      94: iload         8\n      96: iaload\n      97: i2l\n      98: lor\n      99: lstore        9\n     101: aload         6\n     103: lload         9\n     105: invokestatic  #22                 // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;\n     108: iconst_1\n     109: invokestatic  #28                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     112: invokedynamic #31,  0             // InvokeDynamic #0:apply:()Ljava/util/function/BiFunction;\n     117: invokeinterface #35,  4           // InterfaceMethod java/util/Map.merge:(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;\n     122: pop\n     123: iinc          8, 1\n     126: goto          77\n     129: iconst_0\n     130: istore        8\n     132: aload         6\n     134: invokeinterface #41,  1           // InterfaceMethod java/util/Map.keySet:()Ljava/util/Set;\n     139: invokeinterface #45,  1           // InterfaceMethod java/util/Set.iterator:()Ljava/util/Iterator;\n     144: astore        9\n     146: aload         9\n     148: invokeinterface #51,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n     153: ifeq          186\n     156: aload         9\n     158: invokeinterface #57,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n     163: checkcast     #23                 // class java/lang/Long\n     166: invokevirtual #61                 // Method java/lang/Long.longValue:()J\n     169: lstore        10\n     171: lload         10\n     173: lconst_1\n     174: land\n     175: lconst_1\n     176: lcmp\n     177: ifne          183\n     180: iinc          8, 1\n     183: goto          146\n     186: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     189: lload         4\n     191: lsub\n     192: ldc2_w        #64                 // long 1000000l\n     195: ldiv\n     196: lstore        9\n     198: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     201: iload         7\n     203: invokedynamic #70,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     208: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     211: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     214: iload_1\n     215: bipush        10\n     217: idiv\n     218: invokedynamic #80,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     223: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     226: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     229: iload         8\n     231: invokedynamic #81,  0             // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n     236: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     239: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     242: lload         9\n     244: invokedynamic #82,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n     249: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     252: return","command":"javap -c -p lab.wherehaving.HavingFilter"}]},{"beat":"why","title":"SQL 执行顺序与联合索引消除临时表","bridge":"把两条执行流或两个阶段摊在时间轴上，每一步谁先谁后、哪里卡住，一眼看穿。","blocks":[{"t":"lanes","expr":"SELECT user_id, COUNT(*) FROM orders WHERE status='PAID' GROUP BY user_id HAVING COUNT(*)>=3","parts":{"read":"WHERE(行)","calc":"GROUP BY(组)","write":"HAVING(聚合)"},"lanes":["普通索引 / 无索引","(status, user_id) 联合索引"],"shared":{"name":"进分组行数","start":"30 万"},"say":"三者各司其职，联合索引连临时表都能省掉。","steps":[{"lane":0,"op":"read","text":"1. WHERE status='PAID' 先淘汰 90% 行","say":"送进分组的行数瞬间从 30 万降到 3 万！"},{"lane":0,"op":"calc","text":"2. GROUP BY user_id 建内存临时表累加","say":"如果只有单列索引 (status)，user_id 是乱序的，仍需 Using temporary。"},{"lane":1,"op":"calc","text":"2. 建 (status, user_id) 联合索引：status=PAID 区间内 user_id 天然有序！","say":"引擎直接流式顺序计数，彻底消除 Using temporary！","ask":{"q":"想消除 `WHERE status='PAID' GROUP BY user_id` 的 Using temporary，联合索引列顺序怎么建？","options":["(user_id, status)","(status, user_id)"],"answer":1}},{"lane":1,"op":"write","value":"3 万行流式","text":"3. HAVING COUNT(*) >= 3 过滤聚合结果","say":"HAVING 只做它该做的聚合条件过滤，各司其职性能最优！"}],"verdict":"核心口诀：==行过滤放 WHERE，聚合过滤放 HAVING；WHERE 等值列 + GROUP BY 列建联合索引消临时表==。","verdictSay":"看 EXPLAIN Extra 确认没有 Using temporary，这条分组 SQL 就彻底过关了。"}]},{"beat":"fix","title":"先猜：怎么改才能彻底修好？","bridge":"病根找到了。在看几种修法前，先判断一下哪种思路真正对症。","blocks":[{"t":"predict","id":"p2","q":"把条件从 `HavingFilter` 挪到 `WhereBeforeGroup` 或 `IndexedWhere` 后，送进 GROUP BY 的行数会变成多少？","options":["30,000 行（减少 90%）","300,000 行","0 行"],"answer":0,"say":"想清楚「为什么出事」，再选一个你认为能根治的方案。"}]},{"beat":"fix","title":"四种方案同台实测对比","bridge":"不争论，把四种写法放在同一个开关下实测，高下立判。","blocks":[{"t":"experiment","lab":"wherehaving","show":["HavingFilter","WhereBeforeGroup","IndexedWhere","WherePlusHaving"],"select":"IndexedWhere","say":"切到 `WhereBeforeGroup` 和 `IndexedWhere`，送进 GROUP BY 的行数直接砍掉 90% 降到 3 万行！"},{"t":"reveal","of":"p2","say":"切到 `IndexedWhere` 后问题彻底清零，同时兼顾性能与正确性。"},{"t":"try","say":"自己拨动上面的规模开关，对比错误数和耗时随规模的变化。"}]},{"beat":"fix","title":"修好了，各自代价是多少？","bridge":"把四种方案在不同规模下的耗时和正确性画成折线图，工程选型靠数据说话。","blocks":[{"t":"chart","of":"wherehaving","say":"总行数涨到 60 万时，`HavingFilter` 耗时陡增；`IndexedWhere` 既少扫 90% 行又免去哈希表分配，始终贴近 0ms。","walk":[{"focus":"HavingFilter","say":"看 `用 HAVING 过滤状态`：先把 30 万行全塞进 GROUP BY 哈希表，最后再用 HAVING 扔掉 90%。"},{"focus":"WhereBeforeGroup","say":"看 `WHERE 先过滤再分组`：先用 WHERE 筛出 10% 的 PAID 行，再送进 GROUP BY。"},{"focus":"IndexedWhere","say":"看 `联合索引流式分组`：建 (status, user_id) 索引，直接定位 status=PAID 且按 user_id 有序流式计数。"},{"focus":"WherePlusHaving","say":"看 `WHERE+HAVING 各司其职`：WHERE 滤行状态，HAVING 滤聚合结果（如 COUNT(*) >= 3）。"}]}]},{"beat":"choose","title":"工程上到底怎么选？","bridge":"没有银弹，只有适用边界。把每种方案的优点、代价和适用场景摆成一张表。","blocks":[{"t":"choose","say":"行条件放 `WHERE`，聚合条件放 `HAVING`，高频分组建联合索引。","options":[{"name":"HavingFilter (错用 HAVING)","solves":"无优势","cost":"全表进临时表：{ms:wherehaving.HavingFilter} ms","when":"永远禁止把行过滤放 HAVING","say":"内存杀手。"},{"name":"WhereBeforeGroup","solves":"分组前先淘汰 90% 行","cost":"分组量减 90%：{ms:wherehaving.WhereBeforeGroup} ms","when":"常规带过滤条件的分组查询","say":"基本底线。"},{"name":"IndexedWhere (联合索引流式)","solves":"流式计数免临时表","cost":"最低耗时：{ms:wherehaving.IndexedWhere} ms","when":"高频大表分组统计（消 Using temporary）","say":"性能天花板。"}]}]},{"beat":"check","title":"两道巩固题：检验是否真懂","bridge":"学完立刻做两道高频面试陷阱题，看看能不能一眼识破。","blocks":[{"t":"quiz","id":"q1","q":"SQL 标准的逻辑执行顺序，哪一项是正确的？","options":[{"text":"FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY","ok":true,"why":"先过滤行(WHERE)，再分组(GROUP BY)，再过滤组(HAVING)，最后投影和排序。"},{"text":"SELECT → FROM → WHERE → GROUP BY → HAVING","ok":false,"why":"SELECT 投影列在 GROUP BY/HAVING 之后才执行。"},{"text":"FROM → GROUP BY → HAVING → WHERE → SELECT","ok":false,"why":"WHERE 永远在 GROUP BY 之前。"}],"say":"第一题：选最精准的那一项。"},{"t":"quiz","id":"q2","q":"对于 `SELECT user_id, COUNT(*) FROM orders WHERE status = 'PAID' GROUP BY user_id`，建哪个联合索引能消除 Using temporary？","options":[{"text":"(status, user_id)","ok":true,"why":"等值列 status 在前定死区间，user_id 在后天然有序，直接流式计数。"},{"text":"(user_id, status)","ok":false,"why":"跳过了最左前缀 user_id，无法直接定位 status='PAID' 区间。"},{"text":"(create_time)","ok":false,"why":"跟查询条件和分组列无关。"}],"say":"第二题：换个问法考同一个底层原理。"}]},{"beat":"name","title":"把概念装进脑子：标准叫法与面试原题","bridge":"前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。","blocks":[{"t":"callout","tone":"note","title":"WHERE 与 HAVING 及流式分组（WHERE vs HAVING & Streaming Group）","md":"==WHERE 分组前滤行（可走索引），HAVING 分组后滤聚合结果==；建 ==(WHERE等值列, GROUP BY列)== 联合索引可消除 Using temporary。","say":"记住这一句核心定义，面试时先抛结论再展开。"},{"t":"points","items":["WHERE 和 HAVING 的区别是什么？SQL 执行顺序是怎样的？","为什么把普通条件写在 WHERE 比写在 HAVING 快得多？","如何用联合索引消除 GROUP BY 的 Using temporary？"],"say":"这几道都是真实一二面原题，下一页直接练习脱稿讲。"}]},{"beat":"say","title":"合上课件，开口讲一遍","bridge":"看懂不等于讲得出来。对着计时器，按要点一口气讲顺。","blocks":[{"t":"say","prompt":"讲清楚 WHERE 与 HAVING 的执行顺序与职责区别，以及如何用联合索引优化 GROUP BY？","seconds":90,"points":["SQL 执行顺序是 FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY","WHERE 在分组前做行级过滤且能走索引；HAVING 在分组后对聚合结果（COUNT/SUM）过滤，错放会让全表进临时表","按 WHERE 等值列 + GROUP BY 列建联合索引 (status, user_id)，可实现有序流式分组，消除 Using temporary"],"model":"WHERE 和 HAVING 的核心区别在于执行时机和作用对象。SQL 执行顺序是先 FROM、WHERE，再 GROUP BY，最后才执行 HAVING。WHERE 是在分组前做行级过滤，能利用索引直接筛掉无关行；而 HAVING 是在分组聚合之后对聚合结果（比如 COUNT(*) >= 3）做过滤。如果把普通字段条件误写进 HAVING，就会先把全表数据塞进 GROUP BY 临时表再丢弃，导致内存和耗时暴涨。配合 (status, user_id) 联合索引还能有序流式分组，连临时表都不用建。","say":"先自己组织语言讲一遍，再点开参考答案对照漏了哪个得分点。"}]},{"beat":"take","title":"带走三张复习卡片","bridge":"最后留三张一问一答卡片，考前扫一眼就能全部唤醒。","blocks":[{"t":"cards","cards":[{"q":"WHERE 和 HAVING 谁先执行？","a":"WHERE 在 GROUP BY 前过滤行；HAVING 在 GROUP BY 后过滤聚合组。"},{"q":"普通条件放 HAVING 为什么慢？","a":"无法走索引剪枝，会把全表无关行全塞进 GROUP BY 临时表再扔掉。"},{"q":"怎么消除 GROUP BY 的 Using temporary？","a":"建 (WHERE 等值列, GROUP BY 列) 联合索引，实现有序流式分组。"}],"say":"这三张卡片就是本课的最小精华，全部通关，进入下一课！"}]}],"beats":[{"id":"open","label":"开场"},{"id":"hook","label":"问题"},{"id":"code","label":"代码"},{"id":"predict","label":"先猜"},{"id":"run","label":"跑一跑"},{"id":"why","label":"为什么"},{"id":"fix","label":"改一处"},{"id":"choose","label":"怎么选"},{"id":"name","label":"名字"},{"id":"check","label":"小测"},{"id":"say","label":"开口讲"},{"id":"take","label":"带走"}]}</script>
+<script>
+/* Shared pieces of the lesson page: element building, inline marks, Java colouring, the code view, a line diff, saved state.
+   Text always goes in as text nodes; nothing a lesson writes is parsed as HTML. */
+(function () {
+  "use strict";
+  const L = (window.Lesson = { blocks: {} });
+
+  /** h("div.a.b", { text, on: { click }, attr: {…} }, child, child…) */
+  L.h = function (spec, props, ...kids) {
+    const [tag, ...classes] = spec.split(".");
+    const el = document.createElement(tag || "div");
+    if (classes.length) el.className = classes.join(" ");
+    if (props) {
+      if (props.text !== undefined) el.textContent = props.text;
+      for (const [name, value] of Object.entries(props.attr || {})) el.setAttribute(name, value);
+      for (const [name, fn] of Object.entries(props.on || {})) el.addEventListener(name, fn);
+    }
+    for (const kid of kids.flat()) if (kid) el.append(kid);
+    return el;
+  };
+
+  L.num = (value) => Number(value).toLocaleString("en-US");
+
+  /** **bold**, `code` and ==mark== inside a sentence. */
+  L.md = function (text) {
+    const out = document.createDocumentFragment();
+    const pattern = /\*\*([^*]+)\*\*|`([^`]+)`|==([^=]+)==/g;
+    let last = 0;
+    for (let hit = pattern.exec(text); hit; hit = pattern.exec(text)) {
+      out.append(text.slice(last, hit.index));
+      out.append(hit[1] ? L.h("b", { text: hit[1] }) : hit[2] ? L.term(hit[2], L.h("code", { text: hit[2] })) : L.h("mark", { text: hit[3] }));
+      last = pattern.lastIndex;
+    }
+    out.append(text.slice(last));
+    return out;
+  };
+
+  const JAVA = new Set("abstract boolean break byte case catch char class continue default do double else enum extends final finally float for if implements import instanceof int interface long new null package private protected public record return short static super switch synchronized this throw throws try var void volatile while true false".split(" "));
+  const PYTHON = new Set("and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield True False None".split(" "));
+  const LANGS = { java: { words: JAVA, comment: "//" }, python: { words: PYTHON, comment: "#" }, text: { words: new Set(), comment: "\n" } };
+  const TOKEN = /(\/\/.*$|#.*$)|("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)')|\b(\d[\d_]*(?:\.\d+)?[LlFfDd]?)\b|\b([A-Za-z_]\w*)\b/g;
+
+  /** One line of code as coloured spans. */
+  L.colour = function (line, lang) {
+    const { words, comment } = LANGS[lang] || LANGS.text;
+    const out = document.createDocumentFragment();
+    let last = 0;
+    TOKEN.lastIndex = 0;
+    for (let hit = TOKEN.exec(line); hit; hit = TOKEN.exec(line)) {
+      const kind = hit[1] ? (hit[1].startsWith(comment) ? "c" : "") : hit[2] || hit[3] ? "s" : hit[4] ? "n" : words.has(hit[5]) ? "k" : "";
+      out.append(line.slice(last, hit.index));
+      out.append(kind ? L.h(`span.tk-${kind}`, { text: hit[0] }) : hit[0]);
+      last = TOKEN.lastIndex;
+    }
+    out.append(line.slice(last));
+    return out;
+  };
+
+  /* Reminders at the moment of need: a word the learner may not know is explained where it stands, on hover, focus or tap. */
+  L.glossary = {};
+  const tip = L.h("div.tip", { attr: { role: "tooltip", id: "lesson-tip", hidden: "" } });
+  let tipFor = null, tipTimer = 0;
+  function showTip(anchor, word) {
+    clearTimeout(tipTimer);
+    tipFor = anchor;
+    tip.replaceChildren(L.h("b.mono", { text: word }), L.h("span", null, L.md(L.glossary[word])));
+    tip.hidden = false;
+    if (!tip.isConnected) document.body.append(tip);
+    const box = anchor.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
+    tip.style.left = `${Math.max(8, Math.min(window.innerWidth - width - 8, box.left + box.width / 2 - width / 2))}px`;
+    tip.style.top = `${box.bottom + height + 14 > window.innerHeight ? box.top - height - 8 : box.bottom + 8}px`;
+  }
+  L.hideTip = function () { clearTimeout(tipTimer); tip.hidden = true; tipFor = null; };
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") L.hideTip(); });
+  document.addEventListener("click", (event) => { if (tipFor && !tipFor.contains(event.target)) L.hideTip(); });
+
+  /** Wraps `content` as an explainable word when the glossary knows it; otherwise returns the content unchanged. */
+  L.term = function (word, content) {
+    if (!L.glossary[word]) return content;
+    return L.h("span.term", {
+      attr: { tabindex: "0", role: "button", "aria-describedby": "lesson-tip" },
+      on: {
+        mouseenter(event) { const anchor = event.currentTarget; tipTimer = setTimeout(() => showTip(anchor, word), 140); },
+        mouseleave: L.hideTip,
+        focus(event) { showTip(event.currentTarget, word); },
+        blur: L.hideTip,
+        click(event) { event.stopPropagation(); if (tipFor === event.currentTarget) L.hideTip(); else showTip(event.currentTarget, word); },
+      },
+    }, content);
+  };
+
+  /** A line of code with the glossary's words made explainable (longest word first; nothing inside a comment). */
+  L.codeLine = function (line, lang) {
+    const words = Object.keys(L.glossary).sort((a, b) => b.length - a.length);
+    const comment = line.indexOf((LANGS[lang] || LANGS.text).comment);
+    const limit = comment < 0 ? line.length : comment;
+    const out = document.createDocumentFragment();
+    let from = 0;
+    for (let at = 0; at < limit;) {
+      const word = words.find((candidate) => line.startsWith(candidate, at)
+        && !(/\w/.test(candidate[0]) && /\w/.test(line[at - 1] || ""))
+        && !(/\w/.test(candidate.at(-1)) && /\w/.test(line[at + candidate.length] || "")));
+      if (!word) { at++; continue; }
+      out.append(L.colour(line.slice(from, at), lang), L.term(word, L.h("span", null, L.colour(word, lang))));
+      at += word.length;
+      from = at;
+    }
+    out.append(L.colour(line.slice(from), lang));
+    return out;
+  };
+
+  /** The 1-based numbers of the lines of `other` that are not in `base` (longest common subsequence). */
+  L.changedLines = function (base, other) {
+    const a = base.split("\n"), b = other.split("\n");
+    const table = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+    for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
+    const changed = [];
+    for (let i = 0, j = 0; j < b.length;) {
+      if (i < a.length && a[i] === b[j]) { i++; j++; } else if (i < a.length && table[i + 1][j] >= table[i][j + 1]) i++; else changed.push(++j);
+    }
+    return changed;
+  };
+
+  /** A source file with line numbers. show(source, { focus, changed }) redraws it and scrolls the first marked line into view. */
+  L.codeView = function () {
+    const scroll = L.h("div.code__scroll", { attr: { tabindex: "0" } });
+    const label = L.h("div.code__path");
+    const el = L.h("div.code", null, label, scroll);
+    return {
+      el,
+      /** Calls fn(lineNumber) when the learner presses a line. */
+      onLine(fn) { scroll.addEventListener("click", (event) => { const row = event.target.closest(".code__line"); if (row) fn([...scroll.children].indexOf(row) + 1); }); },
+      show(source, { path = "", lang = "text", focus = [], changed = [], wrong = [], tags = {} } = {}) {
+        label.textContent = path;
+        el.classList.toggle("has-focus", focus.length > 0);
+        scroll.replaceChildren(...source.split("\n").map((line, i) => {
+          const state = changed.includes(i + 1) ? ".is-changed" : focus.includes(i + 1) ? ".is-focus" : wrong.includes(i + 1) ? ".is-wrong" : "";
+          return L.h(`div.code__line${state}`, null, L.h("span.code__no", { text: String(i + 1) }), L.h("span", null, L.codeLine(line, lang)), tags[i + 1] ? L.h("span.code__tag", { text: tags[i + 1] }) : null);
+        }));
+        const place = () => {
+          const first = scroll.querySelector(".is-changed, .is-focus");
+          if (first) scroll.scrollTop = Math.max(0, first.offsetTop - scroll.offsetTop - scroll.clientHeight / 3);
+        };
+        place();
+        requestAnimationFrame(place); // a view built before it is on the page has no size yet
+      },
+    };
+  };
+
+  /** A row of mutually exclusive choices. `options` are { id, label }. */
+  L.segmented = function (label, options, selected, onPick) {
+    const buttons = options.map((option) => L.h("button", { text: option.label, attr: { type: "button", "aria-pressed": String(option.id === selected) }, on: { click() { pick(option.id); onPick(option.id); } } }));
+    function pick(id) { buttons.forEach((button, i) => button.setAttribute("aria-pressed", String(options[i].id === id))); }
+    return { el: L.h("div.seg", null, label ? L.h("span", { text: label }) : null, L.h("div.seg__set", { attr: { role: "group", "aria-label": label || "选择" } }, buttons)), pick };
+  };
+
+  /** What the learner did, kept across reloads; quietly does nothing where storage is unavailable. */
+  L.memory = function (key) {
+    let data = {};
+    try { data = JSON.parse(localStorage.getItem(key) || "{}"); } catch { data = {}; }
+    return {
+      get: (name, fallback) => (name in data ? data[name] : fallback),
+      set(name, value) { data[name] = value; try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* private window */ } },
+    };
+  };
+})();
+
+</script>
+<script>
+/* The plain blocks of a lesson. Each maker takes (block, ctx) and returns { el, steps?, set?, ready?, refresh? }:
+   steps = teacher sentences for moments inside the block after it has appeared; set(k) shows it as of step k;
+   ready() false means the learner still has to act before the lesson moves on; refresh() runs each time the block is revealed. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const KEYS = "ABCD";
+
+  L.blocks.text = (block) => ({ el: h("p.text", null, L.md(block.md)) });
+
+  /** A row of small answer buttons. paint(picked, right) locks them once an answer is in and marks the right and the wrong one. */
+  function picks(labels, onPick, extra = "") {
+    const buttons = labels.map((text, i) => h(`button.pick${extra}`, { attr: { type: "button" }, on: { click: () => onPick(i) } }, L.md(text)));
+    return {
+      el: h("div.picks", null, buttons),
+      paint(picked, right) {
+        buttons.forEach((button, i) => {
+          button.disabled = picked !== undefined;
+          button.classList.toggle("is-right", picked !== undefined && i === right);
+          button.classList.toggle("is-wrong", picked === i && i !== right);
+        });
+      },
+    };
+  }
+
+  /** Several small questions answered on the spot. make(item, i) gives each row's content; the answers survive a reload. */
+  function answered(block, ctx, name, make, sum) {
+    const key = `${name}:${block.items.length}:${block.items[0].q || block.items[0].text}`;
+    const answers = ctx.memory.get(key, {});
+    const score = h(`p.${name}__score`, { attr: { "aria-live": "polite" } });
+    const rows = block.items.map((item, i) => {
+      const why = h(`p.${name}__why`, { attr: { hidden: "" } }, L.md(item.why));
+      const row = make(item, (j) => { answers[i] = j; ctx.memory.set(key, answers); paint(); (done() ? score : why).scrollIntoView({ block: "nearest", behavior: "smooth" }); });
+      return { item, why, pick: row.pick, el: h(`div.${name}__item`, null, row.head, row.pick.el, why) };
+    });
+    const done = () => rows.every((row, i) => answers[i] !== undefined);
+    function paint() {
+      rows.forEach((row, i) => { row.pick.paint(answers[i], row.item.answer); row.why.hidden = answers[i] === undefined; });
+      score.textContent = done() ? sum(rows.filter((row, i) => answers[i] === row.item.answer).length, rows.length) : "";
+    }
+    paint();
+    return { el: h(`div.${name}`, null, rows.map((row) => row.el), score), ready: done, waitSay: "先把这几道都点一下再往下。点错没关系；实在想跳过，再按一次。" };
+  }
+
+  /** "You have met these before": a quick question per thing the lesson builds on, with the one sentence needed if it has faded. */
+  L.blocks.recall = (block, ctx) => answered(block, ctx, "recall",
+    (item, onPick) => ({ head: [h("span.recall__have", null, L.md(item.have)), h("p.recall__q", null, L.md(item.q))], pick: picks(item.options, onPick) }),
+    (right, total) => (right === total ? `${total} 样都记得，可以开始了。` : `${total} 样里记得 ${right} 样。没记住的，把它下面那句话再看一眼，这节课够用了。`));
+
+  /** Apply the rule just learned: for each situation, pick the tool. */
+  L.blocks.cases = (block, ctx) => answered(block, ctx, "cases",
+    (item, onPick) => ({ head: [h("p.cases__text", null, L.md(item.text))], pick: picks(block.tools, (j) => { onPick(j); document.dispatchEvent(new CustomEvent("lesson:picked", { detail: { name: block.tools[item.answer] } })); }, ".pick--tool") }),
+    (right, total) => (right === total ? `${total} 个场景都选对了。这条规则是你的了。` : `${total} 个里选对 ${right} 个。看一眼没选对的那条理由，再回想那句规则。`));
+
+  /** A picture to hang the lesson on: a short everyday story, then what each thing in it is called in the program. */
+  L.blocks.scene = (block) => {
+    const rows = block.map.map((pair) => h("div.scene__row", null, h("span", null, L.md(pair.scene)), h("span.scene__arrow", { text: "→" }), h("span.scene__to", null, L.md(pair.code))));
+    const table = h("div.scene__map", null, h("div.scene__head", null, h("span", { text: "场景里" }), h("span"), h("span", { text: "程序里" })), rows);
+    const picture = block.picture ? L.sharePicture({ actors: block.picture.actors, shared: block.picture.shared.name, hands: false }) : null;
+    /* The picture starts as the everyday scene; each row that is reached pins the program's word onto the part it names. */
+    const draw = (k) => {
+      const tags = { actors: [], shared: [], action: "" };
+      block.map.slice(0, k).forEach((pair) => { if (pair.on === "action") tags.action = pair.tag; else if (pair.on) tags[pair.on].push(pair.tag); });
+      picture.set({ value: block.picture.shared.value, tags, hot: k ? block.map[k - 1].on || null : null });
+    };
+    const set = (k) => { table.classList.toggle("is-waiting", k === 0); rows.forEach((row, i) => { row.classList.toggle("is-waiting", i >= k); row.classList.toggle("is-now", i === k - 1); }); if (picture) draw(k); };
+    set(0);
+    return { el: h("div.scene", null, h("p.scene__story", null, L.md(block.story)), h(`div.scene__body${picture ? ".has-picture" : ""}`, null, table, picture?.el)), steps: block.map.map((pair) => ({ say: pair.say })), set };
+  };
+
+  /** "Which line is it?" The learner presses the line they suspect, on the real source. */
+  L.blocks.spot = (block, ctx) => {
+    const key = `spot:${block.of}:${block.answerLines.join("-")}`;
+    const view = L.codeView();
+    const out = h("p.spot__out", { attr: { "aria-live": "polite" } });
+    let found = ctx.memory.get(key, false), wrong = [];
+    function paint() {
+      view.show(block.source, { path: block.path, lang: block.lang, focus: found ? block.answerLines : [], wrong });
+      view.el.classList.toggle("is-pickable", !found);
+      out.className = `spot__out${found ? ".is-ok" : wrong.length ? ".is-miss" : ""}`.replace(/\./g, " ");
+      out.replaceChildren(found ? L.md(block.found) : wrong.length ? L.md(block.hint) : "");
+    }
+    view.onLine((n) => {
+      if (found) return;
+      if (block.answerLines.includes(n)) { found = true; wrong = []; ctx.memory.set(key, true); } else wrong = [n];
+      paint();
+    });
+    paint();
+    return {
+      el: h("div.spot", null, h("p.spot__q", null, L.md(block.q)), view.el, h("div.spot__side", null, h("p.spot__how", { text: "在左边的代码上，点你怀疑的那一行。" }), out)),
+      ready: () => found,
+      waitSay: "先在代码上点一行你怀疑的。点错会有提示；实在想跳过，再按一次。",
+      pass() { found = true; wrong = []; paint(); },
+    };
+  };
+
+  /** Evidence: what the built program looks like inside, as the lab's inspect command printed it. Labels are added as the teacher names each part. */
+  L.blocks.inside = (block) => {
+    const view = L.codeView();
+    const show = (k) => view.show(block.source, {
+      path: block.command, lang: "text", focus: k ? block.walk[k - 1].focusLines : [],
+      tags: Object.fromEntries(block.walk.slice(0, k).map((step) => [step.focusLines.at(-1), step.label])),
+    });
+    show(0);
+    return { el: h("div.inside", null, h("p.inside__what", { text: "这是工具打印出来的真实输出，不是示意图。" }), view.el), steps: block.walk.map((step) => ({ say: step.say, key: step.key })), set: show };
+  };
+
+  /** The teacher hands over the controls: nothing new appears, the switches of the experiment on this slide light up once. */
+  L.blocks.try = () => {
+    const el = h("span.try");
+    return {
+      el,
+      refresh() {
+        for (const exp of el.closest(".slide").querySelectorAll(".exp")) { exp.classList.remove("is-invited"); void exp.offsetWidth; exp.classList.add("is-invited"); }
+      },
+    };
+  };
+
+  L.blocks.points = (block) => ({ el: h("ul.points", null, block.items.map((item) => h("li", null, h("span", null, L.md(item))))) });
+
+  L.blocks.callout = (block) => ({ el: h(`div.callout.callout--${block.tone}`, null, h("h4", { text: block.title }), h("p", null, L.md(block.md))) });
+
+  L.blocks.code = (block) => {
+    const view = L.codeView();
+    const walk = block.walk || [];
+    const show = (focus) => view.show(block.source, { path: block.path, lang: block.lang, focus });
+    show(block.focusLines);
+    return { el: view.el, steps: walk.map((step) => ({ say: step.say, key: step.key })), set(k) { show(k ? walk[k - 1].focusLines : block.focusLines); } };
+  };
+
+  function option(index, text, onPick) {
+    const tag = h("span.opt__tag");
+    const el = h("button.opt", { attr: { type: "button" }, on: { click: () => onPick(index) } }, h("span.opt__key", { text: KEYS[index] }), h("span", null, L.md(text)), tag);
+    return { el, tag };
+  }
+
+  /** Guess first. Nothing is confirmed here: the answer comes from the run, in the matching reveal block. */
+  L.blocks.predict = (block, ctx) => {
+    const key = `predict:${block.id}`;
+    const options = block.options.map((text, i) => option(i, text, pick));
+    function paint() {
+      const picked = ctx.memory.get(key);
+      options.forEach((item, i) => { item.el.classList.toggle("is-picked", i === picked); item.tag.textContent = i === picked ? "你的猜测" : ""; });
+    }
+    function pick(index) { ctx.memory.set(key, index); paint(); }
+    paint();
+    return { el: h("div.predict", null, h("p.predict__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => ctx.memory.get(key) !== undefined };
+  };
+
+  /** After the run: the learner's guess beside what really happened. The explaining is the teacher's job, not this block's. */
+  L.blocks.reveal = (block, ctx) => {
+    const predict = ctx.predicts[block.of];
+    const guess = h("dd");
+    return {
+      el: h("div.reveal", null, h("dl", null, h("dt", { text: "你猜的" }), guess), h("dl", null, h("dt", { text: "实际" }), h("dd.is-ok", null, L.md(predict.options[predict.answer])))),
+      refresh() {
+        const picked = ctx.memory.get(`predict:${block.of}`);
+        guess.className = picked === undefined ? "" : picked === predict.answer ? "is-ok" : "is-miss";
+        guess.replaceChildren(picked === undefined ? "刚才没猜" : L.md(predict.options[picked]));
+      },
+    };
+  };
+
+  /** Several tools side by side: what each solves, what it costs, when to reach for it. The teacher goes through them one row at a
+      time, and the rule to choose by comes last, after every row has been talked through. */
+  L.blocks.choose = (block) => {
+    const rows = block.options.map((option) => h("div.choose__row", null,
+      h("span.choose__name", null, L.term(option.name, h("span", { text: option.name }))),
+      h("span", { attr: { "data-label": "解决什么" } }, L.md(option.solves)),
+      h("span", { attr: { "data-label": "代价" } }, L.md(option.cost)),
+      h("span", { attr: { "data-label": "什么时候用" } }, L.md(option.when))));
+    const rule = h("p.choose__rule", null, L.md(block.rule));
+    const el = h("div.choose", null,
+      h("div.choose__head", null, h("span"), h("span", { text: "解决什么" }), h("span", { text: "代价" }), h("span", { text: "什么时候用" })), rows, rule);
+    const set = (k) => {
+      const walking = k >= 1 && k <= rows.length;
+      el.classList.toggle("is-walking", walking);
+      rows.forEach((row, i) => row.classList.toggle("is-now", walking && i === k - 1));
+      rule.classList.toggle("is-waiting", k <= rows.length);
+    };
+    set(0);
+    return { el, steps: block.options.map((option) => ({ say: option.say })).concat({ say: block.ruleSay, key: block.ruleKey }), set };
+  };
+
+  L.blocks.name = (block) => ({
+    el: h("div.name", null,
+      h("h2.name__term", { text: block.term }),
+      block.alias ? h("p.name__alias", { text: block.alias }) : null,
+      h("p.name__line", null, L.md(block.oneLine)),
+      h("div.name__asked", null, h("h4", { text: "面试里它长这样" }), h("ul", null, block.asked.map((question) => h("li", { text: `「${question}」` })))),
+    ),
+  });
+
+  /** Answered on the spot: the picked option and the right one both show why. */
+  L.blocks.quiz = (block) => {
+    let done = false;
+    const options = block.options.map((item, i) => option(i, item.text, pick));
+    function pick(index) {
+      if (done) return;
+      done = true;
+      block.options.forEach((item, i) => {
+        if (i !== index && !item.ok) return;
+        options[i].el.classList.add(item.ok ? "is-right" : "is-wrong");
+        options[i].tag.textContent = item.ok ? "对" : "不对";
+        options[i].el.append(h("span.opt__why", null, L.md(item.why)));
+      });
+    }
+    return { el: h("div.quiz", null, h("p.quiz__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => done };
+  };
+
+  /** Say it aloud against a clock, then tick off what you covered. The points stay hidden until the learner has spoken. */
+  L.blocks.say = (block) => {
+    const total = block.seconds || 120;
+    let left = total, timer = 0;
+    const clock = h("span.say__clock");
+    const score = h("p.say__score");
+    const boxes = block.points.map((point) => h("input", { attr: { type: "checkbox" }, on: { change: count } }));
+    const points = h("ul.say__points", { attr: { hidden: "" } }, block.points.map((point, i) => h("li", null, h("label", null, boxes[i], h("span", null, L.md(point))))), score);
+    const start = h("button.btn", { text: "开始讲", attr: { type: "button" }, on: { click: toggle } });
+    const model = h("p.say__model", { attr: { hidden: "" } }, L.md(block.model));
+    const showModel = h("button.btn", { text: "看一份参考回答", attr: { type: "button", hidden: "" }, on: { click() { model.hidden = !model.hidden; showModel.textContent = model.hidden ? "看一份参考回答" : "收起参考回答"; if (!model.hidden) model.scrollIntoView({ block: "nearest", behavior: "smooth" }); } } });
+    const check = h("button.btn.btn--primary", { text: "讲完了，对要点", attr: { type: "button" }, on: { click() { stop(); points.hidden = false; check.hidden = true; showModel.hidden = false; count(); } } });
+    function draw() { clock.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`; }
+    function stop() { clearInterval(timer); timer = 0; start.textContent = left === total ? "开始讲" : "接着讲"; }
+    function toggle() {
+      if (timer) return stop();
+      if (left === 0) left = total;
+      start.textContent = "暂停";
+      timer = setInterval(() => { left -= 1; draw(); if (left === 0) stop(); }, 1000);
+      draw();
+    }
+    function count() { score.textContent = `${block.points.length} 个要点，你讲到了 ${boxes.filter((box) => box.checked).length} 个。没讲到的，回到对应那一页再看一遍。`; }
+    draw();
+    return { el: h("div.say", null, h("p.say__prompt", null, L.md(block.prompt)), h("div.say__row", null, clock, start, check, showModel), points, model) };
+  };
+
+  L.blocks.cards = (block) => ({
+    el: h("div.cards", null, block.items.map((card) => {
+      const answer = h("p.card__a", { attr: { hidden: "" } }, L.md(card.a));
+      const button = h("button.btn.btn--quiet", { text: "看答案", attr: { type: "button" }, on: { click() { answer.hidden = !answer.hidden; button.textContent = answer.hidden ? "看答案" : "收起"; } } });
+      return h("div.card", null, h("p.card__q", null, L.md(card.q)), button, answer);
+    })),
+  });
+})();
+
+</script>
+<script>
+/* Things that are drawn instead of described. Three of them:
+   - the shared-thing picture: two actors, what each holds in hand, and the one thing they share. A scene uses it to show the
+     everyday story; `lanes` puts the same picture beside its rows, so every step is also seen in space, not only in time;
+   - `chart`: the recorded runs as lines, one per way of writing the code, along the experiment's knob;
+   - `decide`: the rule for choosing, drawn as a small tree.
+   Every number in a chart is read from the recorded runs. Colour names a series and nothing else; right or wrong is the marker's shape. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const NS = "http://www.w3.org/2000/svg";
+  const s = (tag, attrs, ...kids) => {
+    const el = document.createElementNS(NS, tag);
+    for (const [name, value] of Object.entries(attrs || {})) el.setAttribute(name, value);
+    el.append(...kids.flat().filter(Boolean));
+    return el;
+  };
+
+  /* ---------- two actors and the thing they share ---------- */
+
+  const PIC = { width: 300, height: 300 };
+  const FIGURE = () => s("svg", { viewBox: "0 0 44 40", class: "pic__figure", "aria-hidden": "true" },
+    s("circle", { cx: 22, cy: 10, r: 8.5 }), s("path", { d: "M4 40v-4a18 14 0 0 1 36 0v4" }));
+
+  /** A straight arrow from (x1, y1) to (x2, y2), stopping a little short at both ends. */
+  function arrow(x1, y1, x2, y2) {
+    const length = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / length, uy = (y2 - y1) / length;
+    const tipX = x2 - ux * 3, tipY = y2 - uy * 3, backX = tipX - ux * 9, backY = tipY - uy * 9;
+    return s("g", { class: "pic__arrow" },
+      s("line", { x1: x1 + ux * 3, y1: y1 + uy * 3, x2: backX, y2: backY }),
+      s("polygon", { points: `${tipX},${tipY} ${backX - uy * 4.5},${backY + ux * 4.5} ${backX + uy * 4.5},${backY - ux * 4.5}` }));
+  }
+
+  /** actors: two names; shared: its name; hands: whether each actor holds a value (the scene's story has no need of it). */
+  L.sharePicture = function ({ actors, shared, hands = true }) {
+    const side = ["a", "b"];
+    const value = h("b.pic__value");
+    const boardTags = h("div.pic__tags");
+    const board = h("div.pic__board", null, value);
+    const boardName = h("div.pic__over", null, h("span.pic__name", { text: shared }), boardTags);
+    const action = h("span.pic__action");
+    const people = actors.map((name, i) => {
+      const tags = h("div.pic__tags");
+      const note = h("span.pic__note");
+      const held = h("b");
+      return {
+        tags, note, held,
+        el: h(`div.pic__actor.pic__actor--${side[i]}`, null, FIGURE(), h("span.pic__name", { text: name }), tags, note),
+        hand: hands ? h(`div.pic__hand.pic__hand--${side[i]}`, null, h("small", { text: "手里" }), held) : null,
+      };
+    });
+    /* With hands the arrows run between the board and a hand; without, between an actor and the board. */
+    const ends = hands ? [[124, 110, 104, 144], [176, 110, 196, 144]] : [[122, 110, 62, 192], [178, 110, 238, 192]];
+    const arrows = ends.map(([bx, by, px, py]) => ({ in: arrow(bx, by, px, py), out: arrow(px, py, bx, by) }));
+    const lines = s("svg", { viewBox: `0 0 ${PIC.width} ${PIC.height}`, class: "pic__lines", "aria-hidden": "true" }, arrows.flatMap((pair) => [pair.in, pair.out]));
+    const el = h(`div.pic${hands ? "" : ".pic--plain"}`, { attr: { role: "img" } }, lines, boardName, board, action, people.flatMap((person) => [person.hand, person.el]));
+
+    const fill = (box, texts) => box.replaceChildren(...(texts || []).map((text) => h("span", { text })));
+    return {
+      el,
+      /** state: { value, hands: [text|null ×2], notes: [{ text, tone }|null ×2], move: { lane, op }|null,
+          tags: { actors: [], shared: [], action: text }, hot: "actors"|"shared"|"action"|null } */
+      set(state) {
+        const move = state.move, tags = state.tags || {};
+        value.textContent = String(state.value);
+        board.classList.toggle("is-now", move?.op === "write" || state.hot === "shared");
+        fill(boardTags, tags.shared);
+        action.textContent = tags.action || "";
+        action.classList.toggle("is-now", state.hot === "action");
+        people.forEach((person, i) => {
+          const mine = move?.lane === i;
+          if (person.hand) {
+            const text = state.hands?.[i];
+            person.held.textContent = text ?? "";
+            person.hand.classList.toggle("is-empty", text === null || text === undefined);
+            person.hand.classList.toggle("is-now", mine && (move.op === "read" || move.op === "calc"));
+          }
+          const note = state.notes?.[i];
+          person.note.textContent = note?.text || "";
+          person.note.className = `pic__note${note?.tone ? ` pic__note--${note.tone}` : ""}${mine && move.op === "note" ? " is-now" : ""}`;
+          person.el.classList.toggle("is-now", state.hot === "actors" || (mine && move.op === "note"));
+          fill(person.tags, tags.actors);
+          arrows[i].in.classList.toggle("is-on", mine && move.op === "read");
+          arrows[i].out.classList.toggle("is-on", (mine && move.op === "write") || Boolean(tags.action));
+        });
+        const holding = (state.hands || []).map((text, i) => (text === null || text === undefined ? "" : `${actors[i]}手里是 ${text}`)).filter(Boolean).join("，");
+        el.setAttribute("aria-label", `${actors.join("和")}共用${shared}，现在是 ${state.value}${holding ? `；${holding}` : ""}`);
+      },
+    };
+  };
+
+  /** What the picture shows after each step of a `lanes` walk: frame 0 is the start, frame k is after step k. */
+  L.shareFrames = function (steps, start) {
+    const frames = [{ value: start, hands: [null, null], notes: [null, null], move: null }];
+    for (const step of steps) {
+      const last = frames.at(-1);
+      const frame = { value: last.value, hands: [...last.hands], notes: last.notes.map((note) => (note?.tone === "fail" ? null : note)), move: { lane: step.lane, op: step.op } };
+      if (step.op === "read") frame.hands[step.lane] = String(frame.value);
+      else if (step.op === "calc") frame.hands[step.lane] = step.text.includes("=") ? step.text.split("=").pop().trim() : step.text;
+      else if (step.op === "write") { frame.value = step.value; frame.hands[step.lane] = null; }
+      else frame.notes[step.lane] = { text: step.text, tone: step.tone };
+      frames.push(frame);
+    }
+    return frames.concat({ ...frames.at(-1), move: null });
+  };
+
+  /* ---------- the recorded runs as a line chart ---------- */
+
+  const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+  const VIEW = { width: 640, height: 300, left: 44, right: 178, top: 14, bottom: 34, inset: 18, labelGap: 19 };
+
+  function step(max, ticks = 4) {
+    const raw = max / ticks, power = 10 ** Math.floor(Math.log10(raw));
+    return [1, 2, 5, 10].find((unit) => unit * power >= raw) * power;
+  }
+
+  /** Label heights that keep the order of `wanted` but never sit closer than `gap`, inside [top, bottom]. */
+  function spread(wanted, gap, top, bottom) {
+    const order = wanted.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y);
+    order.forEach((item, n) => { item.y = Math.max(item.y, n ? order[n - 1].y + gap : top); });
+    for (let n = order.length - 1; n >= 0; n--) order[n].y = Math.min(order[n].y, n === order.length - 1 ? bottom : order[n + 1].y - gap);
+    const out = [];
+    order.forEach((item) => { out[item.i] = item.y; });
+    return out;
+  }
+
+  L.blocks.chart = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.of];
+    const y = { label: "耗时", ...(block.y || exp.time) };
+    const xs = exp.knob.values;
+    const base = exp.variants[0];
+    const series = exp.variants.filter((variant) => !block.show || block.show.includes(variant.id)).slice(0, 4).map((variant) => ({
+      variant,
+      slot: exp.variants.indexOf(variant) + 1, // colour follows the way of writing, not its place in this chart
+      points: xs.map((x) => {
+        const runs = exp.results.variants[variant.id].runs[x];
+        return { x, value: median(runs.map((run) => run[y.key])), wrong: runs.filter((run) => run[exp.metric.key] !== run[exp.metric.expectKey]).length, total: runs.length };
+      }),
+    }));
+    const tick = step(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))));
+    const top = tick * Math.ceil(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))) / tick);
+    const plot = { width: VIEW.width - VIEW.left - VIEW.right, height: VIEW.height - VIEW.top - VIEW.bottom };
+    const px = (i) => VIEW.left + VIEW.inset + (i * (plot.width - 2 * VIEW.inset)) / (xs.length - 1);
+    const py = (value) => VIEW.top + plot.height - (value / top) * plot.height;
+    const verdict = (point) => (point.wrong === 0 ? `${point.total} 次全对` : point.wrong === point.total ? `${point.total} 次全错` : `错了 ${point.wrong} 次`);
+    let focus = null;
+
+    const grid = [];
+    for (let value = 0; value <= top; value += tick) {
+      grid.push(s("line", { class: value ? "chart__grid" : "chart__base", x1: VIEW.left, x2: VIEW.left + plot.width, y1: py(value), y2: py(value) }));
+      grid.push(s("text", { class: "chart__tick", x: VIEW.left - 8, y: py(value) + 4, "text-anchor": "end" }, String(value)));
+    }
+    const xLabels = xs.map((x, i) => s("text", { class: "chart__tick", x: px(i), y: VIEW.height - 14, "text-anchor": "middle" }, String(x)));
+    const xTitle = s("text", { class: "chart__tick", x: VIEW.left + plot.width + 12, y: VIEW.height - 14 }, exp.knob.label);
+    const labelY = spread(series.map((one) => py(one.points.at(-1).value)), VIEW.labelGap, VIEW.top + 6, VIEW.top + plot.height);
+    const endX = px(xs.length - 1);
+
+    series.forEach((one, n) => {
+      const last = one.points.at(-1);
+      one.el = s("g", { class: `chart__series chart__series--${one.slot}` },
+        s("polyline", { class: "chart__line", points: one.points.map((point, i) => `${px(i)},${py(point.value)}`).join(" ") }),
+        s("polyline", { class: "chart__lead", points: `${endX + 8},${py(last.value)} ${endX + 20},${labelY[n]} ${endX + 30},${labelY[n]}` }),
+        one.points.map((point, i) => s("circle", { class: `chart__dot${point.wrong ? " is-wrong" : ""}`, cx: px(i), cy: py(point.value), r: 5 })),
+        s("text", { class: "chart__name", x: endX + 35, y: labelY[n] + 4 }, s("tspan", { class: "chart__label" }, `${one.variant.label} `), s("tspan", { class: "chart__end" }, String(last.value))));
+    });
+
+    const cross = s("line", { class: "chart__cross", y1: VIEW.top, y2: VIEW.top + plot.height });
+    const tip = h("div.chart__tip", { attr: { hidden: "" } });
+    function point(i) {
+      cross.setAttribute("x1", px(i)); cross.setAttribute("x2", px(i));
+      cross.classList.add("is-on");
+      tip.replaceChildren(h("b", { text: `${exp.knob.label} ${xs[i]}` }), ...[...series].sort((a, b) => b.points[i].value - a.points[i].value).map((one) => h(`div.chart__row${focus && focus !== one.variant.id ? ".is-dim" : ""}`, null,
+        h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label }), h("span.num", { text: `${one.points[i].value} ${y.unit}` }), h(`span${one.points[i].wrong ? ".is-wrong" : ""}`, { text: verdict(one.points[i]) }))));
+      tip.hidden = false;
+      const half = i >= xs.length / 2;
+      tip.style.left = half ? "" : `${((px(i) + 14) / VIEW.width) * 100}%`;
+      tip.style.right = half ? `${100 - ((px(i) - 14) / VIEW.width) * 100}%` : "";
+    }
+    function leave() { cross.classList.remove("is-on"); tip.hidden = true; }
+    const width = (plot.width - 2 * VIEW.inset) / (xs.length - 1);
+    const hits = xs.map((x, i) => {
+      const hit = s("rect", { class: "chart__hit", x: px(i) - width / 2, y: VIEW.top, width, height: plot.height + VIEW.bottom, tabindex: 0, role: "button", "aria-label": `${exp.knob.label} ${x}，读这一列` });
+      for (const name of ["pointerenter", "focus", "click"]) hit.addEventListener(name, () => point(i));
+      hit.addEventListener("blur", leave);
+      return hit;
+    });
+    const svg = s("svg", { viewBox: `0 0 ${VIEW.width} ${VIEW.height}`, class: "chart__svg", role: "img", "aria-label": `${y.label}随${exp.knob.label}的变化，${series.length} 种写法，数据在下面的表里` },
+      grid, xLabels, xTitle, cross, series.map((one) => one.el), hits);
+    svg.addEventListener("pointerleave", leave);
+
+    const read = h("p.chart__read", { attr: { "aria-live": "polite" } });
+    const buttons = series.map((one) => h("button.chart__pick", { attr: { type: "button", "aria-pressed": "false" }, on: { click: () => look(focus === one.variant.id ? null : one.variant.id) } },
+      h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label })));
+    function look(id) {
+      focus = id;
+      series.forEach((one, n) => { one.el.classList.toggle("is-dim", Boolean(id) && one.variant.id !== id); one.el.classList.toggle("is-on", one.variant.id === id); buttons[n].setAttribute("aria-pressed", String(one.variant.id === id)); });
+      const one = series.find((candidate) => candidate.variant.id === id);
+      if (!one) return read.replaceChildren("点上面的写法名，只看那一条线；把鼠标移到图上（手机上点一下），读那一列的每个数。");
+      const last = one.points.at(-1), first = one.points[0];
+      const basePoint = exp.results.variants[base.id].runs[last.x];
+      const ratio = one.variant.id === base.id ? "" : `，是「${base.label}」的 ${(last.value / median(basePoint.map((run) => run[y.key]))).toFixed(1)} 倍`;
+      const wrongAt = one.points.filter((item) => item.wrong).map((item) => item.x);
+      read.replaceChildren(L.md(`${one.variant.label}：${exp.knob.label} ${first.x} 时 **${first.value} ${y.unit}**，到 ${last.x} 时 **${last.value} ${y.unit}**${ratio}。${wrongAt.length ? `==${exp.knob.label}为 ${wrongAt.join("、")} 时结果有错==。` : "每一组结果都对。"}`));
+    }
+    look(null);
+
+    const table = h("details.chart__table", null, h("summary", { text: "看数据表" }), h("table", null,
+      h("thead", null, h("tr", null, h("th", { text: `${exp.knob.label} →` }), xs.map((x) => h("th", { text: String(x) })))),
+      h("tbody", null, series.map((one) => h("tr", null, h("th", { text: one.variant.label }), one.points.map((item) => h("td", { text: `${item.value} ${y.unit}${item.wrong ? "（有错）" : ""}` })))))));
+
+    return {
+      el: h("figure.chart", null,
+        h("figcaption.chart__cap", null, h("b", { text: `${y.label}（${y.unit}）` }), h("span", { text: `每个点是 ${exp.repeat} 次真实运行的中位数` }),
+          h("span.chart__marks", null, h("i.chart__mark"), "这一组结果全对", h("i.chart__mark.is-wrong"), "有错")),
+        h("div.chart__plot", null, svg, tip),
+        h("div.chart__side", null, h("div.chart__picks", { attr: { role: "group", "aria-label": "只看一种写法" } }, buttons), read, table)),
+      steps: block.walk.map((item) => ({ say: item.say, key: item.key })),
+      set(k) { look(k ? block.walk[k - 1].focus : null); },
+    };
+  };
+
+  /* ---------- the rule for choosing, as a tree ---------- */
+
+  L.blocks.decide = (block) => {
+    const branches = block.branches.map((branch) => ({
+      pick: branch.pick,
+      el: h("li.decide__branch", null,
+        h("span.decide__when", null, L.md(branch.when)),
+        h("span.decide__pick", null, L.term(branch.pick, h("span", { text: branch.pick }))),
+        branch.eg ? h("small.decide__eg", { text: `比如：${branch.eg}` }) : null),
+    }));
+    /* When the learner answers a `cases` item on the same slide, the branch that item belongs to lights up. */
+    const onPicked = (event) => {
+      const hit = branches.find((branch) => branch.pick === event.detail.name);
+      if (!hit || !hit.el.isConnected) return;
+      branches.forEach((branch) => branch.el.classList.remove("is-hit"));
+      void hit.el.offsetWidth; // restart the flash when the same branch is hit twice
+      hit.el.classList.add("is-hit", "is-used");
+    };
+    document.addEventListener("lesson:picked", onPicked);
+    return { el: h("div.decide", null, h("p.decide__q", null, L.md(block.q)), h("ul.decide__list", null, branches.map((branch) => branch.el))) };
+  };
+})();
+
+</script>
+<script>
+/* The experiment block: the code on the left (switch what was changed), what really happened on the right.
+   Every dot is one recorded run on the learner's own machine; the page never invents a number. Switching the code or the knob
+   moves the same dots, so the learner sees the effect of one change as data. Touch a dot to read that single run. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const AXIS_ROOM = 1.04, BIN = 1.2, DROP_MS = 45;
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  const median = (values) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.floor(sorted.length / 2)]; };
+
+  /** worst: the largest miss of the target, signed (negative = came out too low, positive = too high). */
+  function summary(runs, metric) {
+    const misses = runs.map((run) => run[metric.key] - run[metric.expectKey]);
+    return { wrong: misses.filter(Boolean).length, total: runs.length, worst: misses.reduce((far, miss) => (Math.abs(miss) > Math.abs(far) ? miss : far), 0), expected: runs[0][metric.expectKey] };
+  }
+  const missed = (miss) => `${miss > 0 ? "多了" : "少了"} ${L.num(Math.abs(miss))}`;
+
+  L.blocks.experiment = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.lab];
+    const shown = exp.variants.filter((variant) => block.show.includes(variant.id));
+    const base = exp.variants[0];
+    const metric = exp.metric, time = exp.time;
+    let variant = block.select || shown[0].id;
+    let knob = block.at || (exp.knob ? exp.knob.default : "-");
+    let played = false;
+    let seen = block.hand ? 0 : exp.repeat; // hand: the learner lets the recorded runs out one press at a time
+
+    const runsOf = (id) => exp.results.variants[id].runs[knob];
+    const view = L.codeView();
+    const note = h("p.exp__note");
+    const question = h("p.exp__q");
+    const finding = h("p.exp__finding", { attr: { "aria-live": "polite" } });
+    const probe = h("span.exp__probe");
+    const command = h("code.cmd");
+    const ticks = h("div.plot__ticks", null, h("span", { text: "0" }), h("span.is-expect"));
+
+    const rows = shown.map((item) => {
+      const dots = Array.from({ length: exp.repeat }, (unused, i) => h("i.dot.is-waiting", { on: { mouseenter: () => read(item, i), click: () => read(item, i) } }));
+      const sum = h("span.plot__sum");
+      const label = h("button.plot__label", { text: item.label, attr: { type: "button" }, on: { click: () => choose(item.id) } });
+      return { item, dots, sum, track: h("div.plot__track", null, dots), el: null, label };
+    });
+    rows.forEach((row) => { row.el = h("div.plot__row", null, row.label, row.track, row.sum); });
+
+    function read(item, i) {
+      const run = runsOf(item.id)[i];
+      probe.textContent = `${item.label} · 第 ${i + 1} 次：${metric.key} = ${L.num(run[metric.key])}${time ? `，${run[time.key]} ${time.unit}` : ""}`;
+    }
+
+    /* The far end of the axis: the largest result or target among everything this block can show. */
+    const reachable = exp.knob && block.knob !== false ? exp.knob.values : [knob];
+    const axisTop = AXIS_ROOM * Math.max(...shown.flatMap((item) => reachable.flatMap((value) => exp.results.variants[item.id].runs[value].flatMap((run) => [run[metric.key], run[metric.expectKey]]))));
+
+    function place(row) {
+      const runs = runsOf(row.item.id);
+      const info = summary(runs, metric);
+      const bins = new Map();
+      row.track.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      runs.forEach((run, i) => {
+        const percent = (run[metric.key] / axisTop) * 100;
+        const bin = Math.round(percent / BIN);
+        const seat = bins.get(bin) || 0;
+        bins.set(bin, seat + 1);
+        row.dots[i].style.left = `${percent}%`;
+        row.dots[i].style.transform = `translate(${-Math.floor(seat / 3) * 7}px, ${[0, -11, 11][seat % 3]}px)`;
+        row.dots[i].classList.toggle("is-ok", run[metric.key] === run[metric.expectKey]);
+      });
+      row.sum.replaceChildren(
+        h(`b${info.wrong ? "" : ".is-ok"}`, { text: info.wrong === 0 ? `${info.total} 次全对` : info.wrong === info.total ? `${info.total} 次全错` : `错了 ${info.wrong} 次` }),
+        time ? h("span.num", { text: `中位 ${median(runs.map((run) => run[time.key]))} ${time.unit}` }) : null,
+      );
+      row.el.classList.toggle("is-on", row.item.id === variant);
+      return info;
+    }
+
+    function tell(info, item) {
+      const runs = runsOf(item.id);
+      const speed = time ? `中位耗时 **${median(runs.map((run) => run[time.key]))} ${time.unit}**` : "";
+      if (info.wrong === 0) {
+        const slower = time && item.id !== base.id ? `，${base.label}是 ${median(runsOf(base.id).map((run) => run[time.key]))} ${time.unit}` : "";
+        return `${item.label}：${info.total} 次==全对==。${speed}${slower}。`;
+      }
+      const share = Math.round((Math.abs(info.worst) / info.expected) * 100);
+      return `${item.label}：${info.total} 次里 ==${info.wrong} 次不对==。${info.worst > 0 ? "最多到了" : "最少只到"} **${L.num(info.expected + info.worst)}**，${missed(info.worst)}${share ? `（${share}%）` : ""}。${speed}。`;
+    }
+
+    function draw() {
+      const item = exp.variants.find((candidate) => candidate.id === variant);
+      const source = exp.sources[variant];
+      view.show(source, { path: exp.paths[variant], lang: exp.lang, changed: variant === base.id ? [] : L.changedLines(exp.sources[base.id], source), focus: variant === base.id ? block.focusLines || [] : [] });
+      note.textContent = item.note || "";
+      let info = null;
+      for (const row of rows) { const result = place(row); if (row.item.id === variant) info = result; }
+      ticks.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      ticks.lastChild.textContent = `应该是 ${L.num(info.expected)}`;
+      question.replaceChildren(L.md(`每种写法跑 **${exp.repeat} 次**，一个点是一次的「${metric.label}」。`));
+      finding.replaceChildren(L.md(tell(info, item)));
+      command.textContent = `${exp.shown[variant]}${knob === "-" ? "" : ` ${knob}`}`;
+      probe.textContent = "";
+      if (block.hand) paintHand();
+    }
+
+    /* Hand mode: nothing is summed up until every run has been seen, so the surprise is the learner's own. */
+    const more = h("button.btn.btn--primary", { attr: { type: "button" }, on: { click: () => letOut(1) } });
+    const rest = h("button.btn", { attr: { type: "button" }, on: { click: () => letOut(exp.repeat) } });
+    const hand = block.hand ? h("div.exp__hand", null, more, rest) : null;
+    function paintHand() {
+      const row = rows[0], runs = runsOf(row.item.id), pending = seen < exp.repeat;
+      row.dots.forEach((dot, i) => dot.classList.toggle("is-waiting", i >= seen));
+      row.sum.classList.toggle("is-held", pending);
+      hand.hidden = !pending;
+      if (!pending) return;
+      more.textContent = seen === 0 ? "看第 1 次运行" : "再看一次";
+      rest.textContent = `把剩下的 ${exp.repeat - seen} 次一起放出来`;
+      rest.hidden = seen < 2;
+      if (seen === 0) return finding.replaceChildren("还一次都没看。点下面的按钮，看第 1 次跑出了多少。");
+      const last = runs[seen - 1], value = last[metric.key], expected = last[metric.expectKey];
+      const same = seen > 1 && runs[seen - 2][metric.key] === value;
+      finding.replaceChildren(L.md(`第 ${seen} 次：**${L.num(value)}**。${value === expected ? "和应该的一样。" : `应该是 ${L.num(expected)}，==${missed(value - expected)}==。`}${seen > 1 ? (same ? "和上一次一样。" : "和上一次还不一样。") : ""}`));
+    }
+    function letOut(n) {
+      const from = seen;
+      seen = Math.min(exp.repeat, seen + n);
+      draw();
+      if (seen - from > 1 && !still.matches) rows[0].dots.forEach((dot, i) => { if (i >= from) { dot.classList.add("is-waiting"); setTimeout(() => dot.classList.remove("is-waiting"), 80 + (i - from) * DROP_MS); } });
+    }
+
+    function play() {
+      played = true;
+      if (seen < exp.repeat) return;
+      const all = rows.flatMap((row) => row.dots);
+      all.forEach((dot) => dot.classList.add("is-waiting"));
+      if (still.matches) return all.forEach((dot) => dot.classList.remove("is-waiting"));
+      rows.forEach((row) => row.dots.forEach((dot, i) => setTimeout(() => dot.classList.remove("is-waiting"), 260 + i * DROP_MS)));
+    }
+
+    function choose(id) { variant = id; tabs?.pick(id); draw(); }
+    const tabs = shown.length > 1 ? L.segmented("写法", shown.map((item) => ({ id: item.id, label: item.label })), variant, choose) : null;
+    const dial = exp.knob && block.knob !== false ? L.segmented(exp.knob.label, exp.knob.values.map((value) => ({ id: value, label: value })), knob, (value) => { knob = value; draw(); }) : null;
+    const copy = h("button.btn.btn--quiet", { text: "复制", attr: { type: "button" }, on: { click() { navigator.clipboard?.writeText(command.textContent).then(() => { copy.textContent = "已复制"; }, () => {}); } } });
+    const env = exp.results.env;
+
+    draw();
+    return {
+      el: h("div.exp", null,
+        tabs || dial ? h("div.exp__bar", null, tabs?.el, dial?.el) : null,
+        h("div.exp__body", null,
+          h("div", null, view.el, note),
+          h("div.exp__data", null, question, h("div.plot", null, rows.map((row) => row.el), h("div.plot__axis", null, h("span"), ticks, h("span"))), finding, hand,
+            h("div.exp__foot", null,
+              h("span", { text: `真实记录 · 这台电脑 · ${env.runtime} · ${env.cores} 个逻辑核 · ${env.date}` }),
+              h("button.btn.btn--quiet", { text: "再放一遍", attr: { type: "button" }, on: { click: play } }),
+              h("span", null, "自己跑：", command), copy, probe))),
+      ),
+      refresh() { if (!played) play(); },
+      waitSay: "先自己看：点「看第 1 次运行」，一次一次把结果放出来。实在想跳过，再按一次。",
+      ready: () => seen >= exp.repeat,
+      pass() { if (seen < exp.repeat) letOut(exp.repeat); },
+    };
+  };
+})();
+
+</script>
+<script>
+/* Two actors and the one thing they share, with time running downward.
+   `lanes` is the teacher's walk through one fixed order of steps; a step may end in a question the learner answers before the next
+   step shows what really happens. `schedule` hands the order to the learner: they press which actor moves next and watch what the
+   shared value becomes, with a lock they can switch on. Both draw rows the same way. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const OPS = ["read", "calc", "write"];
+
+  /** One row: a step in its actor's lane, an arrow to or from the shared value when the step touches it.
+      A `note` step touches nothing: the actor waits, gives up, takes or releases something. */
+  function row(step, shared) {
+    const touches = step.op === "read" || step.op === "write";
+    const inward = step.op === "write";
+    const arrow = h(`span.arrow.arrow--${!touches ? "none" : (step.lane === 0) === inward ? "right" : "left"}`);
+    const chip = h(`span.chip${step.op === "note" && step.tone ? `.chip--${step.tone}` : ""}`, { text: step.text });
+    const cells = [h("div.lcell.lcell--a"), h("div.lcell.lcell--mid"), h("div.lcell.lcell--b")];
+    cells[step.lane === 0 ? 0 : 2].append(...(step.lane === 0 ? [chip, arrow] : [arrow, chip]));
+    if (touches) cells[1].append(h(`span.val${inward ? ".val--write" : ""}`, { text: String(shared) }));
+    return h("div.lrow", null, cells);
+  }
+
+  function grid(names, sharedName, rows) {
+    return h("div.lanes__grid", null,
+      h("div.lanes__head.lanes__head--a", { text: names[0] }), h("div.lanes__head.lanes__head--mid", { text: sharedName }), h("div.lanes__head.lanes__head--b", { text: names[1] }),
+      rows);
+  }
+
+  L.blocks.lanes = (block, ctx) => {
+    let shared = block.shared.start, now = 0;
+    const key = `lanes:${block.expr}:${block.steps.length}`;
+    const answers = ctx.memory.get(key, {});
+    const parts = OPS.map((op) => h("span.part", { text: block.parts[op] }));
+    const rows = block.steps.map((step) => { if (step.op === "write") shared = step.value; return row(step, shared); });
+    const verdict = h("p.lanes__verdict.is-waiting", null, L.md(block.verdict));
+    const askBox = h("div.lanes__ask", { attr: { hidden: "" } });
+    const askNow = () => (now >= 1 && now <= rows.length ? block.steps[now - 1].ask : null);
+    /* The same steps seen in space: who holds what, and what the shared thing is right now. */
+    const picture = L.sharePicture({ actors: block.lanes, shared: block.shared.name });
+    const frames = L.shareFrames(block.steps, block.shared.start);
+
+    /* The question that closes a step: what will the next step do? Answered here, shown for real by the next press. */
+    function paintAsk() {
+      const ask = askNow();
+      askBox.hidden = !ask;
+      if (!ask) return;
+      const picked = answers[now - 1];
+      const buttons = ask.options.map((text, i) => {
+        const button = h("button.pick", { attr: { type: "button" }, on: { click() { answers[now - 1] = i; ctx.memory.set(key, answers); paintAsk(); } } }, L.md(text));
+        button.disabled = picked !== undefined;
+        if (picked !== undefined && i === ask.answer) button.classList.add("is-right");
+        if (picked === i && i !== ask.answer) button.classList.add("is-wrong");
+        return button;
+      });
+      const out = picked === undefined ? "" : picked === ask.answer ? "对。按下一步，看它是怎么发生的。" : "不是这个。按下一步，看实际发生了什么。";
+      askBox.replaceChildren(h("p", null, L.md(ask.q)), h("div.picks", null, buttons), h("p.ask__out", { text: out }));
+    }
+
+    return {
+      el: h(`div.lanes${rows.length > 7 ? ".lanes--long" : ""}`, null,
+        h("div.lanes__main", null,
+          h("div.lanes__expr", null, h("code.lanes__code", { text: block.expr }), h("div.lanes__parts", null, parts[0], "→", parts[1], "→", parts[2])),
+          grid(block.lanes, block.shared.name, rows), askBox, verdict),
+        h("div.lanes__side", null, h("p.lanes__now", { text: "此刻" }), picture.el)),
+      steps: block.steps.map((step) => ({ say: step.say, key: step.key })).concat({ say: block.verdictSay, key: block.verdictKey }),
+      waitSay: "先猜一下再往下：点一个你觉得会发生的。实在想跳过，再按一次。",
+      ready: () => !askNow() || answers[now - 1] !== undefined,
+      set(k) {
+        now = k;
+        rows.forEach((el, i) => { el.classList.toggle("is-waiting", i >= k); el.classList.toggle("is-now", i === k - 1); });
+        const op = k >= 1 && k <= rows.length ? block.steps[k - 1].op : null;
+        parts.forEach((part, i) => part.classList.toggle("is-now", OPS[i] === op));
+        verdict.classList.toggle("is-waiting", k <= rows.length);
+        picture.set(frames[Math.min(k, frames.length - 1)]);
+        paintAsk();
+      },
+      /** The part that just changed, so a long walk keeps its newest row on screen. */
+      spot: () => (now > rows.length ? verdict : askNow() ? askBox : rows[now - 1]?.firstChild),
+    };
+  };
+
+  L.blocks.schedule = (block) => {
+    const name = block.shared.name;
+    const hint = { read: `读 ${name}`, calc: "算出新值", write: `写回 ${name}` };
+    const reached = new Set();
+    let shared, actors, owner, locked = false;
+
+    const rows = h("div.lrow-list");
+    const value = h("span.val");
+    const buttons = [0, 1].map((lane) => h("button.btn", { attr: { type: "button" }, on: { click: () => move(lane) } }));
+    const result = h("p.sched__result", { attr: { "aria-live": "polite" } });
+    const goals = block.goals.map((goal) => h("li.goal", { text: goal.label }));
+    const lock = block.lock ? L.segmented("", [{ id: "off", label: "不加锁" }, { id: "on", label: block.lock.label }], "off", (id) => { locked = id === "on"; reset(); }) : null;
+    const allReached = () => block.goals.every((goal) => reached.has(goal.value));
+
+    function paint() {
+      value.textContent = String(shared);
+      buttons.forEach((button, lane) => {
+        const actor = actors[lane];
+        const waits = locked && owner !== null && owner !== lane;
+        button.disabled = actor.pc === OPS.length || waits;
+        button.textContent = actor.pc === OPS.length ? `${block.lanes[lane]} 走完了` : waits ? `${block.lanes[lane]} 在等锁` : `${block.lanes[lane]} 走一步：${hint[OPS[actor.pc]]}`;
+      });
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      if (actors.some((actor) => actor.pc < OPS.length)) { result.textContent = ""; return; }
+      reached.add(shared);
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      const lost = (block.shared.start + 2 * block.delta - shared) / block.delta;
+      const outcome = `两边都走完了：${name} = ${shared}。${lost ? `有 ${lost} 次白加了。` : "一次都没丢。"}`;
+      result.replaceChildren(L.md(allReached() ? `${outcome}${block.done}` : `${outcome}点「重来」，换一种顺序试试。`));
+    }
+
+    function move(lane) {
+      const actor = actors[lane], op = OPS[actor.pc];
+      let text;
+      if (op === "read") { actor.local = shared; owner = lane; text = `读到 ${shared}`; }
+      else if (op === "calc") { text = `${actor.local} ${block.delta < 0 ? "−" : "+"} ${Math.abs(block.delta)} = ${actor.local + block.delta}`; actor.local += block.delta; }
+      else { shared = actor.local; owner = null; text = `写回 ${shared}`; }
+      actor.pc += 1;
+      rows.append(row({ lane, op, text }, shared));
+      rows.lastChild.scrollIntoView({ block: "nearest" });
+      paint();
+    }
+
+    function reset() {
+      shared = block.shared.start;
+      actors = [{ pc: 0, local: null }, { pc: 0, local: null }];
+      owner = null;
+      rows.replaceChildren();
+      paint();
+    }
+
+    reset();
+    return {
+      el: h("div.sched", null,
+        h("div.sched__bar", null, h("ul.goals", null, goals), lock?.el, h("button.btn.btn--quiet", { text: "重来", attr: { type: "button" }, on: { click: reset } })),
+        grid(block.lanes, name, [rows,
+          h("div.lrow.lrow--controls", null, h("div.lcell.lcell--a", null, buttons[0]), h("div.lcell.lcell--mid", null, value), h("div.lcell.lcell--b", null, buttons[1]))]),
+        result),
+      waitSay: "先自己排一排：点两边的按钮，把上面几种结果都排出来。实在想跳过，再按一次。",
+      ready: allReached,
+    };
+  };
+})();
+
+</script>
+<script>
+/* The lesson as a sequence of moments. A moment is one teacher sentence plus one visible change: a block appearing, or one step
+   inside a block. → / space goes to the next moment, ← back; the track at the top shows where the lesson is in its arc.
+   A block that waits for the learner (a guess, a quiz) holds the lesson once, then lets a second press pass.
+   Deep link: #4 opens slide 4, #4.end opens it with every moment shown. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const lesson = JSON.parse(document.getElementById("lesson-data").textContent);
+  const memory = L.memory(`lesson:${lesson.id}`);
+  const predicts = {};
+  for (const slide of lesson.slides) for (const block of slide.blocks) if (block.t === "predict") predicts[block.id] = block;
+  const ctx = { lesson, memory, predicts };
+  L.glossary = lesson.terms || {};
+
+  const $ = (id) => document.getElementById(id);
+  const stage = $("stage"), line = $("line"), keyLine = $("key"), prev = $("prev"), next = $("next"), count = $("count"), notes = $("notes"), notesList = $("notes-list");
+  const beats = lesson.beats.map((beat) => h("button.beat", { text: beat.label, attr: { type: "button" }, on: { click: () => go(lesson.slides.findIndex((slide) => slide.beat === beat.id), 0) } }));
+  $("beats").append(...beats);
+  $("title").textContent = `${lesson.course} · ${lesson.title}`;
+
+  let at = { s: 0, m: 0 }, current = null, nudged = false;
+
+  function build(index) {
+    const slide = lesson.slides[index];
+    const items = slide.blocks.map((block) => { const made = L.blocks[block.t](block, ctx); return { block, made, wrap: h("div.block.is-waiting", null, made.el), seen: false }; });
+    const moments = slide.bridge ? [{ b: -1, k: 0, say: slide.bridge }] : [];
+    items.forEach((item, b) => {
+      moments.push({ b, k: 0, say: item.block.say, key: item.block.key });
+      (item.made.steps || []).forEach((step, i) => moments.push({ b, k: i + 1, say: step.say ?? step, key: step.key }));
+    });
+    const hook = index === 0;
+    const meta = hook ? h("div.hook__meta", null,
+      h("div", null, h("h3", { text: "需要先会" }), h("ul", null, lesson.needs.map((item) => h("li", { text: item })))),
+      h("div", null, h("h3", { text: `学完你能（约 ${lesson.minutes} 分钟）` }), h("ul", null, lesson.after.map((item) => h("li", { text: item }))))) : null;
+    const el = h(`section.slide${hook ? ".slide--hook" : ""}${slide.layout === "split" ? ".slide--split" : ""}`, null,
+      h("h1.slide__title", { text: slide.title }), h("div.slide__blocks", null, items.map((item) => item.wrap)), meta);
+    return { index, items, moments, el };
+  }
+
+  function remember(key) {
+    const keys = memory.get("keys", []);
+    if (keys.includes(key)) return;
+    memory.set("keys", keys.concat(key));
+    notes.classList.remove("is-flash");
+    void notes.offsetWidth;
+    notes.classList.add("is-flash");
+  }
+
+  function paintNotes() {
+    const keys = memory.get("keys", []);
+    notes.textContent = `要点 ${keys.length}`;
+    notesList.replaceChildren(...(keys.length ? keys.map((key) => h("li", { text: key })) : [h("li.is-empty", { text: "讲到关键结论时，会自动记在这里。" })]));
+  }
+
+  function show(spoken) {
+    L.hideTip();
+    if (!current || current.index !== at.s) { current = build(at.s); stage.replaceChildren(current.el); stage.scrollTop = 0; }
+    at.m = Math.min(at.m, current.moments.length - 1);
+    const now = current.moments[at.m];
+    current.items.forEach((item, b) => {
+      const reached = current.moments.filter((moment, i) => i <= at.m && moment.b === b);
+      item.wrap.classList.toggle("is-waiting", reached.length === 0);
+      if (!reached.length) { item.seen = false; return; }
+      item.made.set?.(reached.at(-1).k);
+      if (!item.seen) { item.seen = true; item.made.refresh?.(); }
+    });
+    line.replaceChildren(h("span", null, L.md(spoken || now.say)));
+    line.classList.remove("is-fresh");
+    void line.offsetWidth;
+    line.classList.add("is-fresh");
+    keyLine.hidden = !now.key || Boolean(spoken);
+    if (now.key && !spoken) { keyLine.textContent = `已记入要点：${now.key}`; remember(now.key); }
+    paintNotes();
+    // keep what just changed in view: the block says which part of it that is, or it is the block itself
+    const changed = current.items[now.b];
+    if (at.m > 0 && changed) (changed.made.spot?.() || changed.wrap).scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const beat = lesson.beats.findIndex((item) => item.id === lesson.slides[at.s].beat);
+    beats.forEach((el, i) => { el.classList.toggle("is-now", i === beat); el.classList.toggle("is-done", i < beat); el.setAttribute("aria-current", i === beat ? "step" : "false"); });
+    count.textContent = `${at.s + 1} / ${lesson.slides.length}`;
+    const last = at.s === lesson.slides.length - 1 && at.m === current.moments.length - 1;
+    prev.disabled = at.s === 0 && at.m === 0;
+    next.disabled = last;
+    memory.set("at", at);
+  }
+
+  function go(s, m) { if (s < 0) return; at = { s, m }; nudged = false; show(); }
+
+  function forward() {
+    const item = current.items[current.moments[at.m].b];
+    if (item?.made.ready && !item.made.ready()) {
+      if (!nudged) { nudged = true; return show(item.made.waitSay || "先选一个再往下。猜错没关系；实在想跳过，再按一次。"); }
+      item.made.pass?.(); // the learner chose to skip: the block shows what it was holding back
+    }
+    if (at.m < current.moments.length - 1) return go(at.s, at.m + 1);
+    if (at.s < lesson.slides.length - 1) go(at.s + 1, 0);
+  }
+
+  function back() {
+    if (at.m > 0) return go(at.s, at.m - 1);
+    if (at.s > 0) go(at.s - 1, Number.MAX_SAFE_INTEGER);
+  }
+
+  next.addEventListener("click", forward);
+  prev.addEventListener("click", back);
+  document.addEventListener("keydown", (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const typing = event.target.closest?.("button, input, [role=button], .code__scroll");
+    if (event.key === "ArrowRight" || event.key === "PageDown" || (event.key === " " && !typing)) { event.preventDefault(); forward(); }
+    else if (event.key === "ArrowLeft" || event.key === "PageUp") { event.preventDefault(); back(); }
+  });
+
+  notes.addEventListener("click", (event) => { event.stopPropagation(); notesList.hidden = !notesList.hidden; });
+  document.addEventListener("click", (event) => { if (!notesList.contains(event.target)) notesList.hidden = true; });
+
+  const root = document.documentElement, themeButton = $("theme");
+  const dark = () => (root.dataset.theme ? root.dataset.theme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const paintTheme = () => { themeButton.textContent = dark() ? "浅色" : "深色"; };
+  themeButton.addEventListener("click", () => { root.dataset.theme = dark() ? "light" : "dark"; try { localStorage.setItem("lesson-theme", root.dataset.theme); } catch { /* private window */ } paintTheme(); });
+  paintTheme();
+
+  const link = /^#(\d+)(\.end)?$/.exec(location.hash);
+  const saved = memory.get("at", { s: 0, m: 0 });
+  if (link) go(Math.min(Number(link[1]), lesson.slides.length) - 1, link[2] ? Number.MAX_SAFE_INTEGER : 0);
+  else go(Math.min(saved.s, lesson.slides.length - 1), saved.m);
+})();
+
+</script>
+</body>
+</html>

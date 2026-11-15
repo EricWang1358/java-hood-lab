@@ -1,0 +1,594 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "index-condition-pushdown",
+  "course": "MySQL 索引、事务与锁",
+  "title": "索引下推（ICP）怎么把回表次数从 5000 次砍到 500 次？",
+  "lead": "联合索引 `(name, age)` 查 `WHERE name LIKE '张%' AND age = 20`。明明 `age` 也在索引里，为什么 5.6 之前还要傻傻回表 5000 次？",
+  "minutes": 40,
+  "needs": [
+    "知道回表和 EXPLAIN Extra"
+  ],
+  "after": [
+    "讲清 MySQL 5.6 之前与开启 ICP（Using index condition）后的执行路径区别",
+    "看懂索引下推把过滤条件从 Server 层下推到 InnoDB 存储引擎层",
+    "区分 `Using index`（覆盖索引）与 `Using index condition`（索引下推）"
+  ],
+  "terms": {
+    "索引下推（ICP, Index Condition Pushdown）": "MySQL 5.6 引入的优化：在二级索引遍历过程中，就顺手把索引里包含的剩余条件（如 `age=20`）先过滤掉，不满足的**直接不回表**！",
+    "Using index condition": "`EXPLAIN` 的 `Extra` 列出现它，代表成功触发了索引下推（ICP）。",
+    "Server 层 vs 存储引擎层": "没有 ICP 时由存储引擎回表捞整行给 Server 层过滤；有 ICP 时由存储引擎在索引树内部先过滤完再回表。"
+  },
+  "experiments": {
+    "icp": {
+      "runner": "java",
+      "home": "lab.icp",
+      "variants": [
+        {
+          "id": "NoIcpFilter",
+          "label": "关闭 ICP（先全回表再过滤）",
+          "note": "5000 个姓张的全回表查聚簇索引，Server 层再把非 20 岁的扔掉！"
+        },
+        {
+          "id": "WithIcp",
+          "label": "开启索引下推 (Using index condition)",
+          "note": "在索引树里顺手检查 age==20，只对命中的 500 人回表，回表暴降 90%！"
+        },
+        {
+          "id": "ExactComposite",
+          "label": "改为等值前缀（name='张三' AND age=20）",
+          "note": "直接精确定位，回表进一步减少。"
+        },
+        {
+          "id": "CoveringIcp",
+          "label": "覆盖索引（连这 500 次都不用回表）",
+          "note": "所需列全在索引里，回表次数 = 0！"
+        }
+      ],
+      "knob": {
+        "label": "姓张总人数",
+        "values": [
+          "500",
+          "2000",
+          "5000",
+          "10000"
+        ],
+        "default": "5000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "backToTable",
+        "expectKey": "expected",
+        "label": "回表次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "索引下推（ICP）怎么把回表次数从 5000 次砍到 500 次？",
+      "bridge": "今天不背八股定义，先看一个真实工程场景，跑出数据后再拆底层机制。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "表上有联合索引 `(name, age)`，SQL 写的是 `SELECT * FROM user WHERE name LIKE '张%' AND age = 20`。因为 `name` 用了范围 `LIKE '张%'`，`age` 没法定位。在 MySQL 5.6 之前，引擎会把**所有 5000 个姓张的全回表**捞出来再筛选 `age=20`——直到 **索引下推（ICP）** 出现！",
+          "say": "看清 ICP 是怎么把原本白跑的 4500 趟回表直接省掉的。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，热个身",
+      "bridge": "这节课会用到三个基础概念，咱们先花一分钟确认一下。忘了也没关系，选完当场给你补齐。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题，每题点一个答案就行。选完马上告诉你对不对，下面那句话就是这节课要用到的前置底座。",
+          "items": [
+            {
+              "have": "索引树里有什么",
+              "q": "联合索引 `(name, age)` 的叶子节点里，除了 `name` 和主键 `id`，还存了 `age` 吗？",
+              "options": [
+                "没存",
+                "存了！age 就在联合索引叶子节点上",
+                "只存了主键"
+              ],
+              "answer": 1,
+              "why": "正因为 `age` 就躺在二级索引叶子节点里，根本不用回表就能顺手看一眼 `age` 是不是 20！"
+            },
+            {
+              "have": "范围断链后",
+              "q": "`name LIKE '张%'` 已经走完范围定位，为什么 `age=20` 不能直接用 B+ 树定位？",
+              "options": [
+                "因为张姓下面有张三、张四，不同名字下 age 整体无序",
+                "因为 age 是数字",
+                "MySQL 不支持"
+              ],
+              "answer": 0,
+              "why": "`age` 不能缩小树扫描范围，但完全可以在扫到每个叶子节点时顺手比对过滤！"
+            },
+            {
+              "have": "EXPLAIN 标识",
+              "q": "EXPLAIN Extra 列出现 `Using index condition` 代表？",
+              "options": [
+                "覆盖索引",
+                "开启了索引下推（ICP）",
+                "索引失效"
+              ],
+              "answer": 1,
+              "why": "注意区分：`Using index` 是覆盖索引，`Using index condition` 是索引下推。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个生活场景",
+      "bridge": "热身完了。看代码之前，先在脑子里放一个画面。后面所有的数据库和 Java 机制，都可以往这个画面上套。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "旧流程 (先搬5000箱再拆)",
+              "ICP (看清标签再搬500箱)"
+            ],
+            "shared": {
+              "name": "5000 个姓张快递",
+              "value": "只有 500 个 20 岁"
+            }
+          },
+          "story": "快递站有 5000 个收件人姓张的快递，你只要「20 岁的」。快递单上本来就写着年龄：**没有 ICP** 时，搬运工傻傻地把 5000 个大箱子全从仓库搬到大厅（5000 次回表），再让前台把不是 20 岁的 4500 箱退回去；**有了 ICP**，搬运工直接在货架前看一眼快递单上的年龄，不是 20 岁的根本不搬（只搬 500 箱）！",
+          "say": "「在仓库索引架前先看一眼条件再决定搬不搬」，这就是索引下推。",
+          "map": [
+            {
+              "scene": "5000 个姓张的人",
+              "on": "shared",
+              "tag": "zhangCount",
+              "code": "`int[] ages = new int[zhangCount];`",
+              "say": "通过 `name LIKE '张%'` 扫到的 5000 个二级索引项。"
+            },
+            {
+              "scene": "先全部搬出来再检查 age",
+              "on": "actors",
+              "tag": "NoIcpFilter",
+              "code": "`backToTable++; if (ages[i] == 20) matched++;`",
+              "say": "先回表 5000 次，然后才判断 `ages[i] == 20`，白白浪费 4500 次回表！"
+            },
+            {
+              "scene": "先看索引里的 age 再回表",
+              "on": "action",
+              "tag": "WithIcp",
+              "code": "`WithIcp`",
+              "say": "先判断 `ages[i] == 20`，成立才 `backToTable++`，回表骤降 90%！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "5000 个姓张的里只有 500 个 20 岁，没 ICP 要多回表多少次？",
+      "bridge": "直观感觉是一回事，高并发/异常真的撞上来时，结果往往完全相反。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "5000 个姓张的只有 1/10（500 人）满足 `age = 20`。关闭 ICP 的 `NoIcpFilter` 回表了多少次？",
+          "say": "看 `NoIcpFilter` 循环里那两行先后顺序。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "把场景写成程序：NoIcpFilter",
+      "bridge": "我们用纯 JDK 把这个底层过程真实模拟出来。重点看标出来的几行，不认识的词点一下虚线就有大白话解释。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "icp.NoIcpFilter",
+          "say": "注意 `NoIcpFilter` 把 `backToTable++;` 写在了 `if (ages[i] == 20)` 的前面——不管年龄合不合格，先回表再说！",
+          "walk": [
+            {
+              "focus": [
+                "backToTable++;"
+              ],
+              "say": "无 ICP 时：先无条件回表查整行，再交给 Server 层判断。"
+            },
+            {
+              "focus": [
+                "if (ages[i] == 20) matched++;"
+              ],
+              "say": "Server 层发现年龄不是 20，白白浪费了 90% 的回表 I/O！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一个答案",
+      "bridge": "代码看完了。先别急着看结果，按你刚才对场景的理解，先猜一猜程序跑完会打印出什么。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "5000 个姓张的里只有 500 人满足 `age = 20`，没有索引下推（`NoIcpFilter`）会回表多少次？",
+          "options": [
+            "500 次",
+            "5,000 次（全部先回表再丢弃 4500 条）",
+            "0 次"
+          ],
+          "answer": 1,
+          "say": "选一个你觉得最可能的，猜错完全没关系，猜过再看实测印象最深。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一次一次看真实运行结果",
+      "bridge": "你已经下注了。这组程序在本地 JDK 实测跑了多轮，现在把真实数据放出来核对。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "icp",
+          "show": [
+            "NoIcpFilter"
+          ],
+          "hand": true,
+          "focus": [
+            "backToTable++;"
+          ],
+          "say": "先点运行看看基准表现，留意指标和预期是不是对得上。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "say": "实测 `NoIcpFilter` 回表 `5000` 次，而开启 ICP 的 `WithIcp` 只回表 `500` 次，直接砍掉 90% 随机 I/O！",
+          "key": "索引下推（ICP）"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "出事的是哪一行？",
+      "bridge": "结果摆在眼前了。现在回到代码里，把直接导致这个现象的关键一行找出来。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "icp.NoIcpFilter",
+          "q": "回到 `NoIcpFilter`，点击**在检查 `ages[i] == 20` 之前就无脑触发回表**的那一行：",
+          "answer": [
+            "backToTable++;"
+          ],
+          "hint": "找在 `if (ages[i] == 20)` 之前自增 `backToTable` 的那一行。",
+          "found": "就是它！ICP 做的事就是把 `backToTable++` 放进 `if (ages[i] == 20)` 的括号里面去！",
+          "say": "直接在代码上点你怀疑的那一行，点错了会给你提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "拆开字节码 / 底层指令看一眼",
+      "bridge": "光看表面现象还不够，用 JDK 自带的 `javap -c -p` 看一眼机器到底执行了什么。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "icp.NoIcpFilter",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "看 `javap -c -p`：在字节码里，`iinc`（回表计数）竟发生在 `if_icmpne`（年龄比较）之前！把过滤下推到引擎层后，只有 `if` 命中才执行回表。",
+          "walk": [
+            {
+              "focus": [
+                "iinc"
+              ],
+              "label": "过滤前先回表",
+              "say": "每次循环都先付出回表代价。"
+            },
+            {
+              "focus": [
+                "if_icmpne"
+              ],
+              "label": "事后丢弃不满足行",
+              "say": "90% 的回表结果被直接扔掉。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "Server 层 vs InnoDB 引擎层：ICP 到底「下推」了什么？",
+      "bridge": "把两条执行流或两个阶段摊在时间轴上，每一步谁先谁后、哪里卡住，一眼看穿。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "SELECT * FROM user WHERE name LIKE '张%' AND age = 20; -- INDEX(name, age)",
+          "parts": {
+            "read": "引擎扫索引",
+            "calc": "过滤位置",
+            "write": "回表次数"
+          },
+          "lanes": [
+            "InnoDB 存储引擎层",
+            "MySQL Server 层"
+          ],
+          "shared": {
+            "name": "回表次数",
+            "start": "5000 -> 500"
+          },
+          "say": "看清楚条件是从哪一层「下推」到哪一层的。",
+          "steps": [
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "旧版：Server 层拿住 age=20 条件不放，让引擎把 5000 人全回表上来",
+              "say": "引擎只用 `name LIKE '张%'` 拿回表整行，累死累活回表 5000 次。"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "MySQL 5.6+：把 `age=20` 下推给 InnoDB 引擎在二级索引树里先判！",
+              "say": "既然 `age` 就在 `(name, age)` 索引里，引擎顺手就能检查！",
+              "ask": {
+                "q": "索引下推能减少「扫描二级索引树的次数」吗？",
+                "options": [
+                  "能减少",
+                  "不能！二级索引还是要扫 5000 个姓张的，ICP 减少的是「回表次数」！"
+                ],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "value": "500 次回表",
+              "text": "只有 age=20 的 500 行才回表，省掉 4500 次随机 I/O！",
+              "say": "精准记住：ICP 不减少索引扫描行数，它大幅减少的是**回表次数**！"
+            }
+          ],
+          "verdict": "ICP 把本该在 Server 层做的过滤==下推到 InnoDB 索引层==，提前拦截掉绝大部分无效回表。",
+          "verdictSay": "注意：只有二级索引才需要 ICP（因为聚簇索引本来就不用回表）；如果是覆盖索引（0 回表），也用不上 ICP。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "先猜：怎么改才能彻底修好？",
+      "bridge": "病根找到了。在看几种修法前，先判断一下哪种思路真正对症。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "关于索引下推（ICP）的核心作用，下面哪句话最准确？",
+          "options": [
+            "在二级索引遍历时顺手过滤索引内包含的剩余条件，大幅减少回表次数",
+            "让 LIKE '%张' 也能走索引",
+            "完全消除二级索引扫描"
+          ],
+          "answer": 0,
+          "say": "想清楚「为什么出事」，再选一个你认为能根治的方案。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测对比",
+      "bridge": "不争论，把四种写法放在同一个开关下实测，高下立判。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "icp",
+          "show": [
+            "NoIcpFilter",
+            "WithIcp",
+            "ExactComposite",
+            "CoveringIcp"
+          ],
+          "select": "WithIcp",
+          "say": "切到 `WithIcp`，回表次数直接从 5,000 暴降到 500（减少 90%）；如果改用覆盖索引 `CoveringIcp`，回表直接降到 0！"
+        },
+        {
+          "t": "reveal",
+          "of": "p2",
+          "say": "切到 `WithIcp` 后问题彻底清零，同时兼顾性能与正确性。"
+        },
+        {
+          "t": "try",
+          "say": "自己拨动上面的规模开关，对比错误数和耗时随规模的变化。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修好了，各自代价是多少？",
+      "bridge": "把四种方案在不同规模下的耗时和正确性画成折线图，工程选型靠数据说话。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "icp",
+          "say": "`NoIcpFilter` 随姓张人数飙到 10,000 次回表；`WithIcp` 压低了一个数量级；`CoveringIcp` 贴地为 0。",
+          "walk": [
+            {
+              "focus": "NoIcpFilter",
+              "say": "看 `关闭 ICP（先全回表再过滤）`：5000 个姓张的全回表查聚簇索引，Server 层再把非 20 岁的扔掉！"
+            },
+            {
+              "focus": "WithIcp",
+              "say": "看 `开启索引下推 (Using index condition)`：在索引树里顺手检查 age==20，只对命中的 500 人回表，回表暴降 90%！"
+            },
+            {
+              "focus": "ExactComposite",
+              "say": "看 `改为等值前缀（name='张三' AND age=20）`：直接精确定位，回表进一步减少。"
+            },
+            {
+              "focus": "CoveringIcp",
+              "say": "看 `覆盖索引（连这 500 次都不用回表）`：所需列全在索引里，回表次数 = 0！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上到底怎么选？",
+      "bridge": "没有银弹，只有适用边界。把每种方案的优点、代价和适用场景摆成一张表。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "MySQL 5.6+ 默认开启 ICP（`optimizer_switch='index_condition_pushdown=on'`），尽量使用联合索引就能自动享受这个红利。",
+          "options": [
+            {
+              "name": "关闭 ICP（全量回表）",
+              "solves": "无",
+              "cost": "5000 次全量回表",
+              "when": "MySQL 5.5 及以前老版本",
+              "say": "随机 I/O 极重。"
+            },
+            {
+              "name": "开启 ICP (Using index condition)",
+              "solves": "引擎层先滤掉无效行再回表",
+              "cost": "仅回表 500 次：{ms:icp.WithIcp} ms",
+              "when": "MySQL 5.6+ 默认开启，有范围/LIKE 的联合索引",
+              "say": "自动白嫖的 10 倍优化。"
+            },
+            {
+              "name": "覆盖索引 (Using index)",
+              "solves": "0 回表",
+              "cost": "0 回表：{ms:icp.CoveringIcp} ms",
+              "when": "不需要 SELECT * 时",
+              "say": "终极优化。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "两道巩固题：检验是否真懂",
+      "bridge": "学完立刻做两道高频面试陷阱题，看看能不能一眼识破。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "id": "q1",
+          "q": "`EXPLAIN` 结果中 `Extra` 列出现 `Using index condition`，说明什么？",
+          "options": [
+            {
+              "text": "触发了索引下推（ICP），在二级索引遍历阶段提前过滤了索引内的其他条件，减少了回表次数",
+              "ok": true,
+              "why": "完美定义！"
+            },
+            {
+              "text": "触发了覆盖索引，0 回表",
+              "ok": false,
+              "why": "覆盖索引是 `Using index`，没有 `condition` 字样。"
+            },
+            {
+              "text": "索引失效了",
+              "ok": false,
+              "why": "这是优化器生效的好信号。"
+            }
+          ],
+          "say": "第一题：选最精准的那一项。"
+        },
+        {
+          "t": "quiz",
+          "id": "q2",
+          "q": "下面哪种情况**无法**享受索引下推（ICP）的优化？",
+          "options": [
+            {
+              "text": "直接按主键聚簇索引查询（聚簇索引本来就不回表，整行都在叶子上）",
+              "ok": true,
+              "why": "ICP 的目的是减少二级索引的回表次数，主键查询没有回表一说。"
+            },
+            {
+              "text": "联合索引 (a, b) 执行 WHERE a > 10 AND b = 5",
+              "ok": false,
+              "why": "这正是 ICP 最经典的应用场景！"
+            },
+            {
+              "text": "联合索引 (name, age) 执行 WHERE name LIKE '张%' AND age = 20",
+              "ok": false,
+              "why": "这也是 ICP 最经典的场景！"
+            }
+          ],
+          "say": "第二题：换个问法考同一个底层原理。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把概念装进脑子：标准叫法与面试原题",
+      "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
+      "blocks": [
+        {
+          "t": "callout",
+          "tone": "note",
+          "title": "索引下推（ICP）（Index Condition Pushdown）",
+          "md": "将原本在 Server 层做的过滤条件==下推到 InnoDB 二级索引遍历阶段==，不符合条件的直接跳过，==大幅减少回表次数==。",
+          "say": "记住这一句核心定义，面试时先抛结论再展开。"
+        },
+        {
+          "t": "points",
+          "items": [
+            "什么是索引下推（ICP）？有什么作用？",
+            "Using index 和 Using index condition 有什么区别？"
+          ],
+          "say": "这几道都是真实一二面原题，下一页直接练习脱稿讲。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上课件，开口讲一遍",
+      "bridge": "看懂不等于讲得出来。对着计时器，按要点一口气讲顺。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚什么是索引下推（ICP），用 WHERE name LIKE '张%' AND age = 20 举例，并对比 Using index。",
+          "seconds": 90,
+          "points": [
+            "背景：联合索引 (name, age) 遇 name LIKE '张%' 后，age 不能定位但确实存在二级索引里",
+            "无 ICP：先把所有姓张的全回表，再由 Server 层过滤 age=20",
+            "有 ICP（Using index condition）：下推到引擎层在索引内顺手判 age=20，不满足直接不回表，大幅减少回表 I/O；而 Using index 是覆盖索引 0 回表"
+          ],
+          "model": "索引下推（ICP）是 MySQL 5.6 引入的优化，EXPLAIN 里显示为 Using index condition。比如在联合索引 (name, age) 上执行 WHERE name LIKE '张%' AND age = 20，因为 name 用了范围匹配，age 无法用于定位，但 age 的值确实存放在二级索引叶子节点里。开启 ICP 后，MySQL 会把 age=20 这个过滤条件从 Server 层下推到 InnoDB 引擎层，在遍历二级索引时顺手过滤掉不符合 age=20 的记录，只对命中的行进行回表，从而大幅减少回表随机 I/O。它和 Using index（覆盖索引，完全不回表）不同，ICP 依然需要回表，只是减少了回表次数。",
+          "say": "先自己组织语言讲一遍，再点开参考答案对照漏了哪个得分点。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张复习卡片",
+      "bridge": "最后留三张一问一答卡片，考前扫一眼就能全部唤醒。",
+      "blocks": [
+        {
+          "t": "cards",
+          "cards": [
+            {
+              "q": "索引下推在 EXPLAIN Extra 显示什么？",
+              "a": "Using index condition。"
+            },
+            {
+              "q": "索引下推减少的是索引扫描行数还是回表次数？",
+              "a": "减少的是回表次数（二级索引本身还是要扫）。"
+            },
+            {
+              "q": "MySQL 哪个版本引入了索引下推？",
+              "a": "MySQL 5.6。"
+            }
+          ],
+          "say": "这三张卡片就是本课的最小精华，全部通关，进入下一课！"
+        }
+      ]
+    }
+  ]
+}

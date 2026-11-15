@@ -1,0 +1,635 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "threadsafe-lru",
+  "course": "模块 8 · 算法与 SQL 手撕",
+  "title": "手写线程安全 LRU（接第 7 课）：为什么 readLock 照样崩，分段锁怎么提速",
+  "lead": "接回第 7 课的坑：按访问排序的 LinkedHashMap 连 get() 都在改双向链表；手写 HashMap + 双向链表时，单全局锁和 16 分段锁在 8 线程下差多少？",
+  "minutes": 45,
+  "needs": [
+    "学过第 7 课 LinkedHashMap 的坑",
+    "知道 HashMap 和双向链表的基本结构"
+  ],
+  "after": [
+    "2 分钟内手写出带 dummyHead/dummyTail 哨兵的 O(1) LRU",
+    "讲清为什么 get() 不能放在 ReentrantReadWriteLock 的 readLock 里",
+    "用实测耗时对比单全局锁 vs 分段锁的并发扩展性"
+  ],
+  "terms": {
+    "LRU": "Least Recently Used（最近最少使用）：容量满时淘汰最久没被访问过的键。",
+    "dummyHead / dummyTail": "双向链表两端的假哨兵节点，插入和删除时永远不用判 null。",
+    "moveToHead": "命中缓存时把节点从原位置摘下并插到链表头部，O(1) 完成。",
+    "分段锁": "把缓存按 key 哈希拆成 16 个分片，每个分片一把独立锁，降低锁竞争。"
+  },
+  "experiments": {
+    "tslru": {
+      "runner": "java",
+      "home": "lab.tslru",
+      "variants": [
+        {
+          "id": "UnsafeAccessLru",
+          "label": "裸 LinkedHashMap",
+          "note": "无锁并发 get/put，直接抛出异常或破坏链表结构。"
+        },
+        {
+          "id": "ReadLockBugLru",
+          "label": "读写锁误用版",
+          "note": "get 用 readLock、put 用 writeLock——get 会改链表照样撞坏！"
+        },
+        {
+          "id": "SyncNodeLru",
+          "label": "手写双向链表 + synchronized",
+          "note": "标准面试手撕版：100% 正确，但高并发全挤在一把锁上。"
+        },
+        {
+          "id": "SegmentedLru",
+          "label": "16 分段锁手写 LRU",
+          "note": "拆成 16 个分片各管各的锁，线程越多优势越大。"
+        }
+      ],
+      "knob": {
+        "label": "并发线程数",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "ok",
+        "expectKey": "expected",
+        "label": "运行无异常且未超容 (1=正常)"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "手写线程安全 LRU（接第 7 课）：为什么 readLock 照样崩，分段锁怎么提速",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "接回第 7 课的坑：按访问排序的 LinkedHashMap 连 get() 都在改双向链表；手写 HashMap + 双向链表时，单全局锁和 16 分段锁在 8 线程下差多少？",
+          "say": "今天这节课核心只搞透一件事：手写线程安全 LRU（接第 7 课）：为什么 readLock 照样崩，分段锁怎么提速"
+        },
+        {
+          "t": "text",
+          "md": "不死背结论。先用直觉场景建模，再看代码和 `javap` 字节码，最后在你的机器上跑出 20 次实测对比。",
+          "say": "按看现象、拆字节码、比代价、开口讲四步走完。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，3 道诊断热身",
+      "bridge": "先花一分钟自测三个前置基础点，看看哪一块容易含糊。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题直接点选，选完立刻出解析。",
+          "items": [
+            {
+              "have": "LinkedHashMap accessOrder",
+              "q": "`new LinkedHashMap<>(cap, 0.75f, true)` 中第三个参数 `true` 表示什么？",
+              "options": [
+                "按插入顺序排序",
+                "按访问顺序排序（每次 `get` 也会把节点移到链表尾）",
+                "开启线程安全"
+              ],
+              "answer": 1,
+              "why": "只有设成 `true`，`get` 命中时才会把该节点挪到最近访问端，从而实现 LRU。"
+            },
+            {
+              "have": "为什么 get 也会并发冲突",
+              "q": "线程 A 在 `get(k)`、线程 B 在 `put(k2, v2)`，为什么开启 `accessOrder=true` 的 `LinkedHashMap` 会抛出 `ConcurrentModificationException` 或破坏链表？",
+              "options": [
+                "因为 `get` 内部也会修改双向链表的 `before/after` 指针",
+                "因为 `get` 会触发扩容",
+                "因为 `Integer` 不能做 key"
+              ],
+              "answer": 0,
+              "why": "普通 HashMap 读不改结构，但 LRU 的 `get` 必须重连双向链表，读写混合必炸。"
+            },
+            {
+              "have": "O(1) LRU 结构",
+              "q": "手写一个时间复杂度 O(1) 的 LRU 缓存，需要哪两个数据结构配合？",
+              "options": [
+                "数组 + 红黑树",
+                "HashMap（O(1) 定位节点） + 双向链表（O(1) 删节点与头插）",
+                "栈 + 队列"
+              ],
+              "answer": 1,
+              "why": "单链表删除指定节点需要 O(n) 找前驱，只有双向链表配合虚拟 `head/tail` 哨兵才能 O(1) 摘除并头插。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先在脑子里放一个场景",
+      "bridge": "把算法复杂度和数据结构对应到生活画面，后面所有代码都能往上套。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "读请求线程 A",
+              "读请求线程 B"
+            ],
+            "shared": {
+              "name": "LRU 双向链表",
+              "value": "get 也要把节点挪到表头"
+            }
+          },
+          "story": "第 7 课见过：开启 LRU 后，连「只看一眼」的 `get()` 都要把那本书抽出来插到书架最前面。如果给 `get()` 放行共享读锁，两个读线程同时抽书插书，书架直接散架。",
+          "say": "先记住这个对照画面，右侧每一条都能一一映射到真实代码。",
+          "map": [
+            {
+              "scene": "以为只是读，放行多个读线程",
+              "on": "actors",
+              "tag": "ReadLockBugLru",
+              "code": "`rw.readLock().lock(); lru.get(k);`",
+              "say": "accessOrder=true 的 get 是结构性写操作，共享读锁挡不住并发改指针。"
+            },
+            {
+              "scene": "两头钉死假书挡，自己写链表",
+              "on": "shared",
+              "tag": "dummyHead / dummyTail",
+              "code": "`head.next = tail; tail.prev = head;`",
+              "say": "手写双向链表再也不用担心头尾为空的 NullPointerException。"
+            },
+            {
+              "scene": "1 个大书架拆成 16 个小柜子",
+              "on": "action",
+              "tag": "16 分段锁",
+              "code": "`Shard s = shards[k & 15];`",
+              "say": "不同 key 落到不同分片，互不阻塞。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "核心矛盾：为什么直觉写法会崩？",
+      "bridge": "小数据看不出毛病，一旦把规模或并发拉上来，差距立刻暴露。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "本节实验对比 4 种写法：**裸 LinkedHashMap、读写锁误用版、手写双向链表 + synchronized、16 分段锁手写 LRU**。",
+          "say": "把 裸 LinkedHashMap、读写锁误用版、手写双向链表 + synchronized、16 分段锁手写 LRU 放到同一套基准里实测 20 次，看谁快、谁慢、谁直接报错。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看直觉/问题写法：`UnsafeAccessLru`",
+      "bridge": "先看最容易想到的基线写法，记住关键三处。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "tslru.UnsafeAccessLru",
+          "say": "这是 `UnsafeAccessLru` 的完整可运行代码，重点看标亮的三处。",
+          "walk": [
+            {
+              "focus": [
+                "new LinkedHashMap<>(128, 0.75f, true)"
+              ],
+              "say": "开启 `accessOrder = true`，看似几行写完 LRU。",
+              "key": "accessOrder=true 让 get 也写链表"
+            },
+            {
+              "focus": [
+                "protected boolean removeEldestEntry"
+              ],
+              "say": "超过容量时自动淘汰链表头最久未用的节点。"
+            },
+            {
+              "focus": [
+                "else lru.get(i & 127);"
+              ],
+              "say": "多线程下连 `get` 都在改双向链表指针，直接抛出 `ConcurrentModificationException` 或把链表改环。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：实测结果会怎样？",
+      "bridge": "动手跑之前先押一个答案，印象会深一倍。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "result",
+          "q": "4 线程并发压测 `ReadLockBugLru`（get 加 readLock，put 加 writeLock），结果会安全吗？",
+          "options": [
+            "安全，因为写操作加了 writeLock",
+            "不安全，get 也会并发修改双向链表导致异常或坏链",
+            "只是稍微慢一点"
+          ],
+          "answer": 1,
+          "say": "凭直觉选一个最可能的结论。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一次一次放出 `UnsafeAccessLru` 的 20 次实测",
+      "bridge": "以下结果是在当前 JDK 17 环境真实跑了 20 次并保存的记录。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "tslru",
+          "show": [
+            "UnsafeAccessLru"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "protected boolean removeEldestEntry"
+          ],
+          "say": "逐次点击放出运行结果，观察结果是否正确以及单次耗时。"
+        },
+        {
+          "t": "reveal",
+          "of": "result",
+          "say": "对照你刚才的预测，看直觉写法在真实规模下发生了什么。",
+          "key": "无锁并发 get/put，直接抛出异常或破坏链表结构。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拉大挡位，对比最优解",
+      "bridge": "把 `UnsafeAccessLru` 和 `SegmentedLru` 放在一起，切换上方挡位开关看走势。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "tslru",
+          "show": [
+            "UnsafeAccessLru",
+            "SegmentedLru"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换上方 `并发线程数` 挡位，感受两种写法随规模拉大后的差距。"
+        },
+        {
+          "t": "try",
+          "key": "切换不同 并发线程数 挡位",
+          "say": "从小挡位切到最大挡位，观察实心点（正确）与空心点（失败/异常）的变化。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "在代码里点出关键一笔",
+      "bridge": "找出真正决定成败或拉开数量级差距的那一行。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "tslru.SyncNodeLru",
+          "q": "在手写 LRU 里，`addFirst(Node n)` 改了 4 条指针引用。为什么要先连 `n.next` 和 `n.prev`，最后才改 `head.next`？",
+          "hint": "如果先改 `head.next = n`，原来的第一个节点去哪找？",
+          "answer": [
+            "n.next = head.next;"
+          ],
+          "found": "先让新节点 `n` 牵住 `head` 和原来的 `head.next`，再让两侧节点指向 `n`，就不会丢失原来的首节点引用。",
+          "say": "在左侧代码里点击你认为最关键的那一行。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "再看进阶/修复写法：`SegmentedLru`",
+      "bridge": "把优化或修复后的代码也逐行拆开，看它改了哪三处。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "tslru.SegmentedLru",
+          "say": "对照刚才的基线版本，看 `SegmentedLru` 是怎么解决问题的。",
+          "walk": [
+            {
+              "focus": [
+                "final ReentrantLock lock = new ReentrantLock();"
+              ],
+              "say": "每个分片独立一把 `ReentrantLock`，把锁竞争分散到多个桶段。",
+              "key": "分段锁把单把大锁拆小"
+            },
+            {
+              "focus": [
+                "lock.lock();"
+              ],
+              "say": "分片内部加锁完成 `remove(n)` 与 `addFirst(n)` 双向链表重连。"
+            },
+            {
+              "focus": [
+                "lock.unlock();"
+              ],
+              "say": "在 `finally` 里释放锁，既零异常又大幅提升高并发吞吐。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：看真实 `javap -c -p` 字节码",
+      "bridge": "不靠猜，直接看 javac 编译出来的底层 JVM 指令。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "tslru.UnsafeAccessLru",
+          "within": "lambda$main$0",
+          "from": "Map.put",
+          "to": "Map.get",
+          "say": "这是真实 `javap -c -p` 反编译出的热点指令片段。",
+          "walk": [
+            {
+              "focus": [
+                "Map.put"
+              ],
+              "label": "写入并淘汰",
+              "say": "每 8 次操作有 1 次 `put`，可能触发 `removeEldestEntry` 摘除表头。",
+              "key": "写操作修改哈希表与链表"
+            },
+            {
+              "focus": [
+                "Map.get"
+              ],
+              "label": "读也会改链表",
+              "say": "虽然字节码只是 `Map.get`，但 `accessOrder=true` 会在内部 `afterNodeAccess` 重连双向链表，多线程并发读直接冲突。",
+              "key": "LRU 的读实质上是写"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "4 种写法的全量耗时折线",
+      "bridge": "把 裸 LinkedHashMap、读写锁误用版、手写双向链表 + synchronized、16 分段锁手写 LRU 放到同一张折线图上横向对比。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "tslru",
+          "say": "实心点代表正确通过，空心点代表报错或结果不对；注意纵轴耗时变化。",
+          "walk": [
+            {
+              "focus": "UnsafeAccessLru",
+              "say": "裸 LinkedHashMap：无锁并发 get/put，直接抛出异常或破坏链表结构。"
+            },
+            {
+              "focus": "ReadLockBugLru",
+              "say": "读写锁误用版：get 用 readLock、put 用 writeLock——get 会改链表照样撞坏！"
+            },
+            {
+              "focus": "SyncNodeLru",
+              "say": "手写双向链表 + synchronized：标准面试手撕版：100% 正确，但高并发全挤在一把锁上。"
+            },
+            {
+              "focus": "SegmentedLru",
+              "say": "16 分段锁手写 LRU：拆成 16 个分片各管各的锁，线程越多优势越大。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "把方案摆在一起比代价",
+      "bridge": "括号里的毫秒数是本机默认挡位的真实实测耗时。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "面试被追问方案选型时，直接按适用场景、时间/空间代价来答。",
+          "options": [
+            {
+              "name": "synchronized + 手写双向链表",
+              "solves": "面试手撕线程安全 LRU",
+              "cost": "单把锁串行，多线程排队（手写链表+锁实测 {ms:tslru.SyncNodeLru} ms）",
+              "when": "一二面要求 15 分钟内手撕并发 LRU",
+              "say": "synchronized + 手写双向链表：面试手撕线程安全 LRU，代价是单把锁串行，多线程排队（手写链表+锁实测 {ms:tslru.SyncNodeLru} ms）。"
+            },
+            {
+              "name": "16 分段锁 LRU（ReentrantLock）",
+              "solves": "高并发读多写少缓存",
+              "cost": "锁粒度拆小，无异常且高并发最快（分段锁实测 {ms:tslru.SegmentedLru} ms）",
+              "when": "二面追问「单把锁太慢怎么优化」",
+              "say": "16 分段锁 LRU（ReentrantLock）：高并发读多写少缓存，代价是锁粒度拆小，无异常且高并发最快（分段锁实测 {ms:tslru.SegmentedLru} ms）。"
+            },
+            {
+              "name": "Collections.synchronizedMap 包装 LinkedHashMap",
+              "solves": "快速原型",
+              "cost": "同样全表一把锁，且迭代器仍需手动加锁",
+              "when": "不适合要求手写底层节点的面试",
+              "say": "Collections.synchronizedMap 包装 LinkedHashMap：快速原型，代价是同样全表一把锁，且迭代器仍需手动加锁。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "决策树 + 4 道真实面试场景",
+      "layout": "split",
+      "bridge": "顺着左侧决策树，给右侧 4 道高频变体题选出最优解法。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "面试官让你手写线程安全 LRU，怎么递进回答？",
+          "branches": [
+            {
+              "when": "先写单线程 O(1) 主体",
+              "pick": "HashMap + 双向链表（带 dummyHead/dummyTail）",
+              "eg": "get/put 全 O(1)"
+            },
+            {
+              "when": "追问线程安全（千万别答 readLock！）",
+              "pick": "get 和 put 必须互斥（synchronized 或 ReentrantLock）",
+              "eg": "解释 get 也会改链表"
+            },
+            {
+              "when": "再追问高并发优化",
+              "pick": "分段锁分片（如 16 Shard）或读写异步批挪动",
+              "eg": "类似 Caffeine 缓冲队列思想"
+            }
+          ],
+          "say": "看到题面关键词就顺着对应分支往下走。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "单锁手写 LRU",
+            "分段锁 LRU",
+            "LFU（双哈希 + 频次链表）"
+          ],
+          "items": [
+            {
+              "text": "面试官问：能不能用 ReentrantReadWriteLock 给 LRU 的 get 加读锁提升性能？",
+              "answer": 0,
+              "why": "不能！LRU 的 get 会把命中节点移到链表头，本质是写操作，必须与别的 get 互斥（除非改成分段锁或 Caffeine 读缓冲）。"
+            },
+            {
+              "text": "单机缓存每秒 50 万次并发读，单把 synchronized 锁成了瓶颈，怎么改？",
+              "answer": 1,
+              "why": "按 key 哈希拆成 16/64 个分段 LRU，各分片独立加锁，近似全局 LRU 换取数倍吞吐。"
+            },
+            {
+              "text": "除了淘汰最久未用，还要求优先淘汰访问次数最少的 key。",
+              "answer": 2,
+              "why": "升级成 LFU：维护 key->Node 和 freq->双向链表 两张表及 minFreq。"
+            },
+            {
+              "text": "为什么不能直接用 `Collections.synchronizedMap(new LinkedHashMap<>())` 当高并发本地缓存？",
+              "answer": 1,
+              "why": "所有线程抢同一把对象锁导致吞吐急剧下降；生产级本地缓存（如 Caffeine）会用分段/读缓冲+写锁机制。"
+            }
+          ],
+          "say": "逐题点选工具，核对解析里的关键原因。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记下面试官常问的标准叫法",
+      "bridge": "把刚才的实验现象还原成一二面高频术语。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "手写双向链表 & 分段锁并发 LRU",
+          "alias": "专题 08 · 高频 9 题核心模型",
+          "oneLine": "手写 LRU 必用 ==HashMap + dummyHead/dummyTail 双向链表==；并发下 `get` 也是写操作，==绝不能加 readLock==，高并发靠分段锁或读缓冲。",
+          "asked": [
+            "手写一个 O(1) 的 LRU 缓存",
+            "怎么把它改造成线程安全的？能用读写锁吗？",
+            "单锁性能瓶颈怎么优化？"
+          ],
+          "say": "记住这句总结和下面三个高频追问。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "检查一：核心原理与复杂度",
+      "bridge": "核对第一道易混坑点。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "手写 LRU 淘汰最久未使用的元素时，需要从 Map 和链表两处同时删除。应该删哪个位置的节点？",
+          "options": [
+            {
+              "text": "head.next",
+              "ok": false,
+              "why": "head.next 是刚访问过的最新节点。"
+            },
+            {
+              "text": "tail.prev",
+              "ok": true,
+              "why": "每次访问都把节点插到 head.next，最久没用过的会被一路挤到 tail.prev。"
+            },
+            {
+              "text": "随机删一个",
+              "ok": false,
+              "why": "那是 Random 淘汰策略，不是 LRU。"
+            }
+          ],
+          "say": "选出唯一正确的结论。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "检查二：面试边界陷阱",
+      "bridge": "再过一道二面最爱追问的边界细节题。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "手写双向链表实现 LRU 时，为什么通常在链表两端各放一个哑节点 `dummyHead` 和 `dummyTail`？",
+          "options": [
+            {
+              "text": "消除插入和删除节点时判断 `head == null` 或 `tail == null` 的大量边界分支",
+              "ok": true,
+              "why": "有了头尾哨兵，任何节点的 `prev` 和 `next` 永远非空，摘除和头插只需 4 行统一代码。"
+            },
+            {
+              "text": "为了节省 2 个节点的内存",
+              "ok": false,
+              "why": "反而多用了 2 个对象，换的是代码零 bug。"
+            },
+            {
+              "text": "Java 要求链表必须有哨兵",
+              "ok": false,
+              "why": "语法不要求，是工程防错最佳实践。"
+            }
+          ],
+          "say": "仔细看边界条件，选出正确答案。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，2 分钟开口讲一遍",
+      "bridge": "看懂不算会，对着屏幕脱稿讲顺才算长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清手写 LRU 的数据结构、并发下为什么不能用读写锁，以及分段锁怎么提升吞吐。",
+          "points": [
+            "HashMap 负责 O(1) 查找节点，双向链表负责 O(1) 挪动和删尾",
+            "哨兵 head/tail 消灭空指针边界",
+            "get 也会修改链表指针，加 readLock 会并发撞坏，必须互斥",
+            "高并发靠分段锁（如 16 分片）把竞争打散"
+          ],
+          "model": "O(1) LRU 的标准结构是 HashMap 加双向链表，Map 存 key 到节点的映射，链表两端放 dummyHead 和 dummyTail 两个哨兵节点来消除空指针特判。每次 get 命中或 put 更新，就把节点摘下来插到 head.next；容量满时直接删掉 tail.prev 并从 Map 移除。改造成线程安全时，绝对不能用 ReentrantReadWriteLock 给 get 加读锁，因为 get 也在改链表指针，必须互斥保护。为了解决单全局锁的竞争瓶颈，可以按 key 哈希拆成 16 个分片，每个分片独立一把 ReentrantLock 管自己的小 LRU，并发吞吐能提升好几倍。",
+          "say": "计时两分钟开口讲一遍，再对照要点与参考回答查漏补缺。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 4 张卡 & 本地手撕自测套件",
+      "bridge": "复习卡 + 18 道可运行断言自测模板，每天手敲 2～3 题。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "为什么 LRU 淘汰时既要操作链表又要操作 Map？",
+              "a": "链表节点里必须同时存 `key` 和 `val`，删掉 `tail.prev` 后才能拿到 `last.key` 去 `map.remove(last.key)`。"
+            },
+            {
+              "q": "Caffeine 等工业级缓存怎么解决 LRU 读锁竞争？",
+              "a": "读命中先写无锁环形缓冲区，后台单线程批量异步重排链表（或分片锁）。"
+            },
+            {
+              "q": "专题 08 必刷 9 题清单",
+              "a": "LRU 缓存、线程安全 LRU、LFU 缓存、O(1) 随机集合、设计循环队列、数据流中位数、设计跳表、全 O(1) 结构、设计 Twitter。"
+            },
+            {
+              "q": "为什么手写 LRU 必须用「双向」链表而不是「单向」链表？",
+              "a": "把命中节点移动到表头时，必须先把它从原位置摘除；只有双向链表能通过 `node.prev` 在 O(1) 时间内拿到前驱，单链表要 O(n)。"
+            }
+          ],
+          "say": "完整 101 题路线见 `docs/module8-100-problems.md`，核心 18 题模板在 `src/lab/m8practice/M8PracticeTest.java`。"
+        },
+        {
+          "t": "try",
+          "key": "javac -encoding UTF-8 -d out src/lab/m8practice/M8PracticeTest.java && java -ea -cp out lab.m8practice.M8PracticeTest",
+          "say": "在本地终端直接运行 18 题断言自测，也可单独跑本课实验 `java -cp out lab.tslru.SegmentedLru 4`。"
+        }
+      ]
+    }
+  ]
+}

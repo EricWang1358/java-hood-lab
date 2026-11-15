@@ -1,0 +1,871 @@
+{
+ "id": "countstar",
+ "variants": {
+  "CountNullableCol": {
+   "hash": "99d6a0fdd8f6a869",
+   "repeat": 10,
+   "runs": {
+    "50000": [
+     {
+      "counted": 45000,
+      "expected": 50000,
+      "ms": 4
+     },
+     {
+      "counted": 45000,
+      "expected": 50000,
+      "ms": 1
+     },
+     {
+      "counted": 45000,
+      "expected": 50000,
+      "ms": 1
+     },
+     {
+      "counted": 45000,
+      "expected": 50000,
+      "ms": 4
+     },
+     {
+      "counted": 45000,
+      "expected": 50000,
+      "ms": 2
+     },
+     {
+      "counted": 45000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 45000,
+      "expected": 50000,
+      "ms": 1
+     },
+     {
+      "counted": 45000,
+      "expected": 50000,
+      "ms": 1
+     },
+     {
+      "counted": 45000,
+      "expected": 50000,
+      "ms": 1
+     },
+     {
+      "counted": 45000,
+      "expected": 50000,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "counted": 180000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 180000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 180000,
+      "expected": 200000,
+      "ms": 5
+     },
+     {
+      "counted": 180000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 180000,
+      "expected": 200000,
+      "ms": 3
+     },
+     {
+      "counted": 180000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 180000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 180000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 180000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 180000,
+      "expected": 200000,
+      "ms": 0
+     }
+    ],
+    "500000": [
+     {
+      "counted": 450000,
+      "expected": 500000,
+      "ms": 7
+     },
+     {
+      "counted": 450000,
+      "expected": 500000,
+      "ms": 4
+     },
+     {
+      "counted": 450000,
+      "expected": 500000,
+      "ms": 1
+     },
+     {
+      "counted": 450000,
+      "expected": 500000,
+      "ms": 4
+     },
+     {
+      "counted": 450000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "counted": 450000,
+      "expected": 500000,
+      "ms": 8
+     },
+     {
+      "counted": 450000,
+      "expected": 500000,
+      "ms": 6
+     },
+     {
+      "counted": 450000,
+      "expected": 500000,
+      "ms": 5
+     },
+     {
+      "counted": 450000,
+      "expected": 500000,
+      "ms": 6
+     },
+     {
+      "counted": 450000,
+      "expected": 500000,
+      "ms": 9
+     }
+    ],
+    "1000000": [
+     {
+      "counted": 900000,
+      "expected": 1000000,
+      "ms": 5
+     },
+     {
+      "counted": 900000,
+      "expected": 1000000,
+      "ms": 6
+     },
+     {
+      "counted": 900000,
+      "expected": 1000000,
+      "ms": 10
+     },
+     {
+      "counted": 900000,
+      "expected": 1000000,
+      "ms": 7
+     },
+     {
+      "counted": 900000,
+      "expected": 1000000,
+      "ms": 14
+     },
+     {
+      "counted": 900000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "counted": 900000,
+      "expected": 1000000,
+      "ms": 7
+     },
+     {
+      "counted": 900000,
+      "expected": 1000000,
+      "ms": 19
+     },
+     {
+      "counted": 900000,
+      "expected": 1000000,
+      "ms": 5
+     },
+     {
+      "counted": 900000,
+      "expected": 1000000,
+      "ms": 4
+     }
+    ]
+   },
+   "inside": "Compiled from \"CountNullableCol.java\"\npublic class lab.countstar.CountNullableCol {\n  public lab.countstar.CountNullableCol();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: anewarray     #13                 // class java/lang/String\n      11: astore_2\n      12: iconst_0\n      13: istore_3\n      14: iload_3\n      15: iload_1\n      16: if_icmpge     41\n      19: aload_2\n      20: iload_3\n      21: iload_3\n      22: bipush        10\n      24: irem\n      25: ifne          32\n      28: aconst_null\n      29: goto          34\n      32: ldc           #15                 // String ok\n      34: aastore\n      35: iinc          3, 1\n      38: goto          14\n      41: invokestatic  #17                 // Method java/lang/System.nanoTime:()J\n      44: lstore_3\n      45: iconst_0\n      46: istore        5\n      48: iconst_0\n      49: istore        6\n      51: iload         6\n      53: iload_1\n      54: if_icmpge     73\n      57: aload_2\n      58: iload         6\n      60: aaload\n      61: ifnull        67\n      64: iinc          5, 1\n      67: iinc          6, 1\n      70: goto          51\n      73: invokestatic  #17                 // Method java/lang/System.nanoTime:()J\n      76: lload_3\n      77: lsub\n      78: ldc2_w        #23                 // long 1000000l\n      81: ldiv\n      82: lstore        6\n      84: getstatic     #25                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      87: iload         5\n      89: invokedynamic #29,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      94: invokevirtual #33                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      97: getstatic     #25                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     100: iload_1\n     101: invokedynamic #39,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     106: invokevirtual #33                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     109: getstatic     #25                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     112: lload         6\n     114: invokedynamic #40,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     119: invokevirtual #33                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     122: return\n}"
+  },
+  "CountOne": {
+   "hash": "af8d7e810bbc1f58",
+   "repeat": 10,
+   "runs": {
+    "50000": [
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 1
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 7
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 4
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 5
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 3
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 3
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 3
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 2
+     }
+    ],
+    "500000": [
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 4
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 7
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 2
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 6
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 4
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 8
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 4
+     }
+    ],
+    "1000000": [
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 8
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 9
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 3
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 7
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 5
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 8
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 12
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 12
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 10
+     }
+    ]
+   },
+   "inside": "Compiled from \"CountOne.java\"\npublic class lab.countstar.CountOne {\n  public lab.countstar.CountOne();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       byte\n      10: astore_2\n      11: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      14: lstore_3\n      15: iconst_0\n      16: istore        5\n      18: iconst_0\n      19: istore        6\n      21: iload         6\n      23: aload_2\n      24: arraylength\n      25: if_icmpge     37\n      28: iinc          5, 1\n      31: iinc          6, 1\n      34: goto          21\n      37: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      40: lload_3\n      41: lsub\n      42: ldc2_w        #19                 // long 1000000l\n      45: ldiv\n      46: lstore        6\n      48: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      51: iload         5\n      53: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      58: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      61: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      64: iload_1\n      65: invokedynamic #35,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      70: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      73: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      76: lload         6\n      78: invokedynamic #36,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n      83: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      86: return\n}"
+  },
+  "CountStar": {
+   "hash": "9853f3f77a15cbc8",
+   "repeat": 10,
+   "runs": {
+    "50000": [
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 2
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 1
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 3
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 1
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 6
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 5
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 8
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 3
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 3
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 8
+     }
+    ],
+    "500000": [
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 8
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 5
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 4
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 5
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 5
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 4
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 11
+     }
+    ],
+    "1000000": [
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 8
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 6
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 6
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 15
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 3
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 10
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 3
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 11
+     }
+    ]
+   },
+   "inside": "Compiled from \"CountStar.java\"\npublic class lab.countstar.CountStar {\n  public lab.countstar.CountStar();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       byte\n      10: astore_2\n      11: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      14: lstore_3\n      15: iconst_0\n      16: istore        5\n      18: iconst_0\n      19: istore        6\n      21: iload         6\n      23: aload_2\n      24: arraylength\n      25: if_icmpge     37\n      28: iinc          5, 1\n      31: iinc          6, 1\n      34: goto          21\n      37: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      40: lload_3\n      41: lsub\n      42: ldc2_w        #19                 // long 1000000l\n      45: ldiv\n      46: lstore        6\n      48: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      51: iload         5\n      53: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      58: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      61: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      64: iload_1\n      65: invokedynamic #35,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      70: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      73: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      76: lload         6\n      78: invokedynamic #36,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n      83: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      86: return\n}"
+  },
+  "SummaryCounter": {
+   "hash": "cb3fe361633c81e2",
+   "repeat": 10,
+   "runs": {
+    "50000": [
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "counted": 50000,
+      "expected": 50000,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 0
+     },
+     {
+      "counted": 200000,
+      "expected": 200000,
+      "ms": 0
+     }
+    ],
+    "500000": [
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "counted": 500000,
+      "expected": 500000,
+      "ms": 0
+     }
+    ],
+    "1000000": [
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "counted": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"SummaryCounter.java\"\npublic class lab.countstar.SummaryCounter {\n  public lab.countstar.SummaryCounter();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: istore_2\n       9: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      12: lstore_3\n      13: iload_2\n      14: istore        5\n      16: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      19: lload_3\n      20: lsub\n      21: ldc2_w        #19                 // long 1000000l\n      24: ldiv\n      25: lstore        6\n      27: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      30: iload         5\n      32: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      37: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      40: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      43: iload_1\n      44: invokedynamic #35,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      49: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      52: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      55: lload         6\n      57: invokedynamic #36,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n      62: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      65: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

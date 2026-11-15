@@ -1,0 +1,616 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "col-hashmap-treeify",
+  "course": "Java 工程语法与集合",
+  "title": "HashMap 哈希碰撞与红黑树化：为什么 8 和 64 两个阈值缺一不可？",
+  "lead": "故意让 4000 个 Key 的 hashCode 全部撞进同一个桶，为什么 Key 实现 Comparable 时查询快如闪电，没实现 Comparable 时却慢成几十倍？",
+  "minutes": 30,
+  "needs": [
+    "知道 HashMap 链地址法（数组+链表+红黑树）",
+    "知道树化阈值 8、退化阈值 6、最小表长 64"
+  ],
+  "after": [
+    "用实测耗时对比同一碰撞桶在「纯链表 O(N)」「红黑树 O(log N)」「均匀散列 O(1)」下的巨大差异",
+    "说清树化为什么同时要求「桶长 >= 8」且「数组容量 >= 64」（MIN_TREEIFY_CAPACITY）",
+    "理解 Key 实现 Comparable 在极端哈希碰撞时如何帮 HashMap 维持 O(log N) 性能"
+  ],
+  "terms": {
+    "树化阈值 8 / 64": "当单个桶链表长度达到 8 时，若数组长度 `< 64` 会先触发扩容打散；只有数组长度 `>= 64` 才真正把链表转成红黑树。",
+    "退化阈值 6": "红黑树节点降到 6 个时退回链表，留出 6~8 的滞回区间防止频繁增删在边界来回抖动。",
+    "Comparable 树化优势": "当大量 Key 发生哈希碰撞时，如果 Key 实现了 `Comparable`，红黑树就能按 `compareTo` 有序左右分叉（O(log N)）；否则只能退化用 `System.identityHashCode` 勉强排，且查询仍可能退化。"
+  },
+  "experiments": {
+    "treeify": {
+      "runner": "java",
+      "home": "lab.treeify",
+      "variants": [
+        {
+          "id": "BadHashNoComparable",
+          "code": "BadHashNoComparable.java",
+          "label": "全碰撞 + 未实现 Comparable",
+          "note": "虽然树化但无业务比较序，lookup 遇到大量同 hash 且 equals 不等时只能退化遍历树枝。"
+        },
+        {
+          "id": "BadHashComparableTree",
+          "code": "BadHashComparableTree.java",
+          "label": "全碰撞 + 实现 Comparable（红黑树 O(log N)）",
+          "note": "全挤在一桶也能靠 compareTo 走红黑树二分查找，耗时远低于未实现 Comparable。"
+        },
+        {
+          "id": "SmallTableResizeFirst",
+          "code": "SmallTableResizeFirst.java",
+          "label": "小表 cap=4 触发先扩容后树化",
+          "note": "前期先扩容打散到 64 以上再树化，验证 64 阈值机制。"
+        },
+        {
+          "id": "SpreadHashUniform",
+          "code": "SpreadHashUniform.java",
+          "label": "均匀散列 hashCode（O(1) 最快）",
+          "note": "散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。"
+        }
+      ],
+      "knob": {
+        "label": "碰撞键数量 N",
+        "values": [
+          "500",
+          "1000",
+          "2000",
+          "4000"
+        ],
+        "default": "2000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "hits",
+        "expectKey": "expected",
+        "label": "成功查回键数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "HashMap 哈希碰撞与红黑树化：为什么 8 和 64 两个阈值缺一不可？",
+      "bridge": "故意让 4000 个 Key 的 hashCode 全部撞进同一个桶，为什么 Key 实现 Comparable 时查询快如闪电，没实现 Comparable 时却慢成几十倍？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "八股文背得滚瓜烂熟：「链表长度到 8 转红黑树，退化是 6，数组最小 64」。今天直接构造 4000 个全碰撞的 Key 塞进 HashMap，亲眼看看：**Comparable 在树化时到底起了多大作用？为什么良好的 hashCode 依然是第一防线？**",
+          "say": "树化只是防哈希碰撞攻击（HashDoS）的兜底机制，真正快还得靠均匀散列。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
+          "items": [
+            {
+              "have": "为什么是 8",
+              "q": "正常随机哈希下，一个桶链表长度达到 8 的概率（泊松分布）大约是多少？",
+              "options": [
+                "千万分之一（几乎不可能，除非 hashCode 写得很烂或遭遇恶意碰撞攻击）",
+                "10%",
+                "50%"
+              ],
+              "answer": 0,
+              "why": "正因为正常情况下几乎不会树化，所以平时能享受链表省内存的好处，极端碰撞才切红黑树兜底。"
+            },
+            {
+              "have": "为什么先扩到 64",
+              "q": "当数组长度只有 16、某个桶已经有 8 个节点时，JDK 8 HashMap 会立刻树化吗？",
+              "options": [
+                "不会，会先扩容到 32/64 尝试把冲突节点打散",
+                "会立刻树化",
+                "直接抛异常"
+              ],
+              "answer": 0,
+              "why": "表还很小的时候，扩容一倍往往就能把凑巧撞在一起的节点分到不同桶，比建红黑树划算得多。"
+            },
+            {
+              "have": "TreeNode 结构",
+              "q": "转成红黑树后，桶里的节点是否彻底丢弃了链表指针？",
+              "options": [
+                "没有，TreeNode 继承 LinkedHashMap.Entry，依然保留 next 链表指针方便遍历和退化",
+                "彻底丢弃了",
+                "变成了数组"
+              ],
+              "answer": 0,
+              "why": "这样扩容拆分或节点降到 6 个退化回链表（`untreeify`）时可以直接 O(N) 顺着 `next` 拆，非常巧妙。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (BadHashNoComparable)",
+              "安全写法 (SpreadHashUniform)"
+            ],
+            "shared": {
+              "name": "成功查回键数",
+              "value": "目标 2000"
+            }
+          },
+          "story": "故意让 4000 个 Key 的 hashCode 全部撞进同一个桶，为什么 Key 实现 Comparable 时查询快如闪电，没实现 Comparable 时却慢成几十倍？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "树化阈值 8 / 64",
+              "on": "shared",
+              "tag": "树化阈值 8 / 64",
+              "code": "`BadHashNoComparable` vs `SpreadHashUniform`",
+              "say": "当单个桶链表长度达到 8 时，若数组长度 `< 64` 会先触发扩容打散；只有数组长度 `>= 64` 才真正把链表转成红黑树。"
+            },
+            {
+              "scene": "退化阈值 6",
+              "on": "shared",
+              "tag": "退化阈值 6",
+              "code": "`BadHashNoComparable` vs `SpreadHashUniform`",
+              "say": "红黑树节点降到 6 个时退回链表，留出 6~8 的滞回区间防止频繁增删在边界来回抖动。"
+            },
+            {
+              "scene": "Comparable 树化优势",
+              "on": "shared",
+              "tag": "Comparable 树",
+              "code": "`BadHashNoComparable` vs `SpreadHashUniform`",
+              "say": "当大量 Key 发生哈希碰撞时，如果 Key 实现了 `Comparable`，红黑树就能按 `compareTo` 有序左右分叉（O(log N)）；否则只能退化用 `System.identityHashCode` 勉强排，且查询仍可能退化。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`BadHashNoComparable`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "treeify.BadHashNoComparable",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "static class BadKey {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "Map<BadKey, Integer> map = new HashMap<>(128);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (map.get(keys[i]) != null) hits++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：BadHashNoComparable 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "N=4000 全碰撞时，`BadHashComparableTree` 相比 `BadHashNoComparable` 耗时表现如何？",
+          "options": [
+            "快出数倍到十几倍（Comparable 让红黑树能二分剪枝）",
+            "一样慢",
+            "反而更慢"
+          ],
+          "answer": 0,
+          "say": "没有 `Comparable` 时，查找 `TreeNode.find()` 无法通过 `compareTo` 确定走左子树还是右子树，在 `tieBreakOrder` 失效时甚至要两边都递归搜！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：BadHashNoComparable 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "treeify",
+          "show": [
+            "BadHashNoComparable"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "没有 `Comparable` 时，查找 `TreeNode.find()` 无法通过 `compareTo` 确定走左子树还是右子树，在 `tieBreakOrder` 失效时甚至要两边都递归搜！",
+          "say": "没有 `Comparable` 时，查找 `TreeNode.find()` 无法通过 `compareTo` 确定走左子树还是右子树，在 `tieBreakOrder` 失效时甚至要两边都递归搜！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「碰撞键数量 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "treeify",
+          "show": [
+            "BadHashNoComparable",
+            "SpreadHashUniform"
+          ],
+          "say": "左右拖动「碰撞键数量 N」滑块，对比 `BadHashNoComparable` 与 `SpreadHashUniform` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`BadHashNoComparable`：虽然树化但无业务比较序，lookup 遇到大量同 hash 且 equals 不等时只能退化遍历树枝。；`SpreadHashUniform`：散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `BadHashNoComparable.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "treeify.BadHashNoComparable",
+          "q": "在左边的 `BadHashNoComparable.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "return o instanceof BadKey && ((BadKey) o).id == this.id;"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`return o instanceof BadKey && ((BadKey) o).id == this.id;`）导致：虽然树化但无业务比较序，lookup 遇到大量同 hash 且 equals 不等时只能退化遍历树枝。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "treeify.BadHashNoComparable",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "7: new           #13                 // class java/util/HashMap"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "17: astore_2"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `SpreadHashUniform` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "treeify.SpreadHashUniform",
+          "say": "散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。",
+          "walk": [
+            {
+              "focus": [
+                "static class GoodKey {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "Map<GoodKey, Integer> map = new HashMap<>(n * 2);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (map.get(keys[i]) != null) hits++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "treeify",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "全碰撞 + 未实现 Comparable（`BadHashNoComparable`）",
+              "solves": "虽然树化但无业务比较序，lookup 遇到大量同 hash 且 equals 不等时只能退化遍历树枝。",
+              "cost": "实测约 {ms:treeify.BadHashNoComparable} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "虽然树化但无业务比较序，lookup 遇到大量同 hash 且 equals 不等时只能退化遍历树枝。"
+            },
+            {
+              "name": "全碰撞 + 实现 Comparable（红黑树 O(log N)）（`BadHashComparableTree`）",
+              "solves": "全挤在一桶也能靠 compareTo 走红黑树二分查找，耗时远低于未实现 Comparable。",
+              "cost": "实测约 {ms:treeify.BadHashComparableTree} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "全挤在一桶也能靠 compareTo 走红黑树二分查找，耗时远低于未实现 Comparable。"
+            },
+            {
+              "name": "小表 cap=4 触发先扩容后树化（`SmallTableResizeFirst`）",
+              "solves": "前期先扩容打散到 64 以上再树化，验证 64 阈值机制。",
+              "cost": "实测约 {ms:treeify.SmallTableResizeFirst} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "前期先扩容打散到 64 以上再树化，验证 64 阈值机制。"
+            },
+            {
+              "name": "均匀散列 hashCode（O(1) 最快）（`SpreadHashUniform`）",
+              "solves": "散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。",
+              "cost": "实测约 {ms:treeify.SpreadHashUniform} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "树化阈值 8 / 64",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "当单个桶链表长度达到 8 时，若数组长度 `< 64` 会先触发扩容打散；只有数组长度 `>= 64` 才真正把链表转成红黑树。",
+          "asked": [
+            "HashMap 哈希碰撞与红黑树化：为什么 8 和 64 两个阈值缺一不可？——底层原理是什么？",
+            "为什么 `BadHashNoComparable` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `SpreadHashUniform` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "N=4000 全碰撞时，`BadHashComparableTree` 相比 `BadHashNoComparable` 耗时表现如何？",
+          "options": [
+            {
+              "text": "快出数倍到十几倍（Comparable 让红黑树能二分剪枝）",
+              "ok": true,
+              "why": "没有 `Comparable` 时，查找 `TreeNode.find()` 无法通过 `compareTo` 确定走左子树还是右子树，在 `tieBreakOrder` 失效时甚至要两边都递归搜！"
+            },
+            {
+              "text": "一样慢",
+              "ok": false,
+              "why": "再想一想：没有 `Comparable` 时，查找 `TreeNode.find()` 无法通过 `compareTo` 确定走左子树还是右子树，在 `tieBreakOrder` 失效时甚至要两边都递归搜！"
+            },
+            {
+              "text": "反而更慢",
+              "ok": false,
+              "why": "再想一想：没有 `Comparable` 时，查找 `TreeNode.find()` 无法通过 `compareTo` 确定走左子树还是右子树，在 `tieBreakOrder` 失效时甚至要两边都递归搜！"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：为什么是 8",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "正常随机哈希下，一个桶链表长度达到 8 的概率（泊松分布）大约是多少？",
+          "options": [
+            {
+              "text": "千万分之一（几乎不可能，除非 hashCode 写得很烂或遭遇恶意碰撞攻击）",
+              "ok": true,
+              "why": "正因为正常情况下几乎不会树化，所以平时能享受链表省内存的好处，极端碰撞才切红黑树兜底。"
+            },
+            {
+              "text": "10%",
+              "ok": false,
+              "why": "再想一想：正因为正常情况下几乎不会树化，所以平时能享受链表省内存的好处，极端碰撞才切红黑树兜底。"
+            },
+            {
+              "text": "50%",
+              "ok": false,
+              "why": "再想一想：正因为正常情况下几乎不会树化，所以平时能享受链表省内存的好处，极端碰撞才切红黑树兜底。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：为什么先扩到 64",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "当数组长度只有 16、某个桶已经有 8 个节点时，JDK 8 HashMap 会立刻树化吗？",
+          "options": [
+            {
+              "text": "不会，会先扩容到 32/64 尝试把冲突节点打散",
+              "ok": true,
+              "why": "表还很小的时候，扩容一倍往往就能把凑巧撞在一起的节点分到不同桶，比建红黑树划算得多。"
+            },
+            {
+              "text": "会立刻树化",
+              "ok": false,
+              "why": "再想一想：表还很小的时候，扩容一倍往往就能把凑巧撞在一起的节点分到不同桶，比建红黑树划算得多。"
+            },
+            {
+              "text": "直接抛异常",
+              "ok": false,
+              "why": "再想一想：表还很小的时候，扩容一倍往往就能把凑巧撞在一起的节点分到不同桶，比建红黑树划算得多。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `SpreadHashUniform`（均匀散列 hashCode（O(1) 最快））替代 `BadHashNoComparable`（全碰撞 + 未实现 Comparable）？",
+          "options": [
+            {
+              "text": "因为 散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。",
+              "ok": true,
+              "why": "`BadHashNoComparable`：虽然树化但无业务比较序，lookup 遇到大量同 hash 且 equals 不等时只能退化遍历树枝。；而 `SpreadHashUniform`：散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。"
+            },
+            {
+              "text": "因为 `BadHashNoComparable` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`BadHashNoComparable`：虽然树化但无业务比较序，lookup 遇到大量同 hash 且 equals 不等时只能退化遍历树枝。；而 `SpreadHashUniform`：散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`BadHashNoComparable`：虽然树化但无业务比较序，lookup 遇到大量同 hash 且 equals 不等时只能退化遍历树枝。；而 `SpreadHashUniform`：散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) HashMap 树化的两个条件（8 和 64）以及为什么退化阈值是 6；2) HashMap 的扰动函数 (h ^ (h >>> 16)) 有什么用；3) Key 实现 Comparable 对 HashMap 有什么帮助。",
+          "points": [
+            "用实测耗时对比同一碰撞桶在「纯链表 O(N)」「红黑树 O(log N)」「均匀散列 O(1)」下的巨大差异",
+            "说清树化为什么同时要求「桶长 >= 8」且「数组容量 >= 64」（MIN_TREEIFY_CAPACITY）",
+            "理解 Key 实现 Comparable 在极端哈希碰撞时如何帮 HashMap 维持 O(log N) 性能"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：故意让 4000 个 Key 的 hashCode 全部撞进同一个桶，为什么 Key 实现 Comparable 时查询快如闪电，没实现 Comparable 时却慢成几十倍？；**② 再讲底层原理**：树化阈值 8 / 64（当单个桶链表长度达到 8 时，若数组长度 `< 64` 会先触发扩容打散；只有数组长度 `>= 64` 才真正把链表转成红黑树。）；退化阈值 6（红黑树节点降到 6 个时退回链表，留出 6~8 的滞回区间防止频繁增删在边界来回抖动。）；**③ 最后给工程方案**：生产里优先采用「均匀散列 hashCode（O(1) 最快）」（`SpreadHashUniform`），散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「树化阈值 8 / 64」？它在这节课里起了什么关键作用？",
+              "a": "当单个桶链表长度达到 8 时，若数组长度 `< 64` 会先触发扩容打散；只有数组长度 `>= 64` 才真正把链表转成红黑树。"
+            },
+            {
+              "q": "面试官问：什么是「退化阈值 6」？它在这节课里起了什么关键作用？",
+              "a": "红黑树节点降到 6 个时退回链表，留出 6~8 的滞回区间防止频繁增删在边界来回抖动。"
+            },
+            {
+              "q": "面试官问：什么是「Comparable 树化优势」？它在这节课里起了什么关键作用？",
+              "a": "当大量 Key 发生哈希碰撞时，如果 Key 实现了 `Comparable`，红黑树就能按 `compareTo` 有序左右分叉（O(log N)）；否则只能退化用 `System.identityHashCode` 勉强排，且查询仍可能退化。"
+            },
+            {
+              "q": "实战避坑：`BadHashNoComparable` 为什么会出问题，应该怎么改？",
+              "a": "虽然树化但无业务比较序，lookup 遇到大量同 hash 且 equals 不等时只能退化遍历树枝。 正确做法是改用 `SpreadHashUniform`（均匀散列 hashCode（O(1) 最快））：散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "用实测耗时对比同一碰撞桶在「纯链表 O(N)」「红黑树 O(log N)」「均匀散列 O(1)」下的巨大差异",
+            "说清树化为什么同时要求「桶长 >= 8」且「数组容量 >= 64」（MIN_TREEIFY_CAPACITY）",
+            "理解 Key 实现 Comparable 在极端哈希碰撞时如何帮 HashMap 维持 O(log N) 性能"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `BadHashNoComparable`（全碰撞 + 未实现 Comparable），优先选用 `SpreadHashUniform`（均匀散列 hashCode（O(1) 最快））：散列均匀不碰撞，每个桶 0~1 个节点，O(1) 直接命中。"
+        }
+      ]
+    }
+  ]
+}

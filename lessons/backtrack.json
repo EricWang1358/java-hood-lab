@@ -1,0 +1,640 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "backtrack",
+  "course": "模块 8 · 算法与 SQL 手撕",
+  "title": "回溯排列与组合：忘掉撤销现场会全串，剪枝去重怎么省出 10 倍时间",
+  "lead": "同样收集所有子集，为什么每次 new ArrayList 拷贝路径慢得像蜗牛，而忘掉最后一行 remove 会让答案面目全非？",
+  "minutes": 40,
+  "needs": [
+    "写过递归方法",
+    "用过 ArrayList 的 add 和 remove"
+  ],
+  "after": [
+    "牢记回溯三步曲：做选择 -> 递归 -> 撤销选择",
+    "分清子集/组合用 start 去重，排列用 used[] 数组标记",
+    "写对同层去重条件：排序 + i > start && nums[i] == nums[i-1]"
+  ],
+  "terms": {
+    "回溯": "暴力穷举决策树：走到死胡同或收集完答案后退回一步，换另一条路继续试。",
+    "撤销选择": "递归返回后把刚才放进 path 的元素移出去，恢复成进这一层前的干净现场。",
+    "同层去重": "在同一层 for 循环里跳过与前一个相同的数字，避免搜出重复分支。",
+    "剪枝": "提前发现当前路径不可能满足目标（如和已超 target），直接 break 砍掉整棵子树。"
+  },
+  "experiments": {
+    "backtrack": {
+      "runner": "java",
+      "home": "lab.backtrack",
+      "variants": [
+        {
+          "id": "CopyPathBacktrack",
+          "label": "每次拷贝新 List",
+          "note": "每次递归 new ArrayList<>(path)，制造海量垃圾对象。"
+        },
+        {
+          "id": "ForgotUndo",
+          "label": "忘写 remove 撤销",
+          "note": "经典手误：只 add 不 remove，路径越滚越大全错了。"
+        },
+        {
+          "id": "NoPruneDup",
+          "label": "靠 HashSet 事后去重",
+          "note": "先搜完再塞进 Set 去重，哈希开销巨大。"
+        },
+        {
+          "id": "SortedPruned",
+          "label": "原地 add/remove + 排序剪枝",
+          "note": "标准模板：共享一个 path，退出时 remove 恢复现场。"
+        }
+      ],
+      "knob": {
+        "label": "候选集大小 n",
+        "values": [
+          "8",
+          "10",
+          "12",
+          "14"
+        ],
+        "default": "12"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "subsets",
+        "expectKey": "expected",
+        "label": "收集到的子集数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "回溯排列与组合：忘掉撤销现场会全串，剪枝去重怎么省出 10 倍时间",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "同样收集所有子集，为什么每次 new ArrayList 拷贝路径慢得像蜗牛，而忘掉最后一行 remove 会让答案面目全非？",
+          "say": "今天这节课核心只搞透一件事：回溯排列与组合：忘掉撤销现场会全串，剪枝去重怎么省出 10 倍时间"
+        },
+        {
+          "t": "text",
+          "md": "不死背结论。先用直觉场景建模，再看代码和 `javap` 字节码，最后在你的机器上跑出 20 次实测对比。",
+          "say": "按看现象、拆字节码、比代价、开口讲四步走完。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，3 道诊断热身",
+      "bridge": "先花一分钟自测三个前置基础点，看看哪一块容易含糊。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题直接点选，选完立刻出解析。",
+          "items": [
+            {
+              "have": "回溯三要素",
+              "q": "回溯 DFS 函数 `dfs(...)` 里，最核心的三步固定动作是什么？",
+              "options": [
+                "排序、二分、返回",
+                "做选择 → 递归下一层 → 撤销选择（恢复现场）",
+                "建表、填表、查表"
+              ],
+              "answer": 1,
+              "why": "因为共用同一个 `path` 列表，递归返回后必须 `path.remove(path.size() - 1)` 还原现场。"
+            },
+            {
+              "have": "组合 vs 排列",
+              "q": "「组合（不讲究顺序）」和「排列（讲究顺序）」在写回溯循环时最大区别是什么？",
+              "options": [
+                "组合传入 `start` 从 `i = start` 开始避免 `[1,2]` 和 `[2,1]` 重复；排列每次从 `0` 开始并靠 `used[]` 判重",
+                "排列不能用递归",
+                "组合不需要撤销选择"
+              ],
+              "answer": 0,
+              "why": "牢记 `start` 控制「往后选（组合/子集）」，`used[]` 控制「不重选自己（排列）」。"
+            },
+            {
+              "have": "同层去重前提",
+              "q": "写同层去重 `if (i > start && nums[i] == nums[i - 1]) continue;` 之前，必须先做什么？",
+              "options": [
+                "先对 `nums` 排序",
+                "先反转数组",
+                "把 `nums` 放进 HashSet"
+              ],
+              "answer": 0,
+              "why": "不排序的话相同的数不一定相邻，`nums[i] == nums[i - 1]` 根本抓不到重复元素。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先在脑子里放一个场景",
+      "bridge": "把算法复杂度和数据结构对应到生活画面，后面所有代码都能往上套。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "走迷宫的探险者"
+            ],
+            "shared": {
+              "name": "手里的记事本 path",
+              "value": "当前走过的路径"
+            }
+          },
+          "story": "探险者只带**一本记事本**进迷宫。每拐进一个岔路就在本子上记一笔；走完一条路退回岔路口时，必须把刚才记的那一笔擦掉，不然下一条路会把两条路的脚印混在一起。",
+          "say": "先记住这个对照画面，右侧每一条都能一一映射到真实代码。",
+          "map": [
+            {
+              "scene": "每步都复印一本新笔记本",
+              "on": "actors",
+              "tag": "拷贝路径",
+              "code": "`new ArrayList<>(path)`",
+              "say": "指数级节点下会疯狂制造短命对象触发 GC。"
+            },
+            {
+              "scene": "退回来忘了擦掉上一笔",
+              "on": "shared",
+              "tag": "ForgotUndo",
+              "code": "// 漏了 path.remove(...)",
+              "say": "后面所有分支都会带着前面的残留元素。"
+            },
+            {
+              "scene": "同一种岔路不走第二遍",
+              "on": "action",
+              "tag": "排序 + 同层去重",
+              "code": "`if (i > start && nums[i] == nums[i-1]) continue;`",
+              "say": "比事后用 HashSet 过滤快得多。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "核心矛盾：为什么直觉写法会崩？",
+      "bridge": "小数据看不出毛病，一旦把规模或并发拉上来，差距立刻暴露。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "本节实验对比 4 种写法：**每次拷贝新 List、忘写 remove 撤销、靠 HashSet 事后去重、原地 add/remove + 排序剪枝**。",
+          "say": "把 每次拷贝新 List、忘写 remove 撤销、靠 HashSet 事后去重、原地 add/remove + 排序剪枝 放到同一套基准里实测 20 次，看谁快、谁慢、谁直接报错。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看直觉/问题写法：`NoPruneDup`",
+      "bridge": "先看最容易想到的基线写法，记住关键三处。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "backtrack.NoPruneDup",
+          "say": "这是 `NoPruneDup` 的完整可运行代码，重点看标亮的三处。",
+          "walk": [
+            {
+              "focus": [
+                "static Set<List<Integer>> seen = new HashSet<>();"
+              ],
+              "say": "不剪枝的笨办法：把所有重复分支全跑完，最后靠 `HashSet` 硬去重。",
+              "key": "先算再删导致大量无效搜索"
+            },
+            {
+              "focus": [
+                "seen.add(new ArrayList<>(path));"
+              ],
+              "say": "每次进节点都要拷贝一份 `ArrayList` 再算哈希，内存和时间双双爆炸。"
+            },
+            {
+              "focus": [
+                "dfs(nums, i + 1, path);"
+              ],
+              "say": "即使前面已经枚举过相同的数，还是傻傻往下递归完整棵子树。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：实测结果会怎样？",
+      "bridge": "动手跑之前先押一个答案，印象会深一倍。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "result",
+          "q": "把 `ForgotUndo` 跑在 12 个元素上，它统计出的结果会和正确的 $2^{12} = 4096$ 一样吗？",
+          "options": [
+            "一样，只是多占点内存",
+            "完全不对，因为 path 没有撤销会越积越长",
+            "会直接死循环"
+          ],
+          "answer": 1,
+          "say": "凭直觉选一个最可能的结论。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一次一次放出 `NoPruneDup` 的 20 次实测",
+      "bridge": "以下结果是在当前 JDK 17 环境真实跑了 20 次并保存的记录。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "backtrack",
+          "show": [
+            "NoPruneDup"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "seen.add(new ArrayList<>(path));"
+          ],
+          "say": "逐次点击放出运行结果，观察结果是否正确以及单次耗时。"
+        },
+        {
+          "t": "reveal",
+          "of": "result",
+          "say": "对照你刚才的预测，看直觉写法在真实规模下发生了什么。",
+          "key": "先搜完再塞进 Set 去重，哈希开销巨大。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拉大挡位，对比最优解",
+      "bridge": "把 `NoPruneDup` 和 `SortedPruned` 放在一起，切换上方挡位开关看走势。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "backtrack",
+          "show": [
+            "NoPruneDup",
+            "SortedPruned"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换上方 `候选集大小 n` 挡位，感受两种写法随规模拉大后的差距。"
+        },
+        {
+          "t": "try",
+          "key": "切换不同 候选集大小 n 挡位",
+          "say": "从小挡位切到最大挡位，观察实心点（正确）与空心点（失败/异常）的变化。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "在代码里点出关键一笔",
+      "bridge": "找出真正决定成败或拉开数量级差距的那一行。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "backtrack.SortedPruned",
+          "q": "在 `SortedPruned` 里，为什么一定要在递归前先 `Arrays.sort(nums)`？",
+          "hint": "看看 `nums[i] == nums[i - 1]` 这句判断的前提是什么。",
+          "answer": [
+            "if (i > start && nums[i] == nums[i - 1]) continue;"
+          ],
+          "found": "只有先排序，相同的元素才会紧挨在一起，`nums[i] == nums[i - 1]` 的同层去重才能生效。",
+          "say": "在左侧代码里点击你认为最关键的那一行。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "再看进阶/修复写法：`SortedPruned`",
+      "bridge": "把优化或修复后的代码也逐行拆开，看它改了哪三处。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "backtrack.SortedPruned",
+          "say": "对照刚才的基线版本，看 `SortedPruned` 是怎么解决问题的。",
+          "walk": [
+            {
+              "focus": [
+                "Arrays.sort(nums);"
+              ],
+              "say": "第一步必须排序，让相同元素紧挨在一起。",
+              "key": "排序是同层剪枝的前提"
+            },
+            {
+              "focus": [
+                "if (i > start && nums[i] == nums[i - 1]) continue;"
+              ],
+              "say": "同层去重神句：同一层遇到和前一个相同的数直接剪掉整棵子树。"
+            },
+            {
+              "focus": [
+                "path.remove(path.size() - 1);"
+              ],
+              "say": "递归返回后撤销最后一个选择，保证 `path` 干净复用。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：看真实 `javap -c -p` 字节码",
+      "bridge": "不靠猜，直接看 javac 编译出来的底层 JVM 指令。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "backtrack.SortedPruned",
+          "within": "dfs(",
+          "from": "getstatic",
+          "to": "List.remove",
+          "say": "这是真实 `javap -c -p` 反编译出的热点指令片段。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpne"
+              ],
+              "label": "同层剪枝判断",
+              "say": "对应 `nums[i] == nums[i - 1]`：相等时直接 `goto` 跳过本次递归。",
+              "key": "早剪枝省掉整棵子树"
+            },
+            {
+              "focus": [
+                "List.add",
+                "dfs:("
+              ],
+              "label": "做选择并下探",
+              "say": "把当前元素加进 `path`，传入 `i + 1` 进入下一层。"
+            },
+            {
+              "focus": [
+                "List.remove"
+              ],
+              "label": "撤销选择",
+              "say": "返回后把末尾元素移除，这就是「回溯」二字的实体。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "4 种写法的全量耗时折线",
+      "bridge": "把 每次拷贝新 List、忘写 remove 撤销、靠 HashSet 事后去重、原地 add/remove + 排序剪枝 放到同一张折线图上横向对比。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "backtrack",
+          "say": "实心点代表正确通过，空心点代表报错或结果不对；注意纵轴耗时变化。",
+          "walk": [
+            {
+              "focus": "CopyPathBacktrack",
+              "say": "每次拷贝新 List：每次递归 new ArrayList<>(path)，制造海量垃圾对象。"
+            },
+            {
+              "focus": "ForgotUndo",
+              "say": "忘写 remove 撤销：经典手误：只 add 不 remove，路径越滚越大全错了。"
+            },
+            {
+              "focus": "NoPruneDup",
+              "say": "靠 HashSet 事后去重：先搜完再塞进 Set 去重，哈希开销巨大。"
+            },
+            {
+              "focus": "SortedPruned",
+              "say": "原地 add/remove + 排序剪枝：标准模板：共享一个 path，退出时 remove 恢复现场。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "把方案摆在一起比代价",
+      "bridge": "括号里的毫秒数是本机默认挡位的真实实测耗时。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "面试被追问方案选型时，直接按适用场景、时间/空间代价来答。",
+          "options": [
+            {
+              "name": "组合/子集模板（传 start）",
+              "solves": "不关心顺序的选取问题",
+              "cost": "生成全集后再去重，含大量无效递归与 HashSet 开销（实测 {ms:backtrack.NoPruneDup} ms）",
+              "when": "子集、组合总和",
+              "say": "组合/子集模板（传 start）：不关心顺序的选取问题，代价是生成全集后再去重，含大量无效递归与 HashSet 开销（实测 {ms:backtrack.NoPruneDup} ms）。"
+            },
+            {
+              "name": "排列模板（传 used[]）",
+              "solves": "关心顺序的选取问题",
+              "cost": "排序后同层直接跳过整棵重复子树（实测 {ms:backtrack.SortedPruned} ms）",
+              "when": "全排列、全排列 II",
+              "say": "排列模板（传 used[]）：关心顺序的选取问题，代价是排序后同层直接跳过整棵重复子树（实测 {ms:backtrack.SortedPruned} ms）。"
+            },
+            {
+              "name": "排序 + 同层去重",
+              "solves": "输入包含重复元素",
+              "cost": "比 HashSet 事后去重快数倍",
+              "when": "所有含重复数字的组合/排列题",
+              "say": "排序 + 同层去重：输入包含重复元素，代价是比 HashSet 事后去重快数倍。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "决策树 + 4 道真实面试场景",
+      "layout": "split",
+      "bridge": "顺着左侧决策树，给右侧 4 道高频变体题选出最优解法。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "写回溯题之前，先确定哪三件事？",
+          "branches": [
+            {
+              "when": "元素不可重复选且讲究顺序",
+              "pick": "每次从 0 循环 + boolean[] used",
+              "eg": "全排列 / 全排列 II"
+            },
+            {
+              "when": "不讲究顺序（{1,2} 等同于 {2,1}）",
+              "pick": "循环从 start 开始，递归传 i + 1",
+              "eg": "子集 / 组合总和 II"
+            },
+            {
+              "when": "同一个元素可以无限次选",
+              "pick": "循环从 start 开始，递归仍传 i",
+              "eg": "组合总和"
+            }
+          ],
+          "say": "看到题面关键词就顺着对应分支往下走。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "排列 (used[])",
+            "组合/子集 (start)",
+            "排序剪枝去重"
+          ],
+          "items": [
+            {
+              "text": "给定不含重复数字的数组，返回其所有可能的全排列。",
+              "answer": 0,
+              "why": "讲究顺序且每个数用一次，用 used[] 标记已选元素。"
+            },
+            {
+              "text": "给定可能包含重复数字的数组，返回所有不重复的子集。",
+              "answer": 2,
+              "why": "先 Arrays.sort，再在循环里加 i > start && nums[i] == nums[i-1] 跳过同层重复。"
+            },
+            {
+              "text": "数字可无限制重复选取，找出所有和等于 target 的组合。",
+              "answer": 1,
+              "why": "从 start 开始选且递归仍传 i，配合排序后 nums[i] > remain 直接 break 剪枝。"
+            },
+            {
+              "text": "给定无重复元素的数组 `candidates` 和目标 `target`，每个数字可以无限制重复选取，求所有和为 `target` 的组合。",
+              "answer": 2,
+              "why": "排序后若 `sum + candidates[i] > target` 直接 `break`；因为可重复选自己，下一层传 `i` 而不是 `i + 1`。"
+            }
+          ],
+          "say": "逐题点选工具，核对解析里的关键原因。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记下面试官常问的标准叫法",
+      "bridge": "把刚才的实验现象还原成一二面高频术语。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "回溯三步曲 & 同层去重",
+          "alias": "专题 06 · 高频 9 题核心模型",
+          "oneLine": "回溯的核心是 ==选择、递归、撤销==；只在收集叶子结果时才 `new ArrayList<>(path)` 拷贝，平时全程共用一个 `path` 并用排序剪枝。",
+          "asked": [
+            "排列和组合的递归参数有什么区别？",
+            "含有重复元素时怎么去重？",
+            "为什么回溯一定要先排序？"
+          ],
+          "say": "记住这句总结和下面三个高频追问。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "检查一：核心原理与复杂度",
+      "bridge": "核对第一道易混坑点。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "全排列 II（含重复元素）中，去重条件 `if (i > 0 && nums[i] == nums[i-1] && !used[i-1]) continue;` 里的 `!used[i-1]` 是什么意思？",
+          "options": [
+            {
+              "text": "前一个相同元素正在当前路径里被使用（树枝上）",
+              "ok": false,
+              "why": "`used[i-1] == true` 才是树枝上正在使用。"
+            },
+            {
+              "text": "前一个相同元素刚被撤销（同一层刚试过它），跳过以免搜出重复排列",
+              "ok": true,
+              "why": "`!used[i-1]` 说明同一层的前一个兄弟分支已经以这个值开过头了，不能再重复开头。"
+            },
+            {
+              "text": "表示数组没有排序",
+              "ok": false,
+              "why": "这个判断必须建立在已排序的基础上。"
+            }
+          ],
+          "say": "选出唯一正确的结论。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "检查二：面试边界陷阱",
+      "bridge": "再过一道二面最爱追问的边界细节题。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "全排列 II（含重复元素）用 `used[i - 1] == false` 和 `used[i - 1] == true` 都能去重，面试推荐哪种？",
+          "options": [
+            {
+              "text": "推荐 `used[i - 1] == false`（同层剪枝）",
+              "ok": true,
+              "why": "`used[i-1] == false` 表示前一个相同数刚刚在同一层被撤销，现在跳过属于「树层去重」，剪枝比树枝去重更彻底、节点数更少。"
+            },
+            {
+              "text": "推荐 `used[i - 1] == true`",
+              "ok": false,
+              "why": "树枝去重虽然结果也对，但会多跑很多无效分支。"
+            },
+            {
+              "text": "两种剪掉的节点数完全一样",
+              "ok": false,
+              "why": "树层去重剪掉的分支明显更多。"
+            }
+          ],
+          "say": "仔细看边界条件，选出正确答案。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，2 分钟开口讲一遍",
+      "bridge": "看懂不算会，对着屏幕脱稿讲顺才算长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清回溯三步曲、排列与组合模板的差异，以及含重复元素时怎么同层去重。",
+          "points": [
+            "共用一个 path，遵循做选择 -> 递归 -> 撤销选择，只在收集结果时拷贝",
+            "组合/子集用 start 防回头；排列用 used[] 每层从 0 找",
+            "含重复元素先排序，组合用 i > start && nums[i]==nums[i-1]，排列加 && !used[i-1]"
+          ],
+          "model": "回溯本质上是深度优先遍历决策树，核心是「做选择、递归、撤销选择」三步。为了减少内存分配，全程只共用一个 path，仅在到达终点收集答案时才 new ArrayList<>(path) 拷贝，递归返回时务必 remove 撤销。写模板时先分清有序还是无序：子集组合无序，靠 start 参数控制不回头；排列有序，靠 used[] 数组每层从 0 选。如果输入有重复元素，一定要先排序，在同层循环里跳过与前一个相等的元素，比用 HashSet 事后去重快得多。",
+          "say": "计时两分钟开口讲一遍，再对照要点与参考回答查漏补缺。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 4 张卡 & 本地手撕自测套件",
+      "bridge": "复习卡 + 18 道可运行断言自测模板，每天手敲 2～3 题。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "组合和排列的代码最大区别是什么？",
+              "a": "组合循环从 `start` 开始；排列每层从 `0` 开始并靠 `used[]` 跳过已选。"
+            },
+            {
+              "q": "什么时候可以提前 `break` 剪枝？",
+              "a": "数组排好序后，若 `remain - nums[i] < 0`，后面的数更大，直接 `break` 结束本层。"
+            },
+            {
+              "q": "专题 06 必刷 9 题清单",
+              "a": "全排列、全排列 II、子集、子集 II、组合总和、组合总和 II、括号生成、电话号码字母组合、N 皇后。"
+            },
+            {
+              "q": "回溯剪枝两大黄金条件？",
+              "a": "① 排序后同层去重：`i > start && nums[i] == nums[i-1]`；② 组合总和可行性剪枝：`sum + candidates[i] > target` 直接 `break`。"
+            }
+          ],
+          "say": "完整 101 题路线见 `docs/module8-100-problems.md`，核心 18 题模板在 `src/lab/m8practice/M8PracticeTest.java`。"
+        },
+        {
+          "t": "try",
+          "key": "javac -encoding UTF-8 -d out src/lab/m8practice/M8PracticeTest.java && java -ea -cp out lab.m8practice.M8PracticeTest",
+          "say": "在本地终端直接运行 18 题断言自测，也可单独跑本课实验 `java -cp out lab.backtrack.SortedPruned 12`。"
+        }
+      ]
+    }
+  ]
+}

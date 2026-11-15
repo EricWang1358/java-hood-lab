@@ -1,0 +1,249 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "io-zerocopy",
+  "course": "网络与操作系统",
+  "title": "零拷贝：为什么 transferTo 比传统读写快一个数量级？",
+  "lead": "发一个静态文件走传统 read()+write() 要经历 4 次上下文切换和 4 次内存拷贝，sendfile/transferTo 怎么砍掉一半？",
+  "minutes": 35,
+  "needs": ["知道用户态与内核态切换", "知道 PageCache 页缓存", "知道 FileChannel"],
+  "after": [
+    "画出传统 read+write 的 4 次拷贝与 4 次上下文切换路径",
+    "对比 mmap+write 与 sendfile（FileChannel.transferTo）的零拷贝本质",
+    "知道 Kafka/Nginx/Netty 各自在什么场景下使用零拷贝"
+  ],
+  "terms": {
+    "DMA 拷贝": "Direct Memory Access，由网卡/磁盘控制器直接把数据搬进内核缓冲区，不消耗 CPU 算力。",
+    "CPU 拷贝": "需要 CPU 亲自把字节从内核空间搬到用户空间（或相反），是拖慢吞吐的大头。",
+    "sendfile / transferTo": "Linux 系统调用，让数据直接从内核 PageCache 经 DMA 或描述符投递到 Socket 缓冲区，全程不进 JVM 堆。"
+  },
+  "experiments": {
+    "zerocopy": {
+      "runner": "java",
+      "home": "lab.zerocopy",
+      "variants": [
+        { "id": "ByteByByte", "code": "ByteByByte.java", "label": "逐字节无缓冲读写", "note": "每 1 个字节就触发一次 read/write 系统调用，上下文切换直接炸表。" },
+        { "id": "BufferedCopy", "code": "BufferedCopy.java", "label": "64KB 缓冲传统拷贝", "note": "标准用户态 byte[] 缓冲读写：4 次上下文切换 + 2 次 DMA + 2 次 CPU 拷贝。" },
+        { "id": "MappedCopy", "code": "MappedCopy.java", "label": "mmap 内存映射", "note": "FileChannel.map() 映射内核页缓存，省去内核到用户态的一次 CPU 拷贝。" },
+        { "id": "TransferTo", "code": "TransferTo.java", "label": "transferTo 零拷贝", "note": "底层对应 sendfile()，数据完全不经过 JVM 用户态内存，直接内核直通网卡。" }
+      ],
+      "knob": { "label": "传输文件大小 (KB)", "values": ["64", "128", "256", "512"], "default": "256" },
+      "repeat": 20,
+      "metric": { "key": "bytes", "expectKey": "expected", "label": "接收字节数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "零拷贝：为什么 transferTo 比传统读写快一个数量级？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**把磁盘文件通过 Socket 发给客户端，为什么根本不需要把文件字节搬进 JVM 内存？**",
+          "say": "Kafka 吞吐百万级、Nginx 静态文件飞快，核心秘密都在零拷贝（Zero-Copy）。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：传统 read() + write() 到底拷贝了几次？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先盘清传统文件传输的开销账本。",
+          "items": [
+            {
+              "have": "用户态缓冲区",
+              "q": "调用 `FileInputStream.read(buf)` 再调用 `SocketOutputStream.write(buf)`，数据一共经历了多少次拷贝？",
+              "options": ["2 次", "4 次（2 次 DMA + 2 次 CPU）", "1 次"],
+              "answer": 1,
+              "why": "磁盘→内核页缓存(DMA)→用户 buf(CPU)→Socket 缓冲区(CPU)→网卡(DMA)，整整 4 次！"
+            },
+            {
+              "have": "上下文切换",
+              "q": "每调用一次 `read()` 或 `write()` 系统调用，CPU 状态如何切换？",
+              "options": ["用户态→内核态→用户态（每次调用 2 次切换）", "不切换", "只在第一次切换"],
+              "answer": 0,
+              "why": "一次 `read()` 加一次 `write()` 就是 4 次上下文切换，如果缓冲太小（甚至逐字节），系统调用开销直接吞噬 CPU。"
+            },
+            {
+              "have": "零拷贝含义",
+              "q": "操作系统说的「Zero-Copy 零拷贝」指的是完全一次都不拷贝吗？",
+              "options": ["是，连磁盘到网卡都不搬", "指「零次 CPU 拷贝」（数据不经过用户态内存）", "指不占内存"],
+              "answer": 1,
+              "why": "DMA 硬件搬运依然存在，零拷贝消除的是最浪费 CPU 的用户态↔内核态来回拷贝！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「海关仓库直通码头」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["磁盘仓库", "网卡码头"], "shared": { "name": "JVM 用户态办公室", "value": "多此一举中转" } },
+          "story": "传统 `read()+write()` 就像把集装箱从港口仓库（PageCache）拉进市区写字楼（JVM `byte[]`）转一圈，再拉回码头装船（Socket）；而 `transferTo()`（`sendfile`）直接下条指令让仓库集装箱走内部通道直奔码头，写字楼全程不碰货物！",
+          "say": "只要服务端不需要修改文件内容（如静态文件、Kafka 消息广播），进用户态纯属白跑一趟。",
+          "map": [
+            { "scene": "货物拉进写字楼再拉回码头", "on": "shared", "tag": "传统拷贝", "code": "`in.read(buf); out.write(buf);`", "say": "4 次上下文切换 + 2 次 CPU 拷贝。" },
+            { "scene": "港区内直通装船", "on": "actors", "tag": "sendfile 零拷贝", "code": "`fc.transferTo(0, len, sc)`", "say": "数据留在内核态直出网卡，零次 CPU 拷贝。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：transferTo 一行顶过去一整个 while 循环",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "zerocopy.TransferTo",
+          "say": "看 `TransferTo.java`：不需要分配 `byte[]`，直接调用 `fc.transferTo(sent, totalBytes - sent, sc)` 把文件通道连向 Socket 通道。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：发送 256KB 文件，四种写法耗时差距有多大？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "对比 `ByteByByte`（逐字节）、`BufferedCopy`（64KB 缓冲）、`MappedCopy`（mmap）和 `TransferTo`，谁最快谁最慢？",
+          "options": ["差距不大，都在 5ms 内", "ByteByByte 慢到数百毫秒，TransferTo/MappedCopy 最快（仅几毫秒）", "ByteByByte 最快"],
+          "answer": 1,
+          "say": "系统调用次数和 CPU 拷贝次数决定了量级差异。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测耗时：逐字节系统调用 vs 零拷贝",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "zerocopy",
+          "show": ["ByteByByte", "BufferedCopy", "MappedCopy", "TransferTo"],
+          "knob": "256",
+          "hand": "TransferTo",
+          "focus": "ms",
+          "say": "看耗时柱状图：`ByteByByte` 触发 52 万次系统调用，耗时几百毫秒；而 `TransferTo` 几乎瞬间完成！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "减少系统调用次数与消除用户态 CPU 拷贝，可把文件传输耗时压缩一个数量级以上",
+          "say": "这也是为什么写任何 IO 代码都绝不能无缓冲逐字节读写，而大文件传输更要直接上 `transferTo`。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的 transferTo 调用",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "zerocopy.TransferTo",
+          "within": "main",
+          "from": "FileChannel.open",
+          "to": "FileChannel.transferTo",
+          "say": "在 JVM 字节码里，不再有 `new byte[...]` 数组分配，而是直接把 `FileChannel` 和 `SocketChannel` 交给本地方法 `transferTo`。",
+          "walk": [
+            { "focus": ["FileChannel.open"], "label": "打开文件通道", "say": "获取文件描述符。" },
+            { "focus": ["FileChannel.transferTo"], "label": "触发内核 sendfile", "say": "Linux 上由 `sendfile64` 系统调用接管，支持 SG-DMA 甚至连内核内部拷贝都省掉。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "加大文件到 512KB 再看",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "zerocopy",
+          "say": "把文件大小拉到 512KB，感受 `ByteByByte` 线性爆炸与 `TransferTo` 的平稳。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "mmap vs sendfile 怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "RocketMQ 用 mmap，Kafka 用 sendfile，原因完全不同。",
+          "options": [
+            { "name": "mmap (MappedByteBuffer)", "solves": "适合小块频繁随机读写、需要在用户态修改/检索数据", "cost": "虚拟内存映射管理开销，大文件频繁缺页中断，映射释放依赖 GC/Cleaner", "when": "RocketMQ CommitLog 写盘与索引读取", "say": "RocketMQ 需要先写入再做少量逻辑处理，选 mmap。" },
+            { "name": "sendfile (transferTo)", "solves": "数据原封不动从磁盘发往网络，彻底绕过用户态", "cost": "用户态完全拿不到数据内容，无法做加密/压缩/改写", "when": "Kafka 消费者拉消息、Nginx 静态文件、Netty DefaultFileRegion", "say": "Kafka 刷盘后直接发给消费者，sendfile 最快。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住零拷贝的标准路线",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "零拷贝 (Zero-Copy: mmap / sendfile)",
+          "alias": "FileChannel.transferTo",
+          "oneLine": "传统 read+write 需 4 次上下文切换与 4 次拷贝；mmap 省 1 次 CPU 拷贝，sendfile/transferTo 实现 2 次切换与 0 次 CPU 拷贝。",
+          "asked": "什么是零拷贝？Java 里怎么实现？Kafka 和 RocketMQ 分别用哪种？",
+          "say": "把「4 次变 2 次切换」「0 次 CPU 拷贝」「mmap vs sendfile」三个考点背熟。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果服务端必须在发送文件前用 Java 代码把文件内容做一次 AES 加密，还能用 `FileChannel.transferTo()` 实现零拷贝吗？",
+          "options": [
+            { "text": "不能，因为 CPU 必须把数据读到用户态内存才能执行加密计算", "ok": true, "why": "正确！零拷贝的前提是数据在用户态不需要被加工；一旦要加密/压缩，就只能进用户态处理（如配合 DirectBuffer）。" },
+            { "text": "能，transferTo 会自动在内核里跑 Java 加密代码", "ok": false, "why": "内核不会执行用户的 Java 字节码。" },
+            { "text": "能，只要文件小于 4KB 就行", "ok": false, "why": "跟文件大小无关，跟是否需要用户态算力修改数据有关。" }
+          ],
+          "say": "注意区分：开启 HTTPS/TLS 加密传输时，传统 sendfile 往往会退化（除非网卡支持 kTLS 硬件卸载）。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：零拷贝原理与工程选型",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：请讲一下什么是零拷贝？为什么 Kafka 和 Netty 吞吐量那么高？",
+          "points": [
+            "传统路径痛点：read + write 导致 4 次用户态/内核态切换，以及 2 次 DMA + 2 次 CPU 拷贝",
+            "mmap 方案：FileChannel.map 把内核缓冲区映射到用户虚拟地址空间，省去内核到用户态的 CPU 拷贝",
+            "sendfile 方案：Java 中是 FileChannel.transferTo，数据从 PageCache 直接进网卡缓冲区（SG-DMA 下连内核拷贝都省掉），做到 2 次切换、0 次 CPU 拷贝"
+          ],
+          "model": "传统的 read 加 write 传文件要经历 4 次上下文切换和 4 次内存拷贝，其中两次 CPU 拷贝只是把数据在内核和 JVM 堆之间来回搬运，非常浪费 CPU。零拷贝指的就是消除这些无意义的 CPU 拷贝。常见两种方式：第一是 mmap，通过虚拟内存映射让用户态和内核态共享同一块物理内存页，适合 RocketMQ 这种需要读写修改小块数据的场景；第二是 sendfile，在 Java NIO 中对应 FileChannel.transferTo，数据直接从磁盘 DMA 到内核 PageCache 后，再直接交给网卡发出，全程不经过用户态，实现 2 次上下文切换和 0 次 CPU 拷贝，这也是 Kafka 和 Netty 传输大文件吞吐极高的核心原因。",
+          "say": "按「4 次痛点 → mmap → sendfile/transferTo → Kafka/RocketMQ 选型」顺序讲完。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "零拷贝底层原理三张卡收好。",
+          "items": [
+            { "front": "传统 read+write 开销", "back": "4 次上下文切换 + 2 次 DMA 拷贝 + 2 次 CPU 拷贝。" },
+            { "front": "transferTo (sendfile)", "back": "2 次切换 + 0 次 CPU 拷贝，数据不进 JVM 堆直出网卡。" },
+            { "front": "什么时候不能用 sendfile？", "back": "需要在用户态修改/加密/压缩数据时（例如应用层加密）。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1031 @@
+{
+ "id": "sqljoin",
+ "variants": {
+  "LoopQuery": {
+   "hash": "edc51f7c516dc78b",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "roundTrips": 101,
+      "expected": 1,
+      "matched": 100,
+      "ms": 3
+     },
+     {
+      "roundTrips": 101,
+      "expected": 1,
+      "matched": 100,
+      "ms": 4
+     },
+     {
+      "roundTrips": 101,
+      "expected": 1,
+      "matched": 100,
+      "ms": 4
+     },
+     {
+      "roundTrips": 101,
+      "expected": 1,
+      "matched": 100,
+      "ms": 6
+     },
+     {
+      "roundTrips": 101,
+      "expected": 1,
+      "matched": 100,
+      "ms": 8
+     },
+     {
+      "roundTrips": 101,
+      "expected": 1,
+      "matched": 100,
+      "ms": 5
+     },
+     {
+      "roundTrips": 101,
+      "expected": 1,
+      "matched": 100,
+      "ms": 3
+     },
+     {
+      "roundTrips": 101,
+      "expected": 1,
+      "matched": 100,
+      "ms": 7
+     },
+     {
+      "roundTrips": 101,
+      "expected": 1,
+      "matched": 100,
+      "ms": 3
+     },
+     {
+      "roundTrips": 101,
+      "expected": 1,
+      "matched": 100,
+      "ms": 1
+     }
+    ],
+    "500": [
+     {
+      "roundTrips": 501,
+      "expected": 1,
+      "matched": 500,
+      "ms": 30
+     },
+     {
+      "roundTrips": 501,
+      "expected": 1,
+      "matched": 500,
+      "ms": 22
+     },
+     {
+      "roundTrips": 501,
+      "expected": 1,
+      "matched": 500,
+      "ms": 27
+     },
+     {
+      "roundTrips": 501,
+      "expected": 1,
+      "matched": 500,
+      "ms": 16
+     },
+     {
+      "roundTrips": 501,
+      "expected": 1,
+      "matched": 500,
+      "ms": 31
+     },
+     {
+      "roundTrips": 501,
+      "expected": 1,
+      "matched": 500,
+      "ms": 16
+     },
+     {
+      "roundTrips": 501,
+      "expected": 1,
+      "matched": 500,
+      "ms": 21
+     },
+     {
+      "roundTrips": 501,
+      "expected": 1,
+      "matched": 500,
+      "ms": 23
+     },
+     {
+      "roundTrips": 501,
+      "expected": 1,
+      "matched": 500,
+      "ms": 20
+     },
+     {
+      "roundTrips": 501,
+      "expected": 1,
+      "matched": 500,
+      "ms": 35
+     }
+    ],
+    "1000": [
+     {
+      "roundTrips": 1001,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 63
+     },
+     {
+      "roundTrips": 1001,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 46
+     },
+     {
+      "roundTrips": 1001,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 49
+     },
+     {
+      "roundTrips": 1001,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 38
+     },
+     {
+      "roundTrips": 1001,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 65
+     },
+     {
+      "roundTrips": 1001,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 25
+     },
+     {
+      "roundTrips": 1001,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 36
+     },
+     {
+      "roundTrips": 1001,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 51
+     },
+     {
+      "roundTrips": 1001,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 39
+     },
+     {
+      "roundTrips": 1001,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 32
+     }
+    ],
+    "2000": [
+     {
+      "roundTrips": 2001,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 70
+     },
+     {
+      "roundTrips": 2001,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 65
+     },
+     {
+      "roundTrips": 2001,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 110
+     },
+     {
+      "roundTrips": 2001,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 92
+     },
+     {
+      "roundTrips": 2001,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 87
+     },
+     {
+      "roundTrips": 2001,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 74
+     },
+     {
+      "roundTrips": 2001,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 75
+     },
+     {
+      "roundTrips": 2001,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 90
+     },
+     {
+      "roundTrips": 2001,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 99
+     },
+     {
+      "roundTrips": 2001,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 63
+     }
+    ]
+   },
+   "inside": "Compiled from \"LoopQuery.java\"\npublic class lab.sqljoin.LoopQuery {\n  static final int USERS;\n\n  public lab.sqljoin.LoopQuery();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void networkRtt();\n    Code:\n       0: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n       3: ldc2_w        #13                 // long 15000l\n       6: ladd\n       7: lstore_0\n       8: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n      11: lload_0\n      12: lcmp\n      13: ifge          22\n      16: invokestatic  #15                 // Method java/lang/Thread.onSpinWait:()V\n      19: goto          8\n      22: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #20                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #26                 // class java/util/HashMap\n      10: dup\n      11: sipush        20000\n      14: invokespecial #30                 // Method java/util/HashMap.\"<init>\":(I)V\n      17: astore_2\n      18: iconst_0\n      19: istore_3\n      20: iload_3\n      21: sipush        10000\n      24: if_icmpge     50\n      27: aload_2\n      28: iload_3\n      29: invokestatic  #33                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      32: iload_3\n      33: invokedynamic #37,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      38: invokeinterface #41,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      43: pop\n      44: iinc          3, 1\n      47: goto          20\n      50: iload_1\n      51: newarray       int\n      53: astore_3\n      54: iconst_0\n      55: istore        4\n      57: iload         4\n      59: iload_1\n      60: if_icmpge     82\n      63: aload_3\n      64: iload         4\n      66: iload         4\n      68: bipush        37\n      70: imul\n      71: sipush        10000\n      74: irem\n      75: iastore\n      76: iinc          4, 1\n      79: goto          57\n      82: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n      85: lstore        4\n      87: iconst_0\n      88: istore        6\n      90: iconst_0\n      91: istore        7\n      93: invokestatic  #47                 // Method networkRtt:()V\n      96: iinc          6, 1\n      99: aload_3\n     100: astore        8\n     102: aload         8\n     104: arraylength\n     105: istore        9\n     107: iconst_0\n     108: istore        10\n     110: iload         10\n     112: iload         9\n     114: if_icmpge     153\n     117: aload         8\n     119: iload         10\n     121: iaload\n     122: istore        11\n     124: invokestatic  #47                 // Method networkRtt:()V\n     127: iinc          6, 1\n     130: aload_2\n     131: iload         11\n     133: invokestatic  #33                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     136: invokeinterface #50,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     141: ifnull        147\n     144: iinc          7, 1\n     147: iinc          10, 1\n     150: goto          110\n     153: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n     156: lload         4\n     158: lsub\n     159: ldc2_w        #54                 // long 1000000l\n     162: ldiv\n     163: lstore        8\n     165: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     168: iload         6\n     170: invokedynamic #60,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     175: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     178: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     181: ldc           #67                 // String expected=1\n     183: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     186: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     189: iload         7\n     191: invokedynamic #69,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     196: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     199: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     202: lload         8\n     204: invokedynamic #70,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     209: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     212: return\n}"
+  },
+  "BatchIn": {
+   "hash": "0f70b834b80d4615",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 2
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 3
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 2
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 2
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 3
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 100,
+      "ms": 1
+     }
+    ],
+    "500": [
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 4
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 4
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 8
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 5
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 5
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 2
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 3
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 3
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 1
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 4
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 6
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 4
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 5
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 8
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 3
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 5
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 8
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 6
+     }
+    ],
+    "2000": [
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 15
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 5
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 5
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 8
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 13
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 4
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 12
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 7
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 12
+     },
+     {
+      "roundTrips": 2,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 3
+     }
+    ]
+   },
+   "inside": "Compiled from \"BatchIn.java\"\npublic class lab.sqljoin.BatchIn {\n  static final int USERS;\n\n  public lab.sqljoin.BatchIn();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void networkRtt();\n    Code:\n       0: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n       3: ldc2_w        #13                 // long 15000l\n       6: ladd\n       7: lstore_0\n       8: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n      11: lload_0\n      12: lcmp\n      13: ifge          22\n      16: invokestatic  #15                 // Method java/lang/Thread.onSpinWait:()V\n      19: goto          8\n      22: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #20                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #26                 // class java/util/HashMap\n      10: dup\n      11: sipush        20000\n      14: invokespecial #30                 // Method java/util/HashMap.\"<init>\":(I)V\n      17: astore_2\n      18: iconst_0\n      19: istore_3\n      20: iload_3\n      21: sipush        10000\n      24: if_icmpge     50\n      27: aload_2\n      28: iload_3\n      29: invokestatic  #33                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      32: iload_3\n      33: invokedynamic #37,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      38: invokeinterface #41,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      43: pop\n      44: iinc          3, 1\n      47: goto          20\n      50: iload_1\n      51: newarray       int\n      53: astore_3\n      54: iconst_0\n      55: istore        4\n      57: iload         4\n      59: iload_1\n      60: if_icmpge     82\n      63: aload_3\n      64: iload         4\n      66: iload         4\n      68: bipush        37\n      70: imul\n      71: sipush        10000\n      74: irem\n      75: iastore\n      76: iinc          4, 1\n      79: goto          57\n      82: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n      85: lstore        4\n      87: iconst_0\n      88: istore        6\n      90: invokestatic  #47                 // Method networkRtt:()V\n      93: iinc          6, 1\n      96: new           #50                 // class java/util/HashSet\n      99: dup\n     100: iload_1\n     101: iconst_2\n     102: imul\n     103: invokespecial #52                 // Method java/util/HashSet.\"<init>\":(I)V\n     106: astore        7\n     108: aload_3\n     109: astore        8\n     111: aload         8\n     113: arraylength\n     114: istore        9\n     116: iconst_0\n     117: istore        10\n     119: iload         10\n     121: iload         9\n     123: if_icmpge     152\n     126: aload         8\n     128: iload         10\n     130: iaload\n     131: istore        11\n     133: aload         7\n     135: iload         11\n     137: invokestatic  #33                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     140: invokeinterface #53,  2           // InterfaceMethod java/util/Set.add:(Ljava/lang/Object;)Z\n     145: pop\n     146: iinc          10, 1\n     149: goto          119\n     152: invokestatic  #47                 // Method networkRtt:()V\n     155: iinc          6, 1\n     158: new           #26                 // class java/util/HashMap\n     161: dup\n     162: aload         7\n     164: invokeinterface #59,  1           // InterfaceMethod java/util/Set.size:()I\n     169: iconst_2\n     170: imul\n     171: invokespecial #30                 // Method java/util/HashMap.\"<init>\":(I)V\n     174: astore        8\n     176: aload         7\n     178: invokeinterface #63,  1           // InterfaceMethod java/util/Set.iterator:()Ljava/util/Iterator;\n     183: astore        9\n     185: aload         9\n     187: invokeinterface #67,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n     192: ifeq          240\n     195: aload         9\n     197: invokeinterface #73,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n     202: checkcast     #21                 // class java/lang/Integer\n     205: invokevirtual #77                 // Method java/lang/Integer.intValue:()I\n     208: istore        10\n     210: aload         8\n     212: iload         10\n     214: invokestatic  #33                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     217: aload_2\n     218: iload         10\n     220: invokestatic  #33                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     223: invokeinterface #80,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     228: checkcast     #84                 // class java/lang/String\n     231: invokeinterface #41,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n     236: pop\n     237: goto          185\n     240: iconst_0\n     241: istore        9\n     243: aload_3\n     244: astore        10\n     246: aload         10\n     248: arraylength\n     249: istore        11\n     251: iconst_0\n     252: istore        12\n     254: iload         12\n     256: iload         11\n     258: if_icmpge     292\n     261: aload         10\n     263: iload         12\n     265: iaload\n     266: istore        13\n     268: aload         8\n     270: iload         13\n     272: invokestatic  #33                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     275: invokeinterface #80,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     280: ifnull        286\n     283: iinc          9, 1\n     286: iinc          12, 1\n     289: goto          254\n     292: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n     295: lload         4\n     297: lsub\n     298: ldc2_w        #86                 // long 1000000l\n     301: ldiv\n     302: lstore        10\n     304: getstatic     #88                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     307: iload         6\n     309: invokedynamic #92,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     314: invokevirtual #93                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     317: getstatic     #88                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     320: ldc           #99                 // String expected=1\n     322: invokevirtual #93                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     325: getstatic     #88                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     328: iload         9\n     330: invokedynamic #101,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     335: invokevirtual #93                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     338: getstatic     #88                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     341: lload         10\n     343: invokedynamic #102,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     348: invokevirtual #93                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     351: return\n}"
+  },
+  "HashJoin": {
+   "hash": "0f1aa21d418b461a",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 8
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 18
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 8
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 9
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 9
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 11
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 10
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 2
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 7
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 6
+     }
+    ],
+    "500": [
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 12
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 17
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 6
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 10
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 11
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 11
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 6
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 13
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 6
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 8
+     }
+    ],
+    "1000": [
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 9
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 10
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 4
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 11
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 14
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 7
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 10
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 7
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 6
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 7
+     }
+    ],
+    "2000": [
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 11
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 5
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 12
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 5
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 10
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 13
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 6
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 8
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 5
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 7
+     }
+    ]
+   },
+   "inside": "Compiled from \"HashJoin.java\"\npublic class lab.sqljoin.HashJoin {\n  static final int USERS;\n\n  public lab.sqljoin.HashJoin();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void networkRtt();\n    Code:\n       0: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n       3: ldc2_w        #13                 // long 15000l\n       6: ladd\n       7: lstore_0\n       8: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n      11: lload_0\n      12: lcmp\n      13: ifge          22\n      16: invokestatic  #15                 // Method java/lang/Thread.onSpinWait:()V\n      19: goto          8\n      22: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #20                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: sipush        10000\n      10: anewarray     #28                 // class java/lang/String\n      13: astore_2\n      14: iconst_0\n      15: istore_3\n      16: iload_3\n      17: sipush        10000\n      20: if_icmpge     38\n      23: aload_2\n      24: iload_3\n      25: iload_3\n      26: invokedynamic #30,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      31: aastore\n      32: iinc          3, 1\n      35: goto          16\n      38: iload_1\n      39: newarray       int\n      41: astore_3\n      42: iconst_0\n      43: istore        4\n      45: iload         4\n      47: iload_1\n      48: if_icmpge     70\n      51: aload_3\n      52: iload         4\n      54: iload         4\n      56: bipush        37\n      58: imul\n      59: sipush        10000\n      62: irem\n      63: iastore\n      64: iinc          4, 1\n      67: goto          45\n      70: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n      73: lstore        4\n      75: iconst_0\n      76: istore        6\n      78: invokestatic  #34                 // Method networkRtt:()V\n      81: iinc          6, 1\n      84: new           #37                 // class java/util/HashMap\n      87: dup\n      88: sipush        20000\n      91: invokespecial #39                 // Method java/util/HashMap.\"<init>\":(I)V\n      94: astore        7\n      96: iconst_0\n      97: istore        8\n      99: iload         8\n     101: sipush        10000\n     104: if_icmpge     130\n     107: aload         7\n     109: iload         8\n     111: invokestatic  #42                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     114: aload_2\n     115: iload         8\n     117: aaload\n     118: invokeinterface #46,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n     123: pop\n     124: iinc          8, 1\n     127: goto          99\n     130: iconst_0\n     131: istore        8\n     133: aload_3\n     134: astore        9\n     136: aload         9\n     138: arraylength\n     139: istore        10\n     141: iconst_0\n     142: istore        11\n     144: iload         11\n     146: iload         10\n     148: if_icmpge     182\n     151: aload         9\n     153: iload         11\n     155: iaload\n     156: istore        12\n     158: aload         7\n     160: iload         12\n     162: invokestatic  #42                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     165: invokeinterface #52,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     170: ifnull        176\n     173: iinc          8, 1\n     176: iinc          11, 1\n     179: goto          144\n     182: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n     185: lload         4\n     187: lsub\n     188: ldc2_w        #56                 // long 1000000l\n     191: ldiv\n     192: lstore        9\n     194: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     197: iload         6\n     199: invokedynamic #62,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     204: invokevirtual #63                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     207: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     210: ldc           #69                 // String expected=1\n     212: invokevirtual #63                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     215: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     218: iload         8\n     220: invokedynamic #71,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     225: invokevirtual #63                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     228: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     231: lload         9\n     233: invokedynamic #72,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     238: invokevirtual #63                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     241: return\n}"
+  },
+  "IndexJoin": {
+   "hash": "9a9a9522dc8acc21",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 100,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 500,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 1000,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "roundTrips": 1,
+      "expected": 1,
+      "matched": 2000,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"IndexJoin.java\"\npublic class lab.sqljoin.IndexJoin {\n  static final int USERS;\n\n  public lab.sqljoin.IndexJoin();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void networkRtt();\n    Code:\n       0: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n       3: ldc2_w        #13                 // long 15000l\n       6: ladd\n       7: lstore_0\n       8: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n      11: lload_0\n      12: lcmp\n      13: ifge          22\n      16: invokestatic  #15                 // Method java/lang/Thread.onSpinWait:()V\n      19: goto          8\n      22: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #20                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: sipush        10000\n      10: anewarray     #28                 // class java/lang/String\n      13: astore_2\n      14: iconst_0\n      15: istore_3\n      16: iload_3\n      17: sipush        10000\n      20: if_icmpge     38\n      23: aload_2\n      24: iload_3\n      25: iload_3\n      26: invokedynamic #30,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      31: aastore\n      32: iinc          3, 1\n      35: goto          16\n      38: iload_1\n      39: newarray       int\n      41: astore_3\n      42: iconst_0\n      43: istore        4\n      45: iload         4\n      47: iload_1\n      48: if_icmpge     70\n      51: aload_3\n      52: iload         4\n      54: iload         4\n      56: bipush        37\n      58: imul\n      59: sipush        10000\n      62: irem\n      63: iastore\n      64: iinc          4, 1\n      67: goto          45\n      70: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n      73: lstore        4\n      75: iconst_0\n      76: istore        6\n      78: invokestatic  #34                 // Method networkRtt:()V\n      81: iinc          6, 1\n      84: iconst_0\n      85: istore        7\n      87: aload_3\n      88: astore        8\n      90: aload         8\n      92: arraylength\n      93: istore        9\n      95: iconst_0\n      96: istore        10\n      98: iload         10\n     100: iload         9\n     102: if_icmpge     128\n     105: aload         8\n     107: iload         10\n     109: iaload\n     110: istore        11\n     112: aload_2\n     113: iload         11\n     115: aaload\n     116: ifnull        122\n     119: iinc          7, 1\n     122: iinc          10, 1\n     125: goto          98\n     128: invokestatic  #7                  // Method java/lang/System.nanoTime:()J\n     131: lload         4\n     133: lsub\n     134: ldc2_w        #37                 // long 1000000l\n     137: ldiv\n     138: lstore        8\n     140: getstatic     #39                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     143: iload         6\n     145: invokedynamic #43,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     150: invokevirtual #44                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     153: getstatic     #39                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     156: ldc           #50                 // String expected=1\n     158: invokevirtual #44                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     161: getstatic     #39                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     164: iload         7\n     166: invokedynamic #52,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     171: invokevirtual #44                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     174: getstatic     #39                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     177: lload         8\n     179: invokedynamic #53,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     184: invokevirtual #44                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     187: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

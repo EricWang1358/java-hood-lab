@@ -1,0 +1,602 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "index-like-or",
+  "course": "MySQL 索引、事务与锁",
+  "title": "LIKE '%abc' 和 OR 混用，怎么把索引废掉了？",
+  "lead": "模糊匹配加上前导 `%`，或者 `OR` 两边有一个没索引，优化器直接放弃索引走全表扫描！",
+  "minutes": 40,
+  "needs": [
+    "知道 B+ 树字符串按字典序前缀排列"
+  ],
+  "after": [
+    "讲清为什么 `LIKE 'abc%'` 能走索引而 `LIKE '%abc'` 不能",
+    "看懂 `OR` 两边只要有一边没索引就会拖累整条 SQL 走全表扫",
+    "掌握前缀匹配、`UNION ALL` 拆分和业务搜索引擎替代方案"
+  ],
+  "terms": {
+    "前导通配符（Leading Wildcard）": "`LIKE '%abc'` 或 `LIKE '%abc%'`，开头不确定导致 B+ 树按首字符排序失效。",
+    "前缀匹配（Prefix LIKE）": "`LIKE 'abc%'`，开头固定，B+ 树直接定位 `'abc'` 开头区间走 `range`。",
+    "OR 拖累失效": "`WHERE indexed_a = 1 OR unindexed_b = 2`，因为 `unindexed_b` 必须全表扫才能找全，优化器干脆整条走全表扫。",
+    "UNION ALL": "把 `OR` 拆成两条各自走索引的 SQL 用 `UNION ALL` 拼起来，避免全表扫描。"
+  },
+  "experiments": {
+    "likeor": {
+      "runner": "java",
+      "home": "lab.likeor",
+      "variants": [
+        {
+          "id": "LeadingWildcard",
+          "label": "LIKE '%999' (前导通配符)",
+          "note": "开头不确定，无法利用 B+ 树字典序，全表扫 100,000 行！"
+        },
+        {
+          "id": "OrUnindexed",
+          "label": "a=1 OR b=2 (b 无索引)",
+          "note": "b 没索引拖累整句放弃索引，全表扫 100,000 行！"
+        },
+        {
+          "id": "PrefixLike",
+          "label": "LIKE 'ORD_99%' (前缀匹配)",
+          "note": "前缀固定，B+ 树直接范围定位，仅扫 100 行！"
+        },
+        {
+          "id": "UnionAllSplit",
+          "label": "UNION ALL 拆分双索引查询",
+          "note": "各自走索引再合并，避免全表扫！"
+        }
+      ],
+      "knob": {
+        "label": "表总行数",
+        "values": [
+          "10000",
+          "50000",
+          "100000",
+          "200000"
+        ],
+        "default": "100000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "scanned",
+        "expectKey": "expected",
+        "label": "扫描行数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "LIKE '%abc' 和 OR 混用，怎么把索引废掉了？",
+      "bridge": "今天不背八股定义，先看一个真实工程场景，跑出数据后再拆底层机制。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "后台管理系统最常见的慢 SQL：`WHERE code LIKE '%999'`（搜尾号），或者 `WHERE user_id = 1 OR remark = 'vip'`（`remark` 没索引）。看似只查几条数据，数据库却把整张大表全扫了一遍！",
+          "say": "今天看清为什么前缀确定就能秒查，前缀一丢就必须全表扫。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，热个身",
+      "bridge": "这节课会用到三个基础概念，咱们先花一分钟确认一下。忘了也没关系，选完当场给你补齐。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题，每题点一个答案就行。选完马上告诉你对不对，下面那句话就是这节课要用到的前置底座。",
+          "items": [
+            {
+              "have": "字典序排序",
+              "q": "英文词典里的单词是按第几个字母排的序？",
+              "options": [
+                "按最后一个字母",
+                "从左到右按第 1、2、3 个字母（前缀顺序）",
+                "按长度"
+              ],
+              "answer": 1,
+              "why": "B+ 树里的字符串索引也是从左到右按字典序排列的！"
+            },
+            {
+              "have": "前导 %",
+              "q": "让你在字典里找「以 `ing` 结尾的所有单词」（`%ing`），你能直接翻到那一页吗？",
+              "options": [
+                "能",
+                "不能！因为首字母可能是 a~z 任何一个，必须从第 1 页翻到最后一页",
+                "翻到 i 开头就行"
+              ],
+              "answer": 1,
+              "why": "开头不确定，`ing` 结尾的词散落在字典各个角落，B+ 树彻底帮不上忙！"
+            },
+            {
+              "have": "OR 条件",
+              "q": "`WHERE a = 1 OR b = 2`，`a` 有索引但 `b` 没索引，为什么走 `a` 的索引查完还得全表扫？",
+              "options": [
+                "不用全表扫",
+                "因为还要找出所有 `b = 2` 的行，而 `b` 没索引只能全表扫！",
+                "MySQL 不支持 OR"
+              ],
+              "answer": 1,
+              "why": "既然无论如何都要全表扫一遍找 `b = 2`，那顺便把 `a = 1` 一起判了就行，走 `a` 索引反而多余！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个生活场景",
+      "bridge": "热身完了。看代码之前，先在脑子里放一个画面。后面所有的数据库和 Java 机制，都可以往这个画面上套。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "按前缀查字典 (abc%)",
+              "查尾字 (%999)"
+            ],
+            "shared": {
+              "name": "10 万词条",
+              "value": "字典序"
+            }
+          },
+          "story": "查「`ORD_99` 开头」的订单，就跟查「`ab` 开头」的单词一样，直接翻到 `ORD_99` 那几页就行；但查「`999` 结尾」的订单，尾号 `999` 可能藏在 `ORD_999`、`ORD_1999`、`ORD_9999`……散落全书，只能从第一页挨个读到最后一页！",
+          "say": "至于 `OR`，就像「找姓张的，或者穿红衣服的」：花名册按姓排序能秒找姓张的，但没记衣服颜色，为了找穿红衣服的，你还是得把全校所有人看一遍！",
+          "map": [
+            {
+              "scene": "散落全书的尾号 999",
+              "on": "shared",
+              "tag": "LeadingWildcard",
+              "code": "`if (codes[i].endsWith(\"999\")) matched++;`",
+              "say": "开头不确定，B+ 树完全无法剪枝，只能逐行判断 `endsWith`。"
+            },
+            {
+              "scene": "前缀固定直接翻页",
+              "on": "actors",
+              "tag": "PrefixLike",
+              "code": "`PrefixLike`",
+              "say": "`LIKE 'ORD_99%'` 可以精准定位到前缀区间，只扫 100 行！"
+            },
+            {
+              "scene": "OR 另一半没索引",
+              "on": "actors",
+              "tag": "OrUnindexed",
+              "code": "`OrUnindexed`",
+              "say": "一边有索引、一边无索引，整句退化为全表扫描。"
+            },
+            {
+              "scene": "拆成两句再合并",
+              "on": "action",
+              "tag": "UNION ALL",
+              "code": "`UnionAllSplit`",
+              "say": "给 `b` 补索引后，用 `OR`（Index Merge）或 `UNION ALL` 各自走索引！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "只加了个前导 %，10 万行里找 100 行要扫多少行？",
+      "bridge": "直观感觉是一回事，高并发/异常真的撞上来时，结果往往完全相反。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "100,000 行订单里尾号是 `999` 的只有 100 条。写成 `WHERE code LIKE '%999'` 会扫多少行？",
+          "say": "看 `LeadingWildcard` 的扫描代码。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "把场景写成程序：LeadingWildcard",
+      "bridge": "我们用纯 JDK 把这个底层过程真实模拟出来。重点看标出来的几行，不认识的词点一下虚线就有大白话解释。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "likeor.LeadingWildcard",
+          "say": "`LeadingWildcard` 只能从 `0` 遍历到 `n - 1`，对每一行调用 `endsWith(\"999\")`。",
+          "walk": [
+            {
+              "focus": [
+                "for (int i = 0; i < n; i++) {"
+              ],
+              "say": "前导 `%` 让 B+ 树无法定位起点，只能全表扫 10 万行。"
+            },
+            {
+              "focus": [
+                "if (codes[i].endsWith(\"999\")) matched++;"
+              ],
+              "say": "每行都要做字符串后缀匹配，扫完 10 万行才凑齐 100 条结果。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一个答案",
+      "bridge": "代码看完了。先别急着看结果，按你刚才对场景的理解，先猜一猜程序跑完会打印出什么。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "10 万行表里尾号为 `999` 的只有 100 条，执行 `WHERE code LIKE '%999'` 会扫描多少行？",
+          "options": [
+            "100 行",
+            "1,000 行",
+            "100,000 行（全表扫描）"
+          ],
+          "answer": 2,
+          "say": "选一个你觉得最可能的，猜错完全没关系，猜过再看实测印象最深。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一次一次看真实运行结果",
+      "bridge": "你已经下注了。这组程序在本地 JDK 实测跑了多轮，现在把真实数据放出来核对。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "likeor",
+          "show": [
+            "LeadingWildcard"
+          ],
+          "hand": true,
+          "focus": [
+            "for (int i = 0; i < n; i++) {"
+          ],
+          "say": "先点运行看看基准表现，留意指标和预期是不是对得上。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "say": "实测 `scanned = 100000`！而前缀匹配 `PrefixLike`（`LIKE 'ORD_99%'`）只扫了 100 行，性能差出 1000 倍！",
+          "key": "LIKE 前导通配与 OR 拖累"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "出事的是哪一行？",
+      "bridge": "结果摆在眼前了。现在回到代码里，把直接导致这个现象的关键一行找出来。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "likeor.LeadingWildcard",
+          "q": "回到 `LeadingWildcard`，点击**导致每行都要做后缀比对、无法用前缀区间剪枝**的那一行：",
+          "answer": [
+            "if (codes[i].endsWith(\"999\")) matched++;"
+          ],
+          "hint": "找调用 `endsWith` 的那一行。",
+          "found": "就是它！B+ 树按前缀排序，后缀匹配只能全表逐行检查。",
+          "say": "直接在代码上点你怀疑的那一行，点错了会给你提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "拆开字节码 / 底层指令看一眼",
+      "bridge": "光看表面现象还不够，用 JDK 自带的 `javap -c -p` 看一眼机器到底执行了什么。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "likeor.LeadingWildcard",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "看 `javap -c -p`：循环里反复调用 `String.endsWith` 逐行比对，时间复杂度 O(N * len)，而前缀匹配直接在 B+ 树里二分找到起点后连续扫描即可。",
+          "walk": [
+            {
+              "focus": [
+                "invokevirtual"
+              ],
+              "label": "逐行字符串后缀匹配",
+              "say": "每行都要执行一次 `endsWith` 检查。"
+            },
+            {
+              "focus": [
+                "if_icmpge"
+              ],
+              "label": "扫完整表才停",
+              "say": "必须遍历完所有 `n` 行。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "真有「按尾号 / 模糊关键词」搜的需求，工程上怎么解？",
+      "bridge": "把两条执行流或两个阶段摊在时间轴上，每一步谁先谁后、哪里卡住，一眼看穿。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "业务一定要搜 LIKE '%999' 或 '%关键词%' 怎么办？",
+          "parts": {
+            "read": "场景",
+            "calc": "痛点",
+            "write": "工程解法"
+          },
+          "lanes": [
+            "直接硬写 SQL",
+            "工程正经解法"
+          ],
+          "shared": {
+            "name": "搜索延迟",
+            "start": "秒级慢查 -> 毫秒"
+          },
+          "say": "业务方非要搜尾号或中间词，别硬刚 MySQL 全表扫，看这三招。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "直接 WHERE phone LIKE '%8899'",
+              "say": "大表直接全表扫描，CPU 和 I/O 打满。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "text": "招1（查尾号）：存反转字段 reverse_phone，搜 '9988%'",
+              "say": "把手机号反转存一列建索引，查尾号就变成了前缀匹配 `LIKE '9988%'`，秒走索引！",
+              "ask": {
+                "q": "如果需求不是查固定尾号，而是商品标题任意分词模糊搜索（`LIKE '%无线耳机%'`），选什么？",
+                "options": [
+                  "给标题建普通 B+ 树索引",
+                  "同步到 Elasticsearch（倒排索引）"
+                ],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "value": "毫秒级",
+              "text": "招2（任意模糊）：上 ES 倒排索引 / 招3（短覆盖）：覆盖索引扫索引树",
+              "say": "任意分词搜索用 Elasticsearch 倒排索引；如果必须留在 MySQL 且字段很小，至少用覆盖索引（`type=index`）避免回表！"
+            }
+          ],
+          "verdict": "前缀用 ==LIKE 'abc%'==，尾号用==反转前缀==，全模糊上 ==ES 倒排索引==；OR 两边都要有索引或改 ==UNION ALL==。",
+          "verdictSay": "这三招在面试问「LIKE `%xxx%` 怎么优化」时答出来，非常加分。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "先猜：怎么改才能彻底修好？",
+      "bridge": "病根找到了。在看几种修法前，先判断一下哪种思路真正对症。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "`WHERE a = 1 OR b = 2` 里 `a` 有索引、`b` 没有索引，怎么改才能走上索引？",
+          "options": [
+            "给 b 也加上索引（或改成各自走索引后 UNION ALL）",
+            "把 OR 改成 ||",
+            "给 a 再建一个索引"
+          ],
+          "answer": 0,
+          "say": "想清楚「为什么出事」，再选一个你认为能根治的方案。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测对比",
+      "bridge": "不争论，把四种写法放在同一个开关下实测，高下立判。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "likeor",
+          "show": [
+            "LeadingWildcard",
+            "OrUnindexed",
+            "PrefixLike",
+            "UnionAllSplit"
+          ],
+          "select": "PrefixLike",
+          "say": "切到 `PrefixLike`（仅扫 100 行）或 `UnionAllSplit`（拆分走索引），彻底告别 10 万行全表扫！"
+        },
+        {
+          "t": "reveal",
+          "of": "p2",
+          "say": "切到 `PrefixLike` 后问题彻底清零，同时兼顾性能与正确性。"
+        },
+        {
+          "t": "try",
+          "say": "自己拨动上面的规模开关，对比错误数和耗时随规模的变化。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修好了，各自代价是多少？",
+      "bridge": "把四种方案在不同规模下的耗时和正确性画成折线图，工程选型靠数据说话。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "likeor",
+          "say": "`LeadingWildcard` 和 `OrUnindexed` 随表规模飙到 20 万；`PrefixLike` 和 `UnionAllSplit` 稳稳贴在百行级别。",
+          "walk": [
+            {
+              "focus": "LeadingWildcard",
+              "say": "看 `LIKE '%999' (前导通配符)`：开头不确定，无法利用 B+ 树字典序，全表扫 100,000 行！"
+            },
+            {
+              "focus": "OrUnindexed",
+              "say": "看 `a=1 OR b=2 (b 无索引)`：b 没索引拖累整句放弃索引，全表扫 100,000 行！"
+            },
+            {
+              "focus": "PrefixLike",
+              "say": "看 `LIKE 'ORD_99%' (前缀匹配)`：前缀固定，B+ 树直接范围定位，仅扫 100 行！"
+            },
+            {
+              "focus": "UnionAllSplit",
+              "say": "看 `UNION ALL 拆分双索引查询`：各自走索引再合并，避免全表扫！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上到底怎么选？",
+      "bridge": "没有银弹，只有适用边界。把每种方案的优点、代价和适用场景摆成一张表。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "根据查询模式选型：前缀固定直接用 B+ 树，任意模糊上 ES，OR 条件确保两边都有索引。",
+          "options": [
+            {
+              "name": "LIKE '%xxx' / OR 无索引列",
+              "solves": "写法简单",
+              "cost": "10 万+ 行全表扫描",
+              "when": "仅限极小表",
+              "say": "大表必慢。"
+            },
+            {
+              "name": "LIKE 'xxx%' / 反转前缀",
+              "solves": "命中 B+ 树 range 范围扫",
+              "cost": "仅扫 100 行：{ms:likeor.PrefixLike} ms",
+              "when": "前缀匹配 / 尾号查询",
+              "say": "MySQL 原生极速。"
+            },
+            {
+              "name": "ES 倒排索引 / UNION ALL",
+              "solves": "全模糊分词 / 多列 OR 各自走索引",
+              "cost": "毫秒级：{ms:likeor.UnionAllSplit} ms",
+              "when": "电商搜索 / 复杂 OR 查询",
+              "say": "架构级解法。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "两道巩固题：检验是否真懂",
+      "bridge": "学完立刻做两道高频面试陷阱题，看看能不能一眼识破。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "id": "q1",
+          "q": "下面哪条 `LIKE` 语句**可以**利用 B+ 树索引（假设 `name` 列有普通索引）？",
+          "options": [
+            {
+              "text": "WHERE name LIKE '张%'",
+              "ok": true,
+              "why": "开头字符确定，可以利用 B+ 树前缀字典序做 range 范围扫描。"
+            },
+            {
+              "text": "WHERE name LIKE '%张'",
+              "ok": false,
+              "why": "前导 `%` 无法定位起点，走全表或全索引扫描。"
+            },
+            {
+              "text": "WHERE name LIKE '%张%'",
+              "ok": false,
+              "why": "前导 `%` 导致索引失效。"
+            }
+          ],
+          "say": "第一题：选最精准的那一项。"
+        },
+        {
+          "t": "quiz",
+          "id": "q2",
+          "q": "关于 `WHERE a = 1 OR b = 2`，下面哪种说法是正确的？",
+          "options": [
+            {
+              "text": "只要 b 没有索引，整条 SQL 通常会退化为全表扫描",
+              "ok": true,
+              "why": "因为找 `b = 2` 必须扫全表，优化器干脆整句走全表扫描。"
+            },
+            {
+              "text": "只要 a 有索引，就绝对不会全表扫描",
+              "ok": false,
+              "why": "会被没有索引的 `b` 拖累！"
+            },
+            {
+              "text": "MySQL 根本不支持 OR 走索引",
+              "ok": false,
+              "why": "如果 `a` 和 `b` 都有索引，MySQL 可以用 `index_merge` 或改写 `UNION ALL` 走索引。"
+            }
+          ],
+          "say": "第二题：换个问法考同一个底层原理。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把概念装进脑子：标准叫法与面试原题",
+      "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
+      "blocks": [
+        {
+          "t": "callout",
+          "tone": "note",
+          "title": "LIKE 前导通配与 OR 拖累（Leading Wildcard & OR Index Drop）",
+          "md": "==LIKE '%x'== 破坏前缀有序性，==OR== 含无索引列会拖累全句；改用==前缀匹配、反转列、ES 或 UNION ALL==。",
+          "say": "记住这一句核心定义，面试时先抛结论再展开。"
+        },
+        {
+          "t": "points",
+          "items": [
+            "为什么 LIKE '%xxx' 不走索引，而 LIKE 'xxx%' 走索引？",
+            "业务上必须按 '%关键词%' 模糊搜索怎么优化？"
+          ],
+          "say": "这几道都是真实一二面原题，下一页直接练习脱稿讲。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上课件，开口讲一遍",
+      "bridge": "看懂不等于讲得出来。对着计时器，按要点一口气讲顺。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚为什么前导 % 和 OR 含无索引列会失效，以及工程上怎么优化模糊查询？",
+          "seconds": 90,
+          "points": [
+            "B+ 树字符串按从左到右前缀字典序排列，前导 % 开头不确定无法二分定位",
+            "OR 两边只要有一边没索引，为了找全数据只能全表扫，拖累另一边也放弃索引",
+            "优化：前缀用 'abc%'；查尾号存反转列；任意分词模糊上 ES 倒排索引；OR 补索引或改 UNION ALL"
+          ],
+          "model": "B+ 树索引对字符串是按从左到右的前缀字典序排列的，所以 LIKE 'abc%' 可以定位前缀区间走 range 索引，而 LIKE '%abc' 开头不确定，无法剪枝只能全表扫描。同样地，WHERE a=1 OR b=2 如果 b 没索引，为了找齐 b=2 必须全表扫，优化器就会放弃 a 的索引。工程上查尾号可以存反转字段用前缀查，任意模糊搜索同步到 Elasticsearch，OR 条件则确保两边都有索引或拆成 UNION ALL。",
+          "say": "先自己组织语言讲一遍，再点开参考答案对照漏了哪个得分点。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张复习卡片",
+      "bridge": "最后留三张一问一答卡片，考前扫一眼就能全部唤醒。",
+      "blocks": [
+        {
+          "t": "cards",
+          "cards": [
+            {
+              "q": "LIKE '%abc' 和 'abc%' 谁能走索引？",
+              "a": "'abc%' 能走 range 索引，'%abc' 不能。"
+            },
+            {
+              "q": "为什么 WHERE a=1 OR b=2（b 无索引）会全表扫？",
+              "a": "找 b=2 必须扫全表，顺带判 a=1 更省事，所以放弃 a 的索引。"
+            },
+            {
+              "q": "MySQL 怎么高效查手机号尾号 8899？",
+              "a": "冗余存一份反转手机号建索引，用 LIKE '9988%' 查。"
+            }
+          ],
+          "say": "这三张卡片就是本课的最小精华，全部通关，进入下一课！"
+        }
+      ]
+    }
+  ]
+}

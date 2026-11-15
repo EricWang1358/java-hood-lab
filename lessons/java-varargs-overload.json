@@ -1,0 +1,616 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-varargs-overload",
+  "course": "Java 工程语法与集合",
+  "title": "变长参数数组分配、重载静态分派与装箱优先级",
+  "lead": "写了个便捷方法 sum(int... nums)，在热循环里每次传 2 个参数竟然都在偷偷 new int[2]！更迷惑的是 Base ref = new Sub(); 调重载方法 tag(ref) 到底走哪个？",
+  "minutes": 30,
+  "needs": [
+    "知道方法重载（Overload）与重写（Override）",
+    "知道基本类型自动提升与装箱"
+  ],
+  "after": [
+    "用 javap 字节码看清变长参数 `int...` 每次调用都在隐式 `newarray int`",
+    "掌握高频 1~2 个参数的固定重载（Fixed-Arity Overloading，如 List.of）如何消除数组分配",
+    "说清重载的「编译期静态分派」规则及基本类型提升 > 自动装箱 > 变长参数的匹配优先级"
+  ],
+  "terms": {
+    "变长参数 (Varargs)": "编译期语法糖，本质是 `int[]` 数组；每次调用 `sum(1, 2)` 编译器都会生成 `new int[]{1, 2}`。",
+    "固定参数重载 (Fixed-Arity)": "像 JDK `List.of(E e1)`, `List.of(E e1, E e2)` ... 专门重载 0~10 个参数版本，只把 11+ 个留给 `E...`，彻底省掉高频调用的数组分配。",
+    "静态分派 (Static Dispatch)": "重载方法的选择在**编译期**根据变量的「静态声明类型（如 `Base`）」决定，而不是运行期的实际类型（`Sub`）。"
+  },
+  "experiments": {
+    "varargs": {
+      "runner": "java",
+      "home": "lab.varargs",
+      "variants": [
+        {
+          "id": "VarargsArrayAlloc",
+          "code": "VarargsArrayAlloc.java",
+          "label": "只提供 int... 变长参数",
+          "note": "每次 sum(1, 2) 都在堆上隐式分配 new int[2]（或靠逃逸分析消除），字节码多出数组创建。"
+        },
+        {
+          "id": "OverloadFixedArity",
+          "code": "OverloadFixedArity.java",
+          "label": "补上 sum(int, int) 固定重载",
+          "note": "编译器优先匹配固定参数重载，零数组分配，直接寄存器传参。"
+        },
+        {
+          "id": "BoxedOverloadTrap",
+          "code": "BoxedOverloadTrap.java",
+          "label": "pick(Integer) vs pick(long) 优先级",
+          "note": "传入 int 10 时优先「基本类型拓宽 -> long」，而不是「装箱 -> Integer」。"
+        },
+        {
+          "id": "StaticDispatchByRef",
+          "code": "StaticDispatchByRef.java",
+          "label": "Base ref = new Sub() 静态分派",
+          "note": "编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。"
+        }
+      ],
+      "knob": {
+        "label": "方法调用次数 N",
+        "values": [
+          "100000",
+          "500000",
+          "1000000",
+          "2000000"
+        ],
+        "default": "1000000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "ok",
+        "expectKey": "expected",
+        "label": "符合预期调用次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "变长参数数组分配、重载静态分派与装箱优先级",
+      "bridge": "写了个便捷方法 sum(int... nums)，在热循环里每次传 2 个参数竟然都在偷偷 new int[2]！更迷惑的是 Base ref = new Sub(); 调重载方法 tag(ref) 到底走哪个？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "为什么 JDK 9 的 `List.of()`、`Set.of()`、`Map.of()` 要不厌其烦地从 0 个参数一直重载到 10 个参数，最后才放一个 `E... elements`？\n今天用 `javap` 看穿 **varargs 隐式建数组** 和 **重载静态分派优先级**！",
+          "say": "这也是面试常考的「重载 vs 重写」底层分派机制。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
+          "items": [
+            {
+              "have": "拓宽 vs 装箱",
+              "q": "同时存在 `pick(Integer a)` 和 `pick(long a)`，调用 `pick(10)` 会匹配哪个？",
+              "options": [
+                "pick(long a)（基本类型拓宽优先级高于自动装箱）",
+                "pick(Integer a)",
+                "编译报错"
+              ],
+              "answer": 0,
+              "why": "匹配顺序：精确匹配 > 基本类型拓宽 > 自动装箱 > 变长参数（垫底）。"
+            },
+            {
+              "have": "静态分派",
+              "q": "`Base ref = new Sub(); tag(ref);` 有 `tag(Base)` 和 `tag(Sub)` 两个重载，走哪个？",
+              "options": [
+                "tag(Base)（重载看编译期静态声明类型）",
+                "tag(Sub)",
+                "运行期随机"
+              ],
+              "answer": 0,
+              "why": "重载（Overload）是编译期静态分派；重写（Override）才是运行期多态动态分派！"
+            },
+            {
+              "have": "Arrays.asList(int[])",
+              "q": "`int[] arr = {1, 2, 3}; Arrays.asList(arr).size()` 的结果是？",
+              "options": [
+                "1（基本类型数组无法匹配 T... 的每个元素，整个 int[] 被当成 1 个元素！）",
+                "3",
+                "编译报错"
+              ],
+              "answer": 0,
+              "why": "`T...` 只能接收引用类型，基本类型数组 `int[]` 会被整个当成一个 `Object` 塞进 `List<int[]>`！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (VarargsArrayAlloc)",
+              "安全写法 (StaticDispatchByRef)"
+            ],
+            "shared": {
+              "name": "符合预期调用次数",
+              "value": "目标 1000000"
+            }
+          },
+          "story": "写了个便捷方法 sum(int... nums)，在热循环里每次传 2 个参数竟然都在偷偷 new int[2]！更迷惑的是 Base ref = new Sub(); 调重载方法 tag(ref) 到底走哪个？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "变长参数 (Varargs)",
+              "on": "shared",
+              "tag": "变长参数 (Vararg",
+              "code": "`VarargsArrayAlloc` vs `StaticDispatchByRef`",
+              "say": "编译期语法糖，本质是 `int[]` 数组；每次调用 `sum(1, 2)` 编译器都会生成 `new int[]{1, 2}`。"
+            },
+            {
+              "scene": "固定参数重载 (Fixed-Arity)",
+              "on": "shared",
+              "tag": "固定参数重载 (Fixe",
+              "code": "`VarargsArrayAlloc` vs `StaticDispatchByRef`",
+              "say": "像 JDK `List.of(E e1)`, `List.of(E e1, E e2)` ... 专门重载 0~10 个参数版本，只把 11+ 个留给 `E...`，彻底省掉高频调用的数组分配。"
+            },
+            {
+              "scene": "静态分派 (Static Dispatch)",
+              "on": "shared",
+              "tag": "静态分派 (Static",
+              "code": "`VarargsArrayAlloc` vs `StaticDispatchByRef`",
+              "say": "重载方法的选择在**编译期**根据变量的「静态声明类型（如 `Base`）」决定，而不是运行期的实际类型（`Sub`）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`VarargsArrayAlloc`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "varargs.VarargsArrayAlloc",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "static int sum(int... nums) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (sum(1, 2) == 3) ok++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：VarargsArrayAlloc 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`OverloadFixedArity` 调用 `sum(1, 2)` 时，编译器会选择哪个方法？",
+          "options": [
+            "sum(int, int)（固定参数重载优先级永远高于变长参数）",
+            "sum(int...)",
+            "编译歧义报错"
+          ],
+          "answer": 0,
+          "say": "变长参数永远是最后兜底的匹配项，补上固定重载就能直接零分配直调。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：VarargsArrayAlloc 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "varargs",
+          "show": [
+            "VarargsArrayAlloc"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "变长参数永远是最后兜底的匹配项，补上固定重载就能直接零分配直调。",
+          "say": "变长参数永远是最后兜底的匹配项，补上固定重载就能直接零分配直调。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「方法调用次数 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "varargs",
+          "show": [
+            "VarargsArrayAlloc",
+            "StaticDispatchByRef"
+          ],
+          "say": "左右拖动「方法调用次数 N」滑块，对比 `VarargsArrayAlloc` 与 `StaticDispatchByRef` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`VarargsArrayAlloc`：每次 sum(1, 2) 都在堆上隐式分配 new int[2]（或靠逃逸分析消除），字节码多出数组创建。；`StaticDispatchByRef`：编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `VarargsArrayAlloc.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "varargs.VarargsArrayAlloc",
+          "q": "在左边的 `VarargsArrayAlloc.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "for (int x : nums) s += x;"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`for (int x : nums) s += x;`）导致：每次 sum(1, 2) 都在堆上隐式分配 new int[2]（或靠逃逸分析消除），字节码多出数组创建。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "varargs.VarargsArrayAlloc",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "71: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "29: iastore"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `StaticDispatchByRef` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "varargs.StaticDispatchByRef",
+          "say": "编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。",
+          "walk": [
+            {
+              "focus": [
+                "static class Base {}"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "int n = Integer.parseInt(args[0]);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (tag(ref) == 1) ok++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "varargs",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "只提供 int... 变长参数（`VarargsArrayAlloc`）",
+              "solves": "每次 sum(1, 2) 都在堆上隐式分配 new int[2]（或靠逃逸分析消除），字节码多出数组创建。",
+              "cost": "实测约 {ms:varargs.VarargsArrayAlloc} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "每次 sum(1, 2) 都在堆上隐式分配 new int[2]（或靠逃逸分析消除），字节码多出数组创建。"
+            },
+            {
+              "name": "补上 sum(int, int) 固定重载（`OverloadFixedArity`）",
+              "solves": "编译器优先匹配固定参数重载，零数组分配，直接寄存器传参。",
+              "cost": "实测约 {ms:varargs.OverloadFixedArity} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "编译器优先匹配固定参数重载，零数组分配，直接寄存器传参。"
+            },
+            {
+              "name": "pick(Integer) vs pick(long) 优先级（`BoxedOverloadTrap`）",
+              "solves": "传入 int 10 时优先「基本类型拓宽 -> long」，而不是「装箱 -> Integer」。",
+              "cost": "实测约 {ms:varargs.BoxedOverloadTrap} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "传入 int 10 时优先「基本类型拓宽 -> long」，而不是「装箱 -> Integer」。"
+            },
+            {
+              "name": "Base ref = new Sub() 静态分派（`StaticDispatchByRef`）",
+              "solves": "编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。",
+              "cost": "实测约 {ms:varargs.StaticDispatchByRef} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "变长参数 (Varargs)",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "编译期语法糖，本质是 `int[]` 数组；每次调用 `sum(1, 2)` 编译器都会生成 `new int[]{1, 2}`。",
+          "asked": [
+            "变长参数数组分配、重载静态分派与装箱优先级——底层原理是什么？",
+            "为什么 `VarargsArrayAlloc` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `StaticDispatchByRef` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`OverloadFixedArity` 调用 `sum(1, 2)` 时，编译器会选择哪个方法？",
+          "options": [
+            {
+              "text": "sum(int, int)（固定参数重载优先级永远高于变长参数）",
+              "ok": true,
+              "why": "变长参数永远是最后兜底的匹配项，补上固定重载就能直接零分配直调。"
+            },
+            {
+              "text": "sum(int...)",
+              "ok": false,
+              "why": "再想一想：变长参数永远是最后兜底的匹配项，补上固定重载就能直接零分配直调。"
+            },
+            {
+              "text": "编译歧义报错",
+              "ok": false,
+              "why": "再想一想：变长参数永远是最后兜底的匹配项，补上固定重载就能直接零分配直调。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：拓宽 vs 装箱",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "同时存在 `pick(Integer a)` 和 `pick(long a)`，调用 `pick(10)` 会匹配哪个？",
+          "options": [
+            {
+              "text": "pick(long a)（基本类型拓宽优先级高于自动装箱）",
+              "ok": true,
+              "why": "匹配顺序：精确匹配 > 基本类型拓宽 > 自动装箱 > 变长参数（垫底）。"
+            },
+            {
+              "text": "pick(Integer a)",
+              "ok": false,
+              "why": "再想一想：匹配顺序：精确匹配 > 基本类型拓宽 > 自动装箱 > 变长参数（垫底）。"
+            },
+            {
+              "text": "编译报错",
+              "ok": false,
+              "why": "再想一想：匹配顺序：精确匹配 > 基本类型拓宽 > 自动装箱 > 变长参数（垫底）。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：静态分派",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`Base ref = new Sub(); tag(ref);` 有 `tag(Base)` 和 `tag(Sub)` 两个重载，走哪个？",
+          "options": [
+            {
+              "text": "tag(Base)（重载看编译期静态声明类型）",
+              "ok": true,
+              "why": "重载（Overload）是编译期静态分派；重写（Override）才是运行期多态动态分派！"
+            },
+            {
+              "text": "tag(Sub)",
+              "ok": false,
+              "why": "再想一想：重载（Overload）是编译期静态分派；重写（Override）才是运行期多态动态分派！"
+            },
+            {
+              "text": "运行期随机",
+              "ok": false,
+              "why": "再想一想：重载（Overload）是编译期静态分派；重写（Override）才是运行期多态动态分派！"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `StaticDispatchByRef`（Base ref = new Sub() 静态分派）替代 `VarargsArrayAlloc`（只提供 int... 变长参数）？",
+          "options": [
+            {
+              "text": "因为 编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。",
+              "ok": true,
+              "why": "`VarargsArrayAlloc`：每次 sum(1, 2) 都在堆上隐式分配 new int[2]（或靠逃逸分析消除），字节码多出数组创建。；而 `StaticDispatchByRef`：编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。"
+            },
+            {
+              "text": "因为 `VarargsArrayAlloc` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`VarargsArrayAlloc`：每次 sum(1, 2) 都在堆上隐式分配 new int[2]（或靠逃逸分析消除），字节码多出数组创建。；而 `StaticDispatchByRef`：编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`VarargsArrayAlloc`：每次 sum(1, 2) 都在堆上隐式分配 new int[2]（或靠逃逸分析消除），字节码多出数组创建。；而 `StaticDispatchByRef`：编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 重载（静态分派）和重写（动态分派）的本质区别；2) 变长参数底层原理及为什么 SLF4J/List.of 要写多个固定参数重载；3) Arrays.asList(int[]) 为什么 size 是 1。",
+          "points": [
+            "用 javap 字节码看清变长参数 `int...` 每次调用都在隐式 `newarray int`",
+            "掌握高频 1~2 个参数的固定重载（Fixed-Arity Overloading，如 List.of）如何消除数组分配",
+            "说清重载的「编译期静态分派」规则及基本类型提升 > 自动装箱 > 变长参数的匹配优先级"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：写了个便捷方法 sum(int... nums)，在热循环里每次传 2 个参数竟然都在偷偷 new int[2]！更迷惑的是 Base ref = new Sub(); 调重载方法 tag(ref) 到底走哪个？；**② 再讲底层原理**：变长参数 (Varargs)（编译期语法糖，本质是 `int[]` 数组；每次调用 `sum(1, 2)` 编译器都会生成 `new int[]{1, 2}`。）；固定参数重载 (Fixed-Arity)（像 JDK `List.of(E e1)`, `List.of(E e1, E e2)` ... 专门重载 0~10 个参数版本，只把 11+ 个留给 `E...`，彻底省掉高频调用的数组分配。）；**③ 最后给工程方案**：生产里优先采用「Base ref = new Sub() 静态分派」（`StaticDispatchByRef`），编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「变长参数 (Varargs)」？它在这节课里起了什么关键作用？",
+              "a": "编译期语法糖，本质是 `int[]` 数组；每次调用 `sum(1, 2)` 编译器都会生成 `new int[]{1, 2}`。"
+            },
+            {
+              "q": "面试官问：什么是「固定参数重载 (Fixed-Arity)」？它在这节课里起了什么关键作用？",
+              "a": "像 JDK `List.of(E e1)`, `List.of(E e1, E e2)` ... 专门重载 0~10 个参数版本，只把 11+ 个留给 `E...`，彻底省掉高频调用的数组分配。"
+            },
+            {
+              "q": "面试官问：什么是「静态分派 (Static Dispatch)」？它在这节课里起了什么关键作用？",
+              "a": "重载方法的选择在**编译期**根据变量的「静态声明类型（如 `Base`）」决定，而不是运行期的实际类型（`Sub`）。"
+            },
+            {
+              "q": "实战避坑：`VarargsArrayAlloc` 为什么会出问题，应该怎么改？",
+              "a": "每次 sum(1, 2) 都在堆上隐式分配 new int[2]（或靠逃逸分析消除），字节码多出数组创建。 正确做法是改用 `StaticDispatchByRef`（Base ref = new Sub() 静态分派）：编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "用 javap 字节码看清变长参数 `int...` 每次调用都在隐式 `newarray int`",
+            "掌握高频 1~2 个参数的固定重载（Fixed-Arity Overloading，如 List.of）如何消除数组分配",
+            "说清重载的「编译期静态分派」规则及基本类型提升 > 自动装箱 > 变长参数的匹配优先级"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `VarargsArrayAlloc`（只提供 int... 变长参数），优先选用 `StaticDispatchByRef`（Base ref = new Sub() 静态分派）：编译期按静态类型 Base 绑定到 tag(Base)，返回 1 而非 tag(Sub) 的 2。"
+        }
+      ]
+    }
+  ]
+}

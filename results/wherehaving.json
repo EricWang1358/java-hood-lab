@@ -1,0 +1,1031 @@
+{
+ "id": "wherehaving",
+ "variants": {
+  "HavingFilter": {
+   "hash": "163c49ddf71afe06",
+   "repeat": 10,
+   "runs": {
+    "50000": [
+     {
+      "groupedRows": 50000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 37
+     },
+     {
+      "groupedRows": 50000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 39
+     },
+     {
+      "groupedRows": 50000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 45
+     },
+     {
+      "groupedRows": 50000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 42
+     },
+     {
+      "groupedRows": 50000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 60
+     },
+     {
+      "groupedRows": 50000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 27
+     },
+     {
+      "groupedRows": 50000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 32
+     },
+     {
+      "groupedRows": 50000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 53
+     },
+     {
+      "groupedRows": 50000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 50
+     },
+     {
+      "groupedRows": 50000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 24
+     }
+    ],
+    "100000": [
+     {
+      "groupedRows": 100000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 37
+     },
+     {
+      "groupedRows": 100000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 52
+     },
+     {
+      "groupedRows": 100000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 29
+     },
+     {
+      "groupedRows": 100000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 57
+     },
+     {
+      "groupedRows": 100000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 47
+     },
+     {
+      "groupedRows": 100000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 49
+     },
+     {
+      "groupedRows": 100000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 61
+     },
+     {
+      "groupedRows": 100000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 40
+     },
+     {
+      "groupedRows": 100000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 44
+     },
+     {
+      "groupedRows": 100000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 43
+     }
+    ],
+    "300000": [
+     {
+      "groupedRows": 300000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 63
+     },
+     {
+      "groupedRows": 300000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 56
+     },
+     {
+      "groupedRows": 300000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 70
+     },
+     {
+      "groupedRows": 300000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 53
+     },
+     {
+      "groupedRows": 300000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 60
+     },
+     {
+      "groupedRows": 300000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 141
+     },
+     {
+      "groupedRows": 300000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 84
+     },
+     {
+      "groupedRows": 300000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 91
+     },
+     {
+      "groupedRows": 300000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 73
+     },
+     {
+      "groupedRows": 300000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 64
+     }
+    ],
+    "600000": [
+     {
+      "groupedRows": 600000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 99
+     },
+     {
+      "groupedRows": 600000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 120
+     },
+     {
+      "groupedRows": 600000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 67
+     },
+     {
+      "groupedRows": 600000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 129
+     },
+     {
+      "groupedRows": 600000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 75
+     },
+     {
+      "groupedRows": 600000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 87
+     },
+     {
+      "groupedRows": 600000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 85
+     },
+     {
+      "groupedRows": 600000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 82
+     },
+     {
+      "groupedRows": 600000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 73
+     },
+     {
+      "groupedRows": 600000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 83
+     }
+    ]
+   },
+   "inside": "Compiled from \"HavingFilter.java\"\npublic class lab.wherehaving.HavingFilter {\n  public lab.wherehaving.HavingFilter();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iload_1\n      12: newarray       int\n      14: astore_3\n      15: iconst_0\n      16: istore        4\n      18: iload         4\n      20: iload_1\n      21: if_icmpge     57\n      24: aload_2\n      25: iload         4\n      27: iload         4\n      29: sipush        5000\n      32: irem\n      33: iastore\n      34: aload_3\n      35: iload         4\n      37: iload         4\n      39: bipush        10\n      41: irem\n      42: ifne          49\n      45: iconst_1\n      46: goto          50\n      49: iconst_0\n      50: iastore\n      51: iinc          4, 1\n      54: goto          18\n      57: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      60: lstore        4\n      62: new           #19                 // class java/util/HashMap\n      65: dup\n      66: invokespecial #21                 // Method java/util/HashMap.\"<init>\":()V\n      69: astore        6\n      71: iconst_0\n      72: istore        7\n      74: iconst_0\n      75: istore        8\n      77: iload         8\n      79: iload_1\n      80: if_icmpge     129\n      83: iinc          7, 1\n      86: aload_2\n      87: iload         8\n      89: iaload\n      90: i2l\n      91: iconst_1\n      92: lshl\n      93: aload_3\n      94: iload         8\n      96: iaload\n      97: i2l\n      98: lor\n      99: lstore        9\n     101: aload         6\n     103: lload         9\n     105: invokestatic  #22                 // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;\n     108: iconst_1\n     109: invokestatic  #28                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     112: invokedynamic #31,  0             // InvokeDynamic #0:apply:()Ljava/util/function/BiFunction;\n     117: invokeinterface #35,  4           // InterfaceMethod java/util/Map.merge:(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;\n     122: pop\n     123: iinc          8, 1\n     126: goto          77\n     129: iconst_0\n     130: istore        8\n     132: aload         6\n     134: invokeinterface #41,  1           // InterfaceMethod java/util/Map.keySet:()Ljava/util/Set;\n     139: invokeinterface #45,  1           // InterfaceMethod java/util/Set.iterator:()Ljava/util/Iterator;\n     144: astore        9\n     146: aload         9\n     148: invokeinterface #51,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n     153: ifeq          186\n     156: aload         9\n     158: invokeinterface #57,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n     163: checkcast     #23                 // class java/lang/Long\n     166: invokevirtual #61                 // Method java/lang/Long.longValue:()J\n     169: lstore        10\n     171: lload         10\n     173: lconst_1\n     174: land\n     175: lconst_1\n     176: lcmp\n     177: ifne          183\n     180: iinc          8, 1\n     183: goto          146\n     186: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     189: lload         4\n     191: lsub\n     192: ldc2_w        #64                 // long 1000000l\n     195: ldiv\n     196: lstore        9\n     198: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     201: iload         7\n     203: invokedynamic #70,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     208: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     211: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     214: iload_1\n     215: bipush        10\n     217: idiv\n     218: invokedynamic #80,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     223: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     226: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     229: iload         8\n     231: invokedynamic #81,  0             // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n     236: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     239: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     242: lload         9\n     244: invokedynamic #82,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n     249: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     252: return\n}"
+  },
+  "WhereBeforeGroup": {
+   "hash": "cc5ae821d6ea86ca",
+   "repeat": 10,
+   "runs": {
+    "50000": [
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 14
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 18
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 34
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 33
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 27
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 26
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 24
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 31
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 16
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 12
+     }
+    ],
+    "100000": [
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 29
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 24
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 38
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 14
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 17
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 27
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 22
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 35
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 24
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 18
+     }
+    ],
+    "300000": [
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 23
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 31
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 29
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 50
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 21
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 25
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 26
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 46
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 40
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 38
+     }
+    ],
+    "600000": [
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 36
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 21
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 54
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 32
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 38
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 30
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 23
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 53
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 42
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 34
+     }
+    ]
+   },
+   "inside": "Compiled from \"WhereBeforeGroup.java\"\npublic class lab.wherehaving.WhereBeforeGroup {\n  public lab.wherehaving.WhereBeforeGroup();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iload_1\n      12: newarray       int\n      14: astore_3\n      15: iconst_0\n      16: istore        4\n      18: iload         4\n      20: iload_1\n      21: if_icmpge     57\n      24: aload_2\n      25: iload         4\n      27: iload         4\n      29: sipush        5000\n      32: irem\n      33: iastore\n      34: aload_3\n      35: iload         4\n      37: iload         4\n      39: bipush        10\n      41: irem\n      42: ifne          49\n      45: iconst_1\n      46: goto          50\n      49: iconst_0\n      50: iastore\n      51: iinc          4, 1\n      54: goto          18\n      57: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      60: lstore        4\n      62: new           #19                 // class java/util/HashMap\n      65: dup\n      66: invokespecial #21                 // Method java/util/HashMap.\"<init>\":()V\n      69: astore        6\n      71: iconst_0\n      72: istore        7\n      74: iconst_0\n      75: istore        8\n      77: iload         8\n      79: iload_1\n      80: if_icmpge     127\n      83: aload_3\n      84: iload         8\n      86: iaload\n      87: iconst_1\n      88: if_icmpeq     94\n      91: goto          121\n      94: iinc          7, 1\n      97: aload         6\n      99: aload_2\n     100: iload         8\n     102: iaload\n     103: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     106: iconst_1\n     107: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     110: invokedynamic #26,  0             // InvokeDynamic #0:apply:()Ljava/util/function/BiFunction;\n     115: invokeinterface #30,  4           // InterfaceMethod java/util/Map.merge:(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;\n     120: pop\n     121: iinc          8, 1\n     124: goto          77\n     127: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     130: lload         4\n     132: lsub\n     133: ldc2_w        #36                 // long 1000000l\n     136: ldiv\n     137: lstore        8\n     139: getstatic     #38                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     142: iload         7\n     144: invokedynamic #42,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     149: invokevirtual #46                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     152: getstatic     #38                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     155: iload_1\n     156: bipush        10\n     158: idiv\n     159: invokedynamic #52,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     164: invokevirtual #46                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     167: getstatic     #38                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     170: aload         6\n     172: invokeinterface #53,  1           // InterfaceMethod java/util/Map.size:()I\n     177: invokedynamic #57,  0             // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n     182: invokevirtual #46                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     185: getstatic     #38                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     188: lload         8\n     190: invokedynamic #58,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n     195: invokevirtual #46                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     198: return\n}"
+  },
+  "IndexedWhere": {
+   "hash": "11611b1749206930",
+   "repeat": 10,
+   "runs": {
+    "50000": [
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 5000,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 5000,
+      "ms": 2
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 5000,
+      "ms": 4
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 5000,
+      "ms": 1
+     }
+    ],
+    "300000": [
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 5000,
+      "ms": 1
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 5000,
+      "ms": 0
+     }
+    ],
+    "600000": [
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 5000,
+      "ms": 5
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 5000,
+      "ms": 2
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 5000,
+      "ms": 1
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 5000,
+      "ms": 3
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 5000,
+      "ms": 2
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 5000,
+      "ms": 6
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 5000,
+      "ms": 3
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 5000,
+      "ms": 0
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 5000,
+      "ms": 1
+     }
+    ]
+   },
+   "inside": "Compiled from \"IndexedWhere.java\"\npublic class lab.wherehaving.IndexedWhere {\n  public lab.wherehaving.IndexedWhere();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: bipush        10\n      10: idiv\n      11: istore_2\n      12: iload_2\n      13: newarray       int\n      15: astore_3\n      16: iconst_0\n      17: istore        4\n      19: iload         4\n      21: iload_2\n      22: if_icmpge     47\n      25: aload_3\n      26: iload         4\n      28: iload         4\n      30: iconst_1\n      31: iload_2\n      32: sipush        5000\n      35: idiv\n      36: invokestatic  #13                 // Method java/lang/Math.max:(II)I\n      39: idiv\n      40: iastore\n      41: iinc          4, 1\n      44: goto          19\n      47: invokestatic  #19                 // Method java/lang/System.nanoTime:()J\n      50: lstore        4\n      52: iconst_0\n      53: istore        6\n      55: iconst_0\n      56: istore        7\n      58: iconst_m1\n      59: istore        8\n      61: aload_3\n      62: astore        9\n      64: aload         9\n      66: arraylength\n      67: istore        10\n      69: iconst_0\n      70: istore        11\n      72: iload         11\n      74: iload         10\n      76: if_icmpge     109\n      79: aload         9\n      81: iload         11\n      83: iaload\n      84: istore        12\n      86: iinc          6, 1\n      89: iload         12\n      91: iload         8\n      93: if_icmpeq     103\n      96: iinc          7, 1\n      99: iload         12\n     101: istore        8\n     103: iinc          11, 1\n     106: goto          72\n     109: invokestatic  #19                 // Method java/lang/System.nanoTime:()J\n     112: lload         4\n     114: lsub\n     115: ldc2_w        #25                 // long 1000000l\n     118: ldiv\n     119: lstore        9\n     121: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     124: iload         6\n     126: invokedynamic #31,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     131: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     134: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     137: iload_2\n     138: invokedynamic #41,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     143: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     146: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     149: iload         7\n     151: invokedynamic #42,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     156: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     159: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     162: lload         9\n     164: invokedynamic #43,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     169: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     172: return\n}"
+  },
+  "WherePlusHaving": {
+   "hash": "b0ee7f85cf19585a",
+   "repeat": 10,
+   "runs": {
+    "50000": [
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 24
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 19
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 30
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 23
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 23
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 36
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 24
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 14
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 14
+     },
+     {
+      "groupedRows": 5000,
+      "expected": 5000,
+      "keptGroups": 500,
+      "ms": 30
+     }
+    ],
+    "100000": [
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 46
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 30
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 24
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 20
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 35
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 22
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 20
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 22
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 23
+     },
+     {
+      "groupedRows": 10000,
+      "expected": 10000,
+      "keptGroups": 500,
+      "ms": 30
+     }
+    ],
+    "300000": [
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 40
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 33
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 44
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 45
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 35
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 44
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 28
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 25
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 31
+     },
+     {
+      "groupedRows": 30000,
+      "expected": 30000,
+      "keptGroups": 500,
+      "ms": 45
+     }
+    ],
+    "600000": [
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 32
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 40
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 25
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 32
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 19
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 50
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 38
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 36
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 44
+     },
+     {
+      "groupedRows": 60000,
+      "expected": 60000,
+      "keptGroups": 500,
+      "ms": 36
+     }
+    ]
+   },
+   "inside": "Compiled from \"WherePlusHaving.java\"\npublic class lab.wherehaving.WherePlusHaving {\n  public lab.wherehaving.WherePlusHaving();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iload_1\n      12: newarray       int\n      14: astore_3\n      15: iconst_0\n      16: istore        4\n      18: iload         4\n      20: iload_1\n      21: if_icmpge     57\n      24: aload_2\n      25: iload         4\n      27: iload         4\n      29: sipush        5000\n      32: irem\n      33: iastore\n      34: aload_3\n      35: iload         4\n      37: iload         4\n      39: bipush        10\n      41: irem\n      42: ifne          49\n      45: iconst_1\n      46: goto          50\n      49: iconst_0\n      50: iastore\n      51: iinc          4, 1\n      54: goto          18\n      57: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      60: lstore        4\n      62: new           #19                 // class java/util/HashMap\n      65: dup\n      66: invokespecial #21                 // Method java/util/HashMap.\"<init>\":()V\n      69: astore        6\n      71: iconst_0\n      72: istore        7\n      74: iconst_0\n      75: istore        8\n      77: iload         8\n      79: iload_1\n      80: if_icmpge     127\n      83: aload_3\n      84: iload         8\n      86: iaload\n      87: iconst_1\n      88: if_icmpeq     94\n      91: goto          121\n      94: iinc          7, 1\n      97: aload         6\n      99: aload_2\n     100: iload         8\n     102: iaload\n     103: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     106: iconst_1\n     107: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     110: invokedynamic #26,  0             // InvokeDynamic #0:apply:()Ljava/util/function/BiFunction;\n     115: invokeinterface #30,  4           // InterfaceMethod java/util/Map.merge:(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;\n     120: pop\n     121: iinc          8, 1\n     124: goto          77\n     127: iconst_0\n     128: istore        8\n     130: aload         6\n     132: invokeinterface #36,  1           // InterfaceMethod java/util/Map.values:()Ljava/util/Collection;\n     137: invokeinterface #40,  1           // InterfaceMethod java/util/Collection.iterator:()Ljava/util/Iterator;\n     142: astore        9\n     144: aload         9\n     146: invokeinterface #46,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n     151: ifeq          181\n     154: aload         9\n     156: invokeinterface #52,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n     161: checkcast     #8                  // class java/lang/Integer\n     164: invokevirtual #56                 // Method java/lang/Integer.intValue:()I\n     167: istore        10\n     169: iload         10\n     171: iconst_3\n     172: if_icmplt     178\n     175: iinc          8, 1\n     178: goto          144\n     181: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     184: lload         4\n     186: lsub\n     187: ldc2_w        #60                 // long 1000000l\n     190: ldiv\n     191: lstore        9\n     193: getstatic     #62                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     196: iload         7\n     198: invokedynamic #66,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     203: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     206: getstatic     #62                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     209: iload_1\n     210: bipush        10\n     212: idiv\n     213: invokedynamic #76,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     218: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     221: getstatic     #62                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     224: iload         8\n     226: invokedynamic #77,  0             // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n     231: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     234: getstatic     #62                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     237: lload         9\n     239: invokedynamic #78,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n     244: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     247: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

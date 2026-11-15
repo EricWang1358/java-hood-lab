@@ -1,0 +1,249 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "jvm-cpu-diag",
+  "course": "JVM 内存与 GC",
+  "title": "线上 CPU 100% 飙高排障：jstack 如何一秒揪出死循环线程？",
+  "lead": "服务器 CPU 突然打满到 100%，接口全超时！怎么用 top -Hp + printf %x + jstack 三连招，10 秒内精确锁定到哪一行代码？",
+  "minutes": 30,
+  "needs": ["知道线程 RUNNABLE 状态", "知道 top -Hp 与 jstack", "知道正则表达式回溯"],
+  "after": [
+    "背熟并能实操 CPU 飙高排障四步法（top → top -Hp → printf 16进制 → jstack grep）",
+    "识别常见 CPU 100% 元凶：无休眠空转死循环、灾难性正则回溯（ReDoS）、频繁 Full GC 线程狂转",
+    "用事件通知（wait/BlockingQueue）和线性正则消除无谓 CPU 空耗"
+  ],
+  "terms": {
+    "top -Hp <pid>": "查看指定 Java 进程内每条操作系统线程的 CPU 占用率，找出飙高的线程 tid（十进制）。",
+    "printf \"%x\\n\" <tid>": "把十进制线程 ID 转成十六进制 nid，因为 jstack 堆栈里线程号是用 `nid=0x...` 表示的。",
+    "ReDoS (正则灾难性回溯)": "如 `(a+)+b` 遇到大量 `a` 结尾却不匹配的输入时，回溯次数呈指数级 $2^n$ 爆炸，瞬间打满单核 CPU。"
+  },
+  "experiments": {
+    "cpudiag": {
+      "runner": "java",
+      "home": "lab.cpudiag",
+      "variants": [
+        { "id": "BusySpinLoop", "code": "BusySpinLoop.java", "label": "无休眠死循环空转", "note": "while(!ready) 空转死等，把单个 CPU 核心直接打满 100%，白白烧电。" },
+        { "id": "RegexBacktrackReDoS", "code": "RegexBacktrackReDoS.java", "label": "灾难性正则回溯 (ReDoS)", "note": "(a+)+b 遇到不匹配的长串触发指数级回溯，耗时随请求线性/指数暴涨！" },
+        { "id": "EventWaitNotify", "code": "EventWaitNotify.java", "label": "BlockingQueue 事件等待", "note": "无数据时线程进入 WAITING 挂起（0% CPU），有数据毫秒级唤醒处理。" },
+        { "id": "RegexLinearMatch", "code": "RegexLinearMatch.java", "label": "线性非回溯正则", "note": "改成无嵌套量词的 a+b，O(N) 一次扫完，耗时几乎为 0ms。" }
+      ],
+      "knob": { "label": "校验/事件次数", "values": ["10", "20", "40", "80"], "default": "40" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "成功处理数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "线上 CPU 100% 飙高排障",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**线上突然报警 CPU 100%，怎么在 10 秒钟内用 Linux + JDK 自带命令精准定位到引发飙高的那一行 Java 代码？**",
+          "say": "CPU 100% 排障步骤几乎是所有后端一面必考的实操题，回答时命令越准确越加分。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：CPU 飙高三连招命令",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先检验你对 CPU 飙高排查命令链的熟悉度。",
+          "items": [
+            {
+              "have": "定位高耗线程",
+              "q": "用 `top` 找到 Java 进程 PID 为 12345 后，下一步用什么命令看它里面**哪条线程** CPU 最高？",
+              "options": ["top -Hp 12345", "jmap -heap 12345", "free -m"],
+              "answer": 0,
+              "why": "`-H` 显示线程视图，`-p` 指定进程 PID，一眼就能看到占用 99% CPU 的那条子线程 TID。"
+            },
+            {
+              "have": "进制转换",
+              "q": "假设 `top -Hp` 看到的线程 TID 是 `12366`，为什么在 `jstack 12345` 前要执行 `printf \"%x\\n\" 12366`？",
+              "options": ["jstack 输出的线程堆栈里，nid 字段是十六进制小写（如 nid=0x304e）", "为了加密", "为了杀掉线程"],
+              "answer": 0,
+              "why": "转成十六进制后再 `jstack 12345 | grep -A 30 304e`，直接定位到具体线程调用栈！"
+            },
+            {
+              "have": "GC 导致飙高",
+              "q": "如果 `jstack` 抓出来占用 CPU 最高的那几条线程叫 `GC Thread#0`、`G1 Conc#0`，说明真正的问题是什么？",
+              "options": ["堆内存快满导致 JVM 疯狂 Full GC 占满 CPU，需立刻转用 jstat/jmap 查堆内存", "死锁了", "正则回溯"],
+              "answer": 0,
+              "why": "这是极其重要的分支判断：业务线程飙高查代码逻辑；GC 线程飙高查堆内存泄漏！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「原地空转 vs 等电话通知」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["BusySpinLoop (死盯邮箱)", "EventWaitNotify (等铃响)"], "shared": { "name": "CPU 核心算力", "value": "空转占满 100% vs 等待占 0%" } },
+          "story": "等快递时，`BusySpinLoop` 每秒刷新 1 亿次快递页面（`while(!ready.get())`），把电脑风扇直接吹起飞；`RegexBacktrackReDoS` 则是用一个嵌套量词 `(a+)+b` 去走迷宫，撞墙后指数级折返把 CPU 烧穿；而 `EventWaitNotify` 安静等铃响（`q.take()` 挂起），平时 0% CPU，快递一到秒醒！",
+          "say": "线上看到业务线程长期处于 `RUNNABLE` 且连续多次 `jstack` 都停在同一个正则或循环行，基本实锤。",
+          "map": [
+            { "scene": "疯狂空转死等", "on": "actors", "tag": "CPU 100% 空耗", "code": "`while (!ready.get()) c++;`", "say": "RUNNABLE 状态死循环，烧光单核 CPU。" },
+            { "scene": "迷宫指数级回溯", "on": "shared", "tag": "ReDoS 卡死", "code": "`Pattern.compile(\"(a+)+b\")`", "say": "几条恶意/异常输入就能打死整个线程池。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "现场复现：一行正则如何拖垮 CPU？",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "cpudiag.RegexBacktrackReDoS",
+          "say": "看 `RegexBacktrackReDoS.java`：仅仅是一个看起来人畜无害的 `(a+)+b`，遇上 19 个字符的 `\"aaaa...c\"` 耗时就会暴涨！"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：校验 40 次，灾难性正则 vs 线性正则耗时差多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "校验 40 次仅 19 字符的字符串，`RegexBacktrackReDoS` 和 `RegexLinearMatch` 耗时差多少？",
+          "options": ["差不多，都在 1ms 内", "RegexBacktrackReDoS 慢到数十甚至上百毫秒，RegexLinearMatch 不到 1ms", "RegexLinearMatch 更慢"],
+          "answer": 1,
+          "say": "如果输入再长 10 个 `'a'`，`2^30` 次回溯能直接让单条线程卡死几分钟！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测耗时：ReDoS 指数级吞噬 CPU vs 线性匹配",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "cpudiag",
+          "show": ["BusySpinLoop", "RegexBacktrackReDoS", "EventWaitNotify", "RegexLinearMatch"],
+          "knob": "40",
+          "hand": "RegexBacktrackReDoS",
+          "focus": "ms",
+          "say": "看耗时对比：`RegexLinearMatch` 和 `EventWaitNotify` 仅 0~1ms，而 `RegexBacktrackReDoS` 仅校验 40 个短串就狂烧数十毫秒 CPU！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "遇到 CPU 100% 飙高，连续抓 2~3 次 jstack 看处于 RUNNABLE 状态的业务线程停留在哪一行即可一秒破案",
+          "say": "记住：抓 1 次可能是瞬时正常执行，隔 3 秒连抓 2~3 次都在同一个 `Pattern.matcher` 或 `while` 循环里，就是真凶！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：jstack 抓到的真实阻塞点",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "cpudiag.RegexBacktrackReDoS",
+          "within": "main",
+          "from": "Pattern.matcher",
+          "to": "Matcher.matches",
+          "say": "发生 ReDoS 时，用 `jstack` 抓出来的线程状态一定是 `java.lang.Thread.State: RUNNABLE`，且堆栈顶层死死停在 `java.util.regex.Pattern$GroupHead.match` 递归回溯里。",
+          "walk": [
+            { "focus": ["Pattern.matcher"], "label": "创建匹配器", "say": "准备对输入串执行 NFA 状态机匹配。" },
+            { "focus": ["Matcher.matches"], "label": "NFA 指数回溯", "say": "遇到末尾不匹配的 `'c'` 时疯狂尝试所有 `a+` 分组组合，CPU 瞬间 100%。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "拉到 80 次再看",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "cpudiag",
+          "say": "把次数调到 80，观察 `RegexBacktrackReDoS` 耗时随请求数的线性+指数叠加。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "CPU 飙高常见元凶与排查工具箱",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "除了 `top -Hp` + `jstack`，生产上还有 Arthas 一键利器。",
+          "options": [
+            { "name": "原生四步法：top → top -Hp → printf %x → jstack", "solves": "不依赖任何第三方工具，所有 Linux + JDK 容器开箱即用", "cost": "需要手动转 16 进制再 grep", "when": "生产受限环境标准排障", "say": "面试必背这四条命令。" },
+            { "name": "Arthas：thread -n 3 / profiler start", "solves": "`thread -n 3` 一秒直接列出当前 CPU 最高的前 3 条线程堆栈；火焰图 `profiler` 看热点占比", "cost": "需要挂载 Arthas agent", "when": "日常线上疑难性能瓶颈诊断", "say": "答完原生命令再补一句「也可以用 Arthas 的 `thread -n 3` 一步到位」，非常加分。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住 CPU 100% 排障四步法",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "CPU 100% 飙高四步定位法",
+          "alias": "top -Hp + printf %x + jstack",
+          "oneLine": "top 找高 CPU 进程 PID → top -Hp 找高 CPU 线程 TID → printf %x 转十六进制 → jstack 查 nid 堆栈（分清业务死循环 vs GC 线程狂转）。",
+          "asked": "线上服务器 CPU 突然 100% 怎么排查？",
+          "say": "口诀：「找进程 → 找线程 → 转 16 进制 → jstack 查栈 + 分清业务/GC」。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "使用 `top -Hp 1234` 查到最耗 CPU 的线程 TID 是 `1250`，用 `printf \"%x\\n\" 1250` 得到 `4e2`，接下来怎么在 `jstack` 里定位它？",
+          "options": [
+            { "text": "jstack 1234 | grep -A 30 0x4e2", "ok": true, "why": "正确！`grep -A 30` 可以顺带打印出该线程下方 30 行的完整调用栈信息。" },
+            { "text": "jstack 1234 | grep 1250", "ok": false, "why": "jstack 里 nid 是十六进制，直接搜十进制 1250 搜不到！" },
+            { "text": "jmap -histo 1234 | grep 4e2", "ok": false, "why": "jmap 是查堆内存对象的，不是查线程栈的。" }
+          ],
+          "say": "记住 `nid=0x` 是十六进制！"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：线上 CPU 100% 完整排障流程",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：如果线上 Java 服务 CPU 飙到 100%，你怎么一步步定位到具体代码？",
+          "points": [
+            "四步命令链：1) top 找到 CPU 最高的 Java 进程 PID；2) top -Hp <pid> 找到该进程内 CPU 最高的线程 TID；3) printf \"%x\\n\" <tid> 转为十六进制 nid；4) 隔 3 秒连抓 2~3 次 jstack <pid> | grep -A 30 0x<nid>",
+            "分支判断：如果高 CPU 线程是 GC Thread，说明是堆快满引发频繁 Full GC，需转用 jstat/jmap 查内存泄漏；如果是业务线程，则看其 RUNNABLE 堆栈定位死循环、正则灾难回溯或高频自旋",
+            "快捷工具：如果环境允许，也可以直接用 Arthas 的 thread -n 3 一键输出最耗 CPU 的前三条线程堆栈，或用 profiler 生成 CPU 火焰图"
+          ],
+          "model": "线上遇到 CPU 100%，我的标准排查流程是四步：第一步用 `top` 找到占用 CPU 最高的 Java 进程 PID；第二步用 `top -Hp <pid>` 查看进程内部，找出 CPU 占比最高的那条线程 TID；第三步用 `printf \"%x\\n\" <tid>` 把十进制线程号转成十六进制；第四步用 `jstack <pid> | grep -A 30 0x<nid>` 打印出该线程的调用栈，而且最好隔两三秒连抓两三次对比。拿到堆栈后还要做一个关键分支判断：如果飙高的是 GC 线程，说明是堆内存快满导致频繁 Full GC，需要转用 `jstat` 和 `jmap` 查内存泄漏；如果是业务线程一直停在 `RUNNABLE` 状态的同一行代码，那通常是无休眠空转死循环、多线程 HashMap 死链（JDK7）或者正则表达式灾难性回溯。另外如果机器装了 Arthas，也可以直接用 `thread -n 3` 一秒打印最耗 CPU 的三条线程，或者用 `profiler` 采火焰图定位。",
+          "say": "「四步命令 → 连抓对比 → 业务 vs GC 分支 → Arthas 补充」条理极其清晰。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "CPU 飙高排障三张卡收好。",
+          "items": [
+            { "front": "原生排障四步命令", "back": "top → top -Hp <pid> → printf \"%x\\n\" <tid> → jstack <pid> | grep -A 30 0x..." },
+            { "front": "GC 线程飙高怎么办？", "back": "不是代码死循环，而是堆快满触发频繁 Full GC，改用 jstat/jmap 查堆。" },
+            { "front": "Arthas 一键命令", "back": "thread -n 3（直接看前 3 高 CPU 线程栈）或 profiler start（火焰图）。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

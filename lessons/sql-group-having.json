@@ -1,0 +1,614 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "sql-group-having",
+  "course": "MySQL 索引、事务与锁",
+  "title": "WHERE 和 HAVING 混用，全表都被扫了一遍？",
+  "lead": "能用 WHERE 先过滤 90% 无关行，却放到 HAVING 里等 GROUP BY 分完组再丢掉，索引失效不说还白建巨大哈希表。",
+  "minutes": 40,
+  "needs": [
+    "写过包含 GROUP BY 的聚合 SQL"
+  ],
+  "after": [
+    "背出 SQL 逻辑执行顺序（FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY）",
+    "分清 WHERE（分组前行级过滤）与 HAVING（分组后聚合过滤）的职责边界",
+    "掌握用 (WHERE等值列, GROUP BY列) 联合索引实现流式分组、消除 Using temporary"
+  ],
+  "terms": {
+    "WHERE": "行级过滤子句，在 GROUP BY 之前执行，可以利用索引缩减扫描行数，不能包含聚合函数。",
+    "HAVING": "组级过滤子句，在 GROUP BY 聚合之后执行，用于对 COUNT/SUM 等聚合结果做二次筛选。",
+    "流式分组": "当 GROUP BY 列在 WHERE 等值条件后刚好有序（命中联合索引前缀），引擎无需建临时表即可顺序累加计数。",
+    "Using temporary": "EXPLAIN Extra 中的警告，表示 MySQL 为完成分组或去重创建了内部临时表（数据量大时会落盘变慢）。"
+  },
+  "experiments": {
+    "wherehaving": {
+      "runner": "java",
+      "home": "lab.wherehaving",
+      "variants": [
+        {
+          "id": "HavingFilter",
+          "label": "用 HAVING 过滤状态",
+          "note": "先把 30 万行全塞进 GROUP BY 哈希表，最后再用 HAVING 扔掉 90%。"
+        },
+        {
+          "id": "WhereBeforeGroup",
+          "label": "WHERE 先过滤再分组",
+          "note": "先用 WHERE 筛出 10% 的 PAID 行，再送进 GROUP BY。"
+        },
+        {
+          "id": "IndexedWhere",
+          "label": "联合索引流式分组",
+          "note": "建 (status, user_id) 索引，直接定位 status=PAID 且按 user_id 有序流式计数。"
+        },
+        {
+          "id": "WherePlusHaving",
+          "label": "WHERE+HAVING 各司其职",
+          "note": "WHERE 滤行状态，HAVING 滤聚合结果（如 COUNT(*) >= 3）。"
+        }
+      ],
+      "knob": {
+        "label": "总订单行数",
+        "values": [
+          "50000",
+          "100000",
+          "300000",
+          "600000"
+        ],
+        "default": "300000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "groupedRows",
+        "expectKey": "expected",
+        "label": "送进 GROUP BY 的行数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "WHERE 和 HAVING 混用，全表都被扫了一遍？",
+      "bridge": "今天不背八股定义，先看一个真实工程场景，跑出数据后再拆底层机制。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "统计「已付款订单的用户下单数」时，把 `status = 'PAID'` 写在 `HAVING` 里跟写在 `WHERE` 里查出来的结果一模一样——但大表上一跑，写在 `HAVING` 里的那条直接把临时表内存打爆！",
+          "say": "今天用实验把送进 GROUP BY 哈希表的行数打出来，一眼看穿 WHERE 和 HAVING 的天壤之别。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，热个身",
+      "bridge": "这节课会用到三个基础概念，咱们先花一分钟确认一下。忘了也没关系，选完当场给你补齐。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题，每题点一个答案就行。选完马上告诉你对不对，下面那句话就是这节课要用到的前置底座。",
+          "items": [
+            {
+              "have": "SQL 顺序",
+              "q": "MySQL 执行一条 SQL 时，是先执行 `WHERE`、还是先执行 `GROUP BY`、还是先执行 `HAVING`？",
+              "options": [
+                "HAVING → GROUP BY → WHERE",
+                "WHERE → GROUP BY → HAVING",
+                "GROUP BY → WHERE → HAVING"
+              ],
+              "answer": 1,
+              "why": "先 WHERE 筛选行，再 GROUP BY 分组聚合，最后 HAVING 筛选组。"
+            },
+            {
+              "have": "索引利用",
+              "q": "把 `status = 'PAID'` 写在 `HAVING` 里时，还能利用 `status` 字段上的索引提前过滤掉 90% 无关行吗？",
+              "options": [
+                "不能！HAVING 在分组之后执行，全表 30 万行都得先进 GROUP BY",
+                "能，优化器会自动走索引"
+              ],
+              "answer": 0,
+              "why": "HAVING 只能过滤分组后的结果，无法在扫描表阶段走索引剪枝。"
+            },
+            {
+              "have": "HAVING 唯一用途",
+              "q": "什么时候必须用 `HAVING`，而不能用 `WHERE`？",
+              "options": [
+                "过滤普通状态列时",
+                "过滤 COUNT(*)、SUM(amount) 等聚合函数结果时",
+                "任何时候都能用 WHERE 替代"
+              ],
+              "answer": 1,
+              "why": "分组前还没算出 COUNT/SUM，所以聚合结果条件只能放 HAVING。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个生活场景",
+      "bridge": "热身完了。看代码之前，先在脑子里放一个画面。后面所有的数据库和 Java 机制，都可以往这个画面上套。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "30万人全进大厅分组再赶走90% (HAVING)",
+              "大门口先拦掉90%路人 (WHERE)"
+            ],
+            "shared": {
+              "name": "分组统计大厅",
+              "value": "30 万订单（仅 10% 已付款）"
+            }
+          },
+          "story": "统计已付款客户消费：`WHERE` 是在大门口就把 90% 没付款的路人拦在门外，只放 10% 已付款的人进大厅分组；`HAVING` 却是先把全城 30 万人全放进大厅按姓名分好组，最后再把没付款的 90% 赶出去——大厅（临时表）早挤爆了！",
+          "say": "越早把无关数据挡在门外，后面的分组内存和排序开销就越小。",
+          "map": [
+            {
+              "scene": "没写 WHERE，全表 30 万行涌入",
+              "on": "actors",
+              "tag": "全量扫描",
+              "code": "`for (int i = 0; i < rows; i++)`",
+              "say": "90% 未付款的废数据也全部读了进来。"
+            },
+            {
+              "scene": "全部塞进 GROUP BY 哈希表",
+              "on": "actors",
+              "tag": "临时表膨胀10倍",
+              "code": "`groupMap.merge(key, 1, ...)`",
+              "say": "30 万行全建哈希桶，内存和哈希冲突暴涨！"
+            },
+            {
+              "scene": "最后 HAVING 扔掉 90%",
+              "on": "action",
+              "tag": "姗姗来迟",
+              "code": "`if ((key & 1L) == 1L)`",
+              "say": "白干 90% 的分组活之后才过滤掉，纯属浪费。"
+            },
+            {
+              "scene": "WHERE + 联合索引流式分组",
+              "on": "action",
+              "tag": "免临时表",
+              "code": "`(status, user_id)`",
+              "say": "先筛出 10% 行且天然按 user_id 有序，连哈希表都不用建！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "结果一模一样，为什么 HAVING 过滤比 WHERE 慢 10 倍？",
+      "bridge": "直观感觉是一回事，高并发/异常真的撞上来时，结果往往完全相反。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "对比 `HavingFilter`、`WhereBeforeGroup`、`IndexedWhere` 送进 GROUP BY 的行数 `groupedRows`！",
+          "say": "先看 `HavingFilter` 把多少行塞进了 `groupMap`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "把场景写成程序：HavingFilter",
+      "bridge": "我们用纯 JDK 把这个底层过程真实模拟出来。重点看标出来的几行，不认识的词点一下虚线就有大白话解释。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "wherehaving.HavingFilter",
+          "say": "循环把 30 万行全部调用 `groupMap.merge(...)` 放进分组哈希表，直到第 27 行才按状态过滤！",
+          "walk": [
+            {
+              "focus": [
+                "for (int i = 0; i < rows; i++) {"
+              ],
+              "say": "因为没有 WHERE 前置过滤，全量 30 万行都被读入。"
+            },
+            {
+              "focus": [
+                "groupMap.merge(key, 1, Integer::sum);"
+              ],
+              "say": "30 万行（含 90% 无效行）全被塞进 GROUP BY 哈希表！"
+            },
+            {
+              "focus": [
+                "if ((key & 1L) == 1L) keptGroups++;"
+              ],
+              "say": "全部分组算完后，HAVING 才过滤掉那 90% 的无效组。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一个答案",
+      "bridge": "代码看完了。先别急着看结果，按你刚才对场景的理解，先猜一猜程序跑完会打印出什么。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "30 万行订单里只有 10%（3 万行）是 PAID，用 `HavingFilter` 时有多少行被送进了 GROUP BY 哈希表？",
+          "options": [
+            "30,000 行",
+            "300,000 行",
+            "10 行"
+          ],
+          "answer": 1,
+          "say": "选一个你觉得最可能的，猜错完全没关系，猜过再看实测印象最深。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一次一次看真实运行结果",
+      "bridge": "你已经下注了。这组程序在本地 JDK 实测跑了多轮，现在把真实数据放出来核对。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "wherehaving",
+          "show": [
+            "HavingFilter"
+          ],
+          "hand": true,
+          "focus": [
+            "for (int i = 0; i < rows; i++) {"
+          ],
+          "say": "先点运行看看基准表现，留意指标和预期是不是对得上。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "say": "实测 `groupedRows = 300000`！整整 27 万条无效订单陪跑建了哈希表又被扔掉。",
+          "key": "WHERE 与 HAVING 及流式分组"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "出事的是哪一行？",
+      "bridge": "结果摆在眼前了。现在回到代码里，把直接导致这个现象的关键一行找出来。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "wherehaving.HavingFilter",
+          "q": "回到 `HavingFilter`，点击**把 90% 无效行也一并塞进分组哈希表**的那一行：",
+          "answer": [
+            "groupMap.merge(key, 1, Integer::sum);"
+          ],
+          "hint": "找往 `groupMap` 里合并累加的那一行。",
+          "found": "就是它！因为 GROUP BY 在 HAVING 之前执行，所有未被 WHERE 淘汰的行都必须进入分组表。",
+          "say": "直接在代码上点你怀疑的那一行，点错了会给你提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "拆开字节码 / 底层指令看一眼",
+      "bridge": "光看表面现象还不够，用 JDK 自带的 `javap -c -p` 看一眼机器到底执行了什么。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "wherehaving.HavingFilter",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "看 `javap -c -p`：外层循环对全部 30 万行都调用了 `HashMap.merge` 分配节点和哈希计算；而先用 `WHERE` 过滤再配合 `(status, user_id)` 联合索引时，90% 的行根本不会进入分组阶段。",
+          "walk": [
+            {
+              "focus": [
+                "invokeinterface"
+              ],
+              "label": "全量写入分组 Map",
+              "say": "30 万行无差别执行 `Map.merge`，引发大量对象分配与 GC。"
+            },
+            {
+              "focus": [
+                "if_icmplt"
+              ],
+              "label": "扫满全表才结束",
+              "say": "无法利用索引跳过非 PAID 行。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "SQL 执行顺序与联合索引消除临时表",
+      "bridge": "把两条执行流或两个阶段摊在时间轴上，每一步谁先谁后、哪里卡住，一眼看穿。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "SELECT user_id, COUNT(*) FROM orders WHERE status='PAID' GROUP BY user_id HAVING COUNT(*)>=3",
+          "parts": {
+            "read": "WHERE(行)",
+            "calc": "GROUP BY(组)",
+            "write": "HAVING(聚合)"
+          },
+          "lanes": [
+            "普通索引 / 无索引",
+            "(status, user_id) 联合索引"
+          ],
+          "shared": {
+            "name": "进分组行数",
+            "start": "30 万"
+          },
+          "say": "三者各司其职，联合索引连临时表都能省掉。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "1. WHERE status='PAID' 先淘汰 90% 行",
+              "say": "送进分组的行数瞬间从 30 万降到 3 万！"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "2. GROUP BY user_id 建内存临时表累加",
+              "say": "如果只有单列索引 (status)，user_id 是乱序的，仍需 Using temporary。"
+            },
+            {
+              "lane": 1,
+              "op": "calc",
+              "text": "2. 建 (status, user_id) 联合索引：status=PAID 区间内 user_id 天然有序！",
+              "say": "引擎直接流式顺序计数，彻底消除 Using temporary！",
+              "ask": {
+                "q": "想消除 `WHERE status='PAID' GROUP BY user_id` 的 Using temporary，联合索引列顺序怎么建？",
+                "options": [
+                  "(user_id, status)",
+                  "(status, user_id)"
+                ],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "value": "3 万行流式",
+              "text": "3. HAVING COUNT(*) >= 3 过滤聚合结果",
+              "say": "HAVING 只做它该做的聚合条件过滤，各司其职性能最优！"
+            }
+          ],
+          "verdict": "核心口诀：==行过滤放 WHERE，聚合过滤放 HAVING；WHERE 等值列 + GROUP BY 列建联合索引消临时表==。",
+          "verdictSay": "看 EXPLAIN Extra 确认没有 Using temporary，这条分组 SQL 就彻底过关了。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "先猜：怎么改才能彻底修好？",
+      "bridge": "病根找到了。在看几种修法前，先判断一下哪种思路真正对症。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "把条件从 `HavingFilter` 挪到 `WhereBeforeGroup` 或 `IndexedWhere` 后，送进 GROUP BY 的行数会变成多少？",
+          "options": [
+            "30,000 行（减少 90%）",
+            "300,000 行",
+            "0 行"
+          ],
+          "answer": 0,
+          "say": "想清楚「为什么出事」，再选一个你认为能根治的方案。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测对比",
+      "bridge": "不争论，把四种写法放在同一个开关下实测，高下立判。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "wherehaving",
+          "show": [
+            "HavingFilter",
+            "WhereBeforeGroup",
+            "IndexedWhere",
+            "WherePlusHaving"
+          ],
+          "select": "IndexedWhere",
+          "say": "切到 `WhereBeforeGroup` 和 `IndexedWhere`，送进 GROUP BY 的行数直接砍掉 90% 降到 3 万行！"
+        },
+        {
+          "t": "reveal",
+          "of": "p2",
+          "say": "切到 `IndexedWhere` 后问题彻底清零，同时兼顾性能与正确性。"
+        },
+        {
+          "t": "try",
+          "say": "自己拨动上面的规模开关，对比错误数和耗时随规模的变化。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修好了，各自代价是多少？",
+      "bridge": "把四种方案在不同规模下的耗时和正确性画成折线图，工程选型靠数据说话。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "wherehaving",
+          "say": "总行数涨到 60 万时，`HavingFilter` 耗时陡增；`IndexedWhere` 既少扫 90% 行又免去哈希表分配，始终贴近 0ms。",
+          "walk": [
+            {
+              "focus": "HavingFilter",
+              "say": "看 `用 HAVING 过滤状态`：先把 30 万行全塞进 GROUP BY 哈希表，最后再用 HAVING 扔掉 90%。"
+            },
+            {
+              "focus": "WhereBeforeGroup",
+              "say": "看 `WHERE 先过滤再分组`：先用 WHERE 筛出 10% 的 PAID 行，再送进 GROUP BY。"
+            },
+            {
+              "focus": "IndexedWhere",
+              "say": "看 `联合索引流式分组`：建 (status, user_id) 索引，直接定位 status=PAID 且按 user_id 有序流式计数。"
+            },
+            {
+              "focus": "WherePlusHaving",
+              "say": "看 `WHERE+HAVING 各司其职`：WHERE 滤行状态，HAVING 滤聚合结果（如 COUNT(*) >= 3）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上到底怎么选？",
+      "bridge": "没有银弹，只有适用边界。把每种方案的优点、代价和适用场景摆成一张表。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "行条件放 `WHERE`，聚合条件放 `HAVING`，高频分组建联合索引。",
+          "options": [
+            {
+              "name": "HavingFilter (错用 HAVING)",
+              "solves": "无优势",
+              "cost": "全表进临时表：{ms:wherehaving.HavingFilter} ms",
+              "when": "永远禁止把行过滤放 HAVING",
+              "say": "内存杀手。"
+            },
+            {
+              "name": "WhereBeforeGroup",
+              "solves": "分组前先淘汰 90% 行",
+              "cost": "分组量减 90%：{ms:wherehaving.WhereBeforeGroup} ms",
+              "when": "常规带过滤条件的分组查询",
+              "say": "基本底线。"
+            },
+            {
+              "name": "IndexedWhere (联合索引流式)",
+              "solves": "流式计数免临时表",
+              "cost": "最低耗时：{ms:wherehaving.IndexedWhere} ms",
+              "when": "高频大表分组统计（消 Using temporary）",
+              "say": "性能天花板。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "两道巩固题：检验是否真懂",
+      "bridge": "学完立刻做两道高频面试陷阱题，看看能不能一眼识破。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "id": "q1",
+          "q": "SQL 标准的逻辑执行顺序，哪一项是正确的？",
+          "options": [
+            {
+              "text": "FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY",
+              "ok": true,
+              "why": "先过滤行(WHERE)，再分组(GROUP BY)，再过滤组(HAVING)，最后投影和排序。"
+            },
+            {
+              "text": "SELECT → FROM → WHERE → GROUP BY → HAVING",
+              "ok": false,
+              "why": "SELECT 投影列在 GROUP BY/HAVING 之后才执行。"
+            },
+            {
+              "text": "FROM → GROUP BY → HAVING → WHERE → SELECT",
+              "ok": false,
+              "why": "WHERE 永远在 GROUP BY 之前。"
+            }
+          ],
+          "say": "第一题：选最精准的那一项。"
+        },
+        {
+          "t": "quiz",
+          "id": "q2",
+          "q": "对于 `SELECT user_id, COUNT(*) FROM orders WHERE status = 'PAID' GROUP BY user_id`，建哪个联合索引能消除 Using temporary？",
+          "options": [
+            {
+              "text": "(status, user_id)",
+              "ok": true,
+              "why": "等值列 status 在前定死区间，user_id 在后天然有序，直接流式计数。"
+            },
+            {
+              "text": "(user_id, status)",
+              "ok": false,
+              "why": "跳过了最左前缀 user_id，无法直接定位 status='PAID' 区间。"
+            },
+            {
+              "text": "(create_time)",
+              "ok": false,
+              "why": "跟查询条件和分组列无关。"
+            }
+          ],
+          "say": "第二题：换个问法考同一个底层原理。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把概念装进脑子：标准叫法与面试原题",
+      "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
+      "blocks": [
+        {
+          "t": "callout",
+          "tone": "note",
+          "title": "WHERE 与 HAVING 及流式分组（WHERE vs HAVING & Streaming Group）",
+          "md": "==WHERE 分组前滤行（可走索引），HAVING 分组后滤聚合结果==；建 ==(WHERE等值列, GROUP BY列)== 联合索引可消除 Using temporary。",
+          "say": "记住这一句核心定义，面试时先抛结论再展开。"
+        },
+        {
+          "t": "points",
+          "items": [
+            "WHERE 和 HAVING 的区别是什么？SQL 执行顺序是怎样的？",
+            "为什么把普通条件写在 WHERE 比写在 HAVING 快得多？",
+            "如何用联合索引消除 GROUP BY 的 Using temporary？"
+          ],
+          "say": "这几道都是真实一二面原题，下一页直接练习脱稿讲。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上课件，开口讲一遍",
+      "bridge": "看懂不等于讲得出来。对着计时器，按要点一口气讲顺。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚 WHERE 与 HAVING 的执行顺序与职责区别，以及如何用联合索引优化 GROUP BY？",
+          "seconds": 90,
+          "points": [
+            "SQL 执行顺序是 FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY",
+            "WHERE 在分组前做行级过滤且能走索引；HAVING 在分组后对聚合结果（COUNT/SUM）过滤，错放会让全表进临时表",
+            "按 WHERE 等值列 + GROUP BY 列建联合索引 (status, user_id)，可实现有序流式分组，消除 Using temporary"
+          ],
+          "model": "WHERE 和 HAVING 的核心区别在于执行时机和作用对象。SQL 执行顺序是先 FROM、WHERE，再 GROUP BY，最后才执行 HAVING。WHERE 是在分组前做行级过滤，能利用索引直接筛掉无关行；而 HAVING 是在分组聚合之后对聚合结果（比如 COUNT(*) >= 3）做过滤。如果把普通字段条件误写进 HAVING，就会先把全表数据塞进 GROUP BY 临时表再丢弃，导致内存和耗时暴涨。配合 (status, user_id) 联合索引还能有序流式分组，连临时表都不用建。",
+          "say": "先自己组织语言讲一遍，再点开参考答案对照漏了哪个得分点。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张复习卡片",
+      "bridge": "最后留三张一问一答卡片，考前扫一眼就能全部唤醒。",
+      "blocks": [
+        {
+          "t": "cards",
+          "cards": [
+            {
+              "q": "WHERE 和 HAVING 谁先执行？",
+              "a": "WHERE 在 GROUP BY 前过滤行；HAVING 在 GROUP BY 后过滤聚合组。"
+            },
+            {
+              "q": "普通条件放 HAVING 为什么慢？",
+              "a": "无法走索引剪枝，会把全表无关行全塞进 GROUP BY 临时表再扔掉。"
+            },
+            {
+              "q": "怎么消除 GROUP BY 的 Using temporary？",
+              "a": "建 (WHERE 等值列, GROUP BY 列) 联合索引，实现有序流式分组。"
+            }
+          ],
+          "say": "这三张卡片就是本课的最小精华，全部通关，进入下一课！"
+        }
+      ]
+    }
+  ]
+}

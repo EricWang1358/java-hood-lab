@@ -1,0 +1,951 @@
+{
+ "id": "covering",
+ "variants": {
+  "SelectStarLookup": {
+   "hash": "d951c1ff86c9061c",
+   "repeat": 10,
+   "runs": {
+    "500": [
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 2
+     }
+    ],
+    "5000": [
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 8
+     }
+    ],
+    "10000": [
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 7
+     }
+    ]
+   },
+   "inside": "Compiled from \"SelectStarLookup.java\"\npublic class lab.covering.SelectStarLookup {\n  static final int N;\n\n  public lab.covering.SelectStarLookup();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: ldc           #15                 // int 100000\n       9: newarray       int\n      11: astore_2\n      12: ldc           #15                 // int 100000\n      14: anewarray     #16                 // class java/lang/String\n      17: astore_3\n      18: iconst_0\n      19: istore        4\n      21: iload         4\n      23: ldc           #15                 // int 100000\n      25: if_icmpge     51\n      28: aload_2\n      29: iload         4\n      31: iload         4\n      33: iastore\n      34: aload_3\n      35: iload         4\n      37: iload         4\n      39: invokedynamic #18,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      44: aastore\n      45: iinc          4, 1\n      48: goto          21\n      51: invokestatic  #22                 // Method java/lang/System.nanoTime:()J\n      54: lstore        4\n      56: iconst_0\n      57: istore        6\n      59: iconst_0\n      60: istore        7\n      62: iload         7\n      64: iload_1\n      65: if_icmpge     107\n      68: iload         7\n      70: bipush        31\n      72: imul\n      73: ldc           #15                 // int 100000\n      75: irem\n      76: istore        8\n      78: aload_2\n      79: iload         8\n      81: invokestatic  #28                 // Method java/util/Arrays.binarySearch:([II)I\n      84: istore        9\n      86: iload         9\n      88: iflt          101\n      91: aload_3\n      92: iload         9\n      94: aaload\n      95: ifnull        101\n      98: iinc          6, 1\n     101: iinc          7, 1\n     104: goto          62\n     107: invokestatic  #22                 // Method java/lang/System.nanoTime:()J\n     110: lload         4\n     112: lsub\n     113: ldc2_w        #34                 // long 1000000l\n     116: ldiv\n     117: lstore        7\n     119: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     122: iload         6\n     124: invokedynamic #40,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     129: invokevirtual #41                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     132: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     135: ldc           #47                 // String expected=0\n     137: invokevirtual #41                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     140: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     143: lload         7\n     145: invokedynamic #49,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     150: invokevirtual #41                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     153: return\n}"
+  },
+  "ExtraColLookup": {
+   "hash": "16bfc94b0642b3bc",
+   "repeat": 10,
+   "runs": {
+    "500": [
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 500,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 2000,
+      "expected": 0,
+      "ms": 3
+     }
+    ],
+    "5000": [
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "backToTable": 5000,
+      "expected": 0,
+      "ms": 9
+     }
+    ],
+    "10000": [
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "backToTable": 10000,
+      "expected": 0,
+      "ms": 4
+     }
+    ]
+   },
+   "inside": "Compiled from \"ExtraColLookup.java\"\npublic class lab.covering.ExtraColLookup {\n  static final int N;\n\n  public lab.covering.ExtraColLookup();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: ldc           #15                 // int 100000\n       9: newarray       int\n      11: astore_2\n      12: ldc           #15                 // int 100000\n      14: anewarray     #16                 // class java/lang/String\n      17: astore_3\n      18: iconst_0\n      19: istore        4\n      21: iload         4\n      23: ldc           #15                 // int 100000\n      25: if_icmpge     51\n      28: aload_2\n      29: iload         4\n      31: iload         4\n      33: iastore\n      34: aload_3\n      35: iload         4\n      37: iload         4\n      39: invokedynamic #18,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      44: aastore\n      45: iinc          4, 1\n      48: goto          21\n      51: invokestatic  #22                 // Method java/lang/System.nanoTime:()J\n      54: lstore        4\n      56: iconst_0\n      57: istore        6\n      59: iconst_0\n      60: istore        7\n      62: iload         7\n      64: iload_1\n      65: if_icmpge     103\n      68: aload_2\n      69: iload         7\n      71: bipush        31\n      73: imul\n      74: ldc           #15                 // int 100000\n      76: irem\n      77: invokestatic  #28                 // Method java/util/Arrays.binarySearch:([II)I\n      80: istore        8\n      82: iload         8\n      84: iflt          97\n      87: aload_3\n      88: iload         8\n      90: aaload\n      91: ifnull        97\n      94: iinc          6, 1\n      97: iinc          7, 1\n     100: goto          62\n     103: invokestatic  #22                 // Method java/lang/System.nanoTime:()J\n     106: lload         4\n     108: lsub\n     109: ldc2_w        #34                 // long 1000000l\n     112: ldiv\n     113: lstore        7\n     115: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     118: iload         6\n     120: invokedynamic #40,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     125: invokevirtual #41                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     128: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     131: ldc           #47                 // String expected=0\n     133: invokevirtual #41                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     136: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     139: lload         7\n     141: invokedynamic #49,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     146: invokevirtual #41                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     149: return\n}"
+  },
+  "CoveringIndex": {
+   "hash": "ed1c817e5f30cc6c",
+   "repeat": 10,
+   "runs": {
+    "500": [
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     }
+    ],
+    "5000": [
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     }
+    ],
+    "10000": [
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 5
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 2
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"CoveringIndex.java\"\npublic class lab.covering.CoveringIndex {\n  static final int N;\n\n  public lab.covering.CoveringIndex();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: ldc           #15                 // int 100000\n       9: anewarray     #16                 // class java/lang/String\n      12: astore_2\n      13: iconst_0\n      14: istore_3\n      15: iload_3\n      16: ldc           #15                 // int 100000\n      18: if_icmpge     36\n      21: aload_2\n      22: iload_3\n      23: iload_3\n      24: invokedynamic #18,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      29: aastore\n      30: iinc          3, 1\n      33: goto          15\n      36: invokestatic  #22                 // Method java/lang/System.nanoTime:()J\n      39: lstore_3\n      40: iconst_0\n      41: istore        5\n      43: iconst_0\n      44: istore        6\n      46: iconst_0\n      47: istore        7\n      49: iload         7\n      51: iload_1\n      52: if_icmpge     77\n      55: aload_2\n      56: iload         7\n      58: bipush        31\n      60: imul\n      61: ldc           #15                 // int 100000\n      63: irem\n      64: aaload\n      65: ifnull        71\n      68: iinc          6, 1\n      71: iinc          7, 1\n      74: goto          49\n      77: invokestatic  #22                 // Method java/lang/System.nanoTime:()J\n      80: lload_3\n      81: lsub\n      82: ldc2_w        #28                 // long 1000000l\n      85: ldiv\n      86: lstore        7\n      88: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      91: iload         5\n      93: invokedynamic #34,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      98: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     101: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     104: ldc           #41                 // String expected=0\n     106: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     109: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     112: iload         6\n     114: invokedynamic #43,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     119: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     122: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     125: lload         7\n     127: invokedynamic #44,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     132: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     135: return\n}"
+  },
+  "CompositeCovering": {
+   "hash": "f4fabd6f01987e4a",
+   "repeat": 10,
+   "runs": {
+    "500": [
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 500,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 2000,
+      "ms": 0
+     }
+    ],
+    "5000": [
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 5000,
+      "ms": 0
+     }
+    ],
+    "10000": [
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 2
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     },
+     {
+      "backToTable": 0,
+      "expected": 0,
+      "ok": 10000,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"CompositeCovering.java\"\npublic class lab.covering.CompositeCovering {\n  static final int N;\n\n  public lab.covering.CompositeCovering();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: ldc           #15                 // int 100000\n       9: anewarray     #16                 // class java/lang/String\n      12: astore_2\n      13: iconst_0\n      14: istore_3\n      15: iload_3\n      16: ldc           #15                 // int 100000\n      18: if_icmpge     36\n      21: aload_2\n      22: iload_3\n      23: iload_3\n      24: invokedynamic #18,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      29: aastore\n      30: iinc          3, 1\n      33: goto          15\n      36: invokestatic  #22                 // Method java/lang/System.nanoTime:()J\n      39: lstore_3\n      40: iconst_0\n      41: istore        5\n      43: iconst_0\n      44: istore        6\n      46: iconst_0\n      47: istore        7\n      49: iload         7\n      51: iload_1\n      52: if_icmpge     77\n      55: aload_2\n      56: iload         7\n      58: bipush        31\n      60: imul\n      61: ldc           #15                 // int 100000\n      63: irem\n      64: aaload\n      65: ifnull        71\n      68: iinc          6, 1\n      71: iinc          7, 1\n      74: goto          49\n      77: invokestatic  #22                 // Method java/lang/System.nanoTime:()J\n      80: lload_3\n      81: lsub\n      82: ldc2_w        #28                 // long 1000000l\n      85: ldiv\n      86: lstore        7\n      88: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      91: iload         5\n      93: invokedynamic #34,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      98: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     101: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     104: ldc           #41                 // String expected=0\n     106: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     109: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     112: iload         6\n     114: invokedynamic #43,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     119: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     122: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     125: lload         7\n     127: invokedynamic #44,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     132: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     135: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

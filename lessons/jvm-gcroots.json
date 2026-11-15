@@ -1,0 +1,249 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "jvm-gcroots",
+  "course": "JVM 内存与 GC",
+  "title": "GC Roots 可达性分析：为什么循环引用不会内存泄漏？",
+  "lead": "A 指向 B、B 又指向 A，引用计数算法直接死锁泄漏，JVM 的可达性分析怎么一眼识破并一锅端？哪些对象能当 GC Roots？",
+  "minutes": 30,
+  "needs": ["知道引用计数 vs 可达性分析", "知道 GC Roots", "知道内存泄漏"],
+  "after": [
+    "说出 JVM 放弃引用计数、采用可达性分析解决循环引用的核心原因",
+    "背出四大经典 GC Roots（虚拟机栈局部变量、方法区静态属性、常量引用、JNI 本地方法引用）",
+    "学会用「及时断开 GC Root 引用（如置 null / 清理静态集合）」排查线上内存泄漏"
+  ],
+  "terms": {
+    "引用计数法": "每个对象维护被引用次数，为 0 就回收；致命缺陷是无法解决 A↔B 循环引用（计数永远 ≥1）。",
+    "可达性分析 (Reachability Analysis)": "以一系列 GC Roots 为起点向下搜索引用链，凡是走不到的对象（哪怕内部互相循环引用）统统判定为不可达垃圾。",
+    "GC Roots": "必定存活的根对象集合：线程栈帧局部变量、类静态字段、常量池引用、JNI 本地引用、同步锁持有对象等。"
+  },
+  "experiments": {
+    "gcroots": {
+      "runner": "java",
+      "home": "lab.gcroots",
+      "variants": [
+        { "id": "StaticRootPinned", "code": "StaticRootPinned.java", "label": "被 static 静态集合钉死", "note": "循环对象被塞进 static List（GC Root），System.gc() 后 1 个都收不掉（0/N）！" },
+        { "id": "ThreadStackPinned", "code": "ThreadStackPinned.java", "label": "被当前栈帧局部变量钉死", "note": "虽然不是 static，但 main 栈帧里的 localPinned 变量还活着，照样 0/N 收不掉。" },
+        { "id": "CyclicIslandCollected", "code": "CyclicIslandCollected.java", "label": "循环引用孤岛（断 Root）", "note": "a.peer=b 且 b.peer=a 互相死咬，但方法返回后与 GC Roots 断开，一锅端全收（N/N）！" },
+        { "id": "ExplicitNullRelease", "code": "ExplicitNullRelease.java", "label": "显式置 null 断开 Root", "note": "大对象批处理完立刻把局部集合置 null，哪怕方法还没返回也能立即被 GC 回收（N/N）。" }
+      ],
+      "knob": { "label": "循环引用对数", "values": ["100", "200", "400", "800"], "default": "200" },
+      "repeat": 20,
+      "metric": { "key": "reclaimed", "expectKey": "expected", "label": "GC 后回收对数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "GC Roots 可达性分析：为什么循环引用不会内存泄漏？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**两个对象 `a.peer = b; b.peer = a;` 互相死死咬住，为什么 JVM 照样能把它们干净收走？而什么时候又真的收不走？**",
+          "say": "理解可达性分析与四大 GC Roots，是排查所有 Java 内存泄漏（`jmap` 查引用链）的底层钥匙。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：谁能当 GC Roots，谁是垃圾？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先检验你对垃圾判定算法的掌握。",
+          "items": [
+            {
+              "have": "引用计数缺陷",
+              "q": "为什么 JVM 不用简单高效的「引用计数法」来判断对象是否存活？",
+              "options": ["无法解决对象之间互相循环引用（引用计数永远不为 0）的问题", "太费内存", "不支持多线程"],
+              "answer": 0,
+              "why": "A 抱 B、B 抱 A，引用计数都是 1，但外部早就没人认识它们了。"
+            },
+            {
+              "have": "四大 GC Roots",
+              "q": "以下哪一项**不是** JVM 的 GC Roots？",
+              "options": ["堆里一个孤立无主的 static 字段未指向的普通对象", "虚拟机栈帧中的局部变量表引用的对象", "方法区中类静态属性（static）引用的对象"],
+              "answer": 0,
+              "why": "记住四大经典根：栈帧局部变量、方法区静态属性、方法区常量引用、本地方法栈 JNI 引用。"
+            },
+            {
+              "have": "置 null 优化",
+              "q": "在一个很长的方法前半段分配了一个 100MB 的局部数组 `buf`，后半段还要跑很久，怎么让后半段 GC 时能提前收掉 `buf`？",
+              "options": ["用完后显式写 `buf = null;`（或缩小作用域放进独立子块/子方法）", "什么都不用做", "加 volatile"],
+              "answer": 0,
+              "why": "只要栈帧槽位还占着 `buf` 引用，在没有作用域复用或 JIT 活跃性分析覆盖时，它就可能一直钉住这 100MB。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「海上孤岛」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["岛民 A ↔ 岛民 B"], "shared": { "name": "大陆港口 (GC Roots)", "value": "有桥才活，断桥全沉" } },
+          "story": "大陆港口就是 GC Roots（静态变量、活着的线程栈）。哪怕岛民 A 和 B 在孤岛上互相拉着手（`a.peer = b; b.peer = a`），只要通往大陆港口的桥断了（方法返回 `CyclicIslandCollected` 或显式 `tempBatch = null`），管理员从港口出发找不到这座岛，整座孤岛直接一锅端回收！反之如果被 `STATIC_ROOT` 拴在港口，就永远收不掉。",
+          "say": "查内存泄漏的本质，就是用 MAT/jmap 顺着对象往上找「到底是哪个 GC Root 还没松手」。",
+          "map": [
+            { "scene": "铁链拴在港口", "on": "shared", "tag": "GC Root 钉死", "code": "`STATIC_ROOT.add(a)`", "say": "静态集合只进不出，是最常见的线上 OOM 元凶。" },
+            { "scene": "孤岛互拉但断桥", "on": "actors", "tag": "可达性分析回收", "code": "`allocateIslands()` 返回", "say": "循环引用孤岛与 GC Roots 断开，GC 一锅端收走。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：互相死咬的循环孤岛如何被全收",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "gcroots.CyclicIslandCollected",
+          "say": "看 `CyclicIslandCollected.java`：创建 200 对 `a.peer = b; b.peer = a;` 的循环引用，方法返回后跑一次 `System.gc()`。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：4 种引用挂法下，200 对循环对象各自能回收多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`StaticRootPinned`、`ThreadStackPinned`、`CyclicIslandCollected`、`ExplicitNullRelease` 在 `System.gc()` 后各自回收多少对？",
+          "options": ["全回收 200", "前两个回收 0（被 Root 钉死），后两个回收 200（孤岛/断 Root）", "CyclicIslandCollected 也回收 0"],
+          "answer": 1,
+          "say": "只要能从 GC Roots 沿着引用链走到，就绝不回收；走不到的循环孤岛统统回收。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测回收数：0/200 vs 200/200",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "gcroots",
+          "show": ["StaticRootPinned", "ThreadStackPinned", "CyclicIslandCollected", "ExplicitNullRelease"],
+          "knob": "200",
+          "hand": "CyclicIslandCollected",
+          "focus": "reclaimed",
+          "say": "看结果：`StaticRootPinned` 和 `ThreadStackPinned` 一对都收不掉（0/200），而循环引用的 `CyclicIslandCollected` 和置空的 `ExplicitNullRelease` 全部 200/200 回收！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "JVM 可达性分析只看「能否从 GC Roots 到达」，彻底免疫循环引用孤岛问题",
+          "say": "如果线上出现内存泄漏，一定是某个 GC Root（比如静态 Map、未关的线程/ThreadLocal、监听列表）死死拽住了对象链。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：方法出栈即断 Root",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "gcroots.CyclicIslandCollected",
+          "within": "main",
+          "from": "allocateIslands",
+          "to": "System.gc",
+          "say": "`allocateIslands()` 执行完毕出栈，它栈帧里的局部变量 `a` 和 `b` 随之销毁，堆上 200 对循环引用节点瞬间失去所有 GC Roots 路径。",
+          "walk": [
+            { "focus": ["allocateIslands"], "label": "局部栈帧销毁", "say": "循环孤岛虽然内部互相引用，但已无任何外部根可达。" },
+            { "focus": ["System.gc"], "label": "可达性扫描回收", "say": "GC 从所有 Roots 出发标记不到它们，直接全数清理。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "拉到 800 对再验证",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "gcroots",
+          "say": "把对数调到 800，验证 `CyclicIslandCollected` 与 `ExplicitNullRelease` 的彻底回收。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "防内存泄漏的工程习惯",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "90% 的 Java 内存泄漏都源于「无意中把短命对象挂到了长命 GC Root 上」。",
+          "options": [
+            { "name": "静态缓存/全局注册表设上限或过期", "solves": "避免 Static Root 无限膨胀", "cost": "需引入容量淘汰（LRU/Caffeine）", "when": "本地缓存、路由表、回调监听器", "say": "永远不要写只 put 不 remove/淘汰的 static Map。" },
+            { "name": "缩小大对象变量作用域", "solves": "大块临时数据用完即出栈，不占用栈帧局部变量槽", "cost": "代码拆成小方法或加独立作用域", "when": "大文件/大报表批处理方法", "say": "用完的大集合尽量放进子方法里，或者显式置 null。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住可达性分析与四大 GC Roots",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "可达性分析与 GC Roots",
+          "alias": "Reachability Analysis",
+          "oneLine": "以栈局部变量、静态变量、常量、JNI 引用等 GC Roots 为起点向下搜索，走不到的循环孤岛直接判为垃圾回收。",
+          "asked": "JVM 如何判断对象是否可回收？哪些对象可以作为 GC Roots？",
+          "say": "答出「引用计数 vs 可达性分析」「四大经典 GC Roots」「三色标记/STW 根节点枚举」更佳。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "线上发生内存泄漏时，用 `jmap -dump` 导出堆转储后在 MAT 里看「Path to GC Roots」，最常见看到的罪魁祸首通常是？",
+          "options": [
+            { "text": "静态集合（static Map/List）、未 remove 的 ThreadLocal 或未注销的监听器把大量对象挂在了 GC Roots 上", "ok": true, "why": "正确！顺着 Path to GC Roots 一眼就能揪出是哪条静态/线程引用链死死拽着对象不放。" },
+            { "text": "两个临时对象互相循环引用导致 GC 回收不了", "ok": false, "why": "JVM 可达性分析完全不怕循环引用孤岛。" },
+            { "text": "对象太大导致无法回收", "ok": false, "why": "只要不可达，再大的对象也能被 GC 回收。" }
+          ],
+          "say": "记住排障口诀：堆泄漏必有根，顺着 `Path to GC Roots` 抓凶手。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：可达性分析与 GC Roots",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：JVM 怎么判断一个对象可以被回收？哪些对象可以作为 GC Roots？",
+          "points": [
+            "为什么不用引用计数：引用计数无法解决两个孤立对象互相循环引用的泄漏问题",
+            "可达性分析原理：以一系列 GC Roots 对象为起点，沿着引用链向下搜索（Mark），如果一个对象到 GC Roots 没有任何引用链相连（不可达），即使存在内部循环引用也会被判定为可回收",
+            "常见 GC Roots：虚拟机栈（栈帧中的局部变量表）中引用的对象、方法区中类静态属性引用的对象、方法区中常量引用的对象、本地方法栈中 JNI 引用的对象，以及被 synchronized 持有的锁对象和活跃线程本身"
+          ],
+          "model": "JVM 采用的是可达性分析算法，而不是引用计数法，因为引用计数法无法解决两个孤立对象互相循环引用的问题。可达性分析的基本思路是：以一系列称为 GC Roots 的对象作为起点，沿着它们的引用链向下搜索，走过的路径叫引用链；如果一个对象到 GC Roots 没有任何引用链相连，就证明这个对象不可达、可以被回收，哪怕它和别的对象之间存在循环引用。可以作为 GC Roots 的对象主要包括四类：第一是虚拟机栈帧局部变量表里引用的对象；第二是方法区中类静态属性（static 变量）引用的对象；第三是方法区中常量引用的对象；第四是本地方法栈中 JNI（Native 方法）引用的对象，此外还有正在被 synchronized 锁住的对象和活跃线程本身。",
+          "say": "「不选引用计数原因 → 可达性分析原理 → 四大 GC Roots」清晰作答。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "GC Roots 三张卡收好。",
+          "items": [
+            { "front": "循环引用会泄漏吗？", "back": "不会，JVM 用可达性分析，断开 GC Roots 的循环孤岛一锅端回收。" },
+            { "front": "四大经典 GC Roots", "back": "栈局部变量、类静态属性、常量引用、JNI 本地引用。" },
+            { "front": "怎么查内存泄漏？", "back": "jmap dump 后看 Path to GC Roots，找出拽住对象的长命根。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,468 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "spring-tx-multithread",
+  "course": "Spring 全家桶与持久层",
+  "title": "事务方法里开多线程 / @Async，子线程异常主线程怎么不回滚？",
+  "lead": "@Transactional 方法里新开线程或调 @Async 写明细表，子线程报错了，主线程却照常 commit——订单有头无尾！",
+  "minutes": 35,
+  "needs": [
+    "知道 Spring 用 ThreadLocal 绑定当前线程的数据库连接",
+    "知道线程之间 ThreadLocal 不共享",
+    "了解 Future.get()"
+  ],
+  "after": [
+    "讲清 ThreadLocal 事务上下文无法跨线程传递的原理",
+    "说出为什么不能让两个线程共用同一个未提交数据库连接",
+    "掌握 Future 传播异常与主事务提交后发事件两种工程方案"
+  ],
+  "terms": {
+    "TransactionSynchronizationManager": "Spring 事务同步管理器：内部用 ThreadLocal 保存当前线程绑定的数据库连接和事务状态。",
+    "@Async": "Spring 异步注解：把方法丢进另一个线程池执行，新线程有自己空白的 ThreadLocal。",
+    "Outbox 事件": "主事务同步写完本地记录并提交后，再发事件/MQ 异步处理后续步骤，彻底避免跨线程共享事务。"
+  },
+  "experiments": {
+    "txthread": {
+      "runner": "java",
+      "home": "lab.txthread",
+      "variants": [
+        {
+          "id": "AsyncSeparateTx",
+          "label": "开线程/异步直接跑",
+          "note": "子线程拿不到主线程 ThreadLocal 事务，子任务失败主线程照常提交。"
+        },
+        {
+          "id": "ManualSwallowChild",
+          "label": "Future.get 吞异常",
+          "note": "等了子任务但 catch 住异常没上抛，主事务照样提交。"
+        },
+        {
+          "id": "SyncJoinPropagate",
+          "label": "等待子任务并上抛",
+          "note": "主线程阻塞等待 Future.get() 并上抛异常触发主事务回滚。"
+        },
+        {
+          "id": "OutboxEvent",
+          "label": "提交后发事件异步",
+          "note": "主事务同步落库提交后，再触发异步补偿，无跨线程脏数据。"
+        }
+      ],
+      "knob": {
+        "label": "任务数",
+        "values": [
+          "50",
+          "100",
+          "200",
+          "400"
+        ],
+        "default": "100"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "dirty",
+        "expectKey": "expected",
+        "label": "主从不一致脏数据"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "事务方法里开多线程 / @Async，子线程异常主线程怎么不回滚？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "为了提速，有人在 `@Transactional` 方法里用线程池或 `@Async` 并行写子表。结果子表写挂了，主表照样提交成功，**彻底撕裂**。",
+          "say": "原因很朴素：Spring 的事务连接是绑在 `ThreadLocal` 里的，换了线程就等于换了另一个世界。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热个身：先确认三件前置知识",
+      "bridge": "事务不能跨线程共享，根源在于数据库连接的线程绑定模型。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题快速热身。",
+          "items": [
+            {
+              "have": "Spring 事务存储位置",
+              "q": "Spring `@Transactional` 把当前开启的数据库连接（Connection）存放在哪里？",
+              "options": [
+                "全局 static 变量",
+                "ThreadLocal（TransactionSynchronizationManager）"
+              ],
+              "answer": 1,
+              "why": "正是因为存在 `ThreadLocal` 里，同一线程内调十个 Mapper 才能拿到同一个未提交连接。"
+            },
+            {
+              "have": "新线程上下文",
+              "q": "用 `@Async` 或 `executor.submit()` 把任务丢进线程池后，子线程能读到主线程 `ThreadLocal` 里的数据库连接吗？",
+              "options": [
+                "不能，子线程是完全独立的 ThreadLocal",
+                "能，自动继承"
+              ],
+              "answer": 0,
+              "why": "就算强行把同一个 `Connection` 传给子线程也很危险，因为 JDBC Connection 不是线程安全的！"
+            },
+            {
+              "have": "异常传播",
+              "q": "子线程抛出了 `RuntimeException`，如果主线程没调 `future.get()` 或捕获后吞掉了，主线程事务会回滚吗？",
+              "options": [
+                "会",
+                "不会，主线程根本不知道子线程挂了，照常 commit"
+              ],
+              "answer": 1,
+              "why": "主线程只认自己调用栈上抛出的 `RuntimeException`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景",
+      "bridge": "把 `ThreadLocal` 事务想成「每个员工各自桌上的待提交草稿箱」。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "主线程(写订单)",
+              "子线程(写明细)"
+            ],
+            "shared": {
+              "name": "各自 ThreadLocal",
+              "value": "互不相通"
+            }
+          },
+          "story": "主线程在自己工位的**草稿箱（`ThreadLocal` 事务）**里写好了订单主表，然后冲隔壁工位的子线程喊了一嗓子「你帮我写一下明细」。子线程自己桌上是空的，写挂了直接甩手不干了，主线程头也不回把自己的草稿箱提交了——**结果库里只有订单没有明细！**",
+          "say": "跨线程就别指望同一个数据库事务了，要么同步等它并上抛异常，要么主事务提交后再发事件异步补偿。",
+          "map": [
+            {
+              "scene": "隔壁工位桌上是空的",
+              "on": "actors",
+              "tag": "子线程无事务",
+              "code": "if (!TX.get()) throw ...;",
+              "say": "子线程读 `TX.get()` 是 `false`，它不在主线程的事务边界内。"
+            },
+            {
+              "scene": "主线程照常提交",
+              "on": "shared",
+              "tag": "主从撕裂",
+              "code": "orders.incrementAndGet();",
+              "say": "主表成功、子表失败，出现脏数据。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "100 笔下单，子线程全失败，留下了多少孤儿订单？",
+      "bridge": "预期不一致脏数据 `dirty = 0`。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "主线程写 `orders`，子线程写 `items` 并抛异常。",
+          "say": "看 `AsyncSeparateTx` 代码。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看清 ThreadLocal 的线程边界",
+      "bridge": "注意 `TX` 是 `ThreadLocal<Boolean>`。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "txthread.AsyncSeparateTx",
+          "say": "主线程里 `TX.get()` 是 `true`，进了 `pool.submit` 的子线程呢？",
+          "walk": [
+            {
+              "focus": [
+                "if (!TX.get()) throw new RuntimeException(\"子线程无事务且写明细失败\");"
+              ],
+              "say": "子线程读取 `TX.get()` 得到 `false`，而且它抛出的异常只在线程池 `Future` 里静默吞掉，主线程毫不知情地提交了！",
+              "key": "ThreadLocal 事务不跨线程，子线程异常也不会自动传播给主线程"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：100 笔任务会有多少不一致？",
+      "bridge": "跑之前下注。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "txth_guess",
+          "q": "运行 `AsyncSeparateTx`（100 笔），主从不一致 `dirty` 是？",
+          "options": [
+            "0",
+            "100"
+          ],
+          "answer": 1,
+          "say": "选出你的判断。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "出事的是哪一行？点出来",
+      "bridge": "在 `AsyncSeparateTx.java` 中点出子线程读不到主线程事务状态的那一行。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "txthread.AsyncSeparateTx",
+          "q": "哪一行代码暴露了子线程拿不到主线程 `ThreadLocal` 事务的真相？",
+          "answer": [
+            "if (!TX.get()) throw new RuntimeException(\"子线程无事务且写明细失败\");"
+          ],
+          "hint": "找 `pool.submit` 里面判断 `TX.get()` 的那一行。",
+          "found": "就是这句！子线程的 `TX.get()` 默认是 `false`，且它抛的异常只在线程池 `Future` 里静默吞掉，根本传不到主线程。",
+          "say": "点击代码里对应的那一行。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖看字节码",
+      "bridge": "用 `javap -c -p` 看 `AsyncSeparateTx.main` 里提交异步任务后主线程直接退出的指令。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "txthread.AsyncSeparateTx",
+          "within": "main",
+          "from": "invokeinterface",
+          "to": "pop",
+          "say": "反编译看 `pool.submit(...)` 的返回值去哪了。",
+          "walk": [
+            {
+              "focus": [
+                "pop"
+              ],
+              "label": "Future 返回值被直接丢弃",
+              "say": "`invokeinterface ExecutorService.submit` 返回的 `Future` 对象紧接着被一条 `pop` 指令直接从操作数栈扔掉了！主线程既没等子线程，也永远看不到子线程里的异常！",
+              "key": "submit 后的一条 pop 指令把 Future 扔了，子线程异常彻底失联"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "四种写法实测对比",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "txthread",
+          "show": [
+            "AsyncSeparateTx",
+            "ManualSwallowChild",
+            "SyncJoinPropagate",
+            "OutboxEvent"
+          ],
+          "select": "AsyncSeparateTx",
+          "say": "`AsyncSeparateTx` 和 `ManualSwallowChild` 全是 100 笔不一致；`SyncJoinPropagate` 和 `OutboxEvent` 全是 0。"
+        },
+        {
+          "t": "reveal",
+          "of": "txth_guess",
+          "say": "想让多线程一起回滚只有两条正路：要么同步等子任务把异常抛回主线程；要么主事务提交后再异步+补偿。",
+          "key": "多线程不要共用同一数据库事务，用同步聚合或提交后异步"
+        },
+        {
+          "t": "try",
+          "say": "切换任务数 200 和 400 观察。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "耗时对比",
+      "bridge": "四种写法耗时折线。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "txthread",
+          "say": "`OutboxEvent` 既不拖慢主事务持锁时间，又能保证最终一致。",
+          "walk": [
+            {
+              "focus": "OutboxEvent",
+              "say": "主事务只做本地原子写入，提交后再触发异步执行，连接池占用最短。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型",
+      "layout": "split",
+      "bridge": "事务里遇到耗时/并行子任务怎么写？",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "事务内需要并行或异步操作怎么办？",
+          "branches": [
+            {
+              "when": "并行查数据（只读，不写库）",
+              "pick": "移到事务外面并行查完再进事务",
+              "eg": "CompletableFuture.allOf() 查完再开事务"
+            },
+            {
+              "when": "强一致写主从表",
+              "pick": "单线程同一事务内批量写入",
+              "eg": "batchInsert 不开多线程"
+            },
+            {
+              "when": "非核心后置动作（发券/通知）",
+              "pick": "主事务提交后发事件/Outbox",
+              "eg": "@TransactionalEventListener(AFTER_COMMIT)"
+            }
+          ],
+          "say": "核心原则：写事务里别开多线程。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "移到事务外并行查",
+            "单线程同一事务批写",
+            "AFTER_COMMIT 异步事件"
+          ],
+          "say": "三个场景选最佳方案。",
+          "items": [
+            {
+              "text": "下单前需要并行调用 3 个外部查询接口，再开启事务落库。",
+              "answer": 0,
+              "why": "在事务外部用 `CompletableFuture` 并行查完，再进 `@Transactional` 落库。"
+            },
+            {
+              "text": "一次保存订单头和 20 条订单明细，要求绝对强一致。",
+              "answer": 1,
+              "why": "单线程同一事务里 `batchInsert` 只要 1-2ms，比开多线程还快且天然原子。"
+            },
+            {
+              "text": "订单落库后异步发短信和加积分。",
+              "answer": 2,
+              "why": "用 `@TransactionalEventListener(phase = AFTER_COMMIT)` 确保主单提交后再异步。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频提问。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "多线程事务隔离与失效",
+          "alias": "ThreadLocal · @Async · AFTER_COMMIT",
+          "oneLine": "Spring 事务上下文存放在==ThreadLocal==中；子线程无法继承主线程的数据库连接，子线程异常也不会自动回滚主事务。",
+          "asked": [
+            "@Transactional 方法里开新线程或调 @Async，事务还能一起回滚吗？",
+            "如果必须多线程怎么保证数据一致性？"
+          ],
+          "say": "把 `ThreadLocal` 和「事务外并行、事务内单线程」讲清楚即可。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下（两题）",
+      "bridge": "快速检验。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在 `@Transactional` 方法里调用另一个 `@Async` 方法，两者的数据库事务关系是？",
+          "options": [
+            {
+              "text": "共用同一个物理事务",
+              "ok": false,
+              "why": "不同线程有各自的 `ThreadLocal`，不可能共用。"
+            },
+            {
+              "text": "完全独立，子线程异常不会自动触发主线程回滚",
+              "ok": true,
+              "why": "正确！"
+            }
+          ],
+          "say": "选出正确答案。"
+        },
+        {
+          "t": "quiz",
+          "q": "2. 如果把 `TX` 从 `ThreadLocal` 换成 `InheritableThreadLocal`，能让两个线程安全共用同一个 Spring 数据库事务吗？",
+          "options": [
+            {
+              "text": "不能！线程池线程是复用的不会每次重新继承，且 JDBC Connection 本身不是线程安全的，不能并发共用",
+              "ok": true,
+              "why": "正确！分布式/异步场景应该用「主事务提交 + @TransactionalEventListener(AFTER_COMMIT) / Outbox 本地消息表」保证最终一致。"
+            },
+            {
+              "text": "能，换了就能完美并发写同一个事务",
+              "ok": false,
+              "why": "并发共用同一个 JDBC Connection 会导致状态错乱和死锁。"
+            }
+          ],
+          "say": "第 2 题：考常见误区辨析。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么 @Transactional 方法里开子线程或 @Async 不能一起回滚？工程上怎么写？",
+          "points": [
+            "Spring 通过 TransactionSynchronizationManager 的 ThreadLocal 绑定当前线程的数据库连接",
+            "子线程拿不到主线程的 ThreadLocal，异常也不会自动传播给主线程事务代理",
+            "即使手动传连接也极度危险（JDBC Connection 非线程安全）",
+            "工程做法：查询放事务外并行；强一致写库用单线程批写；后置逻辑用 AFTER_COMMIT 事件/Outbox"
+          ],
+          "model": "Spring 的声明式事务是通过 `TransactionSynchronizationManager` 里的 `ThreadLocal` 把数据库连接绑定到当前线程上的。如果在 `@Transactional` 方法里开新线程或调用 `@Async` 方法，子线程的 `ThreadLocal` 是空的，会开启自己独立的连接和事务（甚至无事务），子线程抛异常也不会自动触发主线程回滚。工程上不要在写事务里开多线程：耗时的并行查询应该放到事务外先做完；强一致的主从表写入直接单线程同一事务批量写；非核心的后置动作则用 `@TransactionalEventListener(AFTER_COMMIT)` 或本地消息表在主事务提交后再异步执行。",
+          "say": "点击开始自述。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "为什么 `@Transactional` 内开线程不一起回滚？",
+              "a": "事务连接绑定在 `ThreadLocal`，不跨线程传递，且 JDBC Connection 本身非线程安全。"
+            },
+            {
+              "q": "事务里需要并行查外部接口怎么办？",
+              "a": "把并行查询移到事务开启之前，查完再进事务短平快落库。"
+            },
+            {
+              "q": "主单落库后异步发通知的正确姿势？",
+              "a": "`@TransactionalEventListener(phase = AFTER_COMMIT)` 或本地消息表 Outbox。"
+            }
+          ],
+          "say": "三张卡收好。"
+        }
+      ]
+    }
+  ]
+}

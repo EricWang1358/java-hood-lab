@@ -1,0 +1,616 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "col-linkedhashmap-lru",
+  "course": "Java 工程语法与集合",
+  "title": "LinkedHashMap 手写 O(1) LRU 缓存：accessOrder=true 怎么把热点挪到队尾？",
+  "lead": "面试手撕高频第一题「O(1) LRU 缓存」：用 LinkedHashMap 只需重写一个方法 5 行搞定，可为什么忘了传第三个参数 true，热点键竟然被淘汰了？",
+  "minutes": 30,
+  "needs": [
+    "知道 HashMap + 双向链表组合实现 LRU",
+    "知道 LinkedHashMap 构造器第三个参数 accessOrder"
+  ],
+  "after": [
+    "说清 LinkedHashMap 如何在 HashMap 节点基础上通过 before/after 指针维护双向链表",
+    "区分 accessOrder=false（插入序 FIFO）与 accessOrder=true（访问序 LRU）的差异",
+    "记住 LinkedHashMap 依然非线程安全，并发场景需要加锁或使用 Caffeine"
+  ],
+  "terms": {
+    "accessOrder=true": "开启后，每次 `get()` 或 `put()` 命中已有键时，`afterNodeAccess()` 自动把该节点摘下来挪到双向链表尾部（最新位置），表头永远是最久未使用的冷数据。",
+    "removeEldestEntry": "`LinkedHashMap` 在每次 `put` 结束时回调 `afterNodeInsertion()`，只要 `removeEldestEntry(eldest)` 返回 `true` 就 O(1) 删掉表头最老节点。",
+    "并发改造": "`LinkedHashMap` 的 `get()` 也会修改双向链表指针（第 7 课已测），多线程读写必须加互斥锁或改用 `Caffeine`。"
+  },
+  "experiments": {
+    "lhmlru": {
+      "runner": "java",
+      "home": "lab.lhmlru",
+      "variants": [
+        {
+          "id": "HashMapNoEvictLeak",
+          "code": "HashMapNoEvictLeak.java",
+          "label": "普通 HashMap（无淘汰，内存爆炸）",
+          "note": "写入 N 条后 size=N 远超上限 100，无法淘汰冷数据。"
+        },
+        {
+          "id": "LinkedFifoOrderWrong",
+          "code": "LinkedFifoOrderWrong.java",
+          "label": "accessOrder=false（FIFO 误删热点）",
+          "note": "虽然频繁 get(0)，但链表不刷新顺序，新键一进来就把热点 key=0 淘汰了！"
+        },
+        {
+          "id": "LinkedHashMapLruSafe",
+          "code": "LinkedHashMapLruSafe.java",
+          "label": "accessOrder=true（标准 O(1) LRU）",
+          "note": "get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。"
+        },
+        {
+          "id": "SynchronizedLruCache",
+          "code": "SynchronizedLruCache.java",
+          "label": "synchronizedMap 线程安全包装",
+          "note": "为多线程读写加上互斥锁，兼顾 LRU 语义与并发安全。"
+        }
+      ],
+      "knob": {
+        "label": "热点访问/写入次数 N",
+        "values": [
+          "1000",
+          "5000",
+          "10000",
+          "20000"
+        ],
+        "default": "5000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "boundedOk",
+        "expectKey": "expected",
+        "label": "容量受控且保住热点 (1=是)"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "LinkedHashMap 手写 O(1) LRU 缓存：accessOrder=true 怎么把热点挪到队尾？",
+      "bridge": "面试手撕高频第一题「O(1) LRU 缓存」：用 LinkedHashMap 只需重写一个方法 5 行搞定，可为什么忘了传第三个参数 true，热点键竟然被淘汰了？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "LeetCode 146「LRU 缓存」面试常考两种写法：手写 `HashMap + 双向链表`，或者直接基于 JDK 的 `LinkedHashMap`。今天实测 `LinkedHashMap` 最容易写错的一个布尔参数：**`accessOrder = true`**！",
+          "say": "顺便接上第 7 课的并发结论：LinkedHashMap 的 `get` 也在写链表！"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
+          "items": [
+            {
+              "have": "默认顺序",
+              "q": "`new LinkedHashMap<>()` 默认的遍历顺序是什么？",
+              "options": [
+                "插入顺序（accessOrder=false）",
+                "访问顺序（LRU）",
+                "按 Key 自然排序"
+              ],
+              "answer": 0,
+              "why": "必须显式调三参构造器 `new LinkedHashMap<>(cap, 0.75f, true)` 才会启用 LRU 访问序。"
+            },
+            {
+              "have": "为何 O(1)",
+              "q": "为什么单靠 `HashMap` 或单靠双向链表都做不到 O(1) LRU，必须两者结合？",
+              "options": [
+                "HashMap 负责 O(1) 定位节点，双向链表负责 O(1) 摘除与尾插",
+                "因为链表不能存对象",
+                "为了省内存"
+              ],
+              "answer": 0,
+              "why": "定位靠哈希表，顺序调整和删头节点靠双向链表。"
+            },
+            {
+              "have": "遍历 CME",
+              "q": "对开启了 `accessOrder=true` 的 `LinkedHashMap` 一边用 `for-each` 遍历 keySet，一边在循环体里调用 `map.get(key)` 会怎样？",
+              "options": [
+                "抛出 ConcurrentModificationException（因为 get 挪动了链表顺序并 modCount++）",
+                "正常执行",
+                "死循环"
+              ],
+              "answer": 0,
+              "why": "极其隐蔽的坑：`accessOrder=true` 时连 `get()` 都会 `modCount++`！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (HashMapNoEvictLeak)",
+              "安全写法 (LinkedHashMapLruSafe)"
+            ],
+            "shared": {
+              "name": "容量受控且保住热点 (1=是)",
+              "value": "目标 5000"
+            }
+          },
+          "story": "面试手撕高频第一题「O(1) LRU 缓存」：用 LinkedHashMap 只需重写一个方法 5 行搞定，可为什么忘了传第三个参数 true，热点键竟然被淘汰了？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "accessOrder=true",
+              "on": "shared",
+              "tag": "accessOrder=",
+              "code": "`HashMapNoEvictLeak` vs `LinkedHashMapLruSafe`",
+              "say": "开启后，每次 `get()` 或 `put()` 命中已有键时，`afterNodeAccess()` 自动把该节点摘下来挪到双向链表尾部（最新位置），表头永远是最久未使用的冷数据。"
+            },
+            {
+              "scene": "removeEldestEntry",
+              "on": "shared",
+              "tag": "removeEldest",
+              "code": "`HashMapNoEvictLeak` vs `LinkedHashMapLruSafe`",
+              "say": "`LinkedHashMap` 在每次 `put` 结束时回调 `afterNodeInsertion()`，只要 `removeEldestEntry(eldest)` 返回 `true` 就 O(1) 删掉表头最老节点。"
+            },
+            {
+              "scene": "并发改造",
+              "on": "shared",
+              "tag": "并发改造",
+              "code": "`HashMapNoEvictLeak` vs `LinkedHashMapLruSafe`",
+              "say": "`LinkedHashMap` 的 `get()` 也会修改双向链表指针（第 7 课已测），多线程读写必须加互斥锁或改用 `Caffeine`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`HashMapNoEvictLeak`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "lhmlru.HashMapNoEvictLeak",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "Map<Integer, Integer> cache = new HashMap<>();"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "int ok = cache.size() <= cap ? 1 : 0;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：HashMapNoEvictLeak 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`LinkedFifoOrderWrong` 传入 `accessOrder=false`，连续 `get(0)` 后插入新键 `999999`，`cache.containsKey(0)` 是？",
+          "options": [
+            "false（key=0 作为最早插入的节点被当成最老淘汰了！）",
+            "true",
+            "抛异常"
+          ],
+          "answer": 0,
+          "say": "`accessOrder=false` 时 `get()` 根本不会触发 `afterNodeAccess()` 移动节点，纯按插入时间 FIFO 淘汰！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：HashMapNoEvictLeak 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "lhmlru",
+          "show": [
+            "HashMapNoEvictLeak"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "`accessOrder=false` 时 `get()` 根本不会触发 `afterNodeAccess()` 移动节点，纯按插入时间 FIFO 淘汰！",
+          "say": "`accessOrder=false` 时 `get()` 根本不会触发 `afterNodeAccess()` 移动节点，纯按插入时间 FIFO 淘汰！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「热点访问/写入次数 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "lhmlru",
+          "show": [
+            "HashMapNoEvictLeak",
+            "LinkedHashMapLruSafe"
+          ],
+          "say": "左右拖动「热点访问/写入次数 N」滑块，对比 `HashMapNoEvictLeak` 与 `LinkedHashMapLruSafe` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`HashMapNoEvictLeak`：写入 N 条后 size=N 远超上限 100，无法淘汰冷数据。；`LinkedHashMapLruSafe`：get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `HashMapNoEvictLeak.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "lhmlru.HashMapNoEvictLeak",
+          "q": "在左边的 `HashMapNoEvictLeak.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "for (int i = 0; i < n; i++) cache.put(i, i);"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`for (int i = 0; i < n; i++) cache.put(i, i);`）导致：写入 N 条后 size=N 远超上限 100，无法淘汰冷数据。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "lhmlru.HashMapNoEvictLeak",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "10: new           #13                 // class java/util/HashMap"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "17: astore_3"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `LinkedHashMapLruSafe` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "lhmlru.LinkedHashMapLruSafe",
+          "say": "get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "protected boolean removeEldestEntry(Map.Entry<Integer, Integer> eldest) {"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "int ok = (cache.size() <= cap && cache.containsKey(0)) ? 1 : 0;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "lhmlru",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "普通 HashMap（无淘汰，内存爆炸）（`HashMapNoEvictLeak`）",
+              "solves": "写入 N 条后 size=N 远超上限 100，无法淘汰冷数据。",
+              "cost": "实测约 {ms:lhmlru.HashMapNoEvictLeak} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "写入 N 条后 size=N 远超上限 100，无法淘汰冷数据。"
+            },
+            {
+              "name": "accessOrder=false（FIFO 误删热点）（`LinkedFifoOrderWrong`）",
+              "solves": "虽然频繁 get(0)，但链表不刷新顺序，新键一进来就把热点 key=0 淘汰了！",
+              "cost": "实测约 {ms:lhmlru.LinkedFifoOrderWrong} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "虽然频繁 get(0)，但链表不刷新顺序，新键一进来就把热点 key=0 淘汰了！"
+            },
+            {
+              "name": "accessOrder=true（标准 O(1) LRU）（`LinkedHashMapLruSafe`）",
+              "solves": "get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。",
+              "cost": "实测约 {ms:lhmlru.LinkedHashMapLruSafe} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。"
+            },
+            {
+              "name": "synchronizedMap 线程安全包装（`SynchronizedLruCache`）",
+              "solves": "为多线程读写加上互斥锁，兼顾 LRU 语义与并发安全。",
+              "cost": "实测约 {ms:lhmlru.SynchronizedLruCache} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "为多线程读写加上互斥锁，兼顾 LRU 语义与并发安全。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "accessOrder=true",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "开启后，每次 `get()` 或 `put()` 命中已有键时，`afterNodeAccess()` 自动把该节点摘下来挪到双向链表尾部（最新位置），表头永远是最久未使用的冷数据。",
+          "asked": [
+            "LinkedHashMap 手写 O(1) LRU 缓存：accessOrder=true 怎么把热点挪到队尾？——底层原理是什么？",
+            "为什么 `HashMapNoEvictLeak` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `LinkedHashMapLruSafe` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`LinkedFifoOrderWrong` 传入 `accessOrder=false`，连续 `get(0)` 后插入新键 `999999`，`cache.containsKey(0)` 是？",
+          "options": [
+            {
+              "text": "false（key=0 作为最早插入的节点被当成最老淘汰了！）",
+              "ok": true,
+              "why": "`accessOrder=false` 时 `get()` 根本不会触发 `afterNodeAccess()` 移动节点，纯按插入时间 FIFO 淘汰！"
+            },
+            {
+              "text": "true",
+              "ok": false,
+              "why": "再想一想：`accessOrder=false` 时 `get()` 根本不会触发 `afterNodeAccess()` 移动节点，纯按插入时间 FIFO 淘汰！"
+            },
+            {
+              "text": "抛异常",
+              "ok": false,
+              "why": "再想一想：`accessOrder=false` 时 `get()` 根本不会触发 `afterNodeAccess()` 移动节点，纯按插入时间 FIFO 淘汰！"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：默认顺序",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`new LinkedHashMap<>()` 默认的遍历顺序是什么？",
+          "options": [
+            {
+              "text": "插入顺序（accessOrder=false）",
+              "ok": true,
+              "why": "必须显式调三参构造器 `new LinkedHashMap<>(cap, 0.75f, true)` 才会启用 LRU 访问序。"
+            },
+            {
+              "text": "访问顺序（LRU）",
+              "ok": false,
+              "why": "再想一想：必须显式调三参构造器 `new LinkedHashMap<>(cap, 0.75f, true)` 才会启用 LRU 访问序。"
+            },
+            {
+              "text": "按 Key 自然排序",
+              "ok": false,
+              "why": "再想一想：必须显式调三参构造器 `new LinkedHashMap<>(cap, 0.75f, true)` 才会启用 LRU 访问序。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：为何 O(1)",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么单靠 `HashMap` 或单靠双向链表都做不到 O(1) LRU，必须两者结合？",
+          "options": [
+            {
+              "text": "HashMap 负责 O(1) 定位节点，双向链表负责 O(1) 摘除与尾插",
+              "ok": true,
+              "why": "定位靠哈希表，顺序调整和删头节点靠双向链表。"
+            },
+            {
+              "text": "因为链表不能存对象",
+              "ok": false,
+              "why": "再想一想：定位靠哈希表，顺序调整和删头节点靠双向链表。"
+            },
+            {
+              "text": "为了省内存",
+              "ok": false,
+              "why": "再想一想：定位靠哈希表，顺序调整和删头节点靠双向链表。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `LinkedHashMapLruSafe`（accessOrder=true（标准 O(1) LRU））替代 `HashMapNoEvictLeak`（普通 HashMap（无淘汰，内存爆炸））？",
+          "options": [
+            {
+              "text": "因为 get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。",
+              "ok": true,
+              "why": "`HashMapNoEvictLeak`：写入 N 条后 size=N 远超上限 100，无法淘汰冷数据。；而 `LinkedHashMapLruSafe`：get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。"
+            },
+            {
+              "text": "因为 `HashMapNoEvictLeak` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`HashMapNoEvictLeak`：写入 N 条后 size=N 远超上限 100，无法淘汰冷数据。；而 `LinkedHashMapLruSafe`：get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`HashMapNoEvictLeak`：写入 N 条后 size=N 远超上限 100，无法淘汰冷数据。；而 `LinkedHashMapLruSafe`：get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) LinkedHashMap 的底层数据结构；2) 如何用它实现 O(1) LRU 缓存（accessOrder=true + removeEldestEntry）；3) 为什么高并发生产环境更推荐 Caffeine 而不是 synchronized LinkedHashMap。",
+          "points": [
+            "说清 LinkedHashMap 如何在 HashMap 节点基础上通过 before/after 指针维护双向链表",
+            "区分 accessOrder=false（插入序 FIFO）与 accessOrder=true（访问序 LRU）的差异",
+            "记住 LinkedHashMap 依然非线程安全，并发场景需要加锁或使用 Caffeine"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：面试手撕高频第一题「O(1) LRU 缓存」：用 LinkedHashMap 只需重写一个方法 5 行搞定，可为什么忘了传第三个参数 true，热点键竟然被淘汰了？；**② 再讲底层原理**：accessOrder=true（开启后，每次 `get()` 或 `put()` 命中已有键时，`afterNodeAccess()` 自动把该节点摘下来挪到双向链表尾部（最新位置），表头永远是最久未使用的冷数据。）；removeEldestEntry（`LinkedHashMap` 在每次 `put` 结束时回调 `afterNodeInsertion()`，只要 `removeEldestEntry(eldest)` 返回 `true` 就 O(1) 删掉表头最老节点。）；**③ 最后给工程方案**：生产里优先采用「accessOrder=true（标准 O(1) LRU）」（`LinkedHashMapLruSafe`），get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「accessOrder=true」？它在这节课里起了什么关键作用？",
+              "a": "开启后，每次 `get()` 或 `put()` 命中已有键时，`afterNodeAccess()` 自动把该节点摘下来挪到双向链表尾部（最新位置），表头永远是最久未使用的冷数据。"
+            },
+            {
+              "q": "面试官问：什么是「removeEldestEntry」？它在这节课里起了什么关键作用？",
+              "a": "`LinkedHashMap` 在每次 `put` 结束时回调 `afterNodeInsertion()`，只要 `removeEldestEntry(eldest)` 返回 `true` 就 O(1) 删掉表头最老节点。"
+            },
+            {
+              "q": "面试官问：什么是「并发改造」？它在这节课里起了什么关键作用？",
+              "a": "`LinkedHashMap` 的 `get()` 也会修改双向链表指针（第 7 课已测），多线程读写必须加互斥锁或改用 `Caffeine`。"
+            },
+            {
+              "q": "实战避坑：`HashMapNoEvictLeak` 为什么会出问题，应该怎么改？",
+              "a": "写入 N 条后 size=N 远超上限 100，无法淘汰冷数据。 正确做法是改用 `LinkedHashMapLruSafe`（accessOrder=true（标准 O(1) LRU））：get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "说清 LinkedHashMap 如何在 HashMap 节点基础上通过 before/after 指针维护双向链表",
+            "区分 accessOrder=false（插入序 FIFO）与 accessOrder=true（访问序 LRU）的差异",
+            "记住 LinkedHashMap 依然非线程安全，并发场景需要加锁或使用 Caffeine"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `HashMapNoEvictLeak`（普通 HashMap（无淘汰，内存爆炸）），优先选用 `LinkedHashMapLruSafe`（accessOrder=true（标准 O(1) LRU））：get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。"
+        }
+      ]
+    }
+  ]
+}

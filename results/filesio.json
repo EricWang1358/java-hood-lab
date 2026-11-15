@@ -1,0 +1,1671 @@
+{
+ "id": "filesio",
+ "variants": {
+  "UnbufferedByteByByte": {
+   "hash": "56e5ec01b515b605",
+   "repeat": 20,
+   "runs": {
+    "100000": [
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 3
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 3
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 2
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 2
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 4
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 4
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 2
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 3
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 2
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 3
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 3
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 2
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 6
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 2
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 2
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 4
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 4
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 3
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 3
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 2
+     }
+    ],
+    "500000": [
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     }
+    ],
+    "1000000": [
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 24
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 24
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 24
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 24
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 25
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 25
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 25
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 23
+     }
+    ],
+    "2000000": [
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 47
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 47
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 50
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 47
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 48
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 47
+     }
+    ]
+   },
+   "inside": "Compiled from \"UnbufferedByteByByte.java\"\npublic class lab.filesio.UnbufferedByteByByte {\n  public lab.filesio.UnbufferedByteByByte();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       byte\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     35\n      18: aload_2\n      19: iload_3\n      20: bipush        97\n      22: iload_3\n      23: bipush        26\n      25: irem\n      26: iadd\n      27: i2b\n      28: bastore\n      29: iinc          3, 1\n      32: goto          13\n      35: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      38: lstore_3\n      39: new           #19                 // class java/io/ByteArrayInputStream\n      42: dup\n      43: aload_2\n      44: invokespecial #21                 // Method java/io/ByteArrayInputStream.\"<init>\":([B)V\n      47: astore        5\n      49: iconst_0\n      50: istore        6\n      52: aload         5\n      54: invokevirtual #24                 // Method java/io/ByteArrayInputStream.read:()I\n      57: iconst_m1\n      58: if_icmpeq     67\n      61: iinc          6, 1\n      64: goto          52\n      67: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      70: lload_3\n      71: lsub\n      72: ldc2_w        #28                 // long 1000000l\n      75: ldiv\n      76: lstore        7\n      78: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      81: iload         6\n      83: invokedynamic #34,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      88: invokevirtual #38                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      91: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      94: iload_1\n      95: invokedynamic #44,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     100: invokevirtual #38                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     103: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     106: lload         7\n     108: invokedynamic #45,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     113: invokevirtual #38                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     116: return\n}"
+  },
+  "BufferedChunkStream": {
+   "hash": "ed0cbf113e3ae6fb",
+   "repeat": 20,
+   "runs": {
+    "100000": [
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     }
+    ],
+    "500000": [
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     }
+    ],
+    "1000000": [
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     }
+    ],
+    "2000000": [
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"BufferedChunkStream.java\"\npublic class lab.filesio.BufferedChunkStream {\n  public lab.filesio.BufferedChunkStream();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       byte\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     35\n      18: aload_2\n      19: iload_3\n      20: bipush        97\n      22: iload_3\n      23: bipush        26\n      25: irem\n      26: iadd\n      27: i2b\n      28: bastore\n      29: iinc          3, 1\n      32: goto          13\n      35: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      38: lstore_3\n      39: new           #19                 // class java/io/BufferedInputStream\n      42: dup\n      43: new           #21                 // class java/io/ByteArrayInputStream\n      46: dup\n      47: aload_2\n      48: invokespecial #23                 // Method java/io/ByteArrayInputStream.\"<init>\":([B)V\n      51: sipush        8192\n      54: invokespecial #26                 // Method java/io/BufferedInputStream.\"<init>\":(Ljava/io/InputStream;I)V\n      57: astore        5\n      59: sipush        8192\n      62: newarray       byte\n      64: astore        6\n      66: iconst_0\n      67: istore        7\n      69: aload         5\n      71: aload         6\n      73: invokevirtual #29                 // Method java/io/BufferedInputStream.read:([B)I\n      76: dup\n      77: istore        8\n      79: iconst_m1\n      80: if_icmpeq     93\n      83: iload         7\n      85: iload         8\n      87: iadd\n      88: istore        7\n      90: goto          69\n      93: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      96: lload_3\n      97: lsub\n      98: ldc2_w        #33                 // long 1000000l\n     101: ldiv\n     102: lstore        9\n     104: getstatic     #35                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     107: iload         7\n     109: invokedynamic #39,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     114: invokevirtual #43                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     117: getstatic     #35                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     120: iload_1\n     121: invokedynamic #49,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     126: invokevirtual #43                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     129: getstatic     #35                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     132: lload         9\n     134: invokedynamic #50,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     139: invokevirtual #43                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     142: aload         5\n     144: invokevirtual #53                 // Method java/io/BufferedInputStream.close:()V\n     147: goto          172\n     150: astore        6\n     152: aload         5\n     154: invokevirtual #53                 // Method java/io/BufferedInputStream.close:()V\n     157: goto          169\n     160: astore        7\n     162: aload         6\n     164: aload         7\n     166: invokevirtual #58                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     169: aload         6\n     171: athrow\n     172: return\n    Exception table:\n       from    to  target type\n          59   142   150   Class java/lang/Throwable\n         152   157   160   Class java/lang/Throwable\n}"
+  },
+  "DirectTransferChunk": {
+   "hash": "299bfd0135bc8e77",
+   "repeat": 20,
+   "runs": {
+    "100000": [
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 0
+     }
+    ],
+    "500000": [
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 0
+     }
+    ],
+    "1000000": [
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 0
+     }
+    ],
+    "2000000": [
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"DirectTransferChunk.java\"\npublic class lab.filesio.DirectTransferChunk {\n  public lab.filesio.DirectTransferChunk();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       byte\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     35\n      18: aload_2\n      19: iload_3\n      20: bipush        97\n      22: iload_3\n      23: bipush        26\n      25: irem\n      26: iadd\n      27: i2b\n      28: bastore\n      29: iinc          3, 1\n      32: goto          13\n      35: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      38: lstore_3\n      39: new           #19                 // class java/io/ByteArrayInputStream\n      42: dup\n      43: aload_2\n      44: invokespecial #21                 // Method java/io/ByteArrayInputStream.\"<init>\":([B)V\n      47: astore        5\n      49: sipush        8192\n      52: newarray       byte\n      54: astore        6\n      56: iconst_0\n      57: istore        7\n      59: aload         5\n      61: aload         6\n      63: invokevirtual #24                 // Method java/io/ByteArrayInputStream.read:([B)I\n      66: dup\n      67: istore        8\n      69: iconst_m1\n      70: if_icmpeq     83\n      73: iload         7\n      75: iload         8\n      77: iadd\n      78: istore        7\n      80: goto          59\n      83: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      86: lload_3\n      87: lsub\n      88: ldc2_w        #28                 // long 1000000l\n      91: ldiv\n      92: lstore        9\n      94: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      97: iload         7\n      99: invokedynamic #34,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     104: invokevirtual #38                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     107: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     110: iload_1\n     111: invokedynamic #44,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     116: invokevirtual #38                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     119: getstatic     #30                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     122: lload         9\n     124: invokedynamic #45,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     129: invokevirtual #38                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     132: return\n}"
+  },
+  "BufferedLinesLazy": {
+   "hash": "96a340f9c6cbfe2c",
+   "repeat": 20,
+   "runs": {
+    "100000": [
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 9
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 6
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 5
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 6
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 9
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 5
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 9
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 6
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 5
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 9
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "bytes": 100000,
+      "expected": 100000,
+      "ms": 8
+     }
+    ],
+    "500000": [
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 10
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 14
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 13
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 13
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 13
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 10
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 14
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 13
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 14
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 13
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 10
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 13
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 12
+     },
+     {
+      "bytes": 500000,
+      "expected": 500000,
+      "ms": 11
+     }
+    ],
+    "1000000": [
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 17
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 19
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 18
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 18
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 19
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 19
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 20
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 19
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 17
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 17
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 16
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 17
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "bytes": 1000000,
+      "expected": 1000000,
+      "ms": 17
+     }
+    ],
+    "2000000": [
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 33
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 30
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 38
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 32
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 34
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 34
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 29
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 32
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 33
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 39
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 41
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 38
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 31
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 29
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 36
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 36
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 35
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 35
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 35
+     },
+     {
+      "bytes": 2000000,
+      "expected": 2000000,
+      "ms": 34
+     }
+    ]
+   },
+   "inside": "Compiled from \"BufferedLinesLazy.java\"\npublic class lab.filesio.BufferedLinesLazy {\n  public lab.filesio.BufferedLinesLazy();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       byte\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     44\n      18: aload_2\n      19: iload_3\n      20: iload_3\n      21: bipush        63\n      23: iand\n      24: bipush        63\n      26: if_icmpne     34\n      29: bipush        10\n      31: goto          36\n      34: bipush        97\n      36: i2b\n      37: bastore\n      38: iinc          3, 1\n      41: goto          13\n      44: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      47: lstore_3\n      48: lconst_0\n      49: lstore        5\n      51: new           #19                 // class java/io/BufferedReader\n      54: dup\n      55: new           #21                 // class java/io/InputStreamReader\n      58: dup\n      59: new           #23                 // class java/io/ByteArrayInputStream\n      62: dup\n      63: aload_2\n      64: invokespecial #25                 // Method java/io/ByteArrayInputStream.\"<init>\":([B)V\n      67: getstatic     #28                 // Field java/nio/charset/StandardCharsets.UTF_8:Ljava/nio/charset/Charset;\n      70: invokespecial #34                 // Method java/io/InputStreamReader.\"<init>\":(Ljava/io/InputStream;Ljava/nio/charset/Charset;)V\n      73: sipush        8192\n      76: invokespecial #37                 // Method java/io/BufferedReader.\"<init>\":(Ljava/io/Reader;I)V\n      79: astore        7\n      81: aload         7\n      83: invokevirtual #40                 // Method java/io/BufferedReader.readLine:()Ljava/lang/String;\n      86: dup\n      87: astore        8\n      89: ifnull        108\n      92: lload         5\n      94: aload         8\n      96: invokevirtual #44                 // Method java/lang/String.length:()I\n      99: iconst_1\n     100: iadd\n     101: i2l\n     102: ladd\n     103: lstore        5\n     105: goto          81\n     108: aload         7\n     110: invokevirtual #50                 // Method java/io/BufferedReader.close:()V\n     113: goto          138\n     116: astore        8\n     118: aload         7\n     120: invokevirtual #50                 // Method java/io/BufferedReader.close:()V\n     123: goto          135\n     126: astore        9\n     128: aload         8\n     130: aload         9\n     132: invokevirtual #55                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     135: aload         8\n     137: athrow\n     138: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     141: lload_3\n     142: lsub\n     143: ldc2_w        #59                 // long 1000000l\n     146: ldiv\n     147: lstore        7\n     149: getstatic     #61                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     152: lload         5\n     154: iload_1\n     155: i2l\n     156: invokestatic  #65                 // Method java/lang/Math.min:(JJ)J\n     159: invokedynamic #71,  0             // InvokeDynamic #0:makeConcatWithConstants:(J)Ljava/lang/String;\n     164: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     167: getstatic     #61                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     170: iload_1\n     171: invokedynamic #81,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     176: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     179: getstatic     #61                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     182: lload         7\n     184: invokedynamic #84,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     189: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     192: return\n    Exception table:\n       from    to  target type\n          81   108   116   Class java/lang/Throwable\n         118   123   126   Class java/lang/Throwable\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux",
+  "date": "2026-11-15"
+ }
+}

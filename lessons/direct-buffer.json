@@ -1,0 +1,249 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "direct-buffer",
+  "course": "网络与操作系统",
+  "title": "堆外内存 DirectBuffer：省了一次拷贝，为什么还可能 OOM？",
+  "lead": "Netty 为什么默认用池化 DirectBuffer 而不是 HeapByteBuffer？每次 allocateDirect 又会踩什么大坑？",
+  "minutes": 35,
+  "needs": ["知道 JVM 堆内存与堆外内存", "知道 GC 与对象回收", "知道 ByteBuffer"],
+  "after": [
+    "讲清 HeapByteBuffer 在底层 I/O 时为什么仍需额外拷贝一次到临时 DirectBuffer",
+    "理解 ByteBuffer.allocateDirect 分配与回收成本高、池化复用的必要性",
+    "会排查堆外内存泄漏（-XX:MaxDirectMemorySize 与 Cleaner 回收）"
+  ],
+  "terms": {
+    "HeapByteBuffer": "分配在 JVM 堆内的 byte[] 包装；做原生 Socket/File I/O 时，JVM 必须先临时拷到堆外再传给 OS（因为 GC 会移动堆内对象地址）。",
+    "DirectByteBuffer (堆外内存)": "通过 Unsafe.allocateMemory 直接向 OS 申请的堆外连续内存，OS 原生读写零额外拷贝，不受 JVM 堆 GC 移动影响。",
+    "池化复用 (Pooled)": "预先申请大块 DirectBuffer 按片借还复用（如 Netty PooledByteBufAllocator），避开高频 malloc/free 与 Cleaner 回收延迟。"
+  },
+  "experiments": {
+    "directbuf": {
+      "runner": "java",
+      "home": "lab.directbuf",
+      "variants": [
+        { "id": "AllocDirectEvery", "code": "AllocDirectEvery.java", "label": "每次 new 堆外内存", "note": "每发 16KB 就调用一次 allocateDirect，堆外 malloc/Cleaner 压力直接拉满。" },
+        { "id": "HeapBuffer", "code": "HeapBuffer.java", "label": "复用堆内 HeapBuffer", "note": "ByteBuffer.allocate 复用堆内内存，底层 I/O 会隐式借用线程局部临时堆外缓冲拷贝一次。" },
+        { "id": "PooledDirect", "code": "PooledDirect.java", "label": "池化复用 DirectBuffer", "note": "提前 allocateDirect 一块堆外内存循环复用，既省底层拷贝又免高频分配。" },
+        { "id": "BatchDirect", "code": "BatchDirect.java", "label": "合并大块 DirectBuffer", "note": "把 4 个 16KB 块攒成 64KB 再写一次 SocketChannel，连系统调用次数也砍掉 3/4。" }
+      ],
+      "knob": { "label": "发送数据块数 (16KB/块)", "values": ["200", "500", "1000", "2000"], "default": "1000" },
+      "repeat": 20,
+      "metric": { "key": "bytes", "expectKey": "expected", "label": "接收字节数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "堆外内存 DirectBuffer：省了一次拷贝，为什么还可能 OOM？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**为什么 Netty 一边拼命用堆外 `DirectBuffer` 提速，一边又不敢每次请求 `allocateDirect()`，非要搞一套复杂的池化？**",
+          "say": "Netty 零拷贝（堆外内存减少拷贝）+ 线上 DirectBuffer OOM 排查，是中级 Java 面试必考组合拳。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：为什么 OS 不能直接读 JVM 堆里的 byte[]？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先搞清 JVM GC 和操作系统指针之间的矛盾。",
+          "items": [
+            {
+              "have": "GC 移动对象",
+              "q": "为什么操作系统内核不能直接拿着 JVM 堆内 `byte[]` 的内存地址去做异步/原生 Socket I/O？",
+              "options": ["因为 GC（标记-整理/复制）随时可能把对象搬到新地址，原指针会失效", "因为堆内存太小", "因为堆内存只读"],
+              "answer": 0,
+              "why": "一旦发生 Young GC，堆内对象地址就变了！所以 JDK 做原生 I/O 前，只能先把 HeapByteBuffer 内容临时拷贝到一块固定的堆外临时缓冲（DirectBuffer）里。"
+            },
+            {
+              "have": "堆外内存分配",
+              "q": "`ByteBuffer.allocateDirect()` 的内存占的是 `-Xmx` 还是堆外 Native Memory？",
+              "options": ["占 `-Xmx` 堆内", "占堆外本地内存，受 `-XX:MaxDirectMemorySize` 限制", "占方法区"],
+              "answer": 1,
+              "why": "很多线上容器 `top` 看内存飙高爆 OOM，但 `jmap` 看堆内很空，元凶往往就是堆外内存！"
+            },
+            {
+              "have": "堆外回收机制",
+              "q": "没人手动释放 DirectByteBuffer 时，它靠什么释放本地内存？",
+              "options": ["等关联的堆内壳对象被 GC 回收时，由 `Cleaner`（虚引用）触发 `freeMemory`", "OS 自动每毫秒扫一次", "永远不释放"],
+              "answer": 0,
+              "why": "堆内壳对象很小，如果堆内一直没触发 Full GC，堆外内存就可能迟迟不释放甚至触发 `OutOfMemoryError: Direct buffer memory`！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「进站安检换筐」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["JVM 堆内货箱", "OS 传送带"], "shared": { "name": "堆外中转筐(DirectBuffer)", "value": "现买现扔 vs 循环复用" } },
+          "story": "用 `HeapBuffer` 发货就像货物装在易变形纸箱（堆内受 GC 移动），上 OS 传送带前每次都得倒进专用塑料筐（临时 DirectBuffer）；`AllocDirectEvery` 是每发一件货就现造一个新塑料筐用完扔掉（分配与 Cleaner 极慢）；`PooledDirect` 则是提前买好塑料筐循环复用，直接上带零拷贝！",
+          "say": "记住这两句话：堆外比堆内少一次拷贝；池化比现造快好几倍。",
+          "map": [
+            { "scene": "每次现造塑料筐", "on": "shared", "tag": "allocateDirect", "code": "`ByteBuffer.allocateDirect(16384)`", "say": "高频申请堆外内存，分配重且容易堆外 OOM。" },
+            { "scene": "塑料筐循环复用", "on": "actors", "tag": "PooledDirect", "code": "`buf.clear(); sc.write(buf);`", "say": "Netty PooledByteBuf 的核心思想：复用堆外内存。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：复用 DirectBuffer vs 每次 allocateDirect",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "directbuf.PooledDirect",
+          "say": "看 `PooledDirect.java`：只在循环外申请一次 `allocateDirect(chunkSize)`，循环内不断 `clear()` 复用，对比 `AllocDirectEvery` 每次循环都新建。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：发 1000 块 16KB 数据，哪种方式最慢、哪种最快？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "对比 `AllocDirectEvery`（每次 allocateDirect）、`HeapBuffer`（复用堆内）、`PooledDirect`（复用堆外）和 `BatchDirect`（合并大块），谁最慢？",
+          "options": ["HeapBuffer 最慢", "AllocDirectEvery 最慢（高频堆外分配+Cleaner 压力），PooledDirect/BatchDirect 最快", "全都一样"],
+          "answer": 1,
+          "say": "堆外内存的「分配+回收」成本远高于堆内 TLAB 指针碰撞，不复用就会反噬性能。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测耗时：高频 allocateDirect 惨败 vs 池化/合并飞起",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "directbuf",
+          "show": ["AllocDirectEvery", "HeapBuffer", "PooledDirect", "BatchDirect"],
+          "knob": "1000",
+          "hand": "PooledDirect",
+          "focus": "ms",
+          "say": "看耗时对比：`AllocDirectEvery` 明显慢出一大截，而 `PooledDirect` 和合并系统调用的 `BatchDirect` 稳居第一梯队！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "DirectBuffer 只有「池化复用」才能兑现零拷贝红利；每次现场 allocateDirect 反而比 HeapBuffer 更慢更危险",
+          "say": "这就是为什么 Netty 4 专门花了巨大篇幅实现 Jemalloc 风格的 `PooledByteBufAllocator`。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的堆外分配与写通道",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "directbuf.PooledDirect",
+          "within": "main",
+          "from": "ByteBuffer.allocateDirect",
+          "to": "SocketChannel.write",
+          "say": "在 `PooledDirect` 中，`ByteBuffer.allocateDirect` 只在连接建立后执行一次，随后的发送循环只做 `clear()` 和 `SocketChannel.write`。",
+          "walk": [
+            { "focus": ["ByteBuffer.allocateDirect"], "label": "一次堆外分配", "say": "底层向 OS 申请固定物理地址的堆外内存，并注册 Cleaner。" },
+            { "focus": ["SocketChannel.write"], "label": "直传固定地址", "say": "JDK `IOUtil.write` 检测到是 `DirectBuffer`，直接把内存地址交给 `write` 系统调用，跳过临时堆外缓冲拷贝！" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "加压到 2000 块再看",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "directbuf",
+          "say": "把块数调到 2000（约 32MB 传输量），观察 `AllocDirectEvery` 分配延迟如何进一步放大。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "堆内 vs 堆外 Buffer 选型与避坑",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "不要盲目迷信堆外内存，记住适用边界。",
+          "options": [
+            { "name": "HeapByteBuffer（堆内）", "solves": "分配极快（TLAB），受 JVM 堆统一监控和 GC 管理", "cost": "做网络/文件原生 I/O 时 JVM 内部会多一次拷贝到临时 DirectBuffer", "when": "短生命周期业务对象、非高吞吐 I/O 场景", "say": "普通业务代码老老实实用堆内即可。" },
+            { "name": "Pooled DirectByteBuffer（池化堆外）", "solves": "消除 JVM 堆↔堆外临时拷贝，减少 Young GC 压力", "cost": "分配回收重，必须池化且严防泄漏（忘记 release() 就堆外 OOM）", "when": "Netty 网关、RPC 编解码、高频网络收发", "say": "用 Netty 时务必留意 `ReferenceCountUtil.release()` 防止泄漏。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住 DirectBuffer 的双刃剑",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "堆外内存 DirectBuffer 与池化复用",
+          "alias": "DirectByteBuffer / MaxDirectMemorySize",
+          "oneLine": "HeapBuffer 做 I/O 需临时拷到堆外防 GC 移动；DirectBuffer 省去这次拷贝但分配回收重，必须池化并防范堆外 OOM。",
+          "asked": "Netty 为什么用堆外内存？堆外内存 OOM 怎么排查？",
+          "say": "说清「GC 移动对象导致 Heap 需多拷一次」「allocateDirect 重需池化」「-XX:MaxDirectMemorySize 与 Cleaner/泄漏排查」。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "线上服务报 `java.lang.OutOfMemoryError: Direct buffer memory`，以下哪项排查思路最对路？",
+          "options": [
+            { "text": "检查是否未启用池化/Netty ByteBuf 忘记 release 泄漏，或堆内太闲未触发 GC 导致 Cleaner 没回收，并核对 `-XX:MaxDirectMemorySize`", "ok": true, "why": "正确！此外 `-XX:+DisableExplicitGC` 也会阻止 `System.gc()` 救场，生产上要慎用。" },
+            { "text": "把 `-Xmx` 调大一倍就能扩大 DirectBuffer 上限", "ok": false, "why": "如果没显式设置 `-XX:MaxDirectMemorySize`，默认上限虽接近 `-Xmx`，但把堆调太大反而挤占容器物理内存导致 OS OOM Killer。" },
+            { "text": "堆外内存永远不会 OOM", "ok": false, "why": "受 `MaxDirectMemorySize` 和宿主机物理内存双重限制。" }
+          ],
+          "say": "线上看到容器 RSS 远超 `-Xmx` 时，第一反应就该查堆外内存和线程栈。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：堆外内存原理、池化与 OOM 排查",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：Netty 为什么要用堆外内存 DirectBuffer？直接用会有什么问题？",
+          "points": [
+            "省拷贝原因：GC 会移动堆内对象地址，所以 HeapByteBuffer 做原生 I/O 时 JDK 必须先临时拷一份到堆外；DirectBuffer 地址固定，省去这次拷贝",
+            "直接用问题：allocateDirect 向 OS 申请内存成本远高于堆内 TLAB，且回收依赖堆内壳对象 GC 时触发 Cleaner，高频创建会卡顿甚至堆外 OOM",
+            "解法与排查：通过内存池复用（Netty PooledByteBufAllocator），并注意及时 release 防止引用计数泄漏，配置合理的 -XX:MaxDirectMemorySize"
+          ],
+          "model": "Netty 用堆外内存主要是为了在网络收发时省去一次内存拷贝：因为 JVM 的 GC 会移动堆内对象地址，操作系统没法直接拿着堆内 byte[] 地址做原生 I/O，所以传统 HeapByteBuffer 在底层读写时，JDK 必须先临时拷贝到一块堆外缓冲里；而 DirectBuffer 直接分配在堆外，内存地址固定，能直接交给底层系统调用，既省了拷贝又减轻了堆内 GC 压力。但 DirectBuffer 不能每次现场 allocateDirect，因为堆外分配回收比堆内慢得多，而且它依赖堆内关联的 Cleaner 虚引用在 GC 时才释放，很容易引发 Direct buffer memory OOM。因此工程上必须配合内存池（比如 Netty 的 PooledByteBufAllocator）做池化复用，同时严格管理引用计数及时 release 防止泄漏。",
+          "say": "把「GC 移动防拷贝」「分配回收重」「池化+防泄漏」三步讲透。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "堆外内存三张卡收好，网络与 OS 基座模块圆满收官！",
+          "items": [
+            { "front": "HeapBuffer 为什么多拷一次？", "back": "GC 会移动堆内对象地址，原生 I/O 前必须先拷到固定堆外临时缓冲。" },
+            { "front": "为什么 DirectBuffer 必须池化？", "back": "堆外 malloc/Cleaner 成本高，只有池化复用才能跑出零拷贝收益。" },
+            { "front": "堆外 OOM 常见元凶", "back": "未池化高频申请、Netty ByteBuf 未 release 泄漏、或禁用显式 GC 导致回收滞后。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

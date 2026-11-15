@@ -1,0 +1,613 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-cache-penetration",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "不存在的 ID 疯狂查库：缓存穿透怎么挡？",
+  "lead": "恶意或异常请求专查根本不存在的 ID，缓存与数据库双双未命中，每次都直穿到底层 DB。",
+  "minutes": 40,
+  "needs": [
+    "了解 Cache-Aside 先查缓存再查库的基本流程",
+    "知道 BitSet 位图与哈希函数的基本概念"
+  ],
+  "after": [
+    "区分缓存穿透与缓存击穿的本质差异",
+    "对比空值缓存与布隆过滤器的内存、误判率与 DB 拦截效果",
+    "说明为何生产环境常用「布隆过滤器 + 空值短缓存」双保险"
+  ],
+  "terms": {
+    "缓存穿透": "查询一个缓存和数据库里都不存在的数据，每次请求都穿透缓存直打数据库。",
+    "空值缓存": "即使查库返回 null 也把占位标记写入缓存并设较短 TTL，拦住后续重复查询。",
+    "布隆过滤器": "用固定长度位数组和多个哈希函数快速判断「某 Key 一定不存在」的概率数据结构。",
+    "误判率": "布隆过滤器把不存在的 Key 误判为「可能存在」的概率，可通过增大位图或哈希数压低。",
+    "BitSet": "JDK 自带的位向量实现，每位只占 1 bit，极省内存。"
+  },
+  "experiments": {
+    "m6_penetration": {
+      "runner": "java",
+      "home": "lab.m6.penetration",
+      "knob": {
+        "name": "threads",
+        "label": "并发查库线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "dbHits",
+        "expectKey": "expected",
+        "label": "查库次数",
+        "expect": "有效键应查"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "NoCache",
+          "label": "裸查库",
+          "code": "NoCache.java",
+          "note": "仅缓存非空结果，不存在的 ID 每次直穿 DB。"
+        },
+        {
+          "id": "NullCache",
+          "label": "空值缓存",
+          "code": "NullCache.java",
+          "note": "对 null 写占位标记，首轮仍查一次库但后续命中缓存。"
+        },
+        {
+          "id": "BloomFilter",
+          "label": "布隆拦截",
+          "code": "BloomFilter.java",
+          "note": "先过 3 哈希 BitSet，一定不存在的 ID 在门外直接拦截。"
+        },
+        {
+          "id": "BloomWithNull",
+          "label": "布隆+空值",
+          "code": "BloomWithNull.java",
+          "note": "布隆挡掉 99% 幽灵请求，极少数误判再由空值缓存兜底。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "不存在的 ID 疯狂查库：缓存穿透怎么挡？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "大量请求专查根本不存在的商品 ID（如 `p-99999`），缓存里没有，查库还是 `null`，于是缓存永远写不进去——**每一次请求都直穿数据库**。",
+          "say": "如果有人问你缓存穿透和击穿有啥区别，记住一句话：击穿是热点 Key 刚过期大家抢着查，穿透是 Key 压根不存在，缓存永远存不住。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "Cache-Aside 流程",
+              "q": "常规 Cache-Aside 查库返回 `null` 时如果不写入缓存，下次同 Key 请求会怎样？",
+              "options": [
+                "继续穿透到数据库",
+                "自动跳过数据库",
+                "由 JVM 自动缓存 null"
+              ],
+              "answer": 0,
+              "why": "没写缓存就等于下次还是 miss，直接再查一遍库。"
+            },
+            {
+              "have": "位图空间效率",
+              "q": "1 亿个整数 ID 如果只用 10 bit/元素的布隆过滤器，大概占多少内存？",
+              "options": [
+                "约 120 MB",
+                "约 12 GB",
+                "约 1 KB"
+              ],
+              "answer": 0,
+              "why": "10^8 * 10 bits ≈ 125 MB，远小于存完整 String Key 的几 GB。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：80% 流量全在查不存在的 ID",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "20 个真实商品混杂 80 个幽灵 ID，4 个线程连续 10 波并发轰炸。",
+            "actors": [
+              "线程 A",
+              "线程 B"
+            ],
+            "shared": "p-99 缓存槽"
+          },
+          "say": "20 个真实商品混杂 80 个幽灵 ID，4 个线程连续 10 波并发轰炸。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `NoCache`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_penetration.NoCache",
+          "say": "这就是最常见的基线写法 `NoCache`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`NoCache` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "4 个线程跑 10 波（每波 20 个有效键 + 80 个无效键），`NoCache` 最终会查多少次库？",
+          "options": [
+            "200 次（仅有效键）",
+            "1000 次（每波每键一次）",
+            "3000 次以上（无效键每线程每波都穿透）",
+            "0 次"
+          ],
+          "answer": 2,
+          "say": "有效键 20 个只需查 200 次，但 80 个无效键缓存永远留不住，4 个线程每波都会各自穿透。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`NoCache` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_penetration",
+          "show": [
+            "NoCache"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "if (val != null) cache.putIfAbsent(key, val);"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `NoCache` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_penetration.NoCache",
+          "lines": [
+            "if (val != null) cache.putIfAbsent(key, val);"
+          ],
+          "say": "祸首就在这行 `if (val != null)`：查库返回 `null` 时什么都不放进缓存，导致下一次请求继续穿透。",
+          "answer": [
+            "if (val != null) cache.putIfAbsent(key, val);"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "祸首就在这行 `if (val != null)`：查库返回 `null` 时什么都不放进缓存，导致下一次请求继续穿透。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "if (cache.get(k) == null) queryDb(k)",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "线程 A",
+            "线程 B"
+          ],
+          "shared": {
+            "name": "p-99 缓存槽",
+            "start": "始终为空"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "A 查 p-99 见空",
+              "say": "线程 A 查不存在的 p-99，缓存未命中。"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "A 查库返回 null",
+              "say": "A 打到数据库返回 null，因为是 null 没写缓存。"
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "B 查 p-99 仍为空",
+              "say": "随后 B 来查同一个 p-99，缓存里依然什么都没有，再次穿透打库！",
+              "ask": {
+                "q": "如果黑客每秒换 10 万个随机不存在 ID，只用空值缓存会出什么新问题？",
+                "options": [
+                  "缓存被大量垃圾空值撑爆",
+                  "数据库会主动拒绝返回 null"
+                ],
+                "answer": 0,
+                "why": "随机不重复 ID 会让空值缓存塞满内存、淘汰掉真正的热点数据。"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `NullCache`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "换成 `NullCache` 把 `null` 也塞进缓存后，10 波下来查库次数会降到多少？",
+          "options": [
+            "直接降到 200 次",
+            "降到 1000 次左右（每波每个无效键首查一次）",
+            "和 NoCache 一样多"
+          ],
+          "answer": 1,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`NoCache` vs `NullCache`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_penetration",
+          "show": [
+            "NoCache",
+            "NullCache"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `NullCache` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_penetration.NullCache",
+          "within": "getProduct(java.lang.String)",
+          "from": "0: getstatic",
+          "to": "areturn",
+          "say": "看 `NullCache.getProduct` 的字节码：通过 `computeIfAbsent` 把 `NULL_MARKER` 写回缓存，拦住了同波次后续重复穿透。",
+          "walk": [
+            {
+              "focus": [
+                "computeIfAbsent"
+              ],
+              "label": "单飞写入空标记",
+              "say": "同一波里不管多少线程查同一个无效键，只有一个线程进回调查库并写入 `NULL_MARKER`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`BloomFilter` 与 `BloomWithNull`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_penetration",
+          "show": [
+            "NoCache",
+            "NullCache",
+            "BloomFilter",
+            "BloomWithNull"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_penetration",
+          "variants": [
+            "NoCache",
+            "NullCache",
+            "BloomFilter",
+            "BloomWithNull"
+          ],
+          "notes": [
+            {
+              "focus": "NoCache",
+              "key": "无任何拦截时，查库次数随线程数线性暴涨",
+              "say": "NoCache 随线程数增加，无效键被每个线程重复穿透打库。"
+            },
+            {
+              "focus": "NullCache",
+              "key": "空值缓存拦住重复查询，但首轮仍查且占缓存空间",
+              "say": "NullCache 把 3400+ 压到 1000，但如果攻击者不断换新随机 ID，内存仍会被撑爆。"
+            },
+            {
+              "focus": "BloomWithNull",
+              "key": "布隆前置拦截 + 空值兜底，查库次数贴紧 200 理论下限且耗时最低",
+              "say": "BloomWithNull 稳稳贴着 200 基线，耗时只有裸查库的四分之一！"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `BloomWithNull` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_penetration.BloomWithNull",
+          "within": "getProduct(java.lang.String)",
+          "from": "0: aload_0",
+          "to": "areturn",
+          "say": "看 `BloomWithNull.getProduct`：先走 `mightContain` 三次位检查，不存在直接 `aconst_null` + `areturn`，连 `ConcurrentHashMap` 的门都不用进。",
+          "walk": [
+            {
+              "focus": [
+                "mightContain"
+              ],
+              "label": "前置位图拦截",
+              "key": "布隆过滤器把一定不存在的 Key 挡在缓存与 DB 之外",
+              "say": "只要三位里有一位为 0，直接返回 null，零锁零内存膨胀。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "空值短缓存",
+              "solves": "拦截同一批无效 Key 的高频重试",
+              "cost": "约 {ms:m6_penetration.NullCache} ms，消耗额外缓存空间",
+              "when": "无效 ID 集合有限、业务允许短时间数据不一致",
+              "say": "简单有效，一定要配较短的 TTL 防止长期占内存或新增数据后读不到。"
+            },
+            {
+              "name": "布隆过滤器",
+              "solves": "O(1) 极省内存拦住海量随机不存在 ID",
+              "cost": "约 {ms:m6_penetration.BloomFilter} ms，存在极低误判率且不支持直接删除",
+              "when": "防恶意随机 ID 扫描、数据量极大",
+              "say": "把全量合法 ID 预热进位图，拦截率极高；新增数据时需同步写入布隆。"
+            },
+            {
+              "name": "布隆 + 空值双保险",
+              "solves": "挡住 99.9% 扫描的同时兜底极少数布隆误判",
+              "cost": "约 {ms:m6_penetration.BloomWithNull} ms，工程复杂度略高",
+              "when": "核心高并发读接口（商品详情、用户信息）",
+              "say": "生产标准答案：布隆挡大头，空值兜误判，接口网关再配限流。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "面对无效 Key 穿透，最核心的判断标准是什么？",
+          "branches": [
+            {
+              "when": "无效 Key 固定重复（如误删老链接）",
+              "pick": "空值短缓存",
+              "eg": "下架商品页缓存 60s 空值"
+            },
+            {
+              "when": "黑客刷海量随机不存在 ID",
+              "pick": "布隆 + 空值双保险",
+              "eg": "商品详情页防刷"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "空值短缓存",
+            "布隆过滤器",
+            "布隆 + 空值双保险"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "刚下架的 50 个老活动页不断被老用户收藏夹点开，需要快速挡住查库。",
+              "answer": 0,
+              "why": "Key 集合小且固定，直接缓存 1 分钟空值最简单。"
+            },
+            {
+              "text": "恶意爬虫每秒生成上万个随机 UUID 查用户接口，Redis 内存快被空值撑爆。",
+              "answer": 2,
+              "why": "随机 ID 必须靠布隆过滤器挡在门外，再配短空值兜底误判。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：缓存穿透",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "缓存穿透",
+          "alias": "Cache Penetration · Bloom Filter + Null Cache",
+          "oneLine": "查询==根本不存在的数据==导致缓存永远留不住，每次请求直穿数据库。",
+          "asked": [
+            "缓存穿透、击穿、雪崩的区别是什么？",
+            "布隆过滤器为什么不支持删除？怎么解决？",
+            "空值缓存怎么防止新写入的数据一直读到 null？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "布隆过滤器判断一个 Key「存在」和「不存在」，哪个结论是 100% 准确的？",
+          "options": [
+            {
+              "text": "判断「不存在」100% 准确",
+              "ok": true,
+              "why": "只要有一位为 0，这个 Key 绝对没写入过；位全为 1 可能是其他 Key 哈希碰撞导致的误判。"
+            },
+            {
+              "text": "判断「存在」100% 准确",
+              "ok": false,
+              "why": "多个 Key 的哈希位可能重叠，所以存在会有误判率。"
+            }
+          ],
+          "say": "牢记布隆铁律：说不在就一定不在，说在只是可能存在。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么生产中空值缓存一般要设置较短的过期时间（如 30s~60s）？",
+          "options": [
+            {
+              "text": "防止后续该 ID 真被创建后长期读到空，也避免垃圾 Key 长期占内存",
+              "ok": true,
+              "why": "短 TTL 既能挡住瞬时突发穿透，又能限制脏空值窗口和内存占用。"
+            },
+            {
+              "text": "因为 Redis 不允许空字符串存超过 1 分钟",
+              "ok": false,
+              "why": "Redis 没有这个限制，纯属业务一致性与内存考量。"
+            }
+          ],
+          "say": "想清楚短 TTL 的双重作用。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "下列哪项不能解决缓存穿透？",
+          "options": [
+            {
+              "text": "给热点 Key 加互斥锁重建",
+              "ok": true,
+              "why": "互斥锁防的是热点 Key 过期时的缓存击穿；穿透是 Key 压根不存在，加锁也只是排队查空。"
+            },
+            {
+              "text": "接口层参数校验（拦截负数/非法格式 ID）",
+              "ok": false,
+              "why": "前置参数校验非常有效，能直接挡掉大量明显非法的穿透请求。"
+            }
+          ],
+          "say": "区分清楚穿透与击穿的解法边界。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "什么是缓存穿透？为什么只用空值缓存不够，布隆过滤器+空值缓存怎么配合？",
+          "points": [
+            "穿透指查库和缓存都不存在的数据，每次都直打 DB",
+            "空值缓存可防同 Key 重复穿透，但遇随机海量 ID 会撑爆缓存内存",
+            "布隆过滤器用极小 BitSet 拦截不存在的 Key，说不在就一定不在",
+            "生产采用参数校验 + 布隆前置拦截 + 短 TTL 空值兜底误判"
+          ],
+          "model": "缓存穿透是指大量请求查询缓存和数据库里都不存在的数据，因为查库返回 null 没法写进缓存，导致每次请求都直穿数据库。如果只用空值缓存（把 null 也缓存一段短 TTL），能拦住重复的无效 Key，但如果遭遇恶意随机 ID 扫描，海量空值会把缓存内存撑爆。因此高并发场景通常先在接口层做参数校验，再用布隆过滤器在门外做 O(1) 拦截——布隆过滤器只要说「不存在」就 100% 不存在；对极少数哈希碰撞导致的误判，再由短 TTL 的空值缓存兜底，从根上保住数据库。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "穿透 vs 击穿本质区别？",
+              "a": "穿透是「数据压根不存在」；击穿是「热点数据存在但刚过期」。"
+            },
+            {
+              "q": "布隆过滤器铁律？",
+              "a": "判断「不存在」100% 准确；判断「存在」有极低误判率，且原生不支持删除。"
+            },
+            {
+              "q": "防穿透标准组合拳？",
+              "a": "参数合法性校验 + 布隆过滤器拦截 + 短 TTL 空值缓存兜底。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

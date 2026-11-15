@@ -1,0 +1,616 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-spi-loader",
+  "course": "Java 工程语法与集合",
+  "title": "SPI 扩展机制与懒加载缓存：JDBC / Dubbo / Spring Boot 是怎么插拔实现的？",
+  "lead": "写一个核心接口，不改核心包一行代码，只往 classpath 放个 jar 就能自动加载实现类——JDK ServiceLoader 怎么做到的？为什么每次重新 load 这么慢？",
+  "minutes": 30,
+  "needs": [
+    "知道面向接口编程",
+    "知道 Class.forName 与反射实例化"
+  ],
+  "after": [
+    "说清 JDK SPI（META-INF/services + ServiceLoader）的工作原理与懒加载特性",
+    "理解为什么 JDBC DriverManager 用线程上下文类加载器（TCCL）打破双亲委派",
+    "对比每次反射加载、懒加载注册表与单例缓存的性能差异，并知道 Dubbo/Spring SPI 的改进"
+  ],
+  "terms": {
+    "SPI (Service Provider Interface)": "由调用方/标准方定义接口，第三方厂商提供实现并配置在 `META-INF/services/接口全限定名` 文件中，实现解耦插拔。",
+    "ServiceLoader 懒加载": "`ServiceLoader.load()` 返回 `Iterable`，只有在 `iterator().hasNext()/next()` 遍历时才逐行读取配置文件并 `Class.forName` 实例化。",
+    "JDK SPI 缺陷": "JDK `ServiceLoader` 一旦遍历就会把所有实现类全部实例化，且不支持按 key 名字按需取单个实现（Dubbo/Spring 做了按需缓存改进）。"
+  },
+  "experiments": {
+    "spiloader": {
+      "runner": "java",
+      "home": "lab.spiloader",
+      "variants": [
+        {
+          "id": "ServiceLoaderRescanEvery",
+          "code": "ServiceLoaderRescanEvery.java",
+          "label": "每次 Class.forName + newInstance",
+          "note": "每次调用都重新加载类并反射构造新实例，耗时远高于缓存方案。"
+        },
+        {
+          "id": "LazySpiRegistry",
+          "code": "LazySpiRegistry.java",
+          "label": "按需 Supplier 注册表（每次构造）",
+          "note": "免去 Class.forName 查找，按 key 精准构造实例，无反射开销。"
+        },
+        {
+          "id": "CachedSpiSingleton",
+          "code": "CachedSpiSingleton.java",
+          "label": "按 Key 缓存 SPI 单例（推荐）",
+          "note": "启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。"
+        },
+        {
+          "id": "RealServiceLoaderEmpty",
+          "code": "RealServiceLoaderEmpty.java",
+          "label": "ServiceLoader.load 空扫描开销",
+          "note": "演示即便没有配置 META-INF/services，反复调用 ServiceLoader.load() 仍有扫描开销。"
+        }
+      ],
+      "knob": {
+        "label": "扩展点调用次数 N",
+        "values": [
+          "10000",
+          "50000",
+          "100000",
+          "200000"
+        ],
+        "default": "100000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "ok",
+        "expectKey": "expected",
+        "label": "成功执行次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "SPI 扩展机制与懒加载缓存：JDBC / Dubbo / Spring Boot 是怎么插拔实现的？",
+      "bridge": "写一个核心接口，不改核心包一行代码，只往 classpath 放个 jar 就能自动加载实现类——JDK ServiceLoader 怎么做到的？为什么每次重新 load 这么慢？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "为什么引入一个 `mysql-connector-j.jar` 就能自动注册进 `DriverManager`？为什么 Spring Boot 引入 starter 就能自动装配？底层都是 **SPI（服务发现接口）**！今天实测 SPI 实例化与缓存的正确姿势。",
+          "say": "SPI 是阅读 JDBC、SLF4J、Dubbo、Spring Boot 源码的钥匙。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
+          "items": [
+            {
+              "have": "配置文件路径",
+              "q": "JDK 原生 `ServiceLoader` 默认去哪个目录下查找接口实现类的配置？",
+              "options": [
+                "META-INF/services/<接口全限定名>",
+                "WEB-INF/spi/",
+                "src/main/java/"
+              ],
+              "answer": 0,
+              "why": "文件名为接口全限定名，文件内容为一行一个实现类全限定名。"
+            },
+            {
+              "have": "TCCL 打破双亲委派",
+              "q": "JDK 核心库里的 `DriverManager`（Bootstrap 加载）为什么能加载到 classpath 下的 MySQL Driver？",
+              "options": [
+                "ServiceLoader.load() 默认使用 Thread.currentThread().getContextClassLoader()（应用类加载器）",
+                "MySQL Driver 放在 rt.jar 里",
+                "JVM 禁用双亲委派"
+              ],
+              "answer": 0,
+              "why": "这就是经典的「线程上下文类加载器（TCCL）逆向委派」。"
+            },
+            {
+              "have": "SpringFactories",
+              "q": "Spring Boot 自动装配读取 `META-INF/spring.factories`（或 Boot 3 的 `.imports`）核心思想属于？",
+              "options": [
+                "约定大于配置的 SPI 扩展加载机制",
+                "AOP 动态代理",
+                "JDBC 连接池"
+              ],
+              "answer": 0,
+              "why": "本质就是读取 jar 包里约定路径的配置文件，按条件筛选并注册配置类。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (RealServiceLoaderEmpty)",
+              "安全写法 (CachedSpiSingleton)"
+            ],
+            "shared": {
+              "name": "成功执行次数",
+              "value": "目标 100000"
+            }
+          },
+          "story": "写一个核心接口，不改核心包一行代码，只往 classpath 放个 jar 就能自动加载实现类——JDK ServiceLoader 怎么做到的？为什么每次重新 load 这么慢？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "SPI (Service Provider Interface)",
+              "on": "shared",
+              "tag": "SPI (Service",
+              "code": "`RealServiceLoaderEmpty` vs `CachedSpiSingleton`",
+              "say": "由调用方/标准方定义接口，第三方厂商提供实现并配置在 `META-INF/services/接口全限定名` 文件中，实现解耦插拔。"
+            },
+            {
+              "scene": "ServiceLoader 懒加载",
+              "on": "shared",
+              "tag": "ServiceLoade",
+              "code": "`RealServiceLoaderEmpty` vs `CachedSpiSingleton`",
+              "say": "`ServiceLoader.load()` 返回 `Iterable`，只有在 `iterator().hasNext()/next()` 遍历时才逐行读取配置文件并 `Class.forName` 实例化。"
+            },
+            {
+              "scene": "JDK SPI 缺陷",
+              "on": "shared",
+              "tag": "JDK SPI 缺陷",
+              "code": "`RealServiceLoaderEmpty` vs `CachedSpiSingleton`",
+              "say": "JDK `ServiceLoader` 一旦遍历就会把所有实现类全部实例化，且不支持按 key 名字按需取单个实现（Dubbo/Spring 做了按需缓存改进）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`RealServiceLoaderEmpty`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "spiloader.RealServiceLoaderEmpty",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "public interface Codec { int encode(int x); }"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "int ok = 0;"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (!loader.iterator().hasNext()) ok++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：RealServiceLoaderEmpty 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`ServiceLoaderRescanEvery` 每次 `Class.forName().getDeclaredConstructor().newInstance()` vs `CachedSpiSingleton`，耗时差距大约是？",
+          "options": [
+            "慢一个数量级以上（Class.forName 查类表 + 反射构造）",
+            "差不多",
+            "一样快"
+          ],
+          "answer": 0,
+          "say": "`Class.forName` 涉及类名解析、字典查找与反射构造，绝对不能放在热路径每次重复执行。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：RealServiceLoaderEmpty 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "spiloader",
+          "show": [
+            "RealServiceLoaderEmpty"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "`Class.forName` 涉及类名解析、字典查找与反射构造，绝对不能放在热路径每次重复执行。",
+          "say": "`Class.forName` 涉及类名解析、字典查找与反射构造，绝对不能放在热路径每次重复执行。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「扩展点调用次数 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "spiloader",
+          "show": [
+            "RealServiceLoaderEmpty",
+            "CachedSpiSingleton"
+          ],
+          "say": "左右拖动「扩展点调用次数 N」滑块，对比 `RealServiceLoaderEmpty` 与 `CachedSpiSingleton` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`RealServiceLoaderEmpty`：演示即便没有配置 META-INF/services，反复调用 ServiceLoader.load() 仍有扫描开销。；`CachedSpiSingleton`：启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `RealServiceLoaderEmpty.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "spiloader.RealServiceLoaderEmpty",
+          "q": "在左边的 `RealServiceLoaderEmpty.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "ServiceLoader<Codec> loader = ServiceLoader.load(Codec.class);"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`ServiceLoader<Codec> loader = ServiceLoader.load(Codec.class);`）导致：演示即便没有配置 META-INF/services，反复调用 ServiceLoader.load() 仍有扫描开销。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "spiloader.RealServiceLoaderEmpty",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "32: invokevirtual #27                 // Method java/util/ServiceLoader.iterator:()Ljava/util/Iterator;"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "28: astore        6"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `CachedSpiSingleton` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "spiloader.CachedSpiSingleton",
+          "say": "启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。",
+          "walk": [
+            {
+              "focus": [
+                "interface Codec { int encode(int x); }"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "int n = Integer.parseInt(args[0]);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (c.encode(1) == 2) ok++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "spiloader",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "每次 Class.forName + newInstance（`ServiceLoaderRescanEvery`）",
+              "solves": "每次调用都重新加载类并反射构造新实例，耗时远高于缓存方案。",
+              "cost": "实测约 {ms:spiloader.ServiceLoaderRescanEvery} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "每次调用都重新加载类并反射构造新实例，耗时远高于缓存方案。"
+            },
+            {
+              "name": "按需 Supplier 注册表（每次构造）（`LazySpiRegistry`）",
+              "solves": "免去 Class.forName 查找，按 key 精准构造实例，无反射开销。",
+              "cost": "实测约 {ms:spiloader.LazySpiRegistry} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "免去 Class.forName 查找，按 key 精准构造实例，无反射开销。"
+            },
+            {
+              "name": "按 Key 缓存 SPI 单例（推荐）（`CachedSpiSingleton`）",
+              "solves": "启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。",
+              "cost": "实测约 {ms:spiloader.CachedSpiSingleton} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。"
+            },
+            {
+              "name": "ServiceLoader.load 空扫描开销（`RealServiceLoaderEmpty`）",
+              "solves": "演示即便没有配置 META-INF/services，反复调用 ServiceLoader.load() 仍有扫描开销。",
+              "cost": "实测约 {ms:spiloader.RealServiceLoaderEmpty} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "演示即便没有配置 META-INF/services，反复调用 ServiceLoader.load() 仍有扫描开销。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "SPI (Service Provider Interface)",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "由调用方/标准方定义接口，第三方厂商提供实现并配置在 `META-INF/services/接口全限定名` 文件中，实现解耦插拔。",
+          "asked": [
+            "SPI 扩展机制与懒加载缓存：JDBC / Dubbo / Spring Boot 是怎么插拔实现的？——底层原理是什么？",
+            "为什么 `RealServiceLoaderEmpty` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `CachedSpiSingleton` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`ServiceLoaderRescanEvery` 每次 `Class.forName().getDeclaredConstructor().newInstance()` vs `CachedSpiSingleton`，耗时差距大约是？",
+          "options": [
+            {
+              "text": "慢一个数量级以上（Class.forName 查类表 + 反射构造）",
+              "ok": true,
+              "why": "`Class.forName` 涉及类名解析、字典查找与反射构造，绝对不能放在热路径每次重复执行。"
+            },
+            {
+              "text": "差不多",
+              "ok": false,
+              "why": "再想一想：`Class.forName` 涉及类名解析、字典查找与反射构造，绝对不能放在热路径每次重复执行。"
+            },
+            {
+              "text": "一样快",
+              "ok": false,
+              "why": "再想一想：`Class.forName` 涉及类名解析、字典查找与反射构造，绝对不能放在热路径每次重复执行。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：配置文件路径",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "JDK 原生 `ServiceLoader` 默认去哪个目录下查找接口实现类的配置？",
+          "options": [
+            {
+              "text": "META-INF/services/<接口全限定名>",
+              "ok": true,
+              "why": "文件名为接口全限定名，文件内容为一行一个实现类全限定名。"
+            },
+            {
+              "text": "WEB-INF/spi/",
+              "ok": false,
+              "why": "再想一想：文件名为接口全限定名，文件内容为一行一个实现类全限定名。"
+            },
+            {
+              "text": "src/main/java/",
+              "ok": false,
+              "why": "再想一想：文件名为接口全限定名，文件内容为一行一个实现类全限定名。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：TCCL 打破双亲委派",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "JDK 核心库里的 `DriverManager`（Bootstrap 加载）为什么能加载到 classpath 下的 MySQL Driver？",
+          "options": [
+            {
+              "text": "ServiceLoader.load() 默认使用 Thread.currentThread().getContextClassLoader()（应用类加载器）",
+              "ok": true,
+              "why": "这就是经典的「线程上下文类加载器（TCCL）逆向委派」。"
+            },
+            {
+              "text": "MySQL Driver 放在 rt.jar 里",
+              "ok": false,
+              "why": "再想一想：这就是经典的「线程上下文类加载器（TCCL）逆向委派」。"
+            },
+            {
+              "text": "JVM 禁用双亲委派",
+              "ok": false,
+              "why": "再想一想：这就是经典的「线程上下文类加载器（TCCL）逆向委派」。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `CachedSpiSingleton`（按 Key 缓存 SPI 单例（推荐））替代 `RealServiceLoaderEmpty`（ServiceLoader.load 空扫描开销）？",
+          "options": [
+            {
+              "text": "因为 启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。",
+              "ok": true,
+              "why": "`RealServiceLoaderEmpty`：演示即便没有配置 META-INF/services，反复调用 ServiceLoader.load() 仍有扫描开销。；而 `CachedSpiSingleton`：启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。"
+            },
+            {
+              "text": "因为 `RealServiceLoaderEmpty` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`RealServiceLoaderEmpty`：演示即便没有配置 META-INF/services，反复调用 ServiceLoader.load() 仍有扫描开销。；而 `CachedSpiSingleton`：启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`RealServiceLoaderEmpty`：演示即便没有配置 META-INF/services，反复调用 ServiceLoader.load() 仍有扫描开销。；而 `CachedSpiSingleton`：启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 什么是 SPI，它和 API 有什么区别；2) JDK ServiceLoader 的实现原理与局限性；3) JDBC 和 Spring Boot 分别是怎么利用 SPI 思想的。",
+          "points": [
+            "说清 JDK SPI（META-INF/services + ServiceLoader）的工作原理与懒加载特性",
+            "理解为什么 JDBC DriverManager 用线程上下文类加载器（TCCL）打破双亲委派",
+            "对比每次反射加载、懒加载注册表与单例缓存的性能差异，并知道 Dubbo/Spring SPI 的改进"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：写一个核心接口，不改核心包一行代码，只往 classpath 放个 jar 就能自动加载实现类——JDK ServiceLoader 怎么做到的？为什么每次重新 load 这么慢？；**② 再讲底层原理**：SPI (Service Provider Interface)（由调用方/标准方定义接口，第三方厂商提供实现并配置在 `META-INF/services/接口全限定名` 文件中，实现解耦插拔。）；ServiceLoader 懒加载（`ServiceLoader.load()` 返回 `Iterable`，只有在 `iterator().hasNext()/next()` 遍历时才逐行读取配置文件并 `Class.forName` 实例化。）；**③ 最后给工程方案**：生产里优先采用「按 Key 缓存 SPI 单例（推荐）」（`CachedSpiSingleton`），启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「SPI (Service Provider Interface)」？它在这节课里起了什么关键作用？",
+              "a": "由调用方/标准方定义接口，第三方厂商提供实现并配置在 `META-INF/services/接口全限定名` 文件中，实现解耦插拔。"
+            },
+            {
+              "q": "面试官问：什么是「ServiceLoader 懒加载」？它在这节课里起了什么关键作用？",
+              "a": "`ServiceLoader.load()` 返回 `Iterable`，只有在 `iterator().hasNext()/next()` 遍历时才逐行读取配置文件并 `Class.forName` 实例化。"
+            },
+            {
+              "q": "面试官问：什么是「JDK SPI 缺陷」？它在这节课里起了什么关键作用？",
+              "a": "JDK `ServiceLoader` 一旦遍历就会把所有实现类全部实例化，且不支持按 key 名字按需取单个实现（Dubbo/Spring 做了按需缓存改进）。"
+            },
+            {
+              "q": "实战避坑：`RealServiceLoaderEmpty` 为什么会出问题，应该怎么改？",
+              "a": "演示即便没有配置 META-INF/services，反复调用 ServiceLoader.load() 仍有扫描开销。 正确做法是改用 `CachedSpiSingleton`（按 Key 缓存 SPI 单例（推荐））：启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "说清 JDK SPI（META-INF/services + ServiceLoader）的工作原理与懒加载特性",
+            "理解为什么 JDBC DriverManager 用线程上下文类加载器（TCCL）打破双亲委派",
+            "对比每次反射加载、懒加载注册表与单例缓存的性能差异，并知道 Dubbo/Spring SPI 的改进"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `RealServiceLoaderEmpty`（ServiceLoader.load 空扫描开销），优先选用 `CachedSpiSingleton`（按 Key 缓存 SPI 单例（推荐））：启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。"
+        }
+      ]
+    }
+  ]
+}

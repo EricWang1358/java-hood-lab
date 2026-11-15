@@ -1,0 +1,185 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "mybatis-l1-cache",
+  "course": "Spring 全家桶与持久层",
+  "title": "同一个事务里查了两次余额，怎么第二次读到的还是旧值？",
+  "lead": "账务线程明明已经把余额从 1000 扣成了 800，结果上游方法在同一个 @Transactional 里再查一次，还是 1000！",
+  "minutes": 35,
+  "needs": ["知道 MyBatis 一级缓存默认开启且作用域是 SqlSession", "了解 Spring @Transactional 会让同线程复用同一个 SqlSession", "知道数据库隔离级别（如可重复读）与 ORM 缓存的区别"],
+  "after": ["讲清 MyBatis 一级缓存的生命周期与失效条件", "解释为什么无 @Transactional 时一级缓存看起来‘失效’了", "掌握同事务读最新数据的三种解法（flushCache / STATEMENT / 避免混用原生 SQL）"],
+  "terms": {
+    "一级缓存 (Local Cache)": "MyBatis 默认开启的内存 HashMap（作用域默认为 SESSION），同一个 SqlSession 内执行相同 SQL + 参数会直接返回缓存结果，不走数据库。",
+    "PerpetualCache": "MyBatis 一级缓存的默认实现类，底层就是一个普通的 HashMap，没有过期时间和容量上限。",
+    "Spring-MyBatis 会话绑定": "无 @Transactional 时每次 Mapper 调用都开新 SqlSession 用完即关，所以一级缓存‘形同虚设’；加了 @Transactional 后整个事务复用同一个 SqlSession，一级缓存立刻生效！",
+    "localCacheScope=STATEMENT": "把一级缓存作用域降为单条语句，语句结束立刻清空，彻底杜绝同事务内脏读/旧读。"
+  },
+  "experiments": {
+    "l1cache": {
+      "runner": "java",
+      "home": "lab.l1cache",
+      "variants": [
+        { "id": "SessionL1Stale", "label": "同事务命中一级缓存", "note": "外部把余额改成 800，但同 SqlSession 第二次查直接命中一级缓存旧值 1000！" },
+        { "id": "SpringNoTxNewSession", "label": "无事务每次新建 Session", "note": "每次查询都是新 SqlSession，不命中旧缓存，读到最新 800。" },
+        { "id": "FlushCacheTrue", "label": "flushCache=true / STATEMENT", "note": "查询前刷新或作用域设为 STATEMENT，每次都走库读到最新 800。" },
+        { "id": "ExplicitQuery", "label": "clearCache / 本会话更新", "note": "本 SqlSession 执行过增删改或 clearCache()，一级缓存自动清空。" }
+      ],
+      "knob": { "label": "查询轮次", "values": ["100", "200", "400", "800"], "default": "400" },
+      "repeat": 20,
+      "metric": { "key": "fresh_reads", "expectKey": "expected", "label": "读到最新余额 800 的次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "同一个事务里查了两次余额，怎么第二次读到的还是旧值？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**为什么在同一个 `@Transactional` 方法里，别的事务明明已经提交了新余额，你再查一次却还是旧值。**",
+          "say": "很多同学第一反应去查 MySQL 隔离级别，甚至把隔离级别改成 `READ COMMITTED` 也没用——因为第二次查询压根没发 SQL 到数据库！"
+        },
+        {
+          "t": "text",
+          "md": "先打通 `SqlSession` 和 Spring 事务同步器的前置基础，再亲手跑出旧读现场，看清缓存 Map 是怎么拦截查询的。",
+          "say": "这节课大约 35 分钟，一步步把 MyBatis 一级缓存和 Spring 事务的联动关系讲透。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热个身：先确认三件前置知识",
+      "bridge": "先搞清 `SqlSession`、Spring 事务和缓存清空条件，后面的实验才不会云里雾里。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题快速确认前置认知。",
+          "items": [
+            {
+              "have": "SqlSession 作用域",
+              "q": "MyBatis 一级缓存默认挂在哪个对象上？",
+              "options": ["挂在全局 Mapper 接口上", "挂在单个 SqlSession 实例上"],
+              "answer": 1,
+              "why": "一级缓存是 `SqlSession` 私有的本地 `HashMap`，会话一关闭，缓存就跟着销毁。"
+            },
+            {
+              "have": "Spring 事务绑定",
+              "q": "在 Spring 里，什么时候多个 Mapper 调用会共用同一个 `SqlSession`？",
+              "options": ["方法上加了 @Transactional 时", "只要注入同一个 Mapper Bean 就会共用"],
+              "answer": 0,
+              "why": "没有 `@Transactional` 时，Spring-MyBatis 每次执行完 SQL 就关闭 `SqlSession`；加了 `@Transactional` 后，事务同步器把同一个 `SqlSession` 绑定到当前线程。"
+            },
+            {
+              "have": "缓存失效条件",
+              "q": "下面哪个操作**不会**清空当前 `SqlSession` 的一级缓存？",
+              "options": ["本 SqlSession 执行了一次 update", "另一个独立线程/事务修改了同一行数据库记录"],
+              "answer": 1,
+              "why": "一级缓存在本机 JVM 内存里，其他线程或独立事务改库，当前 `SqlSession` 根本不知情！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景",
+      "bridge": "把 `SqlSession` 一级缓存想成「出纳员手里的草稿本」。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["出纳员(当前事务)", "后台记账(外部改库)"], "shared": { "name": "草稿本(L1 Cache)", "value": "1000" } },
+          "story": "出纳员第一次查账本得知余额 `1000`，顺手抄在自己**草稿本**上。接着后台把总账改成了 `800`。出纳员第二次需要核对余额时，懒得翻总账，直接低头看自己的草稿本——**看到的还是 `1000`！**",
+          "say": "只要草稿本没撕掉（会话没关、自己没改账），出纳员就会一直相信草稿本上的旧数字。",
+          "map": [
+            { "scene": "出纳员的草稿本", "on": "shared", "tag": "PerpetualCache (L1)", "code": "Map<String, Integer> l1Cache", "say": "对应 `SqlSession` 内部的 `HashMap`，查过一次就记下来。" },
+            { "scene": "后台悄悄改了总账", "on": "actors", "tag": "外部/独立事务改库", "code": "dbBalance[0] = 800;", "say": "比如 `REQUIRES_NEW` 子事务、异步回调或原生 JDBC 把数据库改成了 800，草稿本完全不知道。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "400 轮并发改库后重查，能读到最新 800 吗？",
+      "bridge": "目标：400 轮全部读到最新值 `fresh_reads = 400`。",
+      "blocks": [{ "t": "text", "md": "对比同 Session 一级缓存、无事务新建 Session、flushCache=true 与 clearCache。", "say": "先看代码里第二次查询为什么没有走库。" }]
+    },
+    {
+      "beat": "code",
+      "title": "看清一级缓存如何拦截第二次查询",
+      "bridge": "注意 `SessionL1Stale.java` 第 13～19 行。",
+      "blocks": [{ "t": "code", "of": "l1cache.SessionL1Stale", "say": "看这两次 `computeIfAbsent`。", "walk": [{ "focus": ["int first = l1Cache.computeIfAbsent(\"user:1\", k -> dbBalance[0]);"], "say": "第一次查 `user:1`，缓存里没有，于是查库拿到 `1000` 并写进 `l1Cache`。" }, { "focus": ["int second = l1Cache.computeIfAbsent(\"user:1\", k -> dbBalance[0]);"], "say": "中间 `dbBalance[0]` 已经被改成 `800`，但第二次调用时 `l1Cache` 里已经存在键 `\"user:1\"`，lambda 压根不会执行，直接返回旧值 `1000`！", "key": "同一 SqlSession 内相同查询直接命中一级缓存" }] }]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：SessionL1Stale 400 轮能读到几次最新余额 800？",
+      "bridge": "跑之前下注。",
+      "blocks": [{ "t": "predict", "id": "l1_guess", "q": "在同一个 SqlSession 里，第一次查出 1000 后外部把库改成了 800，第二次查询能读到几次 800？", "options": ["400 次（每次都重新查库）", "0 次（全被一级缓存拦住返回旧值 1000）"], "answer": 1, "say": "选出你的判断。" }]
+    },
+    {
+      "beat": "run",
+      "title": "出事的是哪一行？点出来",
+      "bridge": "在 `SessionL1Stale.java` 中点出第二次查询命中旧缓存的那一行。",
+      "blocks": [{ "t": "spot", "of": "l1cache.SessionL1Stale", "q": "哪一行代码没有去查 `dbBalance[0]`，而是直接从内存 Map 返回了旧值？", "answer": ["int second = l1Cache.computeIfAbsent(\"user:1\", k -> dbBalance[0]);"], "hint": "找第二次读取 `user:1` 的那一行。", "found": "就是这句！由于没有清空 `l1Cache`，`computeIfAbsent` 直接跳过查库回调。", "say": "点击代码里的那一行。" }]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖看字节码",
+      "bridge": "用 `javap -c -p` 看 `SessionL1Stale.main` 中两次 `Map.computeIfAbsent` 的调用。",
+      "blocks": [{ "t": "inside", "of": "l1cache.SessionL1Stale", "within": "main", "from": "invokespecial", "to": "invokeinterface", "say": "反编译看 `HashMap` 在方法栈帧里的位置。", "walk": [{ "focus": ["invokeinterface"], "label": "两次查同一个本地 Map", "say": "`computeIfAbsent` 通过 `aload 7` 连续两次访问同一个局部变量 `l1Cache`；只要键命中，后面传进去的查库 lambda（`invokedynamic`）连执行的机会都没有！", "key": "同一 SqlSession 内二次查询根本不会触发 SQL 执行" }] }]
+    },
+    {
+      "beat": "run",
+      "title": "四种场景实测对比",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        { "t": "experiment", "lab": "l1cache", "show": ["SessionL1Stale", "SpringNoTxNewSession", "FlushCacheTrue", "ExplicitQuery"], "select": "SessionL1Stale", "say": "`SessionL1Stale` 惨吃 0/400；而无事务新建 Session、`FlushCacheTrue` 和 `ExplicitQuery` 全是 400/400！" },
+        { "t": "reveal", "of": "l1_guess", "say": "记住一句话：**Spring 里平时感觉不到 MyBatis 一级缓存，是因为没开事务每次新建 SqlSession；一旦加上 `@Transactional`，一级缓存就立刻激活！**", "key": "加了 @Transactional 后同线程复用 SqlSession，一级缓存会拦截重复查询" },
+        { "t": "try", "say": "把轮次调到 800 看看耗时对比。" }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "耗时对比",
+      "bridge": "四种写法耗时折线。",
+      "blocks": [{ "t": "chart", "of": "l1cache", "say": "均在毫秒级完成，生产环境推荐直接配 `localCacheScope=STATEMENT`。", "walk": [{ "focus": "FlushCacheTrue", "say": "杜绝跨语句缓存旧读，省心且安全。" }] }]
+    },
+    {
+      "beat": "choose",
+      "title": "一级缓存治理选型",
+      "layout": "split",
+      "bridge": "怎么避免被一级缓存坑到？",
+      "blocks": [
+        { "t": "decide", "q": "需要保证同事务内读到最新数据怎么办？", "branches": [{ "when": "全局禁用跨语句一级缓存（微服务/分布式推荐）", "pick": "mybatis.configuration.local-cache-scope=STATEMENT", "eg": "语句结束即清缓存" }, { "when": "仅个别高频轮询查询怕命中旧值", "pick": "@Options(flushCache = FlushCachePolicy.TRUE)", "eg": "单条 SQL 强制清缓存" }], "say": "微服务环境下，把 `localCacheScope` 设为 `STATEMENT` 最省心。" },
+        { "t": "cases", "tools": ["localCacheScope=STATEMENT", "@Options(flushCache=TRUE)", "同一 SqlSession 内 update"], "say": "三个现象怎么解释？", "items": [{ "text": "Spring Boot 项目里想彻底关掉一级缓存避免分布式环境旧读。", "answer": 0, "why": "配置文件加上 `mybatis.configuration.local-cache-scope=STATEMENT`。" }, { "text": "长事务里等外部回调改库后轮询查状态，只希望这一条 SELECT 不走缓存。", "answer": 1, "why": "给该 Mapper 方法加 `@Options(flushCache = FlushCachePolicy.TRUE)`。" }, { "text": "同事务里先 select 再自己 update 再 select，第二次能读到新值吗？", "answer": 2, "why": "能！同 SqlSession 内执行任何增删改都会自动清空当前一级缓存。" }] }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频提问。",
+      "blocks": [{ "t": "name", "term": "MyBatis 一级缓存与 Spring 事务联动", "alias": "SqlSession 级缓存 · localCacheScope · 脏读陷阱", "oneLine": "MyBatis 一级缓存默认 ==SESSION 级别==；在 Spring 中无事务时每次新建 SqlSession 导致缓存‘失效’，开启 ==@Transactional== 后复用同一 SqlSession 反而可能因外部改库读到旧值。", "asked": ["MyBatis 一级缓存什么时候生效？为什么在 Spring 里有时会失效？"], "say": "把 Spring 事务和 SqlSession 绑定讲清楚，面试官一定点头。" }]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下（两题）",
+      "bridge": "快速检验是否吃透。",
+      "blocks": [
+        { "t": "quiz", "q": "1. 在 Spring Boot 中没有加 `@Transactional` 的 Service 方法里连续两次调用 `userMapper.selectById(1)`，会命中 MyBatis 一级缓存吗？", "options": [{ "text": "不会，每次 Mapper 调用都会新建并关闭 SqlSession", "ok": true, "why": "正确！没有事务同步器管理时，Spring-MyBatis 每次执行完就关闭 SqlSession，一级缓存随之销毁。" }, { "text": "会，因为是同一个 JVM 进程", "ok": false, "why": "一级缓存绑定在 SqlSession，不是全局 JVM。" }], "say": "第 1 题：考无事务时的会话生命周期。" },
+        { "t": "quiz", "q": "2. 如果在同一个 `@Transactional` 方法里：先 `select` 余额 1000 -> 调用 `REQUIRES_NEW` 独立事务把余额扣成 800 -> 再 `select` 余额，会读到多少？", "options": [{ "text": "800，因为独立事务已经提交了", "ok": false, "why": "就算数据库已提交，外层当前 `SqlSession` 的一级缓存还在，直接拦住返回旧值 1000！" }, { "text": "1000，因为外层事务复用的 SqlSession 命中了一级缓存", "ok": true, "why": "正确！而且如果在 MySQL 默认 RR 隔离级别下，即使关了一级缓存也会因为 MVCC ReadView 读到 1000。" }], "say": "第 2 题：考独立事务与一级缓存联动。" }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [{ "t": "say", "prompt": "讲清 MyBatis 一级缓存的原理、在 Spring 里为什么有时失效，以及怎么防止读到旧数据？", "points": ["作用域：一级缓存默认开启且绑定在 SqlSession（SESSION 级别），底层是一个 PerpetualCache HashMap", "清空时机：SqlSession 关闭/提交、执行了任意 insert/update/delete、调用 clearCache() 或配置了 flushCache=true", "Spring 联动：无 @Transactional 时每次 Mapper 调用都开关新 SqlSession，所以缓存失效；加上 @Transactional 后整个事务复用同一个 SqlSession，一级缓存生效", "线上坑点：在长事务里如果中间有 REQUIRES_NEW 独立事务或外部服务改了库，同事务再查会命中一级缓存读到旧值", "解法：在微服务配置 local-cache-scope=STATEMENT，或对特定查询加 @Options(flushCache=TRUE)"], "model": "MyBatis 一级缓存默认开启，作用域是 `SqlSession`，底层是个本地 `HashMap`。只要在同一个 `SqlSession` 里执行相同的 SQL 和参数，第二次就会直接走内存不查库；只有当 `SqlSession` 提交关闭、或者本会话执行了任意增删改操作、或者显式清缓存时才会失效。在 Spring 里，如果方法没加 `@Transactional`，每次调 Mapper 都会新建再关闭 `SqlSession`，所以看起来一级缓存‘失效’了；一旦加上 `@Transactional`，整个事务复用同一个 `SqlSession`，一级缓存就生效了——但如果这期间有独立事务或别的微服务改了库，第二次查就会读到旧值。所以分布式项目通常直接配置 `local-cache-scope=STATEMENT` 关闭跨语句一级缓存。", "say": "点击开始自述。" }]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [{ "t": "cards", "items": [{ "q": "一级缓存的作用域是什么？", "a": "`SqlSession` 级别（默认 `SESSION`），随会话销毁或本会话增删改清空。" }, { "q": "为什么 Spring 没加事务时一级缓存失效？", "a": "因为没有事务管理器绑定会话，每次调 Mapper 都开新 `SqlSession` 用完即关。" }, { "q": "如何彻底关闭跨语句一级缓存？", "a": "设置 `mybatis.configuration.local-cache-scope=STATEMENT`。" }], "say": "三张卡收好。" }]
+    }
+  ]
+}

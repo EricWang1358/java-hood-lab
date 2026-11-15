@@ -1,0 +1,265 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "tcp-nagle",
+  "course": "网络与操作系统",
+  "title": "小包发得越勤反而越慢？",
+  "lead": "连续发送小数据包并等待确认时，为什么 Nagle 算法撞上延迟 ACK 会让耗时暴涨？",
+  "minutes": 35,
+  "needs": ["知道 TCP 确认报文 ACK", "知道 Socket.getOutputStream()", "知道写入缓冲区的概念"],
+  "after": [
+    "讲清 Nagle 算法与 Delayed ACK 各自原本想解决什么问题",
+    "解释为什么「分两次 write 小包 + 等回包」会触发 40ms 卡顿",
+    "掌握 TCP_NODELAY、应用层缓冲写、批量 Pipeline 三种优化手段"
+  ],
+  "terms": {
+    "Nagle 算法": "为了减少网络上的小包数量：只要还有未确认的在途小包，就先把新小包攒着不发。",
+    "Delayed ACK": "延迟确认：接收方收到数据不立刻回 ACK，先等 40ms 看有没有顺路响应数据可捎带。",
+    "TCP_NODELAY": "Socket 选项：设为 true 时关闭 Nagle 算法，有数据立刻发送不等待。",
+    "BufferedOutputStream": "Java 应用层缓冲流：把多次小 write 攒在内存里，flush() 时合并成一个大包写入内核。"
+  },
+  "experiments": {
+    "nagle": {
+      "runner": "java",
+      "home": "lab.nagle",
+      "variants": [
+        { "id": "NagleDelay", "code": "NagleDelay.java", "label": "默认 Nagle 分两次写", "note": "tcpNoDelay=false，每轮先写 4B header 再写 4B body，然后等服务端回 1B。" },
+        { "id": "NoDelay", "code": "NoDelay.java", "label": "开启 TCP_NODELAY", "note": "仅加上 socket.setTcpNoDelay(true) 关闭 Nagle，小包立刻发出。" },
+        { "id": "BufferedWrite", "code": "BufferedWrite.java", "label": "应用层缓冲合并写", "note": "套上 BufferedOutputStream 攒成 8B 后一次 flush()，不触发 Nagle 停顿。" },
+        { "id": "BatchPipeline", "code": "BatchPipeline.java", "label": "批量 Pipeline 一次发", "note": "把全部 N 轮请求打包成一整块写出并一次读回，消除逐轮等待。" }
+      ],
+      "knob": { "label": "乒乓往返轮数", "values": ["20", "40", "80", "160"], "default": "80" },
+      "repeat": 20,
+      "metric": { "key": "acks", "expectKey": "expected", "label": "完成轮数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "小包发得越勤反而越慢？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**明明只是在 `127.0.0.1` 本机发 8 个字节的小包，为什么 80 轮就能拖出几百毫秒？**",
+          "say": "很多做 RPC 或实时游戏开发的同学都遇到过：CPU 不高、带宽也没满，接口延迟却莫名多出 40ms 的整数倍。元凶往往是 Nagle 算法和延迟 ACK 撞车。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：两个好心办坏事的机制",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先快速确认三个 TCP 发送小包的基础常识。",
+          "items": [
+            {
+              "have": "包头开销",
+              "q": "只发 1 字节应用数据时，TCP + IP 包头一共至少占多少字节？",
+              "options": ["1 字节", "40 字节（20B IP + 20B TCP）", "1024 字节"],
+              "answer": 1,
+              "why": "只发 1 字节有效数据却配 40 字节包头，带宽利用率不到 3%，这就是 Nagle 想解决的痛点。"
+            },
+            {
+              "have": "Nagle",
+              "q": "Nagle 算法在什么时候会「攒着不发」？",
+              "options": ["永远不发", "还有前一个数据包没收到 ACK，且新数据凑不满一个 MSS 时", "带宽为 0 时"],
+              "answer": 1,
+              "why": "它想等前一个包的 ACK 回来，或者等新数据攒够一个大包再一起发。"
+            },
+            {
+              "have": "Delayed ACK",
+              "q": "接收端开启延迟确认（Delayed ACK）时，收到数据后会怎么做？",
+              "options": ["立刻回 ACK", "先等一小会（Linux 约 40ms），看应用层有没有响应数据顺便捎带 ACK", "丢掉数据包"],
+              "answer": 1,
+              "why": "双方都在等对方，就死锁式地硬生生卡出一个 40ms 超时！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「互相客气」的死等场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["客户端(Nagle)", "服务端(延迟ACK)"], "shared": { "name": "协议约定", "value": "等凑齐 8B 才回" } },
+          "story": "客户端把 8 字节拆成两次写：先发 4 字节头，**Nagle 规定「上一个包没 ACK 前不许发第二个小包」**于是捏住 4 字节尾不发；服务端收到 4 字节头发现没凑齐 8 字节不能回响应，**延迟 ACK 又规定「等 40ms 看有没有响应顺便捎带」**。两头干瞪眼卡满 40ms！",
+          "say": "这就是著名的「write-write-read」经典延迟陷阱。",
+          "map": [
+            { "scene": "先写 4B header", "on": "actors", "tag": "发出第一个小包", "code": "`out.write(header)`", "say": "第一个小包直接发出，现在处于「在途未确认」状态。" },
+            { "scene": "紧接着写 4B body", "on": "actors", "tag": "被 Nagle 扣留", "code": "`out.write(body)`", "say": "前包未 ACK，第二个 4B 小包被 Nagle 扣在发送端死等 ACK。" },
+            { "scene": "服务端等凑齐 8B", "on": "shared", "tag": "触发 40ms 延迟 ACK", "code": "服务端 `while (got < 8)`", "say": "服务端读不到后 4B 就没法回业务包，延迟 ACK 硬卡超时后才回空 ACK 破局。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "现场复现：80 轮小包硬拖出近 400ms",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "nagle.NagleDelay",
+          "say": "看 `NagleDelay.java`：每轮只是先 `write(header)` 再 `write(body)` 共 8 字节，再 `in.read()` 等服务端回 1 字节。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：开启 TCP_NODELAY 后，80 轮耗时能降多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`NagleDelay` 在本机跑 80 轮约 300～400ms；仅仅加一行 `setTcpNoDelay(true)` 后，耗时大概会变成多少？",
+          "options": ["还是 300ms 左右", "降到 10ms 以内（快几十倍）", "变成 1000ms"],
+          "answer": 1,
+          "say": "只要不让 Nagle 扣留那 4 字节 body，服务端立刻收齐 8 字节并马上回包，40ms 死等瞬间消失。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测对比：近 400ms vs 几毫秒",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "nagle",
+          "show": ["NagleDelay", "NoDelay"],
+          "knob": "80",
+          "hand": "NagleDelay",
+          "focus": "ms",
+          "say": "看 20 轮真实数据：`NagleDelay` 稳定在几百毫秒高位，而 `NoDelay` 贴着地板只需几毫秒！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "write-write-read 撞上 Nagle + Delayed ACK 会卡出 40ms 级延迟",
+          "say": "这就是为什么 Netty、Redis 客户端、MySQL JDBC 全部默认把 `TCP_NODELAY` 设为 `true`。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的连续两次 write",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "nagle.NagleDelay",
+          "within": "main(",
+          "from": "setTcpNoDelay",
+          "to": "OutputStream.flush",
+          "say": "紧挨着的两个 `OutputStream.write` 分别进入内核 socket；关闭 `TCP_NODELAY` 时，第二次写入被内核 Nagle 逻辑拦在发送队列里。",
+          "walk": [
+            { "focus": ["setTcpNoDelay"], "label": "开启 Nagle", "say": "传入 `iconst_0` (false)，保留 Nagle 攒包机制。" },
+            { "focus": ["OutputStream.write"], "label": "连续两次小写入", "say": "第二次 4B 写入因前包未 ACK 而被扣留。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "三条出路：关 Nagle、应用层合并、批量 Pipeline",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "nagle.BufferedWrite",
+          "say": "除了 `setTcpNoDelay(true)`，`BufferedWrite` 用 `BufferedOutputStream` 把 header+body 攒成一次系统调用写出；`BatchPipeline` 则把多轮合并。"
+        },
+        {
+          "t": "experiment",
+          "lab": "nagle",
+          "show": ["NagleDelay", "NoDelay", "BufferedWrite", "BatchPipeline"],
+          "knob": "80",
+          "hand": "NoDelay",
+          "focus": "ms",
+          "say": "三条修复线全部掉回几毫秒级，彻底摆脱 40ms 延迟诅咒。"
+        },
+        {
+          "t": "try",
+          "key": "nagle",
+          "say": "把轮数拉到 160，`NagleDelay` 的耗时斜率非常恐怖。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "延迟优化怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "现代内网千兆/万兆带宽下，低延迟永远优先于省几个包头。",
+          "options": [
+            { "name": "TCP_NODELAY = true", "solves": "彻底消除 Nagle 扣包导致的 40ms 尾延迟", "cost": "耗时 {ms:nagle.NoDelay} ms", "when": "RPC、Redis、DB、游戏、实时推送等一切低延迟场景", "say": "后端服务端和客户端默认必开。" },
+            { "name": "应用层缓冲合并写", "solves": "自己控制把 header+body 一次 writev 写出，少一次系统调用", "cost": "耗时 {ms:nagle.BufferedWrite} ms", "when": "协议编码器（如 Netty ByteBuf 拼装完整帧后再 flush）", "say": "既省系统调用，又免除了小包碎片。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住这对经典组合",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Nagle 算法与 Delayed ACK",
+          "alias": "TCP_NODELAY",
+          "oneLine": "Nagle 在前包未 ACK 时扣留小包，Delayed ACK 等 40ms 再回确认；两者遇上 write-write-read 会卡出 40ms 延迟，需设 TCP_NODELAY=true 并合并写出。",
+          "asked": "TCP_NODELAY 是干什么的？Nagle 和延迟 ACK 为什么会冲突？",
+          "say": "把「write-write-read」三个动作和「40ms 死等」讲清，面试官立刻点头。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "以下哪种做法最能同时避免 Nagle 延迟卡顿并减少系统调用次数？",
+          "options": [
+            { "text": "开启 TCP_NODELAY=true，并在应用层把 header+body 拼成完整帧后一次写出", "ok": true, "why": "正确！应用层攒帧减少系统调用，TCP_NODELAY 兜底保证不卡 40ms。" },
+            { "text": "把发送缓冲区调成 1 字节", "ok": false, "why": "调小缓冲区只会让系统调用更碎、吞吐更差。" },
+            { "text": "每次 write 后 Thread.sleep(40)", "ok": false, "why": "这相当于自己主动制造 40ms 延迟。" }
+          ],
+          "say": "选出 Netty 等主流框架都在用的黄金组合。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：Nagle 与 TCP_NODELAY",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：什么是 Nagle 算法？为什么后端框架都要设 TCP_NODELAY=true？",
+          "points": [
+            "Nagle 原理：前一个包还没收到 ACK 时，扣留后续小包不发，凑够 MSS 或等 ACK 回来再发",
+            "碰撞延迟 ACK：发送端连调两次 write 小包（write-write-read），第二段被 Nagle 扣留；接收端没收全不回业务包，触发延迟 ACK 硬等 40ms",
+            "工程实践：设 TCP_NODELAY=true 关掉 Nagle，同时在应用层用缓冲区把协议头和包体合并一次写出"
+          ],
+          "model": "Nagle 算法是为了避免网络里充斥大量只有几字节有效载荷的小包，规定只要还有在途未确认的数据，就暂缓发送新的小包。但接收方往往开启了延迟 ACK，收到包不立刻回确认而是等几十毫秒看有没有响应数据可以捎带。当发送方出现 write-write-read 模式——比如先写 header 再写 body 等回包——第二段 body 会被 Nagle 扣住，而服务端没凑齐整帧不会回包，结果硬生生卡出 40ms 延迟。因此高性能 RPC 和中间件都会设 TCP_NODELAY=true 关闭 Nagle，并在应用层缓冲拼好完整帧再一次 flush。",
+          "say": "把这段因果链条讲顺，非常加分。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "记住这三张卡，遇到莫名其妙的 40ms 整数倍延迟第一时间查它。",
+          "items": [
+            { "front": "什么模式会撞车？", "back": "write-write-read：两次小 write 碰上 Nagle + Delayed ACK 卡 40ms。" },
+            { "front": "TCP_NODELAY 怎么设？", "back": "低延迟服务设为 true（关闭 Nagle），有数据立刻发。" },
+            { "front": "应用层怎么配合？", "back": "先用缓冲区拼好 header+body 再一次 flush，省系统调用。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

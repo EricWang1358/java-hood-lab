@@ -1,0 +1,871 @@
+{
+ "id": "prefixidx",
+ "variants": {
+  "PrefixIndex": {
+   "hash": "850ef00999a8bcd7",
+   "repeat": 10,
+   "runs": {
+    "10000": [
+     {
+      "extraReads": 20,
+      "expected": 10,
+      "ms": 2
+     },
+     {
+      "extraReads": 20,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 20,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 20,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 20,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 20,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 20,
+      "expected": 10,
+      "ms": 1
+     },
+     {
+      "extraReads": 20,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 20,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 20,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 1
+     },
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 1
+     },
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "extraReads": 200,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 200,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 200,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 200,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 200,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 200,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 200,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 200,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 200,
+      "expected": 10,
+      "ms": 2
+     },
+     {
+      "extraReads": 200,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "extraReads": 400,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 400,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 400,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 400,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 400,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 400,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 400,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 400,
+      "expected": 10,
+      "ms": 1
+     },
+     {
+      "extraReads": 400,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 400,
+      "expected": 10,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"PrefixIndex.java\"\npublic class lab.prefixidx.PrefixIndex {\n  public lab.prefixidx.PrefixIndex();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: bipush        10\n       9: iload_1\n      10: sipush        500\n      13: idiv\n      14: invokestatic  #13                 // Method java/lang/Math.max:(II)I\n      17: istore_2\n      18: iload_2\n      19: newarray       int\n      21: astore_3\n      22: iconst_0\n      23: istore        4\n      25: iload         4\n      27: iload_2\n      28: if_icmpge     45\n      31: aload_3\n      32: iload         4\n      34: iload_2\n      35: iload         4\n      37: isub\n      38: iastore\n      39: iinc          4, 1\n      42: goto          25\n      45: invokestatic  #19                 // Method java/lang/System.nanoTime:()J\n      48: lstore        4\n      50: iload_2\n      51: istore        6\n      53: aload_3\n      54: invokestatic  #25                 // Method java/util/Arrays.sort:([I)V\n      57: invokestatic  #19                 // Method java/lang/System.nanoTime:()J\n      60: lload         4\n      62: lsub\n      63: ldc2_w        #31                 // long 1000000l\n      66: ldiv\n      67: lstore        7\n      69: getstatic     #33                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      72: iload         6\n      74: invokedynamic #37,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      79: invokevirtual #41                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      82: getstatic     #33                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      85: ldc           #47                 // String expected=10\n      87: invokevirtual #41                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      90: getstatic     #33                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      93: lload         7\n      95: invokedynamic #49,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     100: invokevirtual #41                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     103: return\n}"
+  },
+  "FullStringIndex": {
+   "hash": "64caab4743cd5849",
+   "repeat": 10,
+   "runs": {
+    "10000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"FullStringIndex.java\"\npublic class lab.prefixidx.FullStringIndex {\n  public lab.prefixidx.FullStringIndex();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: bipush        10\n      13: istore        4\n      15: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      18: lload_2\n      19: lsub\n      20: ldc2_w        #19                 // long 1000000l\n      23: ldiv\n      24: lstore        5\n      26: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      29: iload         4\n      31: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      36: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      39: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      42: ldc           #35                 // String expected=10\n      44: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      47: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      50: lload         5\n      52: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      57: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      60: return\n}"
+  },
+  "ReverseIndex": {
+   "hash": "a0ebe745d4f2efde",
+   "repeat": 10,
+   "runs": {
+    "10000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"ReverseIndex.java\"\npublic class lab.prefixidx.ReverseIndex {\n  public lab.prefixidx.ReverseIndex();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: bipush        10\n      13: istore        4\n      15: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      18: lload_2\n      19: lsub\n      20: ldc2_w        #19                 // long 1000000l\n      23: ldiv\n      24: lstore        5\n      26: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      29: iload         4\n      31: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      36: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      39: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      42: ldc           #35                 // String expected=10\n      44: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      47: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      50: lload         5\n      52: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      57: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      60: return\n}"
+  },
+  "CrcHashIndex": {
+   "hash": "f3801eb70c25d4ba",
+   "repeat": 10,
+   "runs": {
+    "10000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"CrcHashIndex.java\"\npublic class lab.prefixidx.CrcHashIndex {\n  public lab.prefixidx.CrcHashIndex();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: bipush        10\n      13: istore        4\n      15: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      18: lload_2\n      19: lsub\n      20: ldc2_w        #19                 // long 1000000l\n      23: ldiv\n      24: lstore        5\n      26: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      29: iload         4\n      31: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      36: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      39: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      42: ldc           #35                 // String expected=10\n      44: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      47: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      50: lload         5\n      52: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      57: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      60: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

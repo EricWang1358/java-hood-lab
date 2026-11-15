@@ -1,0 +1,249 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "jvm-classload",
+  "course": "JVM 内存与 GC",
+  "title": "双亲委派与打破：同名类怎么加载出两份？",
+  "lead": "JDBC SPI、Tomcat 多应用隔离和热部署为什么要打破双亲委派？自定义 ClassLoader 重写 findClass 和 loadClass 有什么本质区别？",
+  "minutes": 35,
+  "needs": ["知道类加载器 ClassLoader", "知道双亲委派机制", "知道全限定类名"],
+  "after": [
+    "讲清双亲委派的向上委派与向下加载流程，以及它保护核心类库的原因",
+    "分清重写 findClass（遵守委派）与重写 loadClass（打破委派）的代码差异",
+    "说出 JDBC SPI 线程上下文类加载器（TCCL）与 Tomcat WebAppClassLoader 打破双亲委派的场景"
+  ],
+  "terms": {
+    "双亲委派": "收到加载请求先递归甩给父加载器，只有父加载器找不到时才自己调 findClass() 加载。",
+    "类的唯一性": "在 JVM 中，一个类的唯一身份由「ClassLoader 实例 + 全限定类名」共同决定，不同加载器加载的同名类互不兼容。",
+    "TCCL (线程上下文类加载器)": "Thread.currentThread().getContextClassLoader()，让启动类加载器里的 SPI 代码能逆向委托应用类加载器加载厂商驱动。"
+  },
+  "experiments": {
+    "classload": {
+      "runner": "java",
+      "home": "lab.classload",
+      "variants": [
+        { "id": "ParentDelegation", "code": "ParentDelegation.java", "label": "标准双亲委派（仅重写 findClass）", "note": "虽然新建了 N 个加载器，但请求全被父加载器截胡，最终只加载出 1 份 Class。" },
+        { "id": "ChildFirstLoader", "code": "ChildFirstLoader.java", "label": "子优先加载（重写 loadClass）", "note": "打破双亲委派，优先自己 defineClass，每个插件独立加载出 N 份隔离 Class。" },
+        { "id": "ContextClassLoaderSpi", "code": "ContextClassLoaderSpi.java", "label": "SPI 线程上下文类加载器", "note": "通过 TCCL 逆向委派给子加载器，既保留核心库安全又能按插件隔离实现类。" },
+        { "id": "UnloadableLoader", "code": "UnloadableLoader.java", "label": "可卸载热部署加载器", "note": "每次不保留 ClassLoader 引用，加载隔离类的同时允许老版本类被 GC 卸载。" }
+      ],
+      "knob": { "label": "插件加载次数", "values": ["50", "100", "200", "400"], "default": "100" },
+      "repeat": 20,
+      "metric": { "key": "distinctClasses", "expectKey": "expected", "label": "隔离加载的 Class 份数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "双亲委派与打破：同名类怎么加载出两份？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**为什么 Tomcat 同一个进程里能同时跑两个用了不同版本 Spring 的 WAR 包，而标准双亲委派反而做不到？**",
+          "say": "类加载双亲委派几乎是 JVM 面试必问第一题，重点不在背概念，而在「怎么打破」以及「打破之后如何隔离/卸载」。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：JVM 怎么判断两个 Class 是不是同一个类？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先对齐类加载器的三条底层规则。",
+          "items": [
+            {
+              "have": "类唯一性",
+              "q": "两个不同 `ClassLoader` 实例分别 `defineClass` 加载了完全相同的字节码，生成的 `Class<?>` 用 `==` 比较结果是？",
+              "options": ["true，字节码一样就是同一个类", "false，JVM 中「类加载器 + 全限定类名」才唯一确定一个类", "直接抛 LinkageError"],
+              "answer": 1,
+              "why": "强转还会直接抛 `ClassCastException`：A 加载器下的 User 不能强转成 B 加载器下的 User。"
+            },
+            {
+              "have": "遵守委派",
+              "q": "想写一个自定义 `ClassLoader` 且不打破双亲委派，应该重写哪个方法？",
+              "options": ["重写 loadClass()", "只重写 findClass()", "重写 defineClass()"],
+              "answer": 1,
+              "why": "`ClassLoader.loadClass()` 已经写死了先找父加载器的模板逻辑，父加载器找不到时才会回调 `findClass()`。"
+            },
+            {
+              "have": "JDBC SPI",
+              "q": "`java.sql.DriverManager` 由启动类加载器（Bootstrap）加载，它怎么加载到厂商 Jar 里的 `com.mysql.cj.jdbc.Driver`？",
+              "options": ["Bootstrap 直接扫描 classpath", "通过 `Thread.currentThread().getContextClassLoader()`（TCCL）逆向委托", "反射强行注入"],
+              "answer": 1,
+              "why": "Bootstrap 根本不认识应用 classpath，只能靠 TCCL 打破双亲委派。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「总公司审批 vs 分公司自主采购」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["插件 A", "插件 B"], "shared": { "name": "父加载器总仓库", "value": "全员共用一份" } },
+          "story": "`ParentDelegation` 就像所有分公司（插件）要东西都必须先问总公司（父加载器），总公司仓库只要有 `PluginPayload` 就直接发同一份，结果 100 个插件全混用同一份静态状态；`ChildFirstLoader` 则是分公司优先在自己本地仓进货（重写 `loadClass`），每个插件拿到自己独立隔离的版本！",
+          "say": "核心基础类（如 `java.lang.String`）必须走总公司防止被伪造；业务插件类则常需要本地优先实现隔离。",
+          "map": [
+            { "scene": "先问父加载器", "on": "shared", "tag": "标准双亲委派", "code": "`super.loadClass(name, resolve)`", "say": "父加载器能找到就永远只加载 1 份。" },
+            { "scene": "自己先 defineClass", "on": "actors", "tag": "打破双亲委派", "code": "`defineClass(name, bytes, ...)`", "say": "每个 ClassLoader 实例各自隔离一份 Class。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：重写 loadClass 打破双亲委派",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "classload.ChildFirstLoader",
+          "say": "看 `ChildFirstLoader.java`：遇到目标插件类时不先调 `super.loadClass`，而是自己先 `findLoadedClass` 再 `defineClass`。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：循环建 100 个加载器加载同一个类，各产出多少份 Class？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "建 100 个 `ParentDelegation` 加载器和 100 个 `ChildFirstLoader` 加载器去加载 `PluginPayload`，各自产出多少个不同的 `Class<?>`？",
+          "options": ["两边都是 100 份", "ParentDelegation 只有 1 份，ChildFirstLoader 有 100 份", "两边都是 1 份"],
+          "answer": 1,
+          "say": "因为父加载器 `AppClassLoader` 已经能找到 `PluginPayload`，标准双亲委派直接截胡。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测隔离效果：1 份 vs 100 份",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "classload",
+          "show": ["ParentDelegation", "ChildFirstLoader", "ContextClassLoaderSpi", "UnloadableLoader"],
+          "knob": "100",
+          "hand": "ChildFirstLoader",
+          "focus": "distinctClasses",
+          "say": "看指标：`ParentDelegation` 永远只有 1 份（无法隔离），而重写 `loadClass` 的三个变体全都稳稳加载出 100 份独立 Class！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "重写 findClass 遵守双亲委派（父优先），重写 loadClass 才能实现子优先类隔离",
+          "say": "注意：在 `ChildFirstLoader` 中，`java.lang.*` 等核心类仍必须 `super.loadClass` 交给父加载器，否则会直接报 SecurityException。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的 loadClass 与集合去重",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "classload.ChildFirstLoader",
+          "within": "main",
+          "from": "loadClass",
+          "to": "HashSet.add",
+          "say": "每次循环新建 `ChildLoader` 并调用 `loadClass`，返回的 `Class<?>` 对象在 JVM 元空间里各自独立，放进 `HashSet` 不会去重。",
+          "walk": [
+            { "focus": ["loadClass"], "label": "子优先加载", "say": "绕过父加载器缓存，在当前 `ChildLoader` 命名空间内定义类。" },
+            { "focus": ["HashSet.add"], "label": "验证 Class 唯一性", "say": "100 个加载器对应 100 个互不相等的 `Class<?>` 实例。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "调大到 400 次加载看元空间与耗时",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "classload",
+          "say": "把加载次数切到 400，观察不断 `defineClass` 带来的耗时变化，思考为什么热部署必须让老加载器可回收。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "什么时候遵守、什么时候打破双亲委派？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "双亲委派不是金科玉律，历史上至少被官方和中间件打破过三次。",
+          "options": [
+            { "name": "遵守双亲委派（只重写 findClass）", "solves": "防止核心类（String/Object）被篡改，避免同一依赖被重复加载浪费元空间", "cost": "无法在一个 JVM 里同时加载同一类的两个不同版本", "when": "加密 Class 解密加载、从网络/数据库拉字节码", "say": "普通扩展加载只重写 `findClass` 就够了。" },
+            { "name": "打破双亲委派（TCCL / 子优先 loadClass）", "solves": "SPI 逆向加载厂商实现（JDBC），或容器多应用版本隔离与热部署（Tomcat/OSGi）", "cost": "容易引发 ClassCastException 或因静态引用未断开导致元空间 OOM", "when": "JDBC/JNDI SPI、Tomcat WebAppClassLoader、插件化热更新", "say": "热部署一定要断开对旧 ClassLoader 和旧 Class 的引用，否则 Metaspace 迟早爆掉。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住类加载的三个核心考点",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "双亲委派模型与打破机制",
+          "alias": "Parent Delegation / TCCL",
+          "oneLine": "双亲委派通过先父后子防止核心类被替换；重写 loadClass 实现子优先隔离，TCCL 让上层 SPI 委托下层加载。",
+          "asked": "什么是双亲委派？为什么还要打破它？举几个打破的例子？",
+          "say": "按「定义与目的 → findClass vs loadClass → 三大打破案例（SPI、Tomcat、OSGi/热部署）」作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果自己写了一个 `java.lang.String` 类放在应用 classpath 下，启动程序会加载到自己写的 `String` 吗？",
+          "options": [
+            { "text": "不会，因为双亲委派会一直委派到 BootstrapClassLoader，直接返回 JDK 自带的 java.lang.String", "ok": true, "why": "正确！而且哪怕打破委派自己强行 defineClass，JVM 也会以禁止定义 `java.` 开头包名为由抛出 SecurityException。" },
+            { "text": "会，应用类优先级更高", "ok": false, "why": "双亲委派正是为了防止这种沙箱安全漏洞。" },
+            { "text": "会随机加载其中一个", "ok": false, "why": "类加载顺序是确定性的。" }
+          ],
+          "say": "沙箱安全 + 避免重复加载，就是双亲委派存在的根本意义。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：双亲委派原理与三大打破场景",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：请讲一下 JVM 的双亲委派模型，以及哪些场景下需要打破它？",
+          "points": [
+            "工作流程：类加载器收到请求后先委派给父加载器递归向上到 Bootstrap，只有父加载器在自己路径找不到时，才调用自己的 findClass 加载",
+            "核心作用：保证核心类库（如 java.lang.Object）全局唯一与沙箱安全，避免同名核心类被恶意篡改或重复加载",
+            "打破方式与场景：第一是 SPI（如 JDBC DriverManager）用 ThreadContextClassLoader 逆向委托应用加载器；第二是 Tomcat/插件热部署重写 loadClass 实现子优先加载与多版本隔离"
+          ],
+          "model": "双亲委派模型是指当一个类加载器收到类加载请求时，不会自己先去加载，而是先把请求递归委派给父加载器，直到顶层的启动类加载器；只有当父加载器无法在它的搜索路径里找到这个类时，子加载器才会调用自己的 findClass 去加载。这样做一方面保护了核心类库不被篡改，另一方面避免了类的重复加载。但在工程上有些场景必须打破它：比如 JDBC 的 DriverManager 在核心库里由启动类加载器加载，它需要加载厂商 jar 包里的驱动实现，于是通过线程上下文类加载器（TCCL）逆向委托给应用类加载器；再比如 Tomcat 为了让同一个进程里的多个 Web 应用隔离各自版本的依赖库，重写了 loadClass 优先自己加载，这就是典型的打破双亲委派。",
+          "say": "把「先父后子」「两个作用」「SPI + Tomcat 两个打破案例」讲清楚。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "类加载核心三张卡收好。",
+          "items": [
+            { "front": "JVM 类唯一性", "back": "ClassLoader 实例 + 全限定类名；不同加载器加载的同名类互不兼容。" },
+            { "front": "findClass vs loadClass", "back": "重写 findClass 遵守双亲委派；重写 loadClass 才能打破委派做子优先隔离。" },
+            { "front": "打破双亲委派经典案例", "back": "JDBC SPI（TCCL 逆向委派）、Tomcat WebAppClassLoader（多应用隔离）。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,584 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-eviction-lfu",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "内存满时随机淘汰 vs 近似 LRU vs LFU 命中率对比",
+  "lead": "Redis 内存触顶 `maxmemory` 时，选 `noeviction` 直接报错、`random` 随机乱删、`allkeys-lru` 还是 `allkeys-lfu`？用真实二八热点负载跑出命中率差距。",
+  "minutes": 35,
+  "needs": [
+    "了解缓存容量上限与淘汰策略概念",
+    "知道局部性原理（热点访问）"
+  ],
+  "after": [
+    "对比 noeviction、Random、LRU、LFU 在二八热点负载下的缓存未命中次数",
+    "解释 Redis 为什么做「近似 LRU」而不是标准双向链表 LRU",
+    "区分 LRU 被突发冷扫描污染时 LFU 的抗污染优势"
+  ],
+  "terms": {
+    "maxmemory": "Redis 允许使用的最大内存上限，达到上限后触发淘汰策略。",
+    "近似LRU": "Redis 不维护全局大链表，而是随机采样 N 个 Key（默认 5 个）淘汰最久未访问的那个。",
+    "LFU": "Least Frequently Used，按访问频率淘汰，使用 8 bit Morris 概率计数器+时间衰减记录热度。"
+  },
+  "experiments": {
+    "m6_eviction": {
+      "runner": "java",
+      "home": "lab.m6.eviction",
+      "knob": {
+        "name": "threads",
+        "label": "并发业务线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "misses",
+        "expectKey": "expected",
+        "label": "缓存未命中次数",
+        "expect": "理想低Miss线"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "NoEvictOom",
+          "label": "noeviction(满即拒)",
+          "code": "NoEvictOom.java",
+          "note": "冷键占满空间后拒绝新热点写入，Miss 率居高不下。"
+        },
+        {
+          "id": "RandomEvict",
+          "label": "random(随机淘汰)",
+          "code": "RandomEvict.java",
+          "note": "随机挑 Key 删，容易误杀真正的热点 Key。"
+        },
+        {
+          "id": "ApproxLru",
+          "label": "LRU(最近最少使用)",
+          "code": "ApproxLru.java",
+          "note": "淘汰最久未访问的 Key，在二八热点下 Miss 骤降。"
+        },
+        {
+          "id": "LfuFrequency",
+          "label": "LFU(最不经常使用)",
+          "code": "LfuFrequency.java",
+          "note": "按访问频率淘汰，即使偶发冷扫描也难撼动高频热点。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "内存满时随机淘汰 vs 近似 LRU vs LFU 命中率对比",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "Redis 内存打满 `maxmemory` 后，默认策略 `noeviction` 会让所有新写入直接报错 OOM；而换上淘汰策略后，**随机删、LRU、LFU 在真实业务下的命中率能差出好几倍**。",
+          "say": "面试被问 Redis 内存淘汰策略，除了报出 8 种策略名字，重点要讲清 Redis 为什么不做标准 LRU 而做随机采样近似 LRU，以及 LFU 怎么防缓存污染。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "Redis 默认策略",
+              "q": "Redis 在不修改配置时，内存达到 `maxmemory` 后的默认行为是？",
+              "options": [
+                "noeviction：不淘汰任何 Key，新写请求直接返回错误",
+                "自动开启 allkeys-lru",
+                "自动扩容一倍内存"
+              ],
+              "answer": 0,
+              "why": "默认 `noeviction` 保安全不乱删数据，做纯缓存使用时务必手动改成 `allkeys-lru` 或 `allkeys-lfu`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：64 个缓存槽，80% 请求打 16 个热点",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "20% 请求不断扫 200 个冷门 Key，看看四种淘汰策略谁能把 16 个热点死死留住。",
+            "actors": [
+              "热点请求",
+              "冷门扫描"
+            ],
+            "shared": "64 槽缓存"
+          },
+          "say": "20% 请求不断扫 200 个冷门 Key，看看四种淘汰策略谁能把 16 个热点死死留住。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `NoEvictOom`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_eviction.NoEvictOom",
+          "say": "这就是最常见的基线写法 `NoEvictOom`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`NoEvictOom` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "如果缓存一开始被 64 个冷门 Key 占满且采用 `NoEvictOom`（不淘汰），800 次请求会 Miss 多少次？",
+          "options": [
+            "仅 200 次左右",
+            "接近 700+ 次（80% 热点永远写不进去）",
+            "0 次"
+          ],
+          "answer": 1,
+          "say": "冷门 Key 占着茅坑不拉屎，后续 80% 的热点访问全部 Miss！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`NoEvictOom` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_eviction",
+          "show": [
+            "NoEvictOom"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "if (map.size() < CAP) map.put(key, i);"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `NoEvictOom` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_eviction.NoEvictOom",
+          "lines": [
+            "if (map.size() < CAP) map.put(key, i);"
+          ],
+          "say": "满了就不让新热点进门，缓存命中率直接崩盘。",
+          "answer": [
+            "if (map.size() < CAP) map.put(key, i);"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "满了就不让新热点进门，缓存命中率直接崩盘。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "full(64) -> evict(random / LRU / LFU)",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "热点请求",
+            "冷门扫描"
+          ],
+          "shared": {
+            "name": "64 槽缓存",
+            "start": "已满"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 1,
+              "op": "write",
+              "text": "冷门扫描写入一个只访问 1 次的冷 Key",
+              "say": "突发批量导出扫了一批冷门 Key 进来，必须淘汰一个旧 Key。"
+            },
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "LFU 保住高频热点，只踢掉低频冷 Key",
+              "say": "LRU 只看最后访问时间，如果大批冷 Key 刚进来容易把老热点挤掉；LFU 看累计频率，稳稳保住热点！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `RandomEvict`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "为什么 Redis 实现 LRU 时不维护一条完整的全局双向链表，而是随机采样 5 个 Key 淘汰最老的？",
+          "options": [
+            "省掉每个 Key 16 字节前后指针内存且消除全局链表锁竞争，精度已逼近真 LRU",
+            "C 语言写不出双向链表",
+            "双向链表不能存字符串"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`NoEvictOom` vs `RandomEvict`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_eviction",
+          "show": [
+            "NoEvictOom",
+            "RandomEvict"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `RandomEvict` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_eviction.RandomEvict",
+          "within": "runWorkload(int)",
+          "from": "0: new",
+          "to": "ireturn",
+          "say": "看 `RandomEvict.runWorkload`：随机下标淘汰实现极简，但在热点集中场景下容易误删热点。",
+          "walk": [
+            {
+              "focus": [
+                "nextInt"
+              ],
+              "label": "随机误杀风险",
+              "say": "只有在所有 Key 访问频率几乎完全均匀时才考虑 random。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`ApproxLru` 与 `LfuFrequency`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_eviction",
+          "show": [
+            "NoEvictOom",
+            "RandomEvict",
+            "ApproxLru",
+            "LfuFrequency"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_eviction",
+          "variants": [
+            "NoEvictOom",
+            "RandomEvict",
+            "ApproxLru",
+            "LfuFrequency"
+          ],
+          "notes": [
+            {
+              "focus": "NoEvictOom",
+              "key": "noeviction 拒绝新热点进入，Miss 次数暴涨近 4 倍",
+              "say": "做纯缓存千万记得把默认的 noeviction 改掉！"
+            },
+            {
+              "focus": "ApproxLru",
+              "key": "LRU 与 LFU 稳稳保住二八热点，Miss 率压到最低",
+              "say": "有突发冷扫描用 LFU，普通时间局部性用 LRU。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `LfuFrequency` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_eviction.LfuFrequency",
+          "within": "runWorkload(int)",
+          "from": "0: new",
+          "to": "ireturn",
+          "say": "看 `LfuFrequency.runWorkload`：新写入给予初始频率 5（类似 Redis Morris 计数器），命中不断累加并带时间衰减，老热点稳如泰山。",
+          "walk": [
+            {
+              "focus": [
+                "Math.min"
+              ],
+              "label": "频率计数抗冷扫描",
+              "key": "LFU 专门克制「偶发全量扫描把真热点挤出缓存」的污染问题",
+              "say": "如果业务有定时离线扫描，优先用 `allkeys-lfu`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "allkeys-lru",
+              "solves": "淘汰最久没被访问的 Key，适配绝大多数热点",
+              "cost": "约 {ms:m6_eviction.ApproxLru} ms",
+              "when": "常规纯缓存（访问呈时间局部性）",
+              "say": "不确定选哪个时，`allkeys-lru` 是最稳的默认选择。"
+            },
+            {
+              "name": "allkeys-lfu",
+              "solves": "按访问频率淘汰，抗突发冷扫描污染",
+              "cost": "约 {ms:m6_eviction.LfuFrequency} ms",
+              "when": "有定时扫表/爬虫冷扫描，需要死守高频热点",
+              "say": "Redis 4.0+ 新增，自带时间衰减防止历史老热点永生不死。"
+            },
+            {
+              "name": "volatile-lru / lfu",
+              "solves": "只淘汰设置了过期时间的 Key，保护永久配置",
+              "cost": "未设 TTL 的 Key 永不被删",
+              "when": "缓存与持久配置混用同一个 Redis 实例",
+              "say": "如果同时存了不能丢的配置 Key 和可丢的缓存 Key，用 `volatile-*`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "线上 Redis `maxmemory` 淘汰策略怎么挑？",
+          "branches": [
+            {
+              "when": "有不能淘汰的永久 Key（未设 TTL）",
+              "pick": "volatile-lru / volatile-lfu",
+              "eg": "配置+缓存混部实例"
+            },
+            {
+              "when": "全都是可淘汰缓存且有偶发冷扫描",
+              "pick": "allkeys-lfu",
+              "eg": "商品/内容高频推荐缓存"
+            },
+            {
+              "when": "全都是可淘汰缓存且无冷扫描",
+              "pick": "allkeys-lru",
+              "eg": "常规业务缓存"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "noeviction",
+            "allkeys-lru",
+            "allkeys-lfu",
+            "volatile-lru"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "做分布式锁和业务缓存混用的 Redis 实例，锁 Key 没设永久但部分配置 Key 没设 TTL 绝不能被误删。",
+              "answer": 3,
+              "why": "用 `volatile-lru` 只在设了过期时间的 Key 里淘汰。"
+            },
+            {
+              "text": "商品详情缓存经常被爬虫全量遍历冷门商品，导致真爆款老被挤出去。",
+              "answer": 2,
+              "why": "用 `allkeys-lfu` 按访问频率保护爆款，爬虫扫一遍的冷门商品很快被淘汰。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：Redis 内存淘汰 (LRU / LFU)",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Redis 内存淘汰 (LRU / LFU)",
+          "alias": "Eviction Policy · Approx LRU & Morris LFU",
+          "oneLine": "==近似 LRU==省指针且够准；==LFU==用概率计数+时间衰减，专治冷扫描污染热点。",
+          "asked": [
+            "Redis 8 种淘汰策略分为哪几类？",
+            "Redis 近似 LRU 怎么实现的？",
+            "LFU 计数器只有 8 bit 怎么存下百万次访问？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Redis 为什么采用随机采样（默认 5 个）的「近似 LRU」而不是标准双向链表 LRU？",
+          "options": [
+            {
+              "text": "省去每个 Key 额外的双向指针内存（16B/Key）与链表维护开销，精度已接近真 LRU",
+              "ok": true,
+              "why": "在内存数据库里每个 Key 省 16 字节非常可观，Redis 3.0 还加了淘汰池进一步逼近真 LRU。"
+            },
+            {
+              "text": "因为标准 LRU 时间复杂度是 O(N)",
+              "ok": false,
+              "why": "标准哈希+双向链表也是 O(1)，主要是内存和锁开销问题。"
+            }
+          ],
+          "say": "省内存 + 淘汰池逼近真 LRU。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Redis LFU 用 8 bit 计数器如何记录高达数百万次的访问热度？",
+          "options": [
+            {
+              "text": "采用对数概率递增（Morris Counter），频率越高越难加 1，并随时间自动衰减",
+              "ok": true,
+              "why": "8 bit（0~255）配合概率递增能表示百万级相对热度，时间衰减防老热点霸占。"
+            },
+            {
+              "text": "超过 255 就直接溢出归零",
+              "ok": false,
+              "why": "归零就乱套了，用的是概率递增。"
+            }
+          ],
+          "say": "记住 Morris Counter 与时间衰减两个关键点。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果一个 Redis 实例只做缓存且所有 Key 都可以被淘汰，应该把默认的 `noeviction` 改成？",
+          "options": [
+            {
+              "text": "allkeys-lru 或 allkeys-lfu",
+              "ok": true,
+              "why": "noeviction 满内存会直接报错拒绝写入，纯缓存必须改成淘汰策略。"
+            },
+            {
+              "text": "保持 noeviction",
+              "ok": false,
+              "why": "满了直接业务报错。"
+            }
+          ],
+          "say": "上线前必查配置项之一。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "Redis 内存满了有哪些淘汰策略？近似 LRU 怎么做的？LFU 比 LRU 好在哪里？",
+          "points": [
+            "默认 noeviction 满即报错；纯缓存常用 allkeys-lru/lfu，混部用 volatile-*",
+            "近似 LRU：不建全局链表，随机采样 maxmemory-samples 个 Key 进淘汰池踢最老，省指针且精度高",
+            "LFU：用 24bit 存时间 + 8bit Morris 概率计数器+时间衰减，防止偶发冷扫描污染真热点"
+          ],
+          "model": "Redis 内存达到 maxmemory 时有 8 种淘汰策略：默认 noeviction 直接报错；按范围分 allkeys（全库）和 volatile（仅设 TTL 的 Key）；按算法分 random、lru 和 lfu。Redis 实现的是近似 LRU——不维护全局双向链表以节省每 Key 16 字节指针开销，而是随机采样 N 个 Key 放入淘汰池选最久未访问者淘汰。Redis 4.0 引入的 LFU 则通过 8 bit Morris 概率计数器和时间衰减记录访问频率，能有效防止批量冷数据扫描把高频热点挤出缓存。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "纯缓存上线必改什么？",
+              "a": "把默认 noeviction 改为 allkeys-lru 或 allkeys-lfu。"
+            },
+            {
+              "q": "近似 LRU 怎么省内存？",
+              "a": "不维护全局双向链表，靠随机采样 + 淘汰池逼近真 LRU。"
+            },
+            {
+              "q": "LFU 怎么防冷扫描污染？",
+              "a": "8 bit Morris 概率频率计数 + 随时间衰减，偶发冷 Key 难撼动高频热点。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

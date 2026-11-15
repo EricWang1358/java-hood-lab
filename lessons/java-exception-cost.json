@@ -1,0 +1,616 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-exception-cost",
+  "course": "Java 工程语法与集合",
+  "title": "异常栈捕获代价：为什么不能用 try-catch 代替 if-else 控制业务流？",
+  "lead": "用异常代替返回 false 或错误码，表面代码少写了几个 if，可一旦并发上来，为什么 CPU 全烧在 Throwable.fillInStackTrace() 上？",
+  "minutes": 30,
+  "needs": [
+    "知道 Checked vs Unchecked 异常",
+    "知道 new Exception() 会采集调用栈"
+  ],
+  "after": [
+    "用实测耗时证明 fillInStackTrace() 爬栈是异常最大的性能杀手",
+    "对比普通异常、无栈异常（writableStackTrace=false）、静态预建异常与返回错误码的耗时差距",
+    "掌握「异常只用于真正异常路径，业务预期分支用错误码/Result」的工程规范"
+  ],
+  "terms": {
+    "fillInStackTrace()": "`Throwable` 构造器默认调用 native 方法逐帧回溯当前线程整条调用栈并生成 `StackTraceElement[]`，栈越深开销越大。",
+    "无栈异常": "通过 `super(msg, null, false, false)` 关闭 `writableStackTrace`，跳过爬栈，适合高频业务校验异常。",
+    "错误码 / Result 模式": "对参数校验失败、库存不足等高频预期分支直接返回 `false` / 状态枚举 / `Result.fail()`，零栈捕获、零跳转开销。"
+  },
+  "experiments": {
+    "exccost": {
+      "runner": "java",
+      "home": "lab.exccost",
+      "variants": [
+        {
+          "id": "ThrowNewEveryFail",
+          "code": "ThrowNewEveryFail.java",
+          "label": "每次 new Exception 抛异常（爬栈）",
+          "note": "每次失败都要调用 fillInStackTrace() 爬 8 层调用栈，耗时暴涨几十倍。"
+        },
+        {
+          "id": "StacklessException",
+          "code": "StacklessException.java",
+          "label": "无栈异常（writableStackTrace=false）",
+          "note": "关闭栈帧采集，保留异常控制流语义但避开爬栈瓶颈。"
+        },
+        {
+          "id": "PrebuiltStaticException",
+          "code": "PrebuiltStaticException.java",
+          "label": "静态预建共享异常",
+          "note": "复用静态常量异常，但栈信息固定在类加载点，排查困难。"
+        },
+        {
+          "id": "ReturnErrorCode",
+          "code": "ReturnErrorCode.java",
+          "label": "返回错误码（推荐）",
+          "note": "普通方法返回 + 分支判断，几乎零开销且分支预测友好。"
+        }
+      ],
+      "knob": {
+        "label": "失败分支次数 N",
+        "values": [
+          "5000",
+          "10000",
+          "20000",
+          "50000"
+        ],
+        "default": "20000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "handled",
+        "expectKey": "expected",
+        "label": "成功拦截处理次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "异常栈捕获代价：为什么不能用 try-catch 代替 if-else 控制业务流？",
+      "bridge": "用异常代替返回 false 或错误码，表面代码少写了几个 if，可一旦并发上来，为什么 CPU 全烧在 Throwable.fillInStackTrace() 上？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "《阿里巴巴 Java 开发手册》明确写着「不要用异常控制业务流程」。今天拿真实压测数据说话：**同样处理 5 万次校验失败，抛异常和返回错误码到底差多少倍？**",
+          "say": "答案全藏在 `Throwable.<init>` 调的那个 native 方法里。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
+          "items": [
+            {
+              "have": "受检 vs 非受检",
+              "q": "以下哪个类属于 Checked Exception（编译期强制 try-catch 或 throws）？",
+              "options": [
+                "IOException / SQLException",
+                "NullPointerException",
+                "IllegalArgumentException"
+              ],
+              "answer": 0,
+              "why": "直接继承 `Exception`（非 `RuntimeException`）的是受检异常；`RuntimeException` 和 `Error` 是非受检异常。"
+            },
+            {
+              "have": "开销大头",
+              "q": "`try { ... } catch (Exception e)` 本身不抛异常时几乎没开销，真正慢的是哪一步？",
+              "options": [
+                "new Exception() 时执行 fillInStackTrace() 爬栈",
+                "try 块声明",
+                "catch 关键字"
+              ],
+              "answer": 0,
+              "why": "没有抛出时 JVM 只是在字节码异常表里挂个区间；一旦 `new` 异常对象就会触发爬栈。"
+            },
+            {
+              "have": "FastThrow",
+              "q": "线上日志突然出现只有 `java.lang.NullPointerException` 一行却没有堆栈信息，最可能的原因是？",
+              "options": [
+                "JIT 触发了 OmitStackTraceInFastThrow 优化，高并发重复抛同一个内置异常时省略了堆栈",
+                "日志框架坏了",
+                "JDK 版本太高"
+              ],
+              "answer": 0,
+              "why": "遇到这种情况，去翻更早几分钟刚启动时的日志，通常就能看到第一条带完整堆栈的原始报错。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (ThrowNewEveryFail)",
+              "安全写法 (ReturnErrorCode)"
+            ],
+            "shared": {
+              "name": "成功拦截处理次数",
+              "value": "目标 20000"
+            }
+          },
+          "story": "用异常代替返回 false 或错误码，表面代码少写了几个 if，可一旦并发上来，为什么 CPU 全烧在 Throwable.fillInStackTrace() 上？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "fillInStackTrace()",
+              "on": "shared",
+              "tag": "fillInStackT",
+              "code": "`ThrowNewEveryFail` vs `ReturnErrorCode`",
+              "say": "`Throwable` 构造器默认调用 native 方法逐帧回溯当前线程整条调用栈并生成 `StackTraceElement[]`，栈越深开销越大。"
+            },
+            {
+              "scene": "无栈异常",
+              "on": "shared",
+              "tag": "无栈异常",
+              "code": "`ThrowNewEveryFail` vs `ReturnErrorCode`",
+              "say": "通过 `super(msg, null, false, false)` 关闭 `writableStackTrace`，跳过爬栈，适合高频业务校验异常。"
+            },
+            {
+              "scene": "错误码 / Result 模式",
+              "on": "shared",
+              "tag": "错误码 / Result",
+              "code": "`ThrowNewEveryFail` vs `ReturnErrorCode`",
+              "say": "对参数校验失败、库存不足等高频预期分支直接返回 `false` / 状态枚举 / `Result.fail()`，零栈捕获、零跳转开销。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`ThrowNewEveryFail`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "exccost.ThrowNewEveryFail",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "static int depthCall(int d) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "int n = Integer.parseInt(args[0]);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "handled++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：ThrowNewEveryFail 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "在 8 层递归深度下执行 50000 次 `ThrowNewEveryFail` vs `ReturnErrorCode`，耗时对比大约是？",
+          "options": [
+            "慢几十到上百倍（几十 ms vs 接近 0 ms）",
+            "只慢 1.5 倍",
+            "一样快"
+          ],
+          "answer": 0,
+          "say": "每次都要进 JVM C++ 层回溯 8 层栈帧并构造数组；而 `return -1` 只是寄存器传值。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：ThrowNewEveryFail 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "exccost",
+          "show": [
+            "ThrowNewEveryFail"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "每次都要进 JVM C++ 层回溯 8 层栈帧并构造数组；而 `return -1` 只是寄存器传值。",
+          "say": "每次都要进 JVM C++ 层回溯 8 层栈帧并构造数组；而 `return -1` 只是寄存器传值。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「失败分支次数 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "exccost",
+          "show": [
+            "ThrowNewEveryFail",
+            "ReturnErrorCode"
+          ],
+          "say": "左右拖动「失败分支次数 N」滑块，对比 `ThrowNewEveryFail` 与 `ReturnErrorCode` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`ThrowNewEveryFail`：每次失败都要调用 fillInStackTrace() 爬 8 层调用栈，耗时暴涨几十倍。；`ReturnErrorCode`：普通方法返回 + 分支判断，几乎零开销且分支预测友好。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `ThrowNewEveryFail.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "exccost.ThrowNewEveryFail",
+          "q": "在左边的 `ThrowNewEveryFail.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "static int depthCall(int d) {"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`static int depthCall(int d) {`）导致：每次失败都要调用 fillInStackTrace() 爬 8 层调用栈，耗时暴涨几十倍。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "exccost.ThrowNewEveryFail",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "3: invokestatic  #20                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "64: invokevirtual #42                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "32: astore        6"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `ReturnErrorCode` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "exccost.ReturnErrorCode",
+          "say": "普通方法返回 + 分支判断，几乎零开销且分支预测友好。",
+          "walk": [
+            {
+              "focus": [
+                "static int depthCall(int d) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "int n = Integer.parseInt(args[0]);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "handled++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "exccost",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "每次 new Exception 抛异常（爬栈）（`ThrowNewEveryFail`）",
+              "solves": "每次失败都要调用 fillInStackTrace() 爬 8 层调用栈，耗时暴涨几十倍。",
+              "cost": "实测约 {ms:exccost.ThrowNewEveryFail} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "每次失败都要调用 fillInStackTrace() 爬 8 层调用栈，耗时暴涨几十倍。"
+            },
+            {
+              "name": "无栈异常（writableStackTrace=false）（`StacklessException`）",
+              "solves": "关闭栈帧采集，保留异常控制流语义但避开爬栈瓶颈。",
+              "cost": "实测约 {ms:exccost.StacklessException} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "关闭栈帧采集，保留异常控制流语义但避开爬栈瓶颈。"
+            },
+            {
+              "name": "静态预建共享异常（`PrebuiltStaticException`）",
+              "solves": "复用静态常量异常，但栈信息固定在类加载点，排查困难。",
+              "cost": "实测约 {ms:exccost.PrebuiltStaticException} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "复用静态常量异常，但栈信息固定在类加载点，排查困难。"
+            },
+            {
+              "name": "返回错误码（推荐）（`ReturnErrorCode`）",
+              "solves": "普通方法返回 + 分支判断，几乎零开销且分支预测友好。",
+              "cost": "实测约 {ms:exccost.ReturnErrorCode} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "普通方法返回 + 分支判断，几乎零开销且分支预测友好。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "fillInStackTrace()",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "`Throwable` 构造器默认调用 native 方法逐帧回溯当前线程整条调用栈并生成 `StackTraceElement[]`，栈越深开销越大。",
+          "asked": [
+            "异常栈捕获代价：为什么不能用 try-catch 代替 if-else 控制业务流？——底层原理是什么？",
+            "为什么 `ThrowNewEveryFail` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `ReturnErrorCode` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在 8 层递归深度下执行 50000 次 `ThrowNewEveryFail` vs `ReturnErrorCode`，耗时对比大约是？",
+          "options": [
+            {
+              "text": "慢几十到上百倍（几十 ms vs 接近 0 ms）",
+              "ok": true,
+              "why": "每次都要进 JVM C++ 层回溯 8 层栈帧并构造数组；而 `return -1` 只是寄存器传值。"
+            },
+            {
+              "text": "只慢 1.5 倍",
+              "ok": false,
+              "why": "再想一想：每次都要进 JVM C++ 层回溯 8 层栈帧并构造数组；而 `return -1` 只是寄存器传值。"
+            },
+            {
+              "text": "一样快",
+              "ok": false,
+              "why": "再想一想：每次都要进 JVM C++ 层回溯 8 层栈帧并构造数组；而 `return -1` 只是寄存器传值。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：受检 vs 非受检",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "以下哪个类属于 Checked Exception（编译期强制 try-catch 或 throws）？",
+          "options": [
+            {
+              "text": "IOException / SQLException",
+              "ok": true,
+              "why": "直接继承 `Exception`（非 `RuntimeException`）的是受检异常；`RuntimeException` 和 `Error` 是非受检异常。"
+            },
+            {
+              "text": "NullPointerException",
+              "ok": false,
+              "why": "再想一想：直接继承 `Exception`（非 `RuntimeException`）的是受检异常；`RuntimeException` 和 `Error` 是非受检异常。"
+            },
+            {
+              "text": "IllegalArgumentException",
+              "ok": false,
+              "why": "再想一想：直接继承 `Exception`（非 `RuntimeException`）的是受检异常；`RuntimeException` 和 `Error` 是非受检异常。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：开销大头",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`try { ... } catch (Exception e)` 本身不抛异常时几乎没开销，真正慢的是哪一步？",
+          "options": [
+            {
+              "text": "new Exception() 时执行 fillInStackTrace() 爬栈",
+              "ok": true,
+              "why": "没有抛出时 JVM 只是在字节码异常表里挂个区间；一旦 `new` 异常对象就会触发爬栈。"
+            },
+            {
+              "text": "try 块声明",
+              "ok": false,
+              "why": "再想一想：没有抛出时 JVM 只是在字节码异常表里挂个区间；一旦 `new` 异常对象就会触发爬栈。"
+            },
+            {
+              "text": "catch 关键字",
+              "ok": false,
+              "why": "再想一想：没有抛出时 JVM 只是在字节码异常表里挂个区间；一旦 `new` 异常对象就会触发爬栈。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `ReturnErrorCode`（返回错误码（推荐））替代 `ThrowNewEveryFail`（每次 new Exception 抛异常（爬栈））？",
+          "options": [
+            {
+              "text": "因为 普通方法返回 + 分支判断，几乎零开销且分支预测友好。",
+              "ok": true,
+              "why": "`ThrowNewEveryFail`：每次失败都要调用 fillInStackTrace() 爬 8 层调用栈，耗时暴涨几十倍。；而 `ReturnErrorCode`：普通方法返回 + 分支判断，几乎零开销且分支预测友好。"
+            },
+            {
+              "text": "因为 `ThrowNewEveryFail` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`ThrowNewEveryFail`：每次失败都要调用 fillInStackTrace() 爬 8 层调用栈，耗时暴涨几十倍。；而 `ReturnErrorCode`：普通方法返回 + 分支判断，几乎零开销且分支预测友好。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`ThrowNewEveryFail`：每次失败都要调用 fillInStackTrace() 爬 8 层调用栈，耗时暴涨几十倍。；而 `ReturnErrorCode`：普通方法返回 + 分支判断，几乎零开销且分支预测友好。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 为什么不能用异常做常规业务流程控制；2) 异常开销大主要大在哪里；3) Checked Exception 和 RuntimeException 的区别及工程选型。",
+          "points": [
+            "用实测耗时证明 fillInStackTrace() 爬栈是异常最大的性能杀手",
+            "对比普通异常、无栈异常（writableStackTrace=false）、静态预建异常与返回错误码的耗时差距",
+            "掌握「异常只用于真正异常路径，业务预期分支用错误码/Result」的工程规范"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：用异常代替返回 false 或错误码，表面代码少写了几个 if，可一旦并发上来，为什么 CPU 全烧在 Throwable.fillInStackTrace() 上？；**② 再讲底层原理**：fillInStackTrace()（`Throwable` 构造器默认调用 native 方法逐帧回溯当前线程整条调用栈并生成 `StackTraceElement[]`，栈越深开销越大。）；无栈异常（通过 `super(msg, null, false, false)` 关闭 `writableStackTrace`，跳过爬栈，适合高频业务校验异常。）；**③ 最后给工程方案**：生产里优先采用「返回错误码（推荐）」（`ReturnErrorCode`），普通方法返回 + 分支判断，几乎零开销且分支预测友好。。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「fillInStackTrace()」？它在这节课里起了什么关键作用？",
+              "a": "`Throwable` 构造器默认调用 native 方法逐帧回溯当前线程整条调用栈并生成 `StackTraceElement[]`，栈越深开销越大。"
+            },
+            {
+              "q": "面试官问：什么是「无栈异常」？它在这节课里起了什么关键作用？",
+              "a": "通过 `super(msg, null, false, false)` 关闭 `writableStackTrace`，跳过爬栈，适合高频业务校验异常。"
+            },
+            {
+              "q": "面试官问：什么是「错误码 / Result 模式」？它在这节课里起了什么关键作用？",
+              "a": "对参数校验失败、库存不足等高频预期分支直接返回 `false` / 状态枚举 / `Result.fail()`，零栈捕获、零跳转开销。"
+            },
+            {
+              "q": "实战避坑：`ThrowNewEveryFail` 为什么会出问题，应该怎么改？",
+              "a": "每次失败都要调用 fillInStackTrace() 爬 8 层调用栈，耗时暴涨几十倍。 正确做法是改用 `ReturnErrorCode`（返回错误码（推荐））：普通方法返回 + 分支判断，几乎零开销且分支预测友好。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "用实测耗时证明 fillInStackTrace() 爬栈是异常最大的性能杀手",
+            "对比普通异常、无栈异常（writableStackTrace=false）、静态预建异常与返回错误码的耗时差距",
+            "掌握「异常只用于真正异常路径，业务预期分支用错误码/Result」的工程规范"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `ThrowNewEveryFail`（每次 new Exception 抛异常（爬栈）），优先选用 `ReturnErrorCode`（返回错误码（推荐））：普通方法返回 + 分支判断，几乎零开销且分支预测友好。"
+        }
+      ]
+    }
+  ]
+}

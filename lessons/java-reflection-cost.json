@@ -1,0 +1,616 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-reflection-cost",
+  "course": "Java 工程语法与集合",
+  "title": "反射性能真相：每次 getMethod、缓存 setAccessible 与 MethodHandle 差多少？",
+  "lead": "大家都说「Java 反射慢」，可 Spring/MyBatis/Jackson 到处都在用反射。到底慢在查元数据、权限检查，还是 invoke 本身？",
+  "minutes": 30,
+  "needs": [
+    "知道 Class 对象与 Method.invoke()",
+    "知道 setAccessible(true) 的作用"
+  ],
+  "after": [
+    "拆解反射开销的三部分：元数据查找、安全访问检查、参数装箱/数组打包",
+    "用实测数据对比「每次 getMethod」「缓存 Method + setAccessible」「MethodHandle」「直接调用」的耗时梯度",
+    "知道为什么框架启动时扫描缓存 Method 后，运行期反射开销几乎可以忽略"
+  ],
+  "terms": {
+    "Method.setAccessible(true)": "关闭 Java 语言访问权限检查，并配合缓存 `Method` 对象，省掉每次调用时的修饰符校验开销。",
+    "Inflation 机制": "HotSpot 默认前 15 次反射调用走本地 JNI 实现，超过阈值后动态生成字节码 `GeneratedMethodAccessor` 加速。",
+    "MethodHandle": "JDK 7 `java.lang.invoke` 提供的轻量级方法句柄，签名精确时 `invokeExact` 可被 JIT 深度内联，性能接近直接调用。"
+  },
+  "experiments": {
+    "reflect": {
+      "runner": "java",
+      "home": "lab.reflect",
+      "variants": [
+        {
+          "id": "ReflectLookupEveryTime",
+          "code": "ReflectLookupEveryTime.java",
+          "label": "每次 getMethod + invoke（最慢）",
+          "note": "每次循环都要遍历类方法表查找并拷贝 Method 对象，耗时暴涨。"
+        },
+        {
+          "id": "ReflectCachedAccessible",
+          "code": "ReflectCachedAccessible.java",
+          "label": "缓存 Method + setAccessible(true)",
+          "note": "省掉查找和权限校验，仅剩基本类型装箱与 Object[] 打包开销。"
+        },
+        {
+          "id": "MethodHandleInvoke",
+          "code": "MethodHandleInvoke.java",
+          "label": "MethodHandle.invokeExact",
+          "note": "强类型句柄调用，无需 Object[] 打包，JIT 可深度内联优化。"
+        },
+        {
+          "id": "DirectCallBaseline",
+          "code": "DirectCallBaseline.java",
+          "label": "直接调用（基线）",
+          "note": "普通 invokevirtual 调用，JIT 直接内联，速度天花板。"
+        }
+      ],
+      "knob": {
+        "label": "方法调用次数 N",
+        "values": [
+          "50000",
+          "200000",
+          "500000",
+          "1000000"
+        ],
+        "default": "500000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "sum",
+        "expectKey": "expected",
+        "label": "累加结果"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "反射性能真相：每次 getMethod、缓存 setAccessible 与 MethodHandle 差多少？",
+      "bridge": "大家都说「Java 反射慢」，可 Spring/MyBatis/Jackson 到处都在用反射。到底慢在查元数据、权限检查，还是 invoke 本身？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "面试常问「为什么都说反射慢，但 Spring 框架依然大量用反射？」今天把反射拆成三步逐个测速，看清：**慢的根本不是反射调用，而是每次都去 `getMethod()` 查找和没开 `setAccessible(true)`！**",
+          "say": "弄清框架「启动慢一点、运行快如飞」的底层原因。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
+          "items": [
+            {
+              "have": "getMethod vs getDeclaredMethod",
+              "q": "`getMethod` 和 `getDeclaredMethod` 的核心区别是？",
+              "options": [
+                "getMethod 只找 public 方法（含父类）；getDeclaredMethod 找当前类声明的所有权限方法（不含父类）",
+                "两者完全一样",
+                "getDeclaredMethod 更快"
+              ],
+              "answer": 0,
+              "why": "框架注入私有字段/方法时必须用 `getDeclared*` + `setAccessible(true)`。"
+            },
+            {
+              "have": "基本类型参数",
+              "q": "调用 `Method.invoke(target, 1)` 传递 `int` 参数时，额外发生了什么开销？",
+              "options": [
+                "int 自动装箱成 Integer 并打包进 new Object[]{...} 数组",
+                "什么都没发生",
+                "直接传寄存器"
+              ],
+              "answer": 0,
+              "why": "`invoke(Object obj, Object... args)` 是可变长 `Object[]`，基本类型必然经历装箱与数组分配。"
+            },
+            {
+              "have": "JDK 17 模块化",
+              "q": "在 JDK 17 中对 JDK 内部包（如 `java.lang.String` 的私有字段 `value`）调用 `setAccessible(true)` 会怎样？",
+              "options": [
+                "默认抛出 InaccessibleObjectException（强封装限制，除非加 --add-opens）",
+                "直接成功",
+                "静默忽略"
+              ],
+              "answer": 0,
+              "why": "JDK 16+ 默认开启强封装（Strong Encapsulation），这也是升级 JDK 17 时老版本序列化库常报错的原因。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (ReflectLookupEveryTime)",
+              "安全写法 (DirectCallBaseline)"
+            ],
+            "shared": {
+              "name": "累加结果",
+              "value": "目标 500000"
+            }
+          },
+          "story": "大家都说「Java 反射慢」，可 Spring/MyBatis/Jackson 到处都在用反射。到底慢在查元数据、权限检查，还是 invoke 本身？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "Method.setAccessible(true)",
+              "on": "shared",
+              "tag": "Method.setAc",
+              "code": "`ReflectLookupEveryTime` vs `DirectCallBaseline`",
+              "say": "关闭 Java 语言访问权限检查，并配合缓存 `Method` 对象，省掉每次调用时的修饰符校验开销。"
+            },
+            {
+              "scene": "Inflation 机制",
+              "on": "shared",
+              "tag": "Inflation 机制",
+              "code": "`ReflectLookupEveryTime` vs `DirectCallBaseline`",
+              "say": "HotSpot 默认前 15 次反射调用走本地 JNI 实现，超过阈值后动态生成字节码 `GeneratedMethodAccessor` 加速。"
+            },
+            {
+              "scene": "MethodHandle",
+              "on": "shared",
+              "tag": "MethodHandle",
+              "code": "`ReflectLookupEveryTime` vs `DirectCallBaseline`",
+              "say": "JDK 7 `java.lang.invoke` 提供的轻量级方法句柄，签名精确时 `invokeExact` 可被 JIT 深度内联，性能接近直接调用。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`ReflectLookupEveryTime`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "reflect.ReflectLookupEveryTime",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "public static class Target {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "Target t = new Target();"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "sum += (int) m.invoke(t, 1);"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：ReflectLookupEveryTime 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "执行 100 万次时，`ReflectLookupEveryTime` 比 `ReflectCachedAccessible` 大约慢多少？",
+          "options": [
+            "慢数倍到数十倍（每次都要查方法表并复制 Method 对象）",
+            "一样快",
+            "反而更快"
+          ],
+          "answer": 0,
+          "say": "`Class.getMethod()` 内部每次都要做方法名匹配和 `Method.copy()` 防篡改拷贝，在百万次循环里开销巨大。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：ReflectLookupEveryTime 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "reflect",
+          "show": [
+            "ReflectLookupEveryTime"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "`Class.getMethod()` 内部每次都要做方法名匹配和 `Method.copy()` 防篡改拷贝，在百万次循环里开销巨大。",
+          "say": "`Class.getMethod()` 内部每次都要做方法名匹配和 `Method.copy()` 防篡改拷贝，在百万次循环里开销巨大。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「方法调用次数 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "reflect",
+          "show": [
+            "ReflectLookupEveryTime",
+            "DirectCallBaseline"
+          ],
+          "say": "左右拖动「方法调用次数 N」滑块，对比 `ReflectLookupEveryTime` 与 `DirectCallBaseline` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`ReflectLookupEveryTime`：每次循环都要遍历类方法表查找并拷贝 Method 对象，耗时暴涨。；`DirectCallBaseline`：普通 invokevirtual 调用，JIT 直接内联，速度天花板。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `ReflectLookupEveryTime.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "reflect.ReflectLookupEveryTime",
+          "q": "在左边的 `ReflectLookupEveryTime.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "public int add(int x) { return x + 1; }"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`public int add(int x) { return x + 1; }`）导致：每次循环都要遍历类方法表查找并拷贝 Method 对象，耗时暴涨。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "reflect.ReflectLookupEveryTime",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "7: new           #13                 // class lab/reflect/ReflectLookupEveryTime$Target"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "45: invokevirtual #30                 // Method java/lang/Class.getMethod:(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `DirectCallBaseline` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "reflect.DirectCallBaseline",
+          "say": "普通 invokevirtual 调用，JIT 直接内联，速度天花板。",
+          "walk": [
+            {
+              "focus": [
+                "public static class Target {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "Target t = new Target();"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "sum += t.add(1);"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "reflect",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "每次 getMethod + invoke（最慢）（`ReflectLookupEveryTime`）",
+              "solves": "每次循环都要遍历类方法表查找并拷贝 Method 对象，耗时暴涨。",
+              "cost": "实测约 {ms:reflect.ReflectLookupEveryTime} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "每次循环都要遍历类方法表查找并拷贝 Method 对象，耗时暴涨。"
+            },
+            {
+              "name": "缓存 Method + setAccessible(true)（`ReflectCachedAccessible`）",
+              "solves": "省掉查找和权限校验，仅剩基本类型装箱与 Object[] 打包开销。",
+              "cost": "实测约 {ms:reflect.ReflectCachedAccessible} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "省掉查找和权限校验，仅剩基本类型装箱与 Object[] 打包开销。"
+            },
+            {
+              "name": "MethodHandle.invokeExact（`MethodHandleInvoke`）",
+              "solves": "强类型句柄调用，无需 Object[] 打包，JIT 可深度内联优化。",
+              "cost": "实测约 {ms:reflect.MethodHandleInvoke} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "强类型句柄调用，无需 Object[] 打包，JIT 可深度内联优化。"
+            },
+            {
+              "name": "直接调用（基线）（`DirectCallBaseline`）",
+              "solves": "普通 invokevirtual 调用，JIT 直接内联，速度天花板。",
+              "cost": "实测约 {ms:reflect.DirectCallBaseline} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "普通 invokevirtual 调用，JIT 直接内联，速度天花板。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Method.setAccessible(true)",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "关闭 Java 语言访问权限检查，并配合缓存 `Method` 对象，省掉每次调用时的修饰符校验开销。",
+          "asked": [
+            "反射性能真相：每次 getMethod、缓存 setAccessible 与 MethodHandle 差多少？——底层原理是什么？",
+            "为什么 `ReflectLookupEveryTime` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `DirectCallBaseline` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "执行 100 万次时，`ReflectLookupEveryTime` 比 `ReflectCachedAccessible` 大约慢多少？",
+          "options": [
+            {
+              "text": "慢数倍到数十倍（每次都要查方法表并复制 Method 对象）",
+              "ok": true,
+              "why": "`Class.getMethod()` 内部每次都要做方法名匹配和 `Method.copy()` 防篡改拷贝，在百万次循环里开销巨大。"
+            },
+            {
+              "text": "一样快",
+              "ok": false,
+              "why": "再想一想：`Class.getMethod()` 内部每次都要做方法名匹配和 `Method.copy()` 防篡改拷贝，在百万次循环里开销巨大。"
+            },
+            {
+              "text": "反而更快",
+              "ok": false,
+              "why": "再想一想：`Class.getMethod()` 内部每次都要做方法名匹配和 `Method.copy()` 防篡改拷贝，在百万次循环里开销巨大。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：getMethod vs getDeclaredMethod",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`getMethod` 和 `getDeclaredMethod` 的核心区别是？",
+          "options": [
+            {
+              "text": "getMethod 只找 public 方法（含父类）；getDeclaredMethod 找当前类声明的所有权限方法（不含父类）",
+              "ok": true,
+              "why": "框架注入私有字段/方法时必须用 `getDeclared*` + `setAccessible(true)`。"
+            },
+            {
+              "text": "两者完全一样",
+              "ok": false,
+              "why": "再想一想：框架注入私有字段/方法时必须用 `getDeclared*` + `setAccessible(true)`。"
+            },
+            {
+              "text": "getDeclaredMethod 更快",
+              "ok": false,
+              "why": "再想一想：框架注入私有字段/方法时必须用 `getDeclared*` + `setAccessible(true)`。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：基本类型参数",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "调用 `Method.invoke(target, 1)` 传递 `int` 参数时，额外发生了什么开销？",
+          "options": [
+            {
+              "text": "int 自动装箱成 Integer 并打包进 new Object[]{...} 数组",
+              "ok": true,
+              "why": "`invoke(Object obj, Object... args)` 是可变长 `Object[]`，基本类型必然经历装箱与数组分配。"
+            },
+            {
+              "text": "什么都没发生",
+              "ok": false,
+              "why": "再想一想：`invoke(Object obj, Object... args)` 是可变长 `Object[]`，基本类型必然经历装箱与数组分配。"
+            },
+            {
+              "text": "直接传寄存器",
+              "ok": false,
+              "why": "再想一想：`invoke(Object obj, Object... args)` 是可变长 `Object[]`，基本类型必然经历装箱与数组分配。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `DirectCallBaseline`（直接调用（基线））替代 `ReflectLookupEveryTime`（每次 getMethod + invoke（最慢））？",
+          "options": [
+            {
+              "text": "因为 普通 invokevirtual 调用，JIT 直接内联，速度天花板。",
+              "ok": true,
+              "why": "`ReflectLookupEveryTime`：每次循环都要遍历类方法表查找并拷贝 Method 对象，耗时暴涨。；而 `DirectCallBaseline`：普通 invokevirtual 调用，JIT 直接内联，速度天花板。"
+            },
+            {
+              "text": "因为 `ReflectLookupEveryTime` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`ReflectLookupEveryTime`：每次循环都要遍历类方法表查找并拷贝 Method 对象，耗时暴涨。；而 `DirectCallBaseline`：普通 invokevirtual 调用，JIT 直接内联，速度天花板。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`ReflectLookupEveryTime`：每次循环都要遍历类方法表查找并拷贝 Method 对象，耗时暴涨。；而 `DirectCallBaseline`：普通 invokevirtual 调用，JIT 直接内联，速度天花板。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 反射调用到底慢在哪几个环节；2) Spring 等框架如何把反射开销降到最低；3) MethodHandle 和传统 Reflection 的区别。",
+          "points": [
+            "拆解反射开销的三部分：元数据查找、安全访问检查、参数装箱/数组打包",
+            "用实测数据对比「每次 getMethod」「缓存 Method + setAccessible」「MethodHandle」「直接调用」的耗时梯度",
+            "知道为什么框架启动时扫描缓存 Method 后，运行期反射开销几乎可以忽略"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：大家都说「Java 反射慢」，可 Spring/MyBatis/Jackson 到处都在用反射。到底慢在查元数据、权限检查，还是 invoke 本身？；**② 再讲底层原理**：Method.setAccessible(true)（关闭 Java 语言访问权限检查，并配合缓存 `Method` 对象，省掉每次调用时的修饰符校验开销。）；Inflation 机制（HotSpot 默认前 15 次反射调用走本地 JNI 实现，超过阈值后动态生成字节码 `GeneratedMethodAccessor` 加速。）；**③ 最后给工程方案**：生产里优先采用「直接调用（基线）」（`DirectCallBaseline`），普通 invokevirtual 调用，JIT 直接内联，速度天花板。。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「Method.setAccessible(true)」？它在这节课里起了什么关键作用？",
+              "a": "关闭 Java 语言访问权限检查，并配合缓存 `Method` 对象，省掉每次调用时的修饰符校验开销。"
+            },
+            {
+              "q": "面试官问：什么是「Inflation 机制」？它在这节课里起了什么关键作用？",
+              "a": "HotSpot 默认前 15 次反射调用走本地 JNI 实现，超过阈值后动态生成字节码 `GeneratedMethodAccessor` 加速。"
+            },
+            {
+              "q": "面试官问：什么是「MethodHandle」？它在这节课里起了什么关键作用？",
+              "a": "JDK 7 `java.lang.invoke` 提供的轻量级方法句柄，签名精确时 `invokeExact` 可被 JIT 深度内联，性能接近直接调用。"
+            },
+            {
+              "q": "实战避坑：`ReflectLookupEveryTime` 为什么会出问题，应该怎么改？",
+              "a": "每次循环都要遍历类方法表查找并拷贝 Method 对象，耗时暴涨。 正确做法是改用 `DirectCallBaseline`（直接调用（基线））：普通 invokevirtual 调用，JIT 直接内联，速度天花板。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "拆解反射开销的三部分：元数据查找、安全访问检查、参数装箱/数组打包",
+            "用实测数据对比「每次 getMethod」「缓存 Method + setAccessible」「MethodHandle」「直接调用」的耗时梯度",
+            "知道为什么框架启动时扫描缓存 Method 后，运行期反射开销几乎可以忽略"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `ReflectLookupEveryTime`（每次 getMethod + invoke（最慢）），优先选用 `DirectCallBaseline`（直接调用（基线））：普通 invokevirtual 调用，JIT 直接内联，速度天花板。"
+        }
+      ]
+    }
+  ]
+}

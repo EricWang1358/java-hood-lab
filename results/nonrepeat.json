@@ -1,0 +1,871 @@
+{
+ "id": "nonrepeat",
+ "variants": {
+  "RcNewReadView": {
+   "hash": "ea02edfd862bee90",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "inconsistentReads": 100,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 100,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 100,
+      "expected": 0,
+      "ms": 1
+     }
+    ],
+    "500": [
+     {
+      "inconsistentReads": 500,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 500,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 500,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "inconsistentReads": 500,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentReads": 500,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 500,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 500,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentReads": 500,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 500,
+      "expected": 0,
+      "ms": 1
+     }
+    ],
+    "1000": [
+     {
+      "inconsistentReads": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 1000,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 1000,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 1000,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 1000,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "inconsistentReads": 1000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentReads": 1000,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 1000,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 1000,
+      "expected": 0,
+      "ms": 1
+     }
+    ],
+    "2000": [
+     {
+      "inconsistentReads": 2000,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "inconsistentReads": 2000,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 2000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentReads": 2000,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "inconsistentReads": 2000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentReads": 2000,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentReads": 2000,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 2000,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 2000,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 2000,
+      "expected": 0,
+      "ms": 4
+     }
+    ]
+   },
+   "inside": "Compiled from \"RcNewReadView.java\"\npublic class lab.nonrepeat.RcNewReadView {\n  public lab.nonrepeat.RcNewReadView();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static int readWithView(lab.nonrepeat.RcNewReadView$UndoNode, int);\n    Code:\n       0: aload_0\n       1: astore_2\n       2: aload_2\n       3: ifnull        22\n       6: aload_2\n       7: getfield      #7                  // Field lab/nonrepeat/RcNewReadView$UndoNode.trxId:I\n      10: iload_1\n      11: if_icmple     22\n      14: aload_2\n      15: getfield      #13                 // Field lab/nonrepeat/RcNewReadView$UndoNode.prev:Llab/nonrepeat/RcNewReadView$UndoNode;\n      18: astore_2\n      19: goto          2\n      22: aload_2\n      23: getfield      #17                 // Field lab/nonrepeat/RcNewReadView$UndoNode.val:I\n      26: ireturn\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #20                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #26                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     95\n      23: new           #8                  // class lab/nonrepeat/RcNewReadView$UndoNode\n      26: dup\n      27: bipush        100\n      29: bipush        10\n      31: aconst_null\n      32: invokespecial #32                 // Method lab/nonrepeat/RcNewReadView$UndoNode.\"<init>\":(IILlab/nonrepeat/RcNewReadView$UndoNode;)V\n      35: astore        6\n      37: bipush        10\n      39: istore        7\n      41: aload         6\n      43: iload         7\n      45: invokestatic  #35                 // Method readWithView:(Llab/nonrepeat/RcNewReadView$UndoNode;I)I\n      48: istore        8\n      50: new           #8                  // class lab/nonrepeat/RcNewReadView$UndoNode\n      53: dup\n      54: sipush        200\n      57: bipush        15\n      59: aload         6\n      61: invokespecial #32                 // Method lab/nonrepeat/RcNewReadView$UndoNode.\"<init>\":(IILlab/nonrepeat/RcNewReadView$UndoNode;)V\n      64: astore        6\n      66: bipush        15\n      68: istore        9\n      70: aload         6\n      72: iload         9\n      74: invokestatic  #35                 // Method readWithView:(Llab/nonrepeat/RcNewReadView$UndoNode;I)I\n      77: istore        10\n      79: iload         8\n      81: iload         10\n      83: if_icmpeq     89\n      86: iinc          4, 1\n      89: iinc          5, 1\n      92: goto          17\n      95: invokestatic  #26                 // Method java/lang/System.nanoTime:()J\n      98: lload_2\n      99: lsub\n     100: ldc2_w        #41                 // long 1000000l\n     103: ldiv\n     104: lstore        5\n     106: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     109: iload         4\n     111: invokedynamic #47,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     116: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     119: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     122: ldc           #57                 // String expected=0\n     124: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     127: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     130: lload         5\n     132: invokedynamic #59,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     137: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     140: return\n}"
+  },
+  "RrReuseReadView": {
+   "hash": "70995f60ed9e04c2",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 3
+     }
+    ]
+   },
+   "inside": "Compiled from \"RrReuseReadView.java\"\npublic class lab.nonrepeat.RrReuseReadView {\n  public lab.nonrepeat.RrReuseReadView();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static int readWithView(lab.nonrepeat.RrReuseReadView$UndoNode, int);\n    Code:\n       0: aload_0\n       1: astore_2\n       2: aload_2\n       3: ifnull        22\n       6: aload_2\n       7: getfield      #7                  // Field lab/nonrepeat/RrReuseReadView$UndoNode.trxId:I\n      10: iload_1\n      11: if_icmple     22\n      14: aload_2\n      15: getfield      #13                 // Field lab/nonrepeat/RrReuseReadView$UndoNode.prev:Llab/nonrepeat/RrReuseReadView$UndoNode;\n      18: astore_2\n      19: goto          2\n      22: aload_2\n      23: getfield      #17                 // Field lab/nonrepeat/RrReuseReadView$UndoNode.val:I\n      26: ireturn\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #20                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #26                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     91\n      23: new           #8                  // class lab/nonrepeat/RrReuseReadView$UndoNode\n      26: dup\n      27: bipush        100\n      29: bipush        10\n      31: aconst_null\n      32: invokespecial #32                 // Method lab/nonrepeat/RrReuseReadView$UndoNode.\"<init>\":(IILlab/nonrepeat/RrReuseReadView$UndoNode;)V\n      35: astore        6\n      37: bipush        10\n      39: istore        7\n      41: aload         6\n      43: iload         7\n      45: invokestatic  #35                 // Method readWithView:(Llab/nonrepeat/RrReuseReadView$UndoNode;I)I\n      48: istore        8\n      50: new           #8                  // class lab/nonrepeat/RrReuseReadView$UndoNode\n      53: dup\n      54: sipush        200\n      57: bipush        15\n      59: aload         6\n      61: invokespecial #32                 // Method lab/nonrepeat/RrReuseReadView$UndoNode.\"<init>\":(IILlab/nonrepeat/RrReuseReadView$UndoNode;)V\n      64: astore        6\n      66: aload         6\n      68: iload         7\n      70: invokestatic  #35                 // Method readWithView:(Llab/nonrepeat/RrReuseReadView$UndoNode;I)I\n      73: istore        9\n      75: iload         8\n      77: iload         9\n      79: if_icmpeq     85\n      82: iinc          4, 1\n      85: iinc          5, 1\n      88: goto          17\n      91: invokestatic  #26                 // Method java/lang/System.nanoTime:()J\n      94: lload_2\n      95: lsub\n      96: ldc2_w        #41                 // long 1000000l\n      99: ldiv\n     100: lstore        5\n     102: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     105: iload         4\n     107: invokedynamic #47,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     112: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     115: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     118: ldc           #57                 // String expected=0\n     120: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     123: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     126: lload         5\n     128: invokedynamic #59,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     133: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     136: return\n}"
+  },
+  "RcWithLock": {
+   "hash": "348180913dc18d18",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"RcWithLock.java\"\npublic class lab.nonrepeat.RcWithLock {\n  public lab.nonrepeat.RcWithLock();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     47\n      23: bipush        100\n      25: istore        6\n      27: bipush        100\n      29: istore        7\n      31: iload         6\n      33: iload         7\n      35: if_icmpeq     41\n      38: iinc          4, 1\n      41: iinc          5, 1\n      44: goto          17\n      47: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      50: lload_2\n      51: lsub\n      52: ldc2_w        #19                 // long 1000000l\n      55: ldiv\n      56: lstore        5\n      58: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      61: iload         4\n      63: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      68: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      71: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      74: ldc           #35                 // String expected=0\n      76: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      79: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      82: lload         5\n      84: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      89: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      92: return\n}"
+  },
+  "SerializableLock": {
+   "hash": "912c4f40c03e9a82",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentReads": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"SerializableLock.java\"\npublic class lab.nonrepeat.SerializableLock {\n  public lab.nonrepeat.SerializableLock();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     47\n      23: bipush        100\n      25: istore        6\n      27: bipush        100\n      29: istore        7\n      31: iload         6\n      33: iload         7\n      35: if_icmpeq     41\n      38: iinc          4, 1\n      41: iinc          5, 1\n      44: goto          17\n      47: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      50: lload_2\n      51: lsub\n      52: ldc2_w        #19                 // long 1000000l\n      55: ldiv\n      56: lstore        5\n      58: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      61: iload         4\n      63: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      68: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      71: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      74: ldc           #35                 // String expected=0\n      76: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      79: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      82: lload         5\n      84: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      89: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      92: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

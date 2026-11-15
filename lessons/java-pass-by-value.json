@@ -1,0 +1,627 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-pass-by-value",
+  "course": "Java 工程语法与集合",
+  "title": "值传递与引用副本：方法里 swap 或重赋值为什么外面没变？",
+  "lead": "大家都说「Java 对象是引用传递」，可为什么在方法里写 `box = new Box(99)` 之后，调用方的 `box.val` 还是 0？",
+  "minutes": 30,
+  "needs": [
+    "知道栈帧局部变量与堆对象的区别",
+    "知道对象变量存的是引用地址"
+  ],
+  "after": [
+    "用「引用地址的值拷贝」解释清楚 Java 为什么只有值传递",
+    "区分方法内「重新指向新对象」与「修改堆对象字段」的本质差异",
+    "掌握不可变对象返回新实例与原地修改的工程取舍"
+  ],
+  "terms": {
+    "按值传递 (Pass by Value)": "调用方法时，实参变量里的值被复制一份放进被调方法的栈帧形参里；对基本类型复制数值本身，对引用类型复制对象地址。",
+    "引用副本": "形参 `b` 和实参 `box` 各自占一个栈帧槽位，只是恰好存着同一个堆地址；把 `b` 改成新地址，丝毫不影响实参槽位。",
+    "防御性不可变返回": "不修改入参字段，而是 `return new Box(target)` 让调用方接收，彻底避免跨方法隐式副作用。"
+  },
+  "experiments": {
+    "passbyval": {
+      "runner": "java",
+      "home": "lab.passbyval",
+      "variants": [
+        {
+          "id": "ReassignRefFail",
+          "code": "ReassignRefFail.java",
+          "label": "方法内重新 new 赋值（失效）",
+          "note": "形参 b 改指新堆对象，调用方 box 仍指旧对象，更新数为 0。"
+        },
+        {
+          "id": "MutateFieldInPlace",
+          "code": "MutateFieldInPlace.java",
+          "label": "修改堆对象字段（生效）",
+          "note": "顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。"
+        },
+        {
+          "id": "ReturnNewImmutable",
+          "code": "ReturnNewImmutable.java",
+          "label": "返回新不可变对象（推荐）",
+          "note": "返回新实例并由调用方重接引用，100% 生效且无隐式副作用。"
+        },
+        {
+          "id": "ArrayWrapperMutate",
+          "code": "ArrayWrapperMutate.java",
+          "label": "单元素数组包装传出（生效）",
+          "note": "通过 int[1] 数组堆对象带回修改结果，100% 生效但语义较晦涩。"
+        }
+      ],
+      "knob": {
+        "label": "调用次数",
+        "values": [
+          "10000",
+          "50000",
+          "100000",
+          "200000"
+        ],
+        "default": "50000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "updated",
+        "expectKey": "expected",
+        "label": "成功更新次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "值传递与引用副本：方法里 swap 或重赋值为什么外面没变？",
+      "bridge": "大家都说「Java 对象是引用传递」，可为什么在方法里写 `box = new Box(99)` 之后，调用方的 `box.val` 还是 0？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**Java 到底有没有「引用传递」？为什么在方法里改形参属性外面能看见，可写 `b = new Box(99)` 或 `swap(a, b)` 外面却纹丝不动？**",
+          "say": "这是 Java 基础面试第一题，答成「基本类型值传递、对象引用传递」直接扣分，正确说法是「Java 只有值传递」。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
+          "items": [
+            {
+              "have": "引用传参",
+              "q": "把对象 `box` 传进方法 `tryReplace(Box b)`，在方法里执行 `b = new Box(99)`，调用方 `box.val` 会变吗？",
+              "options": [
+                "不会变，形参 b 只是地址副本，重指向不影响实参",
+                "会变成 99，因为对象是引用传递",
+                "随机变"
+              ],
+              "answer": 0,
+              "why": "形参 `b` 只是复制了 `box` 的引用地址；`b = new Box(99)` 只是把局部变量 `b` 改写成新地址。"
+            },
+            {
+              "have": "字段修改",
+              "q": "在方法里执行 `b.val = 99`，调用方 `box.val` 为什么又变了？",
+              "options": [
+                "因为 b 和 box 存着同一个堆对象地址，顺着地址改了堆里的值",
+                "因为 b.val 触发了引用传递",
+                "因为 static 优化"
+              ],
+              "answer": 0,
+              "why": "地址虽然是按值拷贝的，但两份相同的地址指向堆里的同一块内存。"
+            },
+            {
+              "have": "不可变安全",
+              "q": "为什么 `String` 或 `Integer` 传进方法怎么改都不会影响调用方？",
+              "options": [
+                "它们内部字段是 final 不可变的，任何操作都只是让形参指向新对象",
+                "JVM 对它们特殊做了深拷贝",
+                "它们存放在栈上"
+              ],
+              "answer": 0,
+              "why": "没有可修改字段，只能重赋值形参引用，而重赋值对调用方无效。"
+            },
+            {
+              "have": "swap 失败",
+              "q": "写一个 `void swap(Integer a, Integer b)`，在方法里交换 `a` 和 `b`，为什么外面没交换成功？",
+              "options": [
+                "方法里只交换了两个形参副本指向的地址，实参没动",
+                "Integer 没有实现 Cloneable",
+                "自动拆箱导致丢失"
+              ],
+              "answer": 0,
+              "why": "Java 没有 C++ 的 `&` 引用形参，无法在方法里改写调用方局部变量的指向。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (ReassignRefFail)",
+              "安全写法 (MutateFieldInPlace)"
+            ],
+            "shared": {
+              "name": "成功更新次数",
+              "value": "目标 50000"
+            }
+          },
+          "story": "大家都说「Java 对象是引用传递」，可为什么在方法里写 `box = new Box(99)` 之后，调用方的 `box.val` 还是 0？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "按值传递 (Pass by Value)",
+              "on": "shared",
+              "tag": "按值传递 (Pass b",
+              "code": "`ReassignRefFail` vs `MutateFieldInPlace`",
+              "say": "调用方法时，实参变量里的值被复制一份放进被调方法的栈帧形参里；对基本类型复制数值本身，对引用类型复制对象地址。"
+            },
+            {
+              "scene": "引用副本",
+              "on": "shared",
+              "tag": "引用副本",
+              "code": "`ReassignRefFail` vs `MutateFieldInPlace`",
+              "say": "形参 `b` 和实参 `box` 各自占一个栈帧槽位，只是恰好存着同一个堆地址；把 `b` 改成新地址，丝毫不影响实参槽位。"
+            },
+            {
+              "scene": "防御性不可变返回",
+              "on": "shared",
+              "tag": "防御性不可变返回",
+              "code": "`ReassignRefFail` vs `MutateFieldInPlace`",
+              "say": "不修改入参字段，而是 `return new Box(target)` 让调用方接收，彻底避免跨方法隐式副作用。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`ReassignRefFail`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "passbyval.ReassignRefFail",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "static class Box {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "int n = Integer.parseInt(args[0]);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (box.val == 99) updated++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：ReassignRefFail 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "调用 50000 次 `tryReplace(box, 99)`，调用方看到 `box.val == 99` 的次数是多少？",
+          "options": [
+            "0 次（全部失效）",
+            "50000 次（全部生效）",
+            "一半一半"
+          ],
+          "answer": 0,
+          "say": "每一次 `b = new Box(target)` 都只改了被调方法自己的栈帧局部变量，调用方 `box` 一次也没变。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：ReassignRefFail 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "passbyval",
+          "show": [
+            "ReassignRefFail"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "每一次 `b = new Box(target)` 都只改了被调方法自己的栈帧局部变量，调用方 `box` 一次也没变。",
+          "say": "每一次 `b = new Box(target)` 都只改了被调方法自己的栈帧局部变量，调用方 `box` 一次也没变。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「调用次数」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "passbyval",
+          "show": [
+            "ReassignRefFail",
+            "MutateFieldInPlace"
+          ],
+          "say": "左右拖动「调用次数」滑块，对比 `ReassignRefFail` 与 `MutateFieldInPlace` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`ReassignRefFail`：形参 b 改指新堆对象，调用方 box 仍指旧对象，更新数为 0。；`MutateFieldInPlace`：顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `ReassignRefFail.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "passbyval.ReassignRefFail",
+          "q": "在左边的 `ReassignRefFail.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "if (box.val == 99) updated++;"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`if (box.val == 99) updated++;`）导致：形参 b 改指新堆对象，调用方 box 仍指旧对象，更新数为 0。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "passbyval.ReassignRefFail",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "23: new           #7                  // class lab/passbyval/ReassignRefFail$Box"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #12                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "80: invokevirtual #44                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `MutateFieldInPlace` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "passbyval.MutateFieldInPlace",
+          "say": "顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。",
+          "walk": [
+            {
+              "focus": [
+                "static class Box {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "int n = Integer.parseInt(args[0]);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (box.val == 99) updated++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "passbyval",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "方法内重新 new 赋值（失效）（`ReassignRefFail`）",
+              "solves": "形参 b 改指新堆对象，调用方 box 仍指旧对象，更新数为 0。",
+              "cost": "实测约 {ms:passbyval.ReassignRefFail} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "形参 b 改指新堆对象，调用方 box 仍指旧对象，更新数为 0。"
+            },
+            {
+              "name": "修改堆对象字段（生效）（`MutateFieldInPlace`）",
+              "solves": "顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。",
+              "cost": "实测约 {ms:passbyval.MutateFieldInPlace} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。"
+            },
+            {
+              "name": "返回新不可变对象（推荐）（`ReturnNewImmutable`）",
+              "solves": "返回新实例并由调用方重接引用，100% 生效且无隐式副作用。",
+              "cost": "实测约 {ms:passbyval.ReturnNewImmutable} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "返回新实例并由调用方重接引用，100% 生效且无隐式副作用。"
+            },
+            {
+              "name": "单元素数组包装传出（生效）（`ArrayWrapperMutate`）",
+              "solves": "通过 int[1] 数组堆对象带回修改结果，100% 生效但语义较晦涩。",
+              "cost": "实测约 {ms:passbyval.ArrayWrapperMutate} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "通过 int[1] 数组堆对象带回修改结果，100% 生效但语义较晦涩。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "按值传递 (Pass by Value)",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "调用方法时，实参变量里的值被复制一份放进被调方法的栈帧形参里；对基本类型复制数值本身，对引用类型复制对象地址。",
+          "asked": [
+            "值传递与引用副本：方法里 swap 或重赋值为什么外面没变？——底层原理是什么？",
+            "为什么 `ReassignRefFail` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `MutateFieldInPlace` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "调用 50000 次 `tryReplace(box, 99)`，调用方看到 `box.val == 99` 的次数是多少？",
+          "options": [
+            {
+              "text": "0 次（全部失效）",
+              "ok": true,
+              "why": "每一次 `b = new Box(target)` 都只改了被调方法自己的栈帧局部变量，调用方 `box` 一次也没变。"
+            },
+            {
+              "text": "50000 次（全部生效）",
+              "ok": false,
+              "why": "再想一想：每一次 `b = new Box(target)` 都只改了被调方法自己的栈帧局部变量，调用方 `box` 一次也没变。"
+            },
+            {
+              "text": "一半一半",
+              "ok": false,
+              "why": "再想一想：每一次 `b = new Box(target)` 都只改了被调方法自己的栈帧局部变量，调用方 `box` 一次也没变。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：引用传参",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "把对象 `box` 传进方法 `tryReplace(Box b)`，在方法里执行 `b = new Box(99)`，调用方 `box.val` 会变吗？",
+          "options": [
+            {
+              "text": "不会变，形参 b 只是地址副本，重指向不影响实参",
+              "ok": true,
+              "why": "形参 `b` 只是复制了 `box` 的引用地址；`b = new Box(99)` 只是把局部变量 `b` 改写成新地址。"
+            },
+            {
+              "text": "会变成 99，因为对象是引用传递",
+              "ok": false,
+              "why": "再想一想：形参 `b` 只是复制了 `box` 的引用地址；`b = new Box(99)` 只是把局部变量 `b` 改写成新地址。"
+            },
+            {
+              "text": "随机变",
+              "ok": false,
+              "why": "再想一想：形参 `b` 只是复制了 `box` 的引用地址；`b = new Box(99)` 只是把局部变量 `b` 改写成新地址。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：字段修改",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在方法里执行 `b.val = 99`，调用方 `box.val` 为什么又变了？",
+          "options": [
+            {
+              "text": "因为 b 和 box 存着同一个堆对象地址，顺着地址改了堆里的值",
+              "ok": true,
+              "why": "地址虽然是按值拷贝的，但两份相同的地址指向堆里的同一块内存。"
+            },
+            {
+              "text": "因为 b.val 触发了引用传递",
+              "ok": false,
+              "why": "再想一想：地址虽然是按值拷贝的，但两份相同的地址指向堆里的同一块内存。"
+            },
+            {
+              "text": "因为 static 优化",
+              "ok": false,
+              "why": "再想一想：地址虽然是按值拷贝的，但两份相同的地址指向堆里的同一块内存。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `MutateFieldInPlace`（修改堆对象字段（生效））替代 `ReassignRefFail`（方法内重新 new 赋值（失效））？",
+          "options": [
+            {
+              "text": "因为 顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。",
+              "ok": true,
+              "why": "`ReassignRefFail`：形参 b 改指新堆对象，调用方 box 仍指旧对象，更新数为 0。；而 `MutateFieldInPlace`：顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。"
+            },
+            {
+              "text": "因为 `ReassignRefFail` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`ReassignRefFail`：形参 b 改指新堆对象，调用方 box 仍指旧对象，更新数为 0。；而 `MutateFieldInPlace`：顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`ReassignRefFail`：形参 b 改指新堆对象，调用方 box 仍指旧对象，更新数为 0。；而 `MutateFieldInPlace`：顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 为什么 Java 只有值传递；2) 为什么方法内修改集合元素外面可见，但 `list = new ArrayList<>()` 外面不可见；3) 工程中推荐用返回新对象还是原地修改。",
+          "points": [
+            "用「引用地址的值拷贝」解释清楚 Java 为什么只有值传递",
+            "区分方法内「重新指向新对象」与「修改堆对象字段」的本质差异",
+            "掌握不可变对象返回新实例与原地修改的工程取舍"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：大家都说「Java 对象是引用传递」，可为什么在方法里写 `box = new Box(99)` 之后，调用方的 `box.val` 还是 0？；**② 再讲底层原理**：按值传递 (Pass by Value)（调用方法时，实参变量里的值被复制一份放进被调方法的栈帧形参里；对基本类型复制数值本身，对引用类型复制对象地址。）；引用副本（形参 `b` 和实参 `box` 各自占一个栈帧槽位，只是恰好存着同一个堆地址；把 `b` 改成新地址，丝毫不影响实参槽位。）；**③ 最后给工程方案**：生产里优先采用「修改堆对象字段（生效）」（`MutateFieldInPlace`），顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「按值传递 (Pass by Value)」？它在这节课里起了什么关键作用？",
+              "a": "调用方法时，实参变量里的值被复制一份放进被调方法的栈帧形参里；对基本类型复制数值本身，对引用类型复制对象地址。"
+            },
+            {
+              "q": "面试官问：什么是「引用副本」？它在这节课里起了什么关键作用？",
+              "a": "形参 `b` 和实参 `box` 各自占一个栈帧槽位，只是恰好存着同一个堆地址；把 `b` 改成新地址，丝毫不影响实参槽位。"
+            },
+            {
+              "q": "面试官问：什么是「防御性不可变返回」？它在这节课里起了什么关键作用？",
+              "a": "不修改入参字段，而是 `return new Box(target)` 让调用方接收，彻底避免跨方法隐式副作用。"
+            },
+            {
+              "q": "实战避坑：`ReassignRefFail` 为什么会出问题，应该怎么改？",
+              "a": "形参 b 改指新堆对象，调用方 box 仍指旧对象，更新数为 0。 正确做法是改用 `MutateFieldInPlace`（修改堆对象字段（生效））：顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "用「引用地址的值拷贝」解释清楚 Java 为什么只有值传递",
+            "区分方法内「重新指向新对象」与「修改堆对象字段」的本质差异",
+            "掌握不可变对象返回新实例与原地修改的工程取舍"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `ReassignRefFail`（方法内重新 new 赋值（失效）），优先选用 `MutateFieldInPlace`（修改堆对象字段（生效））：顺着复制来的地址修改同一个堆对象字段 b.val = target，100% 生效。"
+        }
+      ]
+    }
+  ]
+}

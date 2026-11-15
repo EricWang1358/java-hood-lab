@@ -1,0 +1,581 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-lock-granularity",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "主从异步复制丢锁 vs 分段分布式锁吞吐对比",
+  "lead": "Redis 主从异步复制时，刚加完锁 Master 就宕机，Slave 升主后锁直接蒸发！此外，一把全局大锁怎么拆成分段锁把吞吐翻倍？",
+  "minutes": 35,
+  "needs": [
+    "了解 Redis 主从异步复制机制",
+    "知道第 26 课分段锁思想"
+  ],
+  "after": [
+    "复现主从异步复制切换导致双客户端同时拿锁的事故",
+    "客观评价 Redlock 红锁的争议与工程替代方案（ETCD/ZK/DB乐观锁）",
+    "应用分段分布式锁把高并发抢锁吞吐提升数倍"
+  ],
+  "terms": {
+    "主从异步复制丢锁": "客户端在 Master 拿到锁后，Master 还没把锁同步给 Slave 就宕机，Slave 升主后新客户端又能拿到同一把锁。",
+    "Redlock": "Redis 作者提出的跨 N 个独立 Master（通常 5 个）过半数加锁算法，但因时钟漂移与成本争议较少在常规业务使用。",
+    "分段分布式锁": "把单一热点锁（如某爆品库存）拆成 16 个分段 Key（如 `lock:sku:1#0`~`#15`），大幅降低锁竞争。"
+  },
+  "experiments": {
+    "m6_redlock": {
+      "runner": "java",
+      "home": "lab.m6.redlock",
+      "knob": {
+        "name": "threads",
+        "label": "并发业务线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "conflicts",
+        "expectKey": "expected",
+        "label": "主从丢锁冲突次数",
+        "expect": "零冲突"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "GlobalDistLock",
+          "label": "全局单锁",
+          "code": "GlobalDistLock.java",
+          "note": "不丢锁，但所有订单挤在同一个全局锁上串行排队。"
+        },
+        {
+          "id": "AsyncMasterFailover",
+          "label": "主从切换丢锁",
+          "code": "AsyncMasterFailover.java",
+          "note": "Master 刚加锁未及同步 Slave 就宕机，切主后两人同时持锁。"
+        },
+        {
+          "id": "SegmentedDistLock",
+          "label": "分段分布式锁",
+          "code": "SegmentedDistLock.java",
+          "note": "按 Key 分 16 段锁，互斥不冲突的同时吞吐暴涨。"
+        },
+        {
+          "id": "FencingVersionDb",
+          "label": "乐观锁版本号兜底",
+          "code": "FencingVersionDb.java",
+          "note": "即使极端情况发生双持锁，数据库 CAS 版本号依然保住零脏写。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "主从异步复制丢锁 vs 分段分布式锁吞吐对比",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "Redis 分布式锁平时稳稳当当，可一旦碰到**主节点刚加完锁就断电、从节点异步升主**，两台业务机就会同时拿着同一把锁冲进系统。",
+          "say": "面试被问「Redis 主从架构下锁丢了怎么办」，既要答出 Redlock 的思路与缺陷，更要答出真正落地的 CP 组件（ZooKeeper/ETCD）或数据库乐观锁兜底。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "Redis 主从复制",
+              "q": "Redis 主节点写入一条锁 Key 后，是等从节点全部落盘才返回客户端成功吗？",
+              "options": [
+                "不是，默认异步复制，主节点写完立刻返回客户端",
+                "是，强同步等待",
+                "只有主节点宕机时才同步"
+              ],
+              "answer": 0,
+              "why": "Redis 默认异步复制追求极致性能，这也埋下了主从切换丢锁的隐患。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：主从切换瞬间 & 16 分段并发对比",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "一方面模拟 Master 刚加锁就宕机切换，另一方面对比单锁与 16 分段锁在 8 线程下的吞吐。",
+            "actors": [
+              "客户端 A",
+              "新主库 (原 Replica)"
+            ],
+            "shared": "lock:sku"
+          },
+          "say": "一方面模拟 Master 刚加锁就宕机切换，另一方面对比单锁与 16 分段锁在 8 线程下的吞吐。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `GlobalDistLock`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_redlock.GlobalDistLock",
+          "say": "这就是最常见的基线写法 `GlobalDistLock`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`GlobalDistLock` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`AsyncMasterFailover` 模拟 30 次主从切换，会出现多少次双客户端同时持锁冲突？",
+          "options": [
+            "0 次",
+            "多次冲突（conflicts > 0）",
+            "只有 1 次"
+          ],
+          "answer": 1,
+          "say": "异步复制没来得及送达从节点，新主库里根本没有这把锁。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`GlobalDistLock` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_redlock",
+          "show": [
+            "GlobalDistLock"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "master.putIfAbsent(\"lock:sku\", \"client-A\");",
+            "if (replica.putIfAbsent(\"lock:sku\", \"client-B\") == null"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `GlobalDistLock` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_redlock.GlobalDistLock",
+          "lines": [
+            "master.putIfAbsent(\"lock:sku\", \"client-A\");",
+            "if (replica.putIfAbsent(\"lock:sku\", \"client-B\") == null"
+          ],
+          "say": "Master 还没同步到 Replica 就挂了，Replica 升主后放行了 B。",
+          "answer": [
+            "master.putIfAbsent(\"lock:sku\", \"client-A\");",
+            "if (replica.putIfAbsent(\"lock:sku\", \"client-B\") == null"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "Master 还没同步到 Replica 就挂了，Replica 升主后放行了 B。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "Master(lock=A) -> [CRASH] -> Replica becomes Master -> lock=B",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "客户端 A",
+            "新主库 (原 Replica)"
+          ],
+          "shared": {
+            "name": "lock:sku",
+            "start": "Master 刚写入"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "A 在旧 Master 拿到锁",
+              "say": "旧 Master 返回 OK，但复制包还在半路上。"
+            },
+            {
+              "lane": 1,
+              "op": "calc",
+              "text": "旧 Master 宕机，Replica 升主（无锁记录）",
+              "say": "哨兵把 Replica 提升为新主，新主库里根本没有 lock:sku！"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "text": "B 向新主请求加锁也成功，A/B 双双持锁",
+              "say": "AP 架构为了高可用牺牲了强一致性，极端切换瞬间就会出现双持锁。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `AsyncMasterFailover`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "如果要彻底解决单锁并发瓶颈（如全站订单或爆品库存），`SegmentedDistLock` 怎么提升吞吐？",
+          "options": [
+            "把锁 Key 拆成 16 个分段锁（如 lock#0~#15），不同段并行互不阻塞",
+            "把 TTL 改成 100 秒",
+            "关掉 Redis 密码"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`GlobalDistLock` vs `AsyncMasterFailover`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_redlock",
+          "show": [
+            "GlobalDistLock",
+            "AsyncMasterFailover"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `AsyncMasterFailover` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_redlock.SegmentedDistLock",
+          "within": "processOrder(int)",
+          "from": "0: getstatic",
+          "to": "return",
+          "say": "看 `SegmentedDistLock.processOrder`：通过 `Math.floorMod(orderId, SEGMENTS)` 把请求散列到 16 把独立锁上，线程数越多加速越明显。",
+          "walk": [
+            {
+              "focus": [
+                "floorMod"
+              ],
+              "label": "细粒度分段散列",
+              "key": "锁粒度越细、并发度越高；爆品库存可拆 16 个分段库存桶",
+              "say": "结合第 26 课的分段扣库存思想，分布式场景同样适用。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`SegmentedDistLock` 与 `FencingVersionDb`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_redlock",
+          "show": [
+            "GlobalDistLock",
+            "AsyncMasterFailover",
+            "SegmentedDistLock",
+            "FencingVersionDb"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_redlock",
+          "variants": [
+            "GlobalDistLock",
+            "AsyncMasterFailover",
+            "SegmentedDistLock",
+            "FencingVersionDb"
+          ],
+          "notes": [
+            {
+              "focus": "GlobalDistLock",
+              "key": "全局单锁在多线程下排队严重",
+              "say": "能按业务 ID（如 userId/orderId）加锁就绝不用全局锁。"
+            },
+            {
+              "focus": "SegmentedDistLock",
+              "key": "16 分段锁随线程数扩展性极佳，耗时远低于全局锁",
+              "say": "分段锁把单点瓶颈拆成了多路并行。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `FencingVersionDb` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_redlock.FencingVersionDb",
+          "within": "casUpdate(int)",
+          "from": "0: getstatic",
+          "to": "return",
+          "say": "看 `FencingVersionDb.casUpdate`：存储层自带 CAS 版本号校验，哪怕上层 AP 分布式锁极端情况放进了两个人，底层也绝对写不坏。",
+          "walk": [
+            {
+              "focus": [
+                "compareAndSet"
+              ],
+              "label": "存储层最终兜底",
+              "key": "高可用选 Redis 锁 + DB 乐观锁兜底；强一致选 ETCD/ZK",
+              "say": "这套组合在工程里最实用、性价比最高。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "Redis 锁 + DB 乐观锁兜底",
+              "solves": "兼顾 Redis 高性能与极端切主下的数据绝对安全",
+              "cost": "约 {ms:m6_redlock.FencingVersionDb} ms",
+              "when": "95% 互联网高并发业务（秒杀、发券、订单状态）",
+              "say": "工程黄金搭配：Redis 挡大头并发，DB `WHERE version = ?` 兜底线。"
+            },
+            {
+              "name": "ZooKeeper / ETCD (CP 锁)",
+              "solves": "强一致性 Raft/ZAB 协议保证切主不丢锁",
+              "cost": "写入吞吐低于 Redis，运维成本高",
+              "when": "选主调度、极少并发但绝不允许双主的管控场景",
+              "say": "高并发业务较少直接用 ZK 做锁，吞吐扛不住。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "面对 Redis 主从切主丢锁与吞吐瓶颈怎么选？",
+          "branches": [
+            {
+              "when": "高并发业务 + 绝不能写错账",
+              "pick": "分段 Redis 锁 + 数据库乐观锁/唯一索引兜底",
+              "eg": "扣库存/支付防重"
+            },
+            {
+              "when": "低频管控 + 强一致分布式选主",
+              "pick": "ETCD / ZooKeeper CP 锁",
+              "eg": "分布式调度器选主"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "Redis全局锁",
+            "分段Redis锁+DB乐观锁",
+            "ETCD/ZK CP锁"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "秒杀抢 10 万张优惠券，所有请求抢同一把 `lock:coupon` 卡成狗，且担心主从切换超发。",
+              "answer": 1,
+              "why": "把券拆成 16 个分段锁提升吞吐，再加数据库 `stock >= count` 乐观防超卖兜底。"
+            },
+            {
+              "text": "分布式定时任务框架需要选出一台唯一 Leader 节点发号施令，QPS 极低但绝不能出现双 Leader。",
+              "answer": 2,
+              "why": "选主场景用强一致的 ETCD/ZK（CP）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：主从丢锁与锁粒度优化",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "主从丢锁与锁粒度优化",
+          "alias": "Failover Lock Loss · Redlock & Segmented Lock",
+          "oneLine": "Redis 主从异步复制有==切主丢锁==风险；高并发靠==分段锁==提速，靠==DB 乐观锁/CP 组件==兜底。",
+          "asked": [
+            "Redis 主从切换导致锁丢失怎么解决？",
+            "为什么很多大厂不推荐在业务里上 Redlock？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Redis 主从架构下，为什么会发生「锁丢失」？",
+          "options": [
+            {
+              "text": "主节点异步复制给从节点，写完锁还没同步过去主节点就宕机，从节点升主后没有这把锁",
+              "ok": true,
+              "why": "AP 架构异步复制的必然代价。"
+            },
+            {
+              "text": "因为从节点会自动把所有锁清空",
+              "ok": false,
+              "why": "是压根还没来得及同步过去。"
+            }
+          ],
+          "say": "清晰讲出异步复制时间窗。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "工程中很多团队不用 Redlock 而继续用单集群 Redis 锁，怎么保证数据最终绝对不错？",
+          "options": [
+            {
+              "text": "结合数据库唯一索引、状态机 CAS 或乐观锁版本号做存储层幂等兜底",
+              "ok": true,
+              "why": "Redlock 依赖 5 台独立节点且受时钟跳跃影响，性价比不如「Redis 锁 + DB 兜底」。"
+            },
+            {
+              "text": "把 Redis TTL 改成 1 小时",
+              "ok": false,
+              "why": "TTL 改长也救不了主从切换丢锁。"
+            }
+          ],
+          "say": "最接地气的架构答案。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "把一把热点库存锁拆成 16 个分段锁后，如果某一段库存刚好卖光了怎么办？",
+          "options": [
+            {
+              "text": "顺延探测下一段（如 (i+1)%16），直到全部段都卖光",
+              "ok": true,
+              "why": "和第 26 课分段扣库存一致，避免少卖。"
+            },
+            {
+              "text": "直接报错返回已售罄",
+              "ok": false,
+              "why": "别的段还有货呢，顺延探测即可。"
+            }
+          ],
+          "say": "前后知识串联起来了！"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "Redis 主从切换为什么会丢锁？Redlock 和分段锁怎么看？生产一般怎么兜底？",
+          "points": [
+            "主从默认异步复制，Master 加锁未及同步就宕机，Slave 升主后锁丢失导致双持锁",
+            "Redlock 用 5 个独立 Master 过半成功来防单点，但运维重且仍受时钟跳跃/GC 影响",
+            "高并发吞吐优化：把大锁按业务键或分段散列成细粒度锁",
+            "生产兜底：追求强一致选 ETCD/ZK（CP）；高并发业务用 Redis 分段锁 + DB 乐观锁/唯一索引"
+          ],
+          "model": "Redis 默认采用主从异步复制，若客户端在 Master 加锁成功后、锁尚未同步到 Slave 时 Master 宕机，Slave 升主后就会丢失这把锁，导致其他客户端也能加锁成功。Redlock 虽提出向 5 个独立 Master 过半加锁，但运维成本高且依然受时钟漂移和长 GC 停顿困扰。因此工程上：如果是低频强一致选主，直接用 ETCD/ZooKeeper 等 CP 组件；如果是高并发业务，则通过分段锁或按 ID 加锁提高吞吐，同时在数据库层用乐观锁版本号或唯一索引作为最终防超卖/防重兜底。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "主从丢锁根因？",
+              "a": "Redis 默认异步复制，切主瞬间未同步的锁会蒸发。"
+            },
+            {
+              "q": "高并发怎么压低锁冲突？",
+              "a": "按业务 ID 细粒度加锁，或把单热点拆成 N 个分段锁。"
+            },
+            {
+              "q": "比 Redlock 更实用的兜底？",
+              "a": "Redis 分段锁抗并发 + DB 乐观锁/唯一索引保最终不错。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

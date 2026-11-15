@@ -1,0 +1,871 @@
+{
+ "id": "filesort",
+ "variants": {
+  "FilesortUnindexed": {
+   "hash": "d0af958351366f1f",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 1
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     }
+    ],
+    "20000": [
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 1
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 1
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 1
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 3
+     }
+    ],
+    "50000": [
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 6
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 1
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 3
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 4
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 6
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 6
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 4
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 4
+     }
+    ],
+    "100000": [
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 9
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 3
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 8
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 10
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 4
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 3
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 6
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 8
+     }
+    ]
+   },
+   "inside": "Compiled from \"FilesortUnindexed.java\"\npublic class lab.filesort.FilesortUnindexed {\n  public lab.filesort.FilesortUnindexed();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     30\n      18: aload_2\n      19: iload_3\n      20: iload_1\n      21: iload_3\n      22: isub\n      23: iastore\n      24: iinc          3, 1\n      27: goto          13\n      30: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      33: lstore_3\n      34: aload_2\n      35: invokestatic  #19                 // Method java/util/Arrays.sort:([I)V\n      38: iload_1\n      39: istore        5\n      41: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      44: lload_3\n      45: lsub\n      46: ldc2_w        #25                 // long 1000000l\n      49: ldiv\n      50: lstore        6\n      52: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      55: iload         5\n      57: invokedynamic #31,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      62: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      65: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      68: ldc           #41                 // String expected=20\n      70: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      73: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      76: lload         6\n      78: invokedynamic #43,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      83: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      86: return\n}"
+  },
+  "MixedAscDesc": {
+   "hash": "86ada3432ce1b5e8",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 5000,
+      "expected": 20,
+      "ms": 0
+     }
+    ],
+    "20000": [
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 1
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 1
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 1
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 20000,
+      "expected": 20,
+      "ms": 1
+     }
+    ],
+    "50000": [
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 4
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 4
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 5
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 3
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 3
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 4
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 7
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 50000,
+      "expected": 20,
+      "ms": 2
+     }
+    ],
+    "100000": [
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 3
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 3
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 4
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 5
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 5
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 2
+     },
+     {
+      "sortedRows": 100000,
+      "expected": 20,
+      "ms": 3
+     }
+    ]
+   },
+   "inside": "Compiled from \"MixedAscDesc.java\"\npublic class lab.filesort.MixedAscDesc {\n  public lab.filesort.MixedAscDesc();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     30\n      18: aload_2\n      19: iload_3\n      20: iload_1\n      21: iload_3\n      22: isub\n      23: iastore\n      24: iinc          3, 1\n      27: goto          13\n      30: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      33: lstore_3\n      34: aload_2\n      35: invokestatic  #19                 // Method java/util/Arrays.sort:([I)V\n      38: iload_1\n      39: istore        5\n      41: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      44: lload_3\n      45: lsub\n      46: ldc2_w        #25                 // long 1000000l\n      49: ldiv\n      50: lstore        6\n      52: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      55: iload         5\n      57: invokedynamic #31,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      62: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      65: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      68: ldc           #41                 // String expected=20\n      70: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      73: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      76: lload         6\n      78: invokedynamic #43,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      83: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      86: return\n}"
+  },
+  "CoveringSort": {
+   "hash": "37692cadc7fa5cbc",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     }
+    ],
+    "20000": [
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"CoveringSort.java\"\npublic class lab.filesort.CoveringSort {\n  public lab.filesort.CoveringSort();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: bipush        20\n      13: istore        4\n      15: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      18: lload_2\n      19: lsub\n      20: ldc2_w        #19                 // long 1000000l\n      23: ldiv\n      24: lstore        5\n      26: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      29: iload         4\n      31: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      36: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      39: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      42: ldc           #35                 // String expected=20\n      44: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      47: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      50: lload         5\n      52: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      57: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      60: return\n}"
+  },
+  "IndexOrderLimit": {
+   "hash": "75ce4390ad299d9f",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     }
+    ],
+    "20000": [
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     },
+     {
+      "sortedRows": 20,
+      "expected": 20,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"IndexOrderLimit.java\"\npublic class lab.filesort.IndexOrderLimit {\n  public lab.filesort.IndexOrderLimit();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: bipush        20\n      13: istore        4\n      15: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      18: lload_2\n      19: lsub\n      20: ldc2_w        #19                 // long 1000000l\n      23: ldiv\n      24: lstore        5\n      26: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      29: iload         4\n      31: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      36: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      39: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      42: ldc           #35                 // String expected=20\n      44: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      47: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      50: lload         5\n      52: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      57: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      60: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

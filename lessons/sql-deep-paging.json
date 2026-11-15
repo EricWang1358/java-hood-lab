@@ -1,0 +1,613 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "sql-deep-paging",
+  "course": "MySQL 索引、事务与锁",
+  "title": "翻到第 10 万页，LIMIT 为啥突然卡死？",
+  "lead": "LIMIT 100000, 20 并不是直接跳到第 10 万行，而是把前 100020 行全回表读出来再扔掉前 10 万行。",
+  "minutes": 40,
+  "needs": [
+    "知道聚集索引与二级索引回表的概念"
+  ],
+  "after": [
+    "讲清 LIMIT offset, size 越往后翻越慢的底层原因（回表后丢弃）",
+    "掌握『游标翻页 id > lastId』与『延迟关联 Deferred Join』两种优化方案",
+    "分清 C 端瀑布流与 B 端后台跳页的方案选型"
+  ],
+  "terms": {
+    "深分页": "LIMIT offset, size 中 offset 极大时的分页查询，会导致海量无效回表与丢弃开销。",
+    "延迟关联": "Deferred Join，先通过覆盖索引子查询定位目标页的主键 id，再关联原表只回表这 size 条记录。",
+    "游标翻页": "基于上一页最后一条记录的排序键（如 id > lastId）利用 B+ 树二分定位下一页，复杂度 O(log N)。",
+    "覆盖索引": "索引叶子节点已包含查询所需的全部列，无需回聚簇索引查整行。"
+  },
+  "experiments": {
+    "deeppage": {
+      "runner": "java",
+      "home": "lab.deeppage",
+      "variants": [
+        {
+          "id": "OffsetScan",
+          "label": "普通 LIMIT offset,20",
+          "note": "从头扫描 offset+20 行并逐行取完整记录，再丢弃前 offset 行。"
+        },
+        {
+          "id": "DeferredJoin",
+          "label": "延迟关联",
+          "note": "内层只扫覆盖索引拿 20 个 id，外层只回表 20 次。"
+        },
+        {
+          "id": "CursorSeek",
+          "label": "游标翻页 id > lastId",
+          "note": "直接 B+ 树二分定位到 lastId+1，只扫 20 行。"
+        },
+        {
+          "id": "IdAnchor",
+          "label": "主键区间锚定",
+          "note": "已知 id 区间 BETWEEN min AND max，直接扫描 20 行。"
+        }
+      ],
+      "knob": {
+        "label": "跳过行数 offset",
+        "values": [
+          "1000",
+          "20000",
+          "100000",
+          "300000"
+        ],
+        "default": "100000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "scanned",
+        "expectKey": "expected",
+        "label": "整行回表扫描数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "翻到第 10 万页，LIMIT 为啥突然卡死？",
+      "bridge": "今天不背八股定义，先看一个真实工程场景，跑出数据后再拆底层机制。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "订单分页第 1 页 5ms 秒开，用户点到第 5000 页（`LIMIT 100000, 20`）时接口却要跑好几秒甚至超时！为什么同样只返回 20 条，越往后翻越慢？",
+          "say": "今天把普通 `LIMIT offset,20`、延迟关联和游标翻页跑出真实回表次数对比，一下看透深分页病根。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，热个身",
+      "bridge": "这节课会用到三个基础概念，咱们先花一分钟确认一下。忘了也没关系，选完当场给你补齐。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题，每题点一个答案就行。选完马上告诉你对不对，下面那句话就是这节课要用到的前置底座。",
+          "items": [
+            {
+              "have": "分页直觉",
+              "q": "执行 `SELECT * FROM orders ORDER BY create_time LIMIT 100000, 20` 时，MySQL 是直接跳到第 100001 行开始读吗？",
+              "options": [
+                "是，B+ 树直接跳过去",
+                "不是！它会先扫并回表前 100020 行，再把前 10 万行扔掉"
+              ],
+              "answer": 1,
+              "why": "存储引擎不保留行号偏移，只能老老实实扫过前 10 万行。"
+            },
+            {
+              "have": "性能瓶颈",
+              "q": "深分页真正的性能杀手是数 10 万下，还是回表 10 万次？",
+              "options": [
+                "回表 10 万次随机磁盘 I/O",
+                "CPU 加法计数慢"
+              ],
+              "answer": 0,
+              "why": "二级索引每拿到一个 id 就去聚簇索引回表取整行，10 万次随机 I/O 直接把磁盘打满！"
+            },
+            {
+              "have": "产品设计",
+              "q": "为什么 App 信息流下拉刷新的时候，通常不让跳到第 5000 页，而是传上一页最后一条的 `lastId`？",
+              "options": [
+                "因为产品经理懒得画页码",
+                "为了用游标翻页 `id > lastId LIMIT 20`，直接 B+ 树二分定位"
+              ],
+              "answer": 1,
+              "why": "游标翻页无论翻到第几亿行都只扫 20 行！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个生活场景",
+      "bridge": "热身完了。看代码之前，先在脑子里放一个画面。后面所有的数据库和 Java 机制，都可以往这个画面上套。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "从第1页抄到第10万行再撕掉 (Offset)",
+              "按目录页码直奔目标行 (Cursor)"
+            ],
+            "shared": {
+              "name": "5000 页大字典",
+              "value": "只要第 100001~100020 行"
+            }
+          },
+          "story": "查字典第 5000 页的 20 个词：`OffsetScan` 是从第 1 页起每页把整段正文全抄一遍，抄完 10 万行后全撕进垃圾桶，只留最后 20 行；`CursorSeek` 则是直接查目录二分翻到目标页码，只抄那 20 行！",
+          "say": "前 10 万次回表全部是无用功，这就是深分页慢的根因。",
+          "map": [
+            {
+              "scene": "从头扫描到 offset+20",
+              "on": "actors",
+              "tag": "扫 100020 行",
+              "code": "`i < offset + PAGE_SIZE`",
+              "say": "循环必须走到第 100020 行才能停。"
+            },
+            {
+              "scene": "每走一行先回表捞整行",
+              "on": "actors",
+              "tag": "10万次随机IO",
+              "code": "`rowFetchCost();`",
+              "say": "最致命的动作：在过滤丢弃前就已经回表取了整行！"
+            },
+            {
+              "scene": "丢弃前 offset 行",
+              "on": "action",
+              "tag": "白干 10 万次",
+              "code": "`if (i >= offset)`",
+              "say": "Server 层数够 10 万行直接扔掉，只保留最后 20 行。"
+            },
+            {
+              "scene": "延迟关联 / 游标定位",
+              "on": "action",
+              "tag": "仅回表 20 次",
+              "code": "`DeferredJoin / CursorSeek`",
+              "say": "要么内层只拿覆盖索引 id，要么直接 B+ 树二分定位 lastId。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "只要 20 条数据，LIMIT 100000, 20 到底回表了多少次？",
+      "bridge": "直观感觉是一回事，高并发/异常真的撞上来时，结果往往完全相反。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "把 `offset` 调到 100000，对比 `OffsetScan`、`DeferredJoin`、`CursorSeek` 的整行回表扫描数 `scanned`！",
+          "say": "先看 `OffsetScan` 里的回表位置。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "把场景写成程序：OffsetScan",
+      "bridge": "我们用纯 JDK 把这个底层过程真实模拟出来。重点看标出来的几行，不认识的词点一下虚线就有大白话解释。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "deeppage.OffsetScan",
+          "say": "循环从 `i = 0` 跑到 `offset + 20`，注意 `rowFetchCost()` 是在 `if (i >= offset)` 外面执行的！",
+          "walk": [
+            {
+              "focus": [
+                "i < offset + PAGE_SIZE"
+              ],
+              "say": "循环上限是 `offset + 20`，offset 越大，扫描范围越长。"
+            },
+            {
+              "focus": [
+                "rowFetchCost();"
+              ],
+              "say": "每扫一行就执行一次聚簇索引回表取整行，前 10 万行也照回不误！"
+            },
+            {
+              "focus": [
+                "if (i >= offset)"
+              ],
+              "say": "辛苦回表捞出整行后，前 10 万行全被这个 `if` 丢弃了！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一个答案",
+      "bridge": "代码看完了。先别急着看结果，按你刚才对场景的理解，先猜一猜程序跑完会打印出什么。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "当 `offset = 100000` 时，`OffsetScan` 的整行回表扫描数 `scanned` 是多少？",
+          "options": [
+            "20",
+            "100000",
+            "100020"
+          ],
+          "answer": 2,
+          "say": "选一个你觉得最可能的，猜错完全没关系，猜过再看实测印象最深。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一次一次看真实运行结果",
+      "bridge": "你已经下注了。这组程序在本地 JDK 实测跑了多轮，现在把真实数据放出来核对。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "deeppage",
+          "show": [
+            "OffsetScan"
+          ],
+          "hand": true,
+          "focus": [
+            "i < offset + PAGE_SIZE"
+          ],
+          "say": "先点运行看看基准表现，留意指标和预期是不是对得上。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "say": "实测 `scanned = 100020`！为了返回区区 20 条数据，足足多做了 10 万次无效回表。",
+          "key": "深分页与游标/延迟关联优化"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "出事的是哪一行？",
+      "bridge": "结果摆在眼前了。现在回到代码里，把直接导致这个现象的关键一行找出来。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "deeppage.OffsetScan",
+          "q": "回到 `OffsetScan`，点击**导致前 10 万行也付出昂贵回表代价**的那一行：",
+          "answer": [
+            "rowFetchCost(); // MySQL fetches full row & discards first `offset` rows"
+          ],
+          "hint": "找发生在 `if (i >= offset)` 之前的回表模拟调用。",
+          "found": "就是它！回表动作发生在了丢弃前 offset 行之前，造成海量无效随机 I/O。",
+          "say": "直接在代码上点你怀疑的那一行，点错了会给你提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "拆开字节码 / 底层指令看一眼",
+      "bridge": "光看表面现象还不够，用 JDK 自带的 `javap -c -p` 看一眼机器到底执行了什么。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "deeppage.OffsetScan",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "看 `javap -c -p`：外层循环把 `rowFetchCost()` 重复调用了 `offset + 20` 次，而 `if_icmplt` 过滤逻辑却写在它后面，前 `offset` 次调用的成果全被丢弃。",
+          "walk": [
+            {
+              "focus": [
+                "invokestatic"
+              ],
+              "label": "每次循环都先回表",
+              "say": "无论这条记录最终要不要返回，都先付出回表开销。"
+            },
+            {
+              "focus": [
+                "if_icmplt"
+              ],
+              "label": "回表完再计数丢弃",
+              "say": "前 `offset` 行回表完直接跳过，I/O 白白浪费。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "延迟关联 vs 游标翻页：分别怎么干掉这 10 万次回表？",
+      "bridge": "把两条执行流或两个阶段摊在时间轴上，每一步谁先谁后、哪里卡住，一眼看穿。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "ORDER BY create_time LIMIT 100000, 20",
+          "parts": {
+            "read": "索引定位",
+            "calc": "过滤跳过",
+            "write": "回表取行"
+          },
+          "lanes": [
+            "DeferredJoin (延迟关联)",
+            "CursorSeek (游标翻页)"
+          ],
+          "shared": {
+            "name": "整行回表数",
+            "start": "0"
+          },
+          "say": "两种优化路线都在 20 次回表内搞定，但适用场景不同。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "延迟关联内层：SELECT id FROM orders ORDER BY create_time LIMIT 100000, 20",
+              "say": "只取主键 id，完美命中覆盖索引，0 次回表！"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "value": "20 次",
+              "text": "延迟关联外层：JOIN orders ON o.id = tmp.id",
+              "say": "拿到目标页的 20 个 id 后，外层只回表 20 次捞整行！",
+              "ask": {
+                "q": "延迟关联的内层子查询为什么这么快？",
+                "options": [
+                  "因为走了覆盖索引只拿 id，免去了前 10 万次回表随机 I/O",
+                  "因为用了多线程"
+                ],
+                "answer": 0
+              }
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "游标翻页：WHERE id > lastId ORDER BY id LIMIT 20",
+              "say": "直接沿着 B+ 树根→枝→叶二分定位到 lastId+1！"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "value": "20 次",
+              "text": "顺着叶子链表只读 20 行直接返回",
+              "say": "连前 10 万个索引项都不用扫，无论翻到第几亿行都是毫秒级！"
+            }
+          ],
+          "verdict": "核心口诀：==能不跳页就用 CursorSeek（O(logN)）；必须跳页就用 DeferredJoin（20 次回表）==。",
+          "verdictSay": "再配合限制最大可翻页数（如最多 100 页），彻底杜绝深分页拖垮数据库。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "先猜：怎么改才能彻底修好？",
+      "bridge": "病根找到了。在看几种修法前，先判断一下哪种思路真正对症。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "把 `OffsetScan` 改成 `DeferredJoin` 或 `CursorSeek` 后，整行回表扫描数会从 100020 降到多少？",
+          "options": [
+            "20",
+            "1000",
+            "50000"
+          ],
+          "answer": 0,
+          "say": "想清楚「为什么出事」，再选一个你认为能根治的方案。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测对比",
+      "bridge": "不争论，把四种写法放在同一个开关下实测，高下立判。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "deeppage",
+          "show": [
+            "OffsetScan",
+            "DeferredJoin",
+            "CursorSeek",
+            "IdAnchor"
+          ],
+          "select": "CursorSeek",
+          "say": "切到 `DeferredJoin` 和 `CursorSeek`，整行回表扫描数全部稳稳压在 20 行！"
+        },
+        {
+          "t": "reveal",
+          "of": "p2",
+          "say": "切到 `CursorSeek` 后问题彻底清零，同时兼顾性能与正确性。"
+        },
+        {
+          "t": "try",
+          "say": "自己拨动上面的规模开关，对比错误数和耗时随规模的变化。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修好了，各自代价是多少？",
+      "bridge": "把四种方案在不同规模下的耗时和正确性画成折线图，工程选型靠数据说话。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "deeppage",
+          "say": "随着 `offset` 从 1000 涨到 30 万，`OffsetScan` 耗时直线飙升；`CursorSeek` 和 `DeferredJoin` 几乎贴地不动。",
+          "walk": [
+            {
+              "focus": "OffsetScan",
+              "say": "看 `普通 LIMIT offset,20`：从头扫描 offset+20 行并逐行取完整记录，再丢弃前 offset 行。"
+            },
+            {
+              "focus": "DeferredJoin",
+              "say": "看 `延迟关联`：内层只扫覆盖索引拿 20 个 id，外层只回表 20 次。"
+            },
+            {
+              "focus": "CursorSeek",
+              "say": "看 `游标翻页 id > lastId`：直接 B+ 树二分定位到 lastId+1，只扫 20 行。"
+            },
+            {
+              "focus": "IdAnchor",
+              "say": "看 `主键区间锚定`：已知 id 区间 BETWEEN min AND max，直接扫描 20 行。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上到底怎么选？",
+      "bridge": "没有银弹，只有适用边界。把每种方案的优点、代价和适用场景摆成一张表。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "根据产品是否需要『输入页码跳页』来选型。",
+          "options": [
+            {
+              "name": "OffsetScan (普通 LIMIT)",
+              "solves": "写法最简单",
+              "cost": "回表 offset+20 次：{ms:deeppage.OffsetScan} ms",
+              "when": "仅限前几页小数据量",
+              "say": "深分页必卡死。"
+            },
+            {
+              "name": "DeferredJoin (延迟关联)",
+              "solves": "支持传统跳页",
+              "cost": "仅回表 20 次：{ms:deeppage.DeferredJoin} ms",
+              "when": "后台管理系统必须支持跳到第 N 页",
+              "say": "跳页场景最优解。"
+            },
+            {
+              "name": "CursorSeek (游标翻页)",
+              "solves": "B+ 树二分定位，O(log N)",
+              "cost": "只扫 20 行：{ms:deeppage.CursorSeek} ms",
+              "when": "C 端瀑布流、下拉加载（无需跳页）",
+              "say": "性能天花板。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "两道巩固题：检验是否真懂",
+      "bridge": "学完立刻做两道高频面试陷阱题，看看能不能一眼识破。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "id": "q1",
+          "q": "延迟关联 `JOIN (SELECT id FROM t ORDER BY k LIMIT 100000, 20) tmp ON t.id = tmp.id` 生效的核心前提是什么？",
+          "options": [
+            {
+              "text": "内层子查询必须命中覆盖索引（不回表就能拿到 20 个 id）",
+              "ok": true,
+              "why": "只有内层免回表，才能把 10 万次回表压成 20 次！"
+            },
+            {
+              "text": "表里不能有主键",
+              "ok": false,
+              "why": "恰恰需要主键 id 来做外层关联回表。"
+            },
+            {
+              "text": "必须关闭 InnoDB 缓冲池",
+              "ok": false,
+              "why": "毫无关系。"
+            }
+          ],
+          "say": "第一题：选最精准的那一项。"
+        },
+        {
+          "t": "quiz",
+          "id": "q2",
+          "q": "如果后台系统必须支持页码跳转，又怕爬虫恶意传 `page=1000000` 把库打挂，工程上怎么兜底？",
+          "options": [
+            {
+              "text": "限制最大可翻页数（如最多翻到 100 页），提示用户缩小筛选条件",
+              "ok": true,
+              "why": "业务限流 + 延迟关联是最稳妥的双保险。"
+            },
+            {
+              "text": "把 LIMIT 改成 SELECT *",
+              "ok": false,
+              "why": "毫无帮助。"
+            },
+            {
+              "text": "每次先查一次 COUNT(*)",
+              "ok": false,
+              "why": "只会让数据库更慢。"
+            }
+          ],
+          "say": "第二题：换个问法考同一个底层原理。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把概念装进脑子：标准叫法与面试原题",
+      "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
+      "blocks": [
+        {
+          "t": "callout",
+          "tone": "note",
+          "title": "深分页与游标/延迟关联优化（Deep Paging Optimization）",
+          "md": "==LIMIT offset, 20 慢在先回表 offset+20 次再丢弃前 offset 行==；==游标翻页== 二分定位只扫 20 行，==延迟关联== 覆盖索引拿 id 后仅回表 20 次。",
+          "say": "记住这一句核心定义，面试时先抛结论再展开。"
+        },
+        {
+          "t": "points",
+          "items": [
+            "MySQL 深分页为什么慢？LIMIT 100000, 20 到底干了什么？",
+            "深分页怎么优化？延迟关联和游标翻页分别适用什么场景？",
+            "如果按非唯一列（如 create_time）做游标翻页，同一秒有多条数据怎么防漏？"
+          ],
+          "say": "这几道都是真实一二面原题，下一页直接练习脱稿讲。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上课件，开口讲一遍",
+      "bridge": "看懂不等于讲得出来。对着计时器，按要点一口气讲顺。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚 LIMIT 100000, 20 为什么慢，以及游标翻页和延迟关联各自的原理与适用场景？",
+          "seconds": 90,
+          "points": [
+            "普通 LIMIT offset, 20 会先扫出 offset+20 行并逐行回表取整行，Server 层再丢弃前 offset 行，造成海量无效随机 I/O",
+            "不需跳页的 C 端瀑布流用游标翻页（WHERE (create_time, id) > (lastTime, lastId) LIMIT 20），B+ 树二分定位只扫 20 行",
+            "必须跳页的后台用延迟关联：内层走覆盖索引只拿 20 个 id，外层 JOIN 回表 20 次，并限制最大页码"
+          ],
+          "model": "LIMIT 100000, 20 慢不是因为返回 20 条慢，而是存储引擎会先把前 100020 行全部回表捞出整行交给 Server 层，再把前 10 万行直接丢弃，造成大量无效随机 I/O。优化分两种场景：不需要跳页的瀑布流场景用游标翻页，通过 id > lastId 直接在 B+ 树二分定位，无论翻多深都只扫 20 行；必须支持跳页的后台场景用延迟关联，让子查询走覆盖索引只捞出 20 个主键 id，外层再 JOIN 原表，把 10 万次回表压到 20 次。",
+          "say": "先自己组织语言讲一遍，再点开参考答案对照漏了哪个得分点。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张复习卡片",
+      "bridge": "最后留三张一问一答卡片，考前扫一眼就能全部唤醒。",
+      "blocks": [
+        {
+          "t": "cards",
+          "cards": [
+            {
+              "q": "LIMIT 100000, 20 慢在哪？",
+              "a": "前 10 万行也先回表取了整行再丢弃，随机 I/O 爆炸。"
+            },
+            {
+              "q": "C 端瀑布流深分页最优解？",
+              "a": "游标翻页（WHERE id > lastId LIMIT 20），B+ 树二分定位只扫 20 行。"
+            },
+            {
+              "q": "B 端必须跳页怎么优化？",
+              "a": "延迟关联：内层覆盖索引拿 20 个 id，外层只回表 20 次。"
+            }
+          ],
+          "say": "这三张卡片就是本课的最小精华，全部通关，进入下一课！"
+        }
+      ]
+    }
+  ]
+}

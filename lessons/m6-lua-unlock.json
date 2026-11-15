@@ -1,0 +1,584 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-lua-unlock",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "get 判断锁归属再 del，为什么还是删了别人的锁？",
+  "lead": "就算在 Java 代码里先 `get` 校验 UUID 再 `del`，两步之间的一次 GC 停顿就足够让锁过期易主，照样删掉别人的锁！看懂 Lua 脚本与 Fencing Token 的必要性。",
+  "minutes": 35,
+  "needs": [
+    "了解第 12 课分布式锁唯一 Token",
+    "知道 Redis 单线程执行 Lua 脚本的原子性"
+  ],
+  "after": [
+    "复现 Java 端先 get 后 del 在 GC/网络抖动下删错锁的时序",
+    "写出标准 Redis Lua 原子解锁脚本并理解其单线程原子原理",
+    "了解可重入 Hash 锁与 Fencing Token 防脑裂机制"
+  ],
+  "terms": {
+    "Lua原子脚本": "Redis 把整个 Lua 脚本作为一个整体在主线程中串行执行，期间不会插入任何其他客户端命令。",
+    "可重入锁": "同一个线程在未释放锁前再次请求同一把锁时，通过 Hash 计数加 1 放行，释放时减 1 到 0 才删除。",
+    "FencingToken": "每次加锁颁发的单调递增令牌号，下游 DB 拒绝小于等于已处理最大 Token 的迟到写请求。"
+  },
+  "experiments": {
+    "m6_luaunlock": {
+      "runner": "java",
+      "home": "lab.m6.luaunlock",
+      "knob": {
+        "name": "threads",
+        "label": "并发测试线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "stolenLocks",
+        "expectKey": "expected",
+        "label": "误删他人锁次数",
+        "expect": "零误删"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "CheckThenDel",
+          "label": "先get再del(Java端)",
+          "code": "CheckThenDel.java",
+          "note": "在应用层分两步调用 get 和 del，中间停顿即删掉 B 的新锁。"
+        },
+        {
+          "id": "AtomicLuaUnlock",
+          "label": "Lua原子解锁",
+          "code": "AtomicLuaUnlock.java",
+          "note": "校验与删除合在服务端单次原子执行，绝不误删。"
+        },
+        {
+          "id": "ReentrantHashLock",
+          "label": "Hash可重入锁",
+          "code": "ReentrantHashLock.java",
+          "note": "用 Hash 记录持有者与重入次数，支持同线程嵌套加锁。"
+        },
+        {
+          "id": "FencingTokenLock",
+          "label": "FencingToken防迟到",
+          "code": "FencingTokenLock.java",
+          "note": "配合单调递增 Token，连 GC 停顿后迟到的业务写库也能挡住。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "get 判断锁归属再 del，为什么还是删了别人的锁？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "很多同学已经知道 Value 要存 UUID，于是顺手在 Java 里写 `if (uuid.equals(redis.get(k))) redis.del(k)`——**结果线上跑久了还是把别人的锁给删了**。",
+          "say": "只要「判断」和「删除」在网络两端分两次发，中间就永远插得进一只黑天鹅。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "复合操作原子性",
+              "q": "Java 端先调 `redis.get` 再调 `redis.del`，Redis 服务端把它们当成一个原子操作吗？",
+              "options": [
+                "不是，这是两条独立网络请求，中间可穿插其他客户端命令和 TTL 过期",
+                "是，只要在同一个 Java if 语句里就原子",
+                "Redis 会自动把它们合并"
+              ],
+              "answer": 0,
+              "why": "Redis 服务端只保证单条命令或单个 Lua 脚本原子执行。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：get 返回 true 后的 10ms GC 停顿",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "40 轮并发测试：A 刚拿到锁准备释放，B 在锁过期瞬间抢到新锁。",
+            "actors": [
+              "客户端 A",
+              "客户端 B"
+            ],
+            "shared": "Redis 锁 k"
+          },
+          "say": "40 轮并发测试：A 刚拿到锁准备释放，B 在锁过期瞬间抢到新锁。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `CheckThenDel`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_luaunlock.CheckThenDel",
+          "say": "这就是最常见的基线写法 `CheckThenDel`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`CheckThenDel` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`CheckThenDel` 在 `if (owner.equals(cur))` 和 `lock.remove` 之间出现停顿，40 轮会误删多少次 B 的锁？",
+          "options": [
+            "0 次",
+            "多次误删（stolenLocks > 0）",
+            "40 次全部"
+          ],
+          "answer": 1,
+          "say": "只要 B 在那条缝隙里把锁抢到手，A 接下来的 `DEL` 就会一刀砍掉 B 的锁！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`CheckThenDel` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_luaunlock",
+          "show": [
+            "CheckThenDel"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "String cur = lock.get(\"k\");",
+            "if (owner.equals(cur)) {",
+            "String removed = lock.remove(\"k\");"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `CheckThenDel` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_luaunlock.CheckThenDel",
+          "lines": [
+            "String cur = lock.get(\"k\");",
+            "if (owner.equals(cur)) {",
+            "String removed = lock.remove(\"k\");"
+          ],
+          "say": "这三行在 Java 端看似紧挨着，在分布式网络与 JVM GC 面前中间隔着一道鸿沟。",
+          "answer": [
+            "String cur = lock.get(\"k\");",
+            "if (owner.equals(cur)) {",
+            "String removed = lock.remove(\"k\");"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "这三行在 Java 端看似紧挨着，在分布式网络与 JVM GC 面前中间隔着一道鸿沟。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "get(k)==A -> [GC Pause / B acquires k] -> del(k)",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "客户端 A",
+            "客户端 B"
+          ],
+          "shared": {
+            "name": "Redis 锁 k",
+            "start": "A 持有 (快过期)"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "A 调 GET 确认锁是自己的",
+              "say": "A 校验通过，准备发 DEL 命令。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "text": "此时锁刚好过期，B 抢到新锁 k=B",
+              "say": "A 刚好触发一次小 GC 停顿，Redis 把过期的锁摘除，B 立刻 SET NX 成功！"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "A 醒来发出无条件 DEL，把 B 的锁删了",
+              "say": "A 直接发出 DEL k，Redis 不管现在是谁的直接删掉，B 的互斥保护被撕碎！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `AtomicLuaUnlock`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "把校验和删除写进一段 Lua 脚本丢给 Redis 执行后，`stolenLocks` 会是多少？",
+          "options": [
+            "严格为 0，Redis 主线程执行 Lua 期间不可被打断",
+            "还是可能误删",
+            "Lua 会把 B 也一起锁死"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`CheckThenDel` vs `AtomicLuaUnlock`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_luaunlock",
+          "show": [
+            "CheckThenDel",
+            "AtomicLuaUnlock"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `AtomicLuaUnlock` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_luaunlock.AtomicLuaUnlock",
+          "within": "luaUnlock(java.lang.String)",
+          "from": "0: getstatic",
+          "to": "ireturn",
+          "say": "看 `AtomicLuaUnlock.luaUnlock`：等价于服务端单线程原子 `if get(KEYS[1]) == ARGV[1] then return del(KEYS[1]) end`。",
+          "walk": [
+            {
+              "focus": [
+                "remove"
+              ],
+              "label": "服务端单次原子判断+删除",
+              "say": "就算 A 卡顿 10 秒才把 Lua 发到服务端，服务端判断时发现 Value 已经是 B 了，直接返回 0 不删！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`ReentrantHashLock` 与 `FencingTokenLock`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_luaunlock",
+          "show": [
+            "CheckThenDel",
+            "AtomicLuaUnlock",
+            "ReentrantHashLock",
+            "FencingTokenLock"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_luaunlock",
+          "variants": [
+            "CheckThenDel",
+            "AtomicLuaUnlock",
+            "ReentrantHashLock",
+            "FencingTokenLock"
+          ],
+          "notes": [
+            {
+              "focus": "CheckThenDel",
+              "key": "应用层先 get 后 del 存在竞态缝隙，多次误删他人锁",
+              "say": "只要分两步发请求，就一定挡不住 GC 停顿。"
+            },
+            {
+              "focus": "AtomicLuaUnlock",
+              "key": "Lua 原子解锁全程零误删",
+              "say": "Lua 脚本是 Redis 分布式锁解锁的绝对标配。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `FencingTokenLock` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_luaunlock.FencingTokenLock",
+          "within": "writeDbWithToken(long)",
+          "from": "0: getstatic",
+          "to": "ireturn",
+          "say": "看 `FencingTokenLock.writeDbWithToken`：就算 A 在写数据库前 GC 停顿了，B 拿了更大的 Token 写完后，A 迟到的写库请求也会被 `token <= dbMaxToken` 拦下。",
+          "walk": [
+            {
+              "focus": [
+                "compareAndSet"
+              ],
+              "label": "Fencing Token 终极防线",
+              "key": "锁管入口，Fencing Token（或数据库乐观锁版本号）管落地",
+              "say": "这是分布式系统权威专家 Martin Kleppmann 强调的「只靠锁不够，存储端也要校验单调凭证」。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "Lua 原子解锁",
+              "solves": "彻底消除解锁时的 check-then-del 竞态误删",
+              "cost": "约 {ms:m6_luaunlock.AtomicLuaUnlock} ms",
+              "when": "所有 Redis 分布式锁释放场景",
+              "say": "Redisson 底层也是用 Lua 脚本实现加锁、续期和解锁。"
+            },
+            {
+              "name": "Hash 可重入锁 + Fencing Token",
+              "solves": "支持同线程嵌套调用，且防止 GC 停顿后迟到写库脏数据",
+              "cost": "约 {ms:m6_luaunlock.FencingTokenLock} ms，需下游配合版本号",
+              "when": "复杂业务嵌套加锁、金融级写库防脑裂",
+              "say": "重要写库操作务必配合数据库乐观锁版本号或 Fencing Token。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "分布式锁解锁与写库怎么防「GC 停顿」？",
+          "branches": [
+            {
+              "when": "防解锁时误删别人新锁",
+              "pick": "Redis Lua 脚本原子校验并删除",
+              "eg": "if get==ARGV[1] then del end"
+            },
+            {
+              "when": "防持锁线程 GC 醒来后脏写数据库",
+              "pick": "Fencing Token / 数据库乐观锁版本号",
+              "eg": "UPDATE ... WHERE version = ?"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "Java端 get+del",
+            "Lua 原子解锁",
+            "Lua + Fencing Token"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "代码评审发现同事写了 `if (uuid.equals(redis.get(k))) redis.del(k)`。",
+              "answer": 1,
+              "why": "立刻改成 `DefaultRedisScript` 执行 Lua 原子解锁。"
+            },
+            {
+              "text": "支付扣款在分布式锁内执行，但担心机器发生 15 秒 Full GC 醒来后锁已易主，两个线程同时改数据库余额。",
+              "answer": 2,
+              "why": "锁内写库还要配合数据库乐观锁或单调 Fencing Token 做最后一道防线。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：Lua 原子解锁与可重入",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Lua 原子解锁与可重入",
+          "alias": "Lua Atomic Unlock · Reentrant Hash & Fencing Token",
+          "oneLine": "==Lua 脚本==把校验与删除合成单线程原子动作；==Fencing Token== 挡住 GC 停顿后的迟到写库。",
+          "asked": [
+            "写出 Redis Lua 原子解锁脚本？",
+            "Redisson 怎么实现可重入分布式锁？",
+            "什么是 Fencing Token？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "下面哪段 Lua 脚本能正确实现分布式锁原子解锁？",
+          "options": [
+            {
+              "text": "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+              "ok": true,
+              "why": "经典 1 行标准 Lua 解锁脚本。"
+            },
+            {
+              "text": "redis.call('del', KEYS[1])",
+              "ok": false,
+              "why": "没有校验 ARGV[1] 归属。"
+            }
+          ],
+          "say": "手写背熟这行 Lua 脚本。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Redisson 的 `RLock` 在 Redis 里用什么数据结构实现「可重入」？",
+          "options": [
+            {
+              "text": "Hash 结构：field 存 `UUID:threadId`，value 存重入次数",
+              "ok": true,
+              "why": "每次同线程重入 HINCRBY +1，解锁 -1，减到 0 才 DEL。"
+            },
+            {
+              "text": "List 结构",
+              "ok": false,
+              "why": "List 不适合按线程字段计数。"
+            }
+          ],
+          "say": "Redisson 可重入靠 Hash + HINCRBY。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么说即使解锁用了 Lua，机器发生长时间 Full GC 依然可能出现两个线程同时改数据库？",
+          "options": [
+            {
+              "text": "A 锁过期后 B 抢到锁，A 从 GC 醒来继续执行锁体内的 DB 写入；需靠 DB 乐观锁/Fencing Token 兜底",
+              "ok": true,
+              "why": "锁过期时 B 合法进入了临界区，而 A 此时还没走出临界区。"
+            },
+            {
+              "text": "因为 Full GC 会把 Redis 重启",
+              "ok": false,
+              "why": "GC 只暂停当前 JVM 进程。"
+            }
+          ],
+          "say": "理解分布式锁的物理极限。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么 Java 端先 get 再 del 还会误删锁？Lua 脚本怎么写？Redisson 怎么实现可重入？",
+          "points": [
+            "Java 端 get 和 del 是两次网络请求，中间若发生 GC 或抖动导致锁过期易主，del 就会删掉别人新锁",
+            "Lua 脚本把 get 校验与 del 打包在 Redis 单线程内原子执行，杜绝中间插队",
+            "Redisson 用 Hash 结构（field=UUID:threadId, value=重入计数）实现可重入",
+            "极端长 GC 醒来脏写 DB 需靠数据库乐观锁或 Fencing Token 兜底"
+          ],
+          "model": "即使锁 Value 存了唯一 UUID，如果在客户端分两步先调 GET 再调 DEL，两步之间一旦发生网络抖动或 JVM Full GC 导致锁过期并被他人重新获取，客户端醒来后的 DEL 依然会误删别人的锁。因此必须用 Redis Lua 脚本将判断和删除合成一个原子操作：`if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end`。Redisson 进一步使用 Hash 结构记录 `UUID:threadId` 和重入次数来实现可重入锁；若要防范长 GC 醒来后的脏写库，还需在存储层配合乐观锁或 Fencing Token。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "客户端 get+del 为什么不安全？",
+              "a": "两次网络请求之间存在竞态窗口，GC 停顿后可能删掉新持有者的锁。"
+            },
+            {
+              "q": "标准 Lua 解锁？",
+              "a": "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end"
+            },
+            {
+              "q": "Redisson 可重入数据结构？",
+              "a": "Hash（field 为 UUID:threadId，value 为重入次数）。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

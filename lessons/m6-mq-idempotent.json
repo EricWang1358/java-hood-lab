@@ -1,0 +1,584 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-mq-idempotent",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "MQ 重试发了两次消息，为什么用户被扣了两次钱？",
+  "lead": "第 16 课的「至少一次投递」保证了消息不丢，但也带来了重复消息。只靠内存/Redis 判断 `if (exists) return` 依然会有并发竞态，真正稳的是数据库唯一索引和状态机 CAS。",
+  "minutes": 35,
+  "needs": [
+    "理解为什么 MQ 必然存在重复消费",
+    "知道数据库唯一约束与乐观锁的基本概念"
+  ],
+  "after": [
+    "复现无幂等与「先查缓存再扣款」在并发重复消息下的双扣款事故",
+    "对比 Redis 去重、DB 唯一防重表、业务状态机 CAS 三种幂等方案",
+    "讲清为什么数据库唯一索引/状态机是消费幂等的最后一道防线"
+  ],
+  "terms": {
+    "幂等性": "同一条消息无论被消费 1 次还是 N 次，对业务状态和资金产生的最终结果完全一致。",
+    "状态机幂等": "利用 `UPDATE order SET status = PAID WHERE id = ? AND status = UNPAID` 的原子条件更新实现天然防重。"
+  },
+  "experiments": {
+    "m6_mqidem": {
+      "runner": "java",
+      "home": "lab.m6.mqidem",
+      "knob": {
+        "name": "threads",
+        "label": "并发重复投递线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "duplicateCharges",
+        "expectKey": "expected",
+        "label": "重复扣款次数",
+        "expect": "零重复扣款"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "NaiveConsume",
+          "label": "无幂等直接扣款",
+          "code": "NaiveConsume.java",
+          "note": "来一条消息扣一次钱，50 笔订单被 4 个线程重投后直接多扣 150 次。"
+        },
+        {
+          "id": "DedupCacheOnly",
+          "label": "先get缓存再去重",
+          "code": "DedupCacheOnly.java",
+          "note": "先 seen.get 再扣款再 seen.put，多线程并发到达时同时穿透造成重复扣款。"
+        },
+        {
+          "id": "DbUniqueKeyIdem",
+          "label": "唯一防重表(putIfAbsent)",
+          "code": "DbUniqueKeyIdem.java",
+          "note": "等价于同库事务里 INSERT INTO dedup_log(msg_id) UNIQUE KEY，冲突即回滚跳过。"
+        },
+        {
+          "id": "StateMachineIdem",
+          "label": "业务状态机CAS",
+          "code": "StateMachineIdem.java",
+          "note": "compareAndSet(0, 1) 等价于 UPDATE ... WHERE status=0，零额外防重表且绝对并发安全。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "MQ 重试发了两次消息，为什么用户被扣了两次钱？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "只要用了 MQ 重试和手动 ACK，**同一条消息就一定会被重复投递**。如果消费者写成「收到消息直接扣款」，用户马上就会收到两条扣款短信。",
+          "say": "今天我们重点抓一个隐蔽坑：为什么很多人在代码里写了 `if (cache.exists(msgId)) return;`，并发一来还是双扣款？"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "原子占位思想",
+              "q": "为什么 `if (!exists(key)) { doBiz(); set(key); }` 在多线程或双消费者并发时挡不住重复消费？",
+              "options": [
+                "因为查和写不是原子的，两个线程可能同时查到不存在",
+                "因为缓存一定比数据库慢",
+                "因为 MQ 不支持多线程"
+              ],
+              "answer": 0,
+              "why": "经典的 Check-Then-Act 竞态：两个并发到达的重复消息会同时通过 exists 检查。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：50 笔支付回调消息同时被重复投递",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "多个消费者线程同时收到这 50 笔订单的支付成功消息，目标是不论并发多高，每笔订单只能扣款/入账 1 次。",
+            "actors": [
+              "线程 1 (首条消息)",
+              "线程 2 (重投消息)"
+            ],
+            "shared": "seen[orderId]"
+          },
+          "say": "多个消费者线程同时收到这 50 笔订单的支付成功消息，目标是不论并发多高，每笔订单只能扣款/入账 1 次。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `NaiveConsume`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_mqidem.NaiveConsume",
+          "say": "这就是最常见的基线写法 `NaiveConsume`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`NaiveConsume` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`DedupCacheOnly` 先查 `seen.get(orderId)` 再扣款再 `seen.put`，多线程同时收到同一订单消息会怎样？",
+          "options": [
+            "完全去重",
+            "两个线程同时查到 null，依然发生重复扣款",
+            "抛出死锁异常"
+          ],
+          "answer": 1,
+          "say": "中间哪怕只差一个线程切换（yield），两条消息就会齐刷刷穿过 if 检查。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`NaiveConsume` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqidem",
+          "show": [
+            "NaiveConsume"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "if (Boolean.TRUE.equals(seen.get(orderId))) return;",
+            "chargeCount.incrementAndGet();"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `NaiveConsume` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_mqidem.NaiveConsume",
+          "lines": [
+            "if (Boolean.TRUE.equals(seen.get(orderId))) return;",
+            "chargeCount.incrementAndGet();"
+          ],
+          "say": "在 `NaiveConsume` 完全不校验、`DedupCacheOnly` 拆成 get+put 两步的情况下，重复扣款根本挡不住。",
+          "answer": [
+            "if (Boolean.TRUE.equals(seen.get(orderId))) return;",
+            "chargeCount.incrementAndGet();"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "在 `NaiveConsume` 完全不校验、`DedupCacheOnly` 拆成 get+put 两步的情况下，重复扣款根本挡不住。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "msg_1 -> [T1: get=null] / [T2: get=null] -> 双扣款",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "线程 1 (首条消息)",
+            "线程 2 (重投消息)"
+          ],
+          "shared": {
+            "name": "seen[orderId]",
+            "start": "null"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "T1 执行 seen.get(1) 读到 null",
+              "say": "线程 1 准备扣款。"
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "T2 同时执行 seen.get(1) 也读到 null",
+              "say": "线程 2 拿到重投消息，在 T1 写入 seen 之前也过了检查！"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "T1、T2 各自执行扣款，duplicateCharges +1",
+              "say": "只有把占位和业务做成原子操作（唯一索引或状态机 CAS），才能彻底封死这个口子。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `DedupCacheOnly`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "`DbUniqueKeyIdem` 和 `StateMachineIdem` 为什么能做到永远 0 重复扣款？",
+          "options": [
+            "它们把「判重」和「占位/改状态」合成一条原子操作",
+            "它们用了单线程消费",
+            "它们关闭了 MQ 重试"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`NaiveConsume` vs `DedupCacheOnly`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqidem",
+          "show": [
+            "NaiveConsume",
+            "DedupCacheOnly"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `DedupCacheOnly` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_mqidem.DedupCacheOnly",
+          "within": "onMessage(int)",
+          "from": "0: getstatic",
+          "to": "return",
+          "say": "看 `DedupCacheOnly.onMessage` 的字节码：先调 `ConcurrentHashMap.get`，中间没有任何锁保护就去加钱，最后才调 `put`。",
+          "walk": [
+            {
+              "focus": [
+                "get",
+                "put"
+              ],
+              "label": "非原子 Check-Then-Act",
+              "say": "就算用了线程安全的 ConcurrentHashMap，拆成 get 和 put 两步依然不是原子的。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`DbUniqueKeyIdem` 与 `StateMachineIdem`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqidem",
+          "show": [
+            "NaiveConsume",
+            "DedupCacheOnly",
+            "DbUniqueKeyIdem",
+            "StateMachineIdem"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_mqidem",
+          "variants": [
+            "NaiveConsume",
+            "DedupCacheOnly",
+            "DbUniqueKeyIdem",
+            "StateMachineIdem"
+          ],
+          "notes": [
+            {
+              "focus": "NaiveConsume",
+              "key": "无幂等保护，并发重投多少次就多扣多少次",
+              "say": "生产环境绝不允许裸奔消费。"
+            },
+            {
+              "focus": "StateMachineIdem",
+              "key": "状态机 CAS 与 DB 唯一键全程零重复扣款",
+              "say": "数据库唯一索引和状态机 CAS 是最可靠的兜底。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `StateMachineIdem` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_mqidem.StateMachineIdem",
+          "within": "onMessage(int)",
+          "from": "0: getstatic",
+          "to": "return",
+          "say": "看 `StateMachineIdem.onMessage`：单条 `AtomicIntegerArray.compareAndSet(orderId, 0, 1)`，对应 SQL 里的 `UPDATE ... SET status=1 WHERE id=? AND status=0`。",
+          "walk": [
+            {
+              "focus": [
+                "compareAndSet"
+              ],
+              "label": "状态机 CAS 原子防重",
+              "key": "影响行数为 1 才继续，为 0 直接幂等返回",
+              "say": "不依赖额外防重表、不依赖 Redis，业务本身自带状态流转时最优雅。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "业务状态机 CAS (乐观锁)",
+              "solves": "有明确状态流转的订单/支付/工单防重",
+              "cost": "约 {ms:m6_mqidem.StateMachineIdem} ms，零额外存储开销",
+              "when": "待支付→已支付、待发货→已发货等单向状态机",
+              "say": "最推荐方案：一条带前置状态的 UPDATE 语句搞定业务与幂等。"
+            },
+            {
+              "name": "DB 唯一索引防重表",
+              "solves": "无状态机（如积分流水、发券记录）",
+              "cost": "约 {ms:m6_mqidem.DbUniqueKeyIdem} ms，与业务操作在同一个本地事务中插入",
+              "when": "账户流水、发短信/发券记录、通用事件去重",
+              "say": "切记防重表和业务表要在同一个 DB 事务里，否则一样有部分成功的问题。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "消费端幂等该如何选型？",
+          "branches": [
+            {
+              "when": "业务有单向状态流转（待支付→已支付）",
+              "pick": "状态机 CAS 条件更新",
+              "eg": "UPDATE t SET status=1 WHERE id=? AND status=0"
+            },
+            {
+              "when": "纯新增流水/无前置状态",
+              "pick": "DB 唯一索引 (biz_id + biz_type) 同事务插入",
+              "eg": "INSERT INTO mq_dedup(msg_key) 捕获 DuplicateKeyException"
+            },
+            {
+              "when": "高并发前置拦截减轻 DB 压力",
+              "pick": "Redis SET NX 挡一层 + DB 唯一键/状态机兜底",
+              "eg": "注意 Redis 宕机或过期时仍需 DB 兜底"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "无幂等",
+            "先查缓存再写",
+            "状态机 CAS / DB 唯一索引"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "用户充值加余额消息，没有单向状态字段，但有全局唯一流水号 `pay_tx_no`。",
+              "answer": 2,
+              "why": "在账户流水表对 `pay_tx_no` 建唯一索引，与加余额放进同一个数据库事务。"
+            },
+            {
+              "text": "同事写了 `if (!redis.hasKey(id)) { pay(); redis.set(id, 1); }`。",
+              "answer": 1,
+              "why": "典型非原子 Check-Then-Act，并发重投时照样双扣款，应改用原子占位+DB兜底。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：MQ 消费幂等",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "MQ 消费幂等",
+          "alias": "Idempotent Consumer (Unique Key / State Machine CAS)",
+          "oneLine": "==状态机 CAS== 与 ==DB 唯一索引同事务== 是消费幂等的终极防线；纯缓存 `get+put` 挡不住并发。",
+          "asked": [
+            "MQ 如何保证消息不被重复消费（消费幂等）？",
+            "用 Redis setnx 做幂等有什么隐患？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "仅用 Redis `SETNX msgId 1 EX 3600` 做消费幂等，为什么还不够安全？",
+          "options": [
+            {
+              "text": "如果设置成先落库再删/写 Redis 无法保证跨库原子性，且 Redis 过期或驱逐后旧重投消息会穿透",
+              "ok": true,
+              "why": "Redis 和 DB 分属两个系统，无法在一个事务里提交；真正兜底还是要靠 DB 唯一索引或状态机。"
+            },
+            {
+              "text": "Redis SETNX 本身不是原子的",
+              "ok": false,
+              "why": "SETNX 是原子的，问题在于跨系统和过期淘汰。"
+            }
+          ],
+          "say": "Redis 适合做前置防刷，DB 唯一键/状态机才是最终一致性防线。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在 MySQL 中利用防重表做幂等时，防重表插入与业务表更新应该放在哪里？",
+          "options": [
+            {
+              "text": "同一个本地数据库事务中",
+              "ok": true,
+              "why": "同事务才能同生共死：业务失败回滚时防重记录也一起回滚，允许后续重试。"
+            },
+            {
+              "text": "先提交防重表再异步改业务表",
+              "ok": false,
+              "why": "业务失败后防重记录已提交，后续重投全被误杀！"
+            }
+          ],
+          "say": "这是一个非常容易踩的事务边界坑。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "订单状态从 `UNPAID(0)` 变 `PAID(1)` 时，最优雅的幂等 SQL 写法是？",
+          "options": [
+            {
+              "text": "UPDATE orders SET status=1 WHERE id=? AND status=0",
+              "ok": true,
+              "why": "利用数据库行锁与条件更新的原子性，第二次执行受影响行数为 0 直接跳过。"
+            },
+            {
+              "text": "先 SELECT status，Java 判断等于 0 再 UPDATE orders SET status=1 WHERE id=?",
+              "ok": false,
+              "why": "先查后改在并发下不是原子的。"
+            }
+          ],
+          "say": "一行 SQL 解决并发与幂等。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "MQ 重复消费怎么处理？如果让你设计消费端幂等方案，有哪些实现方式以及各自优缺点？",
+          "points": [
+            "业务有单向状态流转时优先用状态机 CAS（UPDATE ... WHERE status=old），零额外表开销",
+            "无状态流转（如流水/发券）用业务唯一键建 DB 唯一索引，与业务操作同事务提交",
+            "可用 Redis SET NX 做前置过滤，但不能替代 DB 兜底；禁止先 get 后 put 的非原子判重"
+          ],
+          "model": "MQ 在重投和故障恢复时必然会产生重复消息，消费端必须保证幂等。工程上有三种常见做法：第一，如果业务本身有单向状态机，比如订单从未支付到已支付，直接用状态机 CAS 条件更新（WHERE id=? AND status=0），影响行数为 0 就直接 ACK 跳过，最简洁且绝对并发安全；第二，如果是新增流水或发券这类无状态操作，建一张防重表或在流水表上加业务唯一索引，和业务操作放在同一个本地数据库事务里；第三，高并发场景下可以在前面加一层 Redis SET NX 快速挡掉大部分重复请求，但最终还是要用 DB 唯一索引或状态机兜底，防止 Redis 过期或跨系统不一致。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "消费幂等最稳的两种方案？",
+              "a": "业务状态机 CAS 条件更新；DB 唯一索引同事务插入。"
+            },
+            {
+              "q": "先 get 缓存再业务再 put 为什么不行？",
+              "a": "非原子 Check-Then-Act，并发重投时两个线程会同时穿透。"
+            },
+            {
+              "q": "防重表和业务表必须在同一事务吗？",
+              "a": "必须！否则业务失败回滚了但防重记录还在，后续重试会被误判为重复而丢单。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

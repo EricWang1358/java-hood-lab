@@ -1,0 +1,264 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "https-tls",
+  "course": "网络与操作系统",
+  "title": "换上 HTTPS，首包到底多花多少毫秒？",
+  "lead": "非对称签名验签 + ECDH 密钥协商 + AES-GCM 加密，TLS 握手到底贵在哪里，怎么加速？",
+  "minutes": 35,
+  "needs": ["知道 HTTP 与对称/非对称加密", "知道 TCP 三次握手", "听说过 TLS 证书"],
+  "after": [
+    "讲清 TLS 握手为什么「先非对称协商密钥，再对称加密传数据」",
+    "用实测数据说出完整 TLS 握手比明文慢多少倍",
+    "掌握 Session Resumption（会话复用）与 HTTPS 长连接两大优化手段"
+  ],
+  "terms": {
+    "非对称加密": "RSA / ECDHE：用公钥/私钥对做身份认证与密钥协商，安全性高但 CPU 计算开销极大。",
+    "对称加密": "AES-GCM / ChaCha20：通信双方用同一把会话密钥加解密，速度极快，适合传输大量业务数据。",
+    "ECDH": "椭圆曲线迪菲-赫尔曼密钥交换：双方各生成临时公私钥，在不安全的网络上算出同一把会话密钥。",
+    "Session Resumption": "TLS 会话复用：缓存已协商好的会话密钥（Session ID / Ticket），重连时跳过非对称签名验签。"
+  },
+  "experiments": {
+    "tlscost": {
+      "runner": "java",
+      "home": "lab.tlscost",
+      "variants": [
+        { "id": "PlainTcp", "code": "PlainTcp.java", "label": "明文 TCP 短连接", "note": "无加密无认证，直接 TCP 收发作为性能基线。" },
+        { "id": "FullHandshake", "code": "FullHandshake.java", "label": "每次完整 TLS 握手", "note": "每次建连都做 RSA2048 签名验签 + ECDH 协商 + AES-GCM 传输，CPU 开销极大。" },
+        { "id": "SessionResume", "code": "SessionResume.java", "label": "TLS 会话复用", "note": "复用已协商的 AES 会话密钥，跳过昂贵的 RSA 与 ECDH 非对称握手。" },
+        { "id": "TlsKeepAlive", "code": "TlsKeepAlive.java", "label": "TLS + 长连接复用", "note": "1 次握手建好长连接后连续走 AES-GCM 加密传输，既安全又极快。" }
+      ],
+      "knob": { "label": "请求次数", "values": ["10", "25", "50", "100"], "default": "50" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "成功请求数" },
+      "time": { "key": "ms", "label": "总耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "换上 HTTPS，首包到底多花多少毫秒？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**HTTPS 为什么不直接全程用 RSA 加密，而要费劲「先非对称握手、再对称加密」？每次完整握手到底多贵？**",
+          "say": "HTTPS 面试必问握手流程，但很少有人真测过 RSA 签名验签 + ECDH 密钥交换在 CPU 上到底有多烧钱。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：对称与非对称的分工",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先快速确认三个密码学基础。",
+          "items": [
+            {
+              "have": "非对称加密",
+              "q": "HTTPS 里，RSA / ECDSA 非对称加密主要用来干什么？",
+              "options": ["加密传输全部视频和 JSON 正文", "身份认证（防中间人伪造服务端）与密钥协商", "压缩网页体积"],
+              "answer": 1,
+              "why": "非对称加密比对称加密慢成百上千倍，绝对不能用来直接加密全部业务数据。"
+            },
+            {
+              "have": "对称加密",
+              "q": "TLS 握手完成后，实际业务数据用什么加密？",
+              "options": ["AES-GCM 等对称加密", "Base64", "明文"],
+              "answer": 0,
+              "why": "AES-GCM 有硬件指令集加速（AES-NI），加解密吞吐可达 GB/s 级。"
+            },
+            {
+              "have": "TLS 1.3",
+              "q": "TLS 1.3 相比 TLS 1.2 把握手 RTT 从 2 RTT 压缩到了几 RTT？",
+              "options": ["1 RTT（会话复用甚至 0-RTT）", "4 RTT", "0.5 RTT"],
+              "answer": 0,
+              "why": "TLS 1.3 在 ClientHello 里直接带上密钥交换参数，1 个 RTT 就能完成握手。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「先对暗号、再换密本」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["客户端", "服务端"], "shared": { "name": "会话密钥", "value": "AES-128-GCM" } },
+          "story": "每次见面先查身份证（RSA 证书验签）再当场摇出同一本密码本（ECDH），光查证+摇密码本就要费很大劲；如果把密码本编号记下来（Session Resumption）或者干脆一直连着别挂（Keep-Alive），后面直接用密码本加密对话，飞快！",
+          "say": "这就是 HTTPS 既能防窃听防篡改、又能跑得飞快的秘密。",
+          "map": [
+            { "scene": "查身份证 + 摇密码本", "on": "actors", "tag": "非对称握手", "code": "`SHA256withRSA` + `ECDH`", "say": "最耗 CPU 和 RTT 的一步，尽量减少触发次数。" },
+            { "scene": "用同一本密码本加密", "on": "shared", "tag": "AES-GCM 对称传输", "code": "`Cipher.getInstance(\"AES/GCM/NoPadding\")`", "say": "握手完后全程走对称加密。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "现场复现：每次完整 TLS 握手的 CPU 代价",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "tlscost.FullHandshake",
+          "say": "看 `FullHandshake.java`：每次连接都真实执行 RSA2048 签名验签 + ECDH 密钥协商，再走 AES-GCM 加密。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：50 次请求，完整 TLS 握手比明文慢多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "同样在本机发 50 次短请求，`FullHandshake`（每次 RSA+ECDH+AES）比 `PlainTcp` 慢多少？",
+          "options": ["慢不到 1 倍", "慢 10～25 倍以上", "一样快"],
+          "answer": 1,
+          "say": "50 次 RSA 2048 私钥签名 + 公钥验签 + ECDH 运算直接把 CPU 拉满，耗时暴涨一个数量级！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测对比：400+ms vs 17ms",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "tlscost",
+          "show": ["PlainTcp", "FullHandshake"],
+          "knob": "50",
+          "hand": "FullHandshake",
+          "focus": "ms",
+          "say": "明文 50 次只需十来毫秒，而每次完整握手直接冲上四百多毫秒！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "非对称签名与密钥协商是 TLS 最贵的部分，不能每次请求都重做",
+          "say": "这就是为什么线上 HTTPS 必须配合 Keep-Alive、Session Ticket 和 TLS 卸载。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的 RSA 签名与 ECDH",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "tlscost.FullHandshake",
+          "within": "main(",
+          "from": "SHA256withRSA",
+          "to": "KeyAgreement",
+          "say": "每条连接都要调 `Signature.verify` 和 `KeyAgreement.doPhase`，大整数模幂与椭圆曲线点乘消耗了绝大部分时间。",
+          "walk": [
+            { "focus": ["Signature.verify"], "label": "RSA 验签", "say": "验证服务端证书签名，确认对方不是中间人。" },
+            { "focus": ["KeyAgreement"], "label": "ECDH 协商", "say": "双方算出同一把 128 位 AES 会话密钥。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "加速两板斧：会话复用 + 长连接",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "tlscost.TlsKeepAlive",
+          "say": "`SessionResume` 跳过非对称握手直接复用会话密钥；`TlsKeepAlive` 则在一条长连接上连续走 AES-GCM 加密。"
+        },
+        {
+          "t": "experiment",
+          "lab": "tlscost",
+          "show": ["PlainTcp", "FullHandshake", "SessionResume", "TlsKeepAlive"],
+          "knob": "50",
+          "hand": "TlsKeepAlive",
+          "focus": "ms",
+          "say": "去掉重复非对称握手后，耗时立刻从 400+ms 掉回几十毫秒！"
+        },
+        {
+          "t": "try",
+          "key": "tlscost",
+          "say": "调到 100 次请求，`FullHandshake` 几乎逼近 1 秒，而 `TlsKeepAlive` 依然轻松。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "HTTPS 生产优化怎么配？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "线上网关（Nginx / Envoy）标配这三招。",
+          "options": [
+            { "name": "TLS Session Ticket / ID", "solves": "断线重连时跳过非对称签名，省 RTT 与 CPU", "cost": "{ms:tlscost.SessionResume} ms", "when": "移动端弱网频繁重连", "say": "注意定期轮换 Ticket 密钥保证前向安全。" },
+            { "name": "HTTPS 长连接 + HTTP/2", "solves": "一次握手复用整条连接跑成百上千个请求", "cost": "{ms:tlscost.TlsKeepAlive} ms", "when": "所有 Web/App API 网关", "say": "把握手成本摊薄到几乎为零。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住这个核心机制",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "HTTPS 混合加密与 TLS 会话复用",
+          "alias": "Hybrid Encryption & Session Resumption",
+          "oneLine": "非对称加密负责验身份和协商会话密钥，对称加密负责高速传数据；靠长连接与 Session Ticket 摊薄握手成本。",
+          "asked": "HTTPS 握手过程是怎样的？为什么既用非对称又用对称加密？",
+          "say": "先说清分工（非对称太慢只用来验签+换密钥，对称快用来传正文），再补 TLS 1.3 1-RTT 和会话复用。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "某接口从 HTTP 切到 HTTPS 后 CPU 飙高、延迟上涨，最有效的优化组合是？",
+          "options": [
+            { "text": "开启 HTTP/2 + Keep-Alive 长连接 + TLS 1.3 Session Resumption", "ok": true, "why": "正确！大幅减少非对称握手次数与 RTT。" },
+            { "text": "把对称加密换成 4096 位 RSA 全程加密正文", "ok": false, "why": "CPU 会直接原地爆炸。" },
+            { "text": "关闭证书验证", "ok": false, "why": "会直接失去防中间人攻击的安全性。" }
+          ],
+          "say": "选出生产环境标准优化方案。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：HTTPS 握手与性能",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：HTTPS 为什么安全？为什么握手比 HTTP 慢，怎么优化？",
+          "points": [
+            "混合加密：非对称加密（RSA/ECDSA 验证书 + ECDHE 协商共享密钥），对称加密（AES-GCM 加密业务数据）",
+            "慢在哪里：额外多出 1～2 个 TLS 握手 RTT，且服务端私钥签名/解密消耗大量 CPU",
+            "优化手段：开启 Keep-Alive/HTTP2 复用连接、开启 TLS 1.3（1-RTT）和 Session Ticket 会话复用"
+          ],
+          "model": "HTTPS 是在 TCP 和 HTTP 之间加了一层 TLS。它采用混合加密：先用非对称加密验证服务端证书防止中间人，并通过 ECDHE 协商出一把临时的对称会话密钥；握手完成后，所有业务数据都用速度极快的对称加密 AES-GCM 传输。因为非对称签名和密钥协商非常耗 CPU 且多花 RTT，如果每次短连接都完整握手会慢十几倍，所以生产环境一定要在 Nginx 开启 Keep-Alive/HTTP2、TLS 1.3 和 Session Ticket 会话复用。",
+          "say": "试着不看提示讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "收好这三张卡，HTTPS 原理与调优一次过。",
+          "items": [
+            { "front": "为什么混合加密？", "back": "非对称防伪造并协商密钥，对称（AES-GCM）高速加密正文。" },
+            { "front": "TLS 贵在哪里？", "back": "RSA/ECDH 非对称计算耗 CPU，且多 1～2 个握手 RTT。" },
+            { "front": "HTTPS 提速三招？", "back": "长连接/HTTP2 复用 + TLS 1.3 (1-RTT) + Session Ticket。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

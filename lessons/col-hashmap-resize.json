@@ -1,0 +1,616 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "col-hashmap-resize",
+  "course": "Java 工程语法与集合",
+  "title": "HashMap 初始容量与负载因子：new HashMap<>(10000) 为什么还是会扩容？",
+  "lead": "明明知道要往 HashMap 里放 10000 条数据，贴心地写了 new HashMap<>(10000)，可源码算下来竟然还是在放第 7501 条时触发了一次全表扩容！",
+  "minutes": 30,
+  "needs": [
+    "知道 HashMap 默认容量 16、负载因子 0.75",
+    "知道扩容阈值 threshold = capacity * loadFactor"
+  ],
+  "after": [
+    "说清 HashMap 扩容机制：2 的幂对齐、threshold = cap * 0.75 与 JDK 8 高低位拆链优化",
+    "知道为什么传 new HashMap<>(N) 依然会扩容一次，以及 `(int)(N / 0.75f) + 1` 的正确算法",
+    "理解负载因子 0.75 在空间与哈希碰撞率之间的工程权衡"
+  ],
+  "terms": {
+    "tableSizeFor(cap)": "`HashMap` 构造器把传入的初始容量向上取整到最近的 2 的幂（如传 10000 变成 16384，传 100000 变成 131072）。",
+    "负载因子 0.75": "当 `size > capacity * 0.75` 时触发 2 倍扩容；传入恰好等于 N 的初始容量时，`N > N * 0.75` 仍可能触发扩容！",
+    "JDK 8 高低位拆链": "扩容后新容量是 2 倍，节点新位置要么在原下标 `j`，要么在 `j + oldCap`，无需重新算 hashCode，只需看新增的高位 bit 是 0 还是 1。"
+  },
+  "experiments": {
+    "mapresize": {
+      "runner": "java",
+      "home": "lab.mapresize",
+      "variants": [
+        {
+          "id": "DefaultCapResizeLoop",
+          "code": "DefaultCapResizeLoop.java",
+          "label": "默认 new HashMap<>()（多次翻倍扩容）",
+          "note": "从 16 开始反复 2 倍扩容十几次，每次都要新建数组并搬迁所有节点。"
+        },
+        {
+          "id": "ExactSizeStillResizes",
+          "code": "ExactSizeStillResizes.java",
+          "label": "new HashMap<>(N)（仍可能触发 1 次扩容）",
+          "note": "未除以 0.75 负载因子，N 恰好超过 2 的幂的 0.75 倍时会多扩一次。"
+        },
+        {
+          "id": "PreSizedLoadFactor",
+          "code": "PreSizedLoadFactor.java",
+          "label": "new HashMap<>((int)(N/0.75f)+1)（零扩容）",
+          "note": "或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。"
+        },
+        {
+          "id": "LowLoadFactorWasteful",
+          "code": "LowLoadFactorWasteful.java",
+          "label": "loadFactor=0.25（过度浪费内存与频繁扩容）",
+          "note": "每装满 25% 就扩容，数组膨胀 4 倍且频繁搬迁，得不偿失。"
+        }
+      ],
+      "knob": {
+        "label": "写入键值对数量 N",
+        "values": [
+          "20000",
+          "50000",
+          "100000",
+          "200000"
+        ],
+        "default": "100000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "size",
+        "expectKey": "expected",
+        "label": "最终写入键数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "HashMap 初始容量与负载因子：new HashMap<>(10000) 为什么还是会扩容？",
+      "bridge": "明明知道要往 HashMap 里放 10000 条数据，贴心地写了 new HashMap<>(10000)，可源码算下来竟然还是在放第 7501 条时触发了一次全表扩容！",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "《阿里巴巴 Java 开发手册》专门有一条规范：集合初始化时指定集合初始值大小，**`initialCapacity = (需要存储的元素个数 / 负载因子) + 1`**。今天实测不预分配 vs 算错初始容量 vs 正确预分配，性能到底差多少！",
+          "say": "顺便搞懂 `HashMap` 为什么容量必须是 2 的幂。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
+          "items": [
+            {
+              "have": "为何 2 的幂",
+              "q": "为什么 `HashMap` 的数组长度永远是 2 的幂（16, 32, 64...）？",
+              "options": [
+                "可以用位运算 (n - 1) & hash 代替慢速取模 hash % n，且扩容只需看 1 个高位 bit",
+                "JVM 数组只支持 2 的幂",
+                "防止内存泄漏"
+              ],
+              "answer": 0,
+              "why": "前提是 `n` 为 2 的幂，`(n - 1)` 二进制全为 1，`&` 运算才等价于 `%`。"
+            },
+            {
+              "have": "算容量",
+              "q": "预计存入 100 个元素，`new HashMap<>(100)` 会扩容吗？",
+              "options": [
+                "会！100 向上对齐到 128，threshold = 128 * 0.75 = 96 < 100，第 97 个就会扩容到 256！",
+                "不会",
+                "报错"
+              ],
+              "answer": 0,
+              "why": "必须算 `(int) (100 / 0.75f) + 1 = 134`，向上对齐到 256，threshold=192 才不扩容。"
+            },
+            {
+              "have": "头插 vs 尾插",
+              "q": "JDK 8 把 HashMap 扩容搬迁链表从头插法改成尾插法，主要解决了什么问题？",
+              "options": [
+                "并发扩容时可能形成的环形链表死循环（CPU 100%）",
+                "减少了一半内存",
+                "不需要 hashCode 了"
+              ],
+              "answer": 0,
+              "why": "不过要注意：JDK 8 的 HashMap 依然**不是线程安全的**，多线程并发 put 仍会丢数据或触发树化异常，并发必须用 `ConcurrentHashMap`！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (LowLoadFactorWasteful)",
+              "安全写法 (PreSizedLoadFactor)"
+            ],
+            "shared": {
+              "name": "最终写入键数",
+              "value": "目标 100000"
+            }
+          },
+          "story": "明明知道要往 HashMap 里放 10000 条数据，贴心地写了 new HashMap<>(10000)，可源码算下来竟然还是在放第 7501 条时触发了一次全表扩容！",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "tableSizeFor(cap)",
+              "on": "shared",
+              "tag": "tableSizeFor",
+              "code": "`LowLoadFactorWasteful` vs `PreSizedLoadFactor`",
+              "say": "`HashMap` 构造器把传入的初始容量向上取整到最近的 2 的幂（如传 10000 变成 16384，传 100000 变成 131072）。"
+            },
+            {
+              "scene": "负载因子 0.75",
+              "on": "shared",
+              "tag": "负载因子 0.75",
+              "code": "`LowLoadFactorWasteful` vs `PreSizedLoadFactor`",
+              "say": "当 `size > capacity * 0.75` 时触发 2 倍扩容；传入恰好等于 N 的初始容量时，`N > N * 0.75` 仍可能触发扩容！"
+            },
+            {
+              "scene": "JDK 8 高低位拆链",
+              "on": "shared",
+              "tag": "JDK 8 高低位拆链",
+              "code": "`LowLoadFactorWasteful` vs `PreSizedLoadFactor`",
+              "say": "扩容后新容量是 2 倍，节点新位置要么在原下标 `j`，要么在 `j + oldCap`，无需重新算 hashCode，只需看新增的高位 bit 是 0 还是 1。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`LowLoadFactorWasteful`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "mapresize.LowLoadFactorWasteful",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "Map<Integer, Integer> map = new HashMap<>(16, 0.25f);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "for (int i = 0; i < n; i++) map.put(i, i);"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：LowLoadFactorWasteful 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "写入 20 万条数据时，`DefaultCapResizeLoop` 相比 `PreSizedLoadFactor` 会经历多少次扩容？",
+          "options": [
+            "14 次扩容（从 16 一路翻倍到 262144）",
+            "1 次",
+            "0 次"
+          ],
+          "answer": 0,
+          "say": "16 -> 32 -> 64 -> ... -> 262144，累计搬迁几十万个节点并留下十几份废弃大数组给 GC！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：LowLoadFactorWasteful 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "mapresize",
+          "show": [
+            "LowLoadFactorWasteful"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "16 -> 32 -> 64 -> ... -> 262144，累计搬迁几十万个节点并留下十几份废弃大数组给 GC！",
+          "say": "16 -> 32 -> 64 -> ... -> 262144，累计搬迁几十万个节点并留下十几份废弃大数组给 GC！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「写入键值对数量 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "mapresize",
+          "show": [
+            "LowLoadFactorWasteful",
+            "PreSizedLoadFactor"
+          ],
+          "say": "左右拖动「写入键值对数量 N」滑块，对比 `LowLoadFactorWasteful` 与 `PreSizedLoadFactor` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`LowLoadFactorWasteful`：每装满 25% 就扩容，数组膨胀 4 倍且频繁搬迁，得不偿失。；`PreSizedLoadFactor`：或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `LowLoadFactorWasteful.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "mapresize.LowLoadFactorWasteful",
+          "q": "在左边的 `LowLoadFactorWasteful.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "for (int i = 0; i < n; i++) map.put(i, i);"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`for (int i = 0; i < n; i++) map.put(i, i);`）导致：每装满 25% 就扩容，数组膨胀 4 倍且频繁搬迁，得不偿失。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "mapresize.LowLoadFactorWasteful",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "11: new           #19                 // class java/util/HashMap"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "83: invokevirtual #49                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `PreSizedLoadFactor` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "mapresize.PreSizedLoadFactor",
+          "say": "或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "int cap = (int) (n / 0.75f) + 1;"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "for (int i = 0; i < n; i++) map.put(i, i);"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "mapresize",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "默认 new HashMap<>()（多次翻倍扩容）（`DefaultCapResizeLoop`）",
+              "solves": "从 16 开始反复 2 倍扩容十几次，每次都要新建数组并搬迁所有节点。",
+              "cost": "实测约 {ms:mapresize.DefaultCapResizeLoop} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "从 16 开始反复 2 倍扩容十几次，每次都要新建数组并搬迁所有节点。"
+            },
+            {
+              "name": "new HashMap<>(N)（仍可能触发 1 次扩容）（`ExactSizeStillResizes`）",
+              "solves": "未除以 0.75 负载因子，N 恰好超过 2 的幂的 0.75 倍时会多扩一次。",
+              "cost": "实测约 {ms:mapresize.ExactSizeStillResizes} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "未除以 0.75 负载因子，N 恰好超过 2 的幂的 0.75 倍时会多扩一次。"
+            },
+            {
+              "name": "new HashMap<>((int)(N/0.75f)+1)（零扩容）（`PreSizedLoadFactor`）",
+              "solves": "或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。",
+              "cost": "实测约 {ms:mapresize.PreSizedLoadFactor} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。"
+            },
+            {
+              "name": "loadFactor=0.25（过度浪费内存与频繁扩容）（`LowLoadFactorWasteful`）",
+              "solves": "每装满 25% 就扩容，数组膨胀 4 倍且频繁搬迁，得不偿失。",
+              "cost": "实测约 {ms:mapresize.LowLoadFactorWasteful} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "每装满 25% 就扩容，数组膨胀 4 倍且频繁搬迁，得不偿失。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "tableSizeFor(cap)",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "`HashMap` 构造器把传入的初始容量向上取整到最近的 2 的幂（如传 10000 变成 16384，传 100000 变成 131072）。",
+          "asked": [
+            "HashMap 初始容量与负载因子：new HashMap<>(10000) 为什么还是会扩容？——底层原理是什么？",
+            "为什么 `LowLoadFactorWasteful` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `PreSizedLoadFactor` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "写入 20 万条数据时，`DefaultCapResizeLoop` 相比 `PreSizedLoadFactor` 会经历多少次扩容？",
+          "options": [
+            {
+              "text": "14 次扩容（从 16 一路翻倍到 262144）",
+              "ok": true,
+              "why": "16 -> 32 -> 64 -> ... -> 262144，累计搬迁几十万个节点并留下十几份废弃大数组给 GC！"
+            },
+            {
+              "text": "1 次",
+              "ok": false,
+              "why": "再想一想：16 -> 32 -> 64 -> ... -> 262144，累计搬迁几十万个节点并留下十几份废弃大数组给 GC！"
+            },
+            {
+              "text": "0 次",
+              "ok": false,
+              "why": "再想一想：16 -> 32 -> 64 -> ... -> 262144，累计搬迁几十万个节点并留下十几份废弃大数组给 GC！"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：为何 2 的幂",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么 `HashMap` 的数组长度永远是 2 的幂（16, 32, 64...）？",
+          "options": [
+            {
+              "text": "可以用位运算 (n - 1) & hash 代替慢速取模 hash % n，且扩容只需看 1 个高位 bit",
+              "ok": true,
+              "why": "前提是 `n` 为 2 的幂，`(n - 1)` 二进制全为 1，`&` 运算才等价于 `%`。"
+            },
+            {
+              "text": "JVM 数组只支持 2 的幂",
+              "ok": false,
+              "why": "再想一想：前提是 `n` 为 2 的幂，`(n - 1)` 二进制全为 1，`&` 运算才等价于 `%`。"
+            },
+            {
+              "text": "防止内存泄漏",
+              "ok": false,
+              "why": "再想一想：前提是 `n` 为 2 的幂，`(n - 1)` 二进制全为 1，`&` 运算才等价于 `%`。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：算容量",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "预计存入 100 个元素，`new HashMap<>(100)` 会扩容吗？",
+          "options": [
+            {
+              "text": "会！100 向上对齐到 128，threshold = 128 * 0.75 = 96 < 100，第 97 个就会扩容到 256！",
+              "ok": true,
+              "why": "必须算 `(int) (100 / 0.75f) + 1 = 134`，向上对齐到 256，threshold=192 才不扩容。"
+            },
+            {
+              "text": "不会",
+              "ok": false,
+              "why": "再想一想：必须算 `(int) (100 / 0.75f) + 1 = 134`，向上对齐到 256，threshold=192 才不扩容。"
+            },
+            {
+              "text": "报错",
+              "ok": false,
+              "why": "再想一想：必须算 `(int) (100 / 0.75f) + 1 = 134`，向上对齐到 256，threshold=192 才不扩容。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `PreSizedLoadFactor`（new HashMap<>((int)(N/0.75f)+1)（零扩容））替代 `LowLoadFactorWasteful`（loadFactor=0.25（过度浪费内存与频繁扩容））？",
+          "options": [
+            {
+              "text": "因为 或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。",
+              "ok": true,
+              "why": "`LowLoadFactorWasteful`：每装满 25% 就扩容，数组膨胀 4 倍且频繁搬迁，得不偿失。；而 `PreSizedLoadFactor`：或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。"
+            },
+            {
+              "text": "因为 `LowLoadFactorWasteful` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`LowLoadFactorWasteful`：每装满 25% 就扩容，数组膨胀 4 倍且频繁搬迁，得不偿失。；而 `PreSizedLoadFactor`：或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`LowLoadFactorWasteful`：每装满 25% 就扩容，数组膨胀 4 倍且频繁搬迁，得不偿失。；而 `PreSizedLoadFactor`：或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) HashMap 为什么容量是 2 的幂、负载因子为什么默认 0.75；2) 为什么 new HashMap<>(100) 存 100 个元素还是会扩容；3) JDK 8 扩容时节点位置怎么重新计算。",
+          "points": [
+            "说清 HashMap 扩容机制：2 的幂对齐、threshold = cap * 0.75 与 JDK 8 高低位拆链优化",
+            "知道为什么传 new HashMap<>(N) 依然会扩容一次，以及 `(int)(N / 0.75f) + 1` 的正确算法",
+            "理解负载因子 0.75 在空间与哈希碰撞率之间的工程权衡"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：明明知道要往 HashMap 里放 10000 条数据，贴心地写了 new HashMap<>(10000)，可源码算下来竟然还是在放第 7501 条时触发了一次全表扩容！；**② 再讲底层原理**：tableSizeFor(cap)（`HashMap` 构造器把传入的初始容量向上取整到最近的 2 的幂（如传 10000 变成 16384，传 100000 变成 131072）。）；负载因子 0.75（当 `size > capacity * 0.75` 时触发 2 倍扩容；传入恰好等于 N 的初始容量时，`N > N * 0.75` 仍可能触发扩容！）；**③ 最后给工程方案**：生产里优先采用「new HashMap<>((int)(N/0.75f)+1)（零扩容）」（`PreSizedLoadFactor`），或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「tableSizeFor(cap)」？它在这节课里起了什么关键作用？",
+              "a": "`HashMap` 构造器把传入的初始容量向上取整到最近的 2 的幂（如传 10000 变成 16384，传 100000 变成 131072）。"
+            },
+            {
+              "q": "面试官问：什么是「负载因子 0.75」？它在这节课里起了什么关键作用？",
+              "a": "当 `size > capacity * 0.75` 时触发 2 倍扩容；传入恰好等于 N 的初始容量时，`N > N * 0.75` 仍可能触发扩容！"
+            },
+            {
+              "q": "面试官问：什么是「JDK 8 高低位拆链」？它在这节课里起了什么关键作用？",
+              "a": "扩容后新容量是 2 倍，节点新位置要么在原下标 `j`，要么在 `j + oldCap`，无需重新算 hashCode，只需看新增的高位 bit 是 0 还是 1。"
+            },
+            {
+              "q": "实战避坑：`LowLoadFactorWasteful` 为什么会出问题，应该怎么改？",
+              "a": "每装满 25% 就扩容，数组膨胀 4 倍且频繁搬迁，得不偿失。 正确做法是改用 `PreSizedLoadFactor`（new HashMap<>((int)(N/0.75f)+1)（零扩容））：或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "说清 HashMap 扩容机制：2 的幂对齐、threshold = cap * 0.75 与 JDK 8 高低位拆链优化",
+            "知道为什么传 new HashMap<>(N) 依然会扩容一次，以及 `(int)(N / 0.75f) + 1` 的正确算法",
+            "理解负载因子 0.75 在空间与哈希碰撞率之间的工程权衡"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `LowLoadFactorWasteful`（loadFactor=0.25（过度浪费内存与频繁扩容）），优先选用 `PreSizedLoadFactor`（new HashMap<>((int)(N/0.75f)+1)（零扩容））：或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。"
+        }
+      ]
+    }
+  ]
+}

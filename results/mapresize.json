@@ -1,0 +1,1671 @@
+{
+ "id": "mapresize",
+ "variants": {
+  "DefaultCapResizeLoop": {
+   "hash": "47bf6951fa0a91b3",
+   "repeat": 20,
+   "runs": {
+    "20000": [
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     }
+    ],
+    "50000": [
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 13
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 13
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 13
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 13
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 13
+     }
+    ],
+    "100000": [
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 32
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     }
+    ],
+    "200000": [
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 38
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 46
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 41
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 39
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 42
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 43
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 37
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 41
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 39
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 39
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 37
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 45
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 42
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 45
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 39
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 42
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 41
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 40
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 39
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 43
+     }
+    ]
+   },
+   "inside": "Compiled from \"DefaultCapResizeLoop.java\"\npublic class lab.mapresize.DefaultCapResizeLoop {\n  public lab.mapresize.DefaultCapResizeLoop();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: new           #19                 // class java/util/HashMap\n      14: dup\n      15: invokespecial #21                 // Method java/util/HashMap.\"<init>\":()V\n      18: astore        4\n      20: iconst_0\n      21: istore        5\n      23: iload         5\n      25: iload_1\n      26: if_icmpge     53\n      29: aload         4\n      31: iload         5\n      33: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      36: iload         5\n      38: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      41: invokeinterface #26,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      46: pop\n      47: iinc          5, 1\n      50: goto          23\n      53: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      56: lload_2\n      57: lsub\n      58: ldc2_w        #32                 // long 1000000l\n      61: ldiv\n      62: lstore        5\n      64: getstatic     #34                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      67: aload         4\n      69: invokeinterface #38,  1           // InterfaceMethod java/util/Map.size:()I\n      74: invokedynamic #42,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      79: invokevirtual #46                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      82: getstatic     #34                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      85: iload_1\n      86: invokedynamic #52,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      91: invokevirtual #46                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      94: getstatic     #34                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      97: lload         5\n      99: invokedynamic #53,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     104: invokevirtual #46                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     107: return\n}"
+  },
+  "ExactSizeStillResizes": {
+   "hash": "8322afe5a65e633d",
+   "repeat": 20,
+   "runs": {
+    "20000": [
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 3
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 3
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 3
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 3
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     }
+    ],
+    "50000": [
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     }
+    ],
+    "100000": [
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 28
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 30
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 27
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 27
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 31
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 27
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 27
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     }
+    ],
+    "200000": [
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 38
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 41
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 36
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 40
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 39
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 36
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 38
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 38
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 37
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 40
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 39
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 38
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 44
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 40
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 38
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 37
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 38
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 37
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 37
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 39
+     }
+    ]
+   },
+   "inside": "Compiled from \"ExactSizeStillResizes.java\"\npublic class lab.mapresize.ExactSizeStillResizes {\n  public lab.mapresize.ExactSizeStillResizes();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: new           #19                 // class java/util/HashMap\n      14: dup\n      15: iload_1\n      16: invokespecial #21                 // Method java/util/HashMap.\"<init>\":(I)V\n      19: astore        4\n      21: iconst_0\n      22: istore        5\n      24: iload         5\n      26: iload_1\n      27: if_icmpge     54\n      30: aload         4\n      32: iload         5\n      34: invokestatic  #24                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      37: iload         5\n      39: invokestatic  #24                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      42: invokeinterface #28,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      47: pop\n      48: iinc          5, 1\n      51: goto          24\n      54: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      57: lload_2\n      58: lsub\n      59: ldc2_w        #34                 // long 1000000l\n      62: ldiv\n      63: lstore        5\n      65: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      68: aload         4\n      70: invokeinterface #40,  1           // InterfaceMethod java/util/Map.size:()I\n      75: invokedynamic #44,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      80: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      83: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      86: iload_1\n      87: invokedynamic #54,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      92: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      95: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      98: lload         5\n     100: invokedynamic #55,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     105: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     108: return\n}"
+  },
+  "PreSizedLoadFactor": {
+   "hash": "e9a20e5364a7d827",
+   "repeat": 20,
+   "runs": {
+    "20000": [
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 3
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     }
+    ],
+    "50000": [
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 6
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 6
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 5
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 6
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 6
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     }
+    ],
+    "100000": [
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 21
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 20
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 19
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 21
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 20
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 28
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 19
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 18
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 20
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 18
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 19
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 20
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 20
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 19
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 21
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 21
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 22
+     }
+    ],
+    "200000": [
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 32
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 33
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 28
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 31
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 30
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 34
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 29
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 31
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 33
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 31
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 31
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 35
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 31
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 34
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 35
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 32
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 35
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 34
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 31
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 32
+     }
+    ]
+   },
+   "inside": "Compiled from \"PreSizedLoadFactor.java\"\npublic class lab.mapresize.PreSizedLoadFactor {\n  public lab.mapresize.PreSizedLoadFactor();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iload_1\n      12: i2f\n      13: ldc           #19                 // float 0.75f\n      15: fdiv\n      16: f2i\n      17: iconst_1\n      18: iadd\n      19: istore        4\n      21: new           #20                 // class java/util/HashMap\n      24: dup\n      25: iload         4\n      27: invokespecial #22                 // Method java/util/HashMap.\"<init>\":(I)V\n      30: astore        5\n      32: iconst_0\n      33: istore        6\n      35: iload         6\n      37: iload_1\n      38: if_icmpge     65\n      41: aload         5\n      43: iload         6\n      45: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      48: iload         6\n      50: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      53: invokeinterface #29,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      58: pop\n      59: iinc          6, 1\n      62: goto          35\n      65: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      68: lload_2\n      69: lsub\n      70: ldc2_w        #35                 // long 1000000l\n      73: ldiv\n      74: lstore        6\n      76: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      79: aload         5\n      81: invokeinterface #41,  1           // InterfaceMethod java/util/Map.size:()I\n      86: invokedynamic #45,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      91: invokevirtual #49                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      94: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      97: iload_1\n      98: invokedynamic #55,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     103: invokevirtual #49                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     106: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     109: lload         6\n     111: invokedynamic #56,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     116: invokevirtual #49                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     119: return\n}"
+  },
+  "LowLoadFactorWasteful": {
+   "hash": "3f71c44613718c7b",
+   "repeat": 20,
+   "runs": {
+    "20000": [
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 6
+     },
+     {
+      "size": 20000,
+      "expected": 20000,
+      "ms": 5
+     }
+    ],
+    "50000": [
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 13
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 13
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 14
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 13
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 13
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 14
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 15
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 13
+     },
+     {
+      "size": 50000,
+      "expected": 50000,
+      "ms": 12
+     }
+    ],
+    "100000": [
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 31
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 30
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 31
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 28
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 28
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 28
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 21
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "size": 100000,
+      "expected": 100000,
+      "ms": 28
+     }
+    ],
+    "200000": [
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 45
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 38
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 45
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 43
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 42
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 43
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 35
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 45
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 47
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 41
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 41
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 45
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 42
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 44
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 42
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 41
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 43
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 45
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 45
+     },
+     {
+      "size": 200000,
+      "expected": 200000,
+      "ms": 49
+     }
+    ]
+   },
+   "inside": "Compiled from \"LowLoadFactorWasteful.java\"\npublic class lab.mapresize.LowLoadFactorWasteful {\n  public lab.mapresize.LowLoadFactorWasteful();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: new           #19                 // class java/util/HashMap\n      14: dup\n      15: bipush        16\n      17: ldc           #21                 // float 0.25f\n      19: invokespecial #22                 // Method java/util/HashMap.\"<init>\":(IF)V\n      22: astore        4\n      24: iconst_0\n      25: istore        5\n      27: iload         5\n      29: iload_1\n      30: if_icmpge     57\n      33: aload         4\n      35: iload         5\n      37: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      40: iload         5\n      42: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      45: invokeinterface #29,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      50: pop\n      51: iinc          5, 1\n      54: goto          27\n      57: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      60: lload_2\n      61: lsub\n      62: ldc2_w        #35                 // long 1000000l\n      65: ldiv\n      66: lstore        5\n      68: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      71: aload         4\n      73: invokeinterface #41,  1           // InterfaceMethod java/util/Map.size:()I\n      78: invokedynamic #45,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      83: invokevirtual #49                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      86: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      89: iload_1\n      90: invokedynamic #55,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      95: invokevirtual #49                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      98: getstatic     #37                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     101: lload         5\n     103: invokedynamic #56,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     108: invokevirtual #49                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     111: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux",
+  "date": "2026-11-15"
+ }
+}

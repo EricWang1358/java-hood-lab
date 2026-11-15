@@ -1,0 +1,581 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-watchdog-renew",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "业务跑超时锁提前过期，看门狗怎么自动续期？",
+  "lead": "锁 TTL 设 3 秒，结果业务跑了 5 秒，另一个线程立刻闯进来双写撞车；设 5 分钟又怕机器挂了卡死。看懂 Redisson Watchdog 看门狗的续期与停续逻辑。",
+  "minutes": 35,
+  "needs": [
+    "了解分布式锁 TTL 过期机制",
+    "知道定时任务/时间轮基本概念"
+  ],
+  "after": [
+    "对比短固定 TTL、长固定 TTL 与 Watchdog 自动续期的双入/卡死事故",
+    "准确说出 Redisson 看门狗的默认租约（30s）与续期间隔（10s）",
+    "分清 `lock()` 自动续期与 `lock(leaseTime)` 不续期的关键坑"
+  ],
+  "terms": {
+    "Watchdog看门狗": "Redisson 客户端后台定时任务：默认锁 TTL 30 秒，只要业务线程还活着，每 10 秒（1/3 TTL）自动把 TTL 续回 30 秒。",
+    "leaseTime": "显式指定的锁租约时间；在 Redisson 中一旦手动传入了 leaseTime，看门狗就不会启动！"
+  },
+  "experiments": {
+    "m6_watchdog": {
+      "runner": "java",
+      "home": "lab.m6.watchdog",
+      "knob": {
+        "name": "threads",
+        "label": "并发抢锁线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "doubleEntries",
+        "expectKey": "expected",
+        "label": "双入/死锁事故次数",
+        "expect": "零事故"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "ShortFixedTtl",
+          "label": "短固定TTL(超时双入)",
+          "code": "ShortFixedTtl.java",
+          "note": "TTL 设太短，业务没跑完锁先过期，两个线程同时闯进临界区。"
+        },
+        {
+          "id": "LongFixedTtl",
+          "label": "长固定TTL(崩溃卡死)",
+          "code": "LongFixedTtl.java",
+          "note": "TTL 设太长，持锁节点一崩溃，全链路干等几分钟。"
+        },
+        {
+          "id": "WatchdogRenew",
+          "label": "Watchdog自动续期",
+          "code": "WatchdogRenew.java",
+          "note": "默认 30s 租约 + 每 10s 自动续期；业务崩了自动停续 30s 释放。"
+        },
+        {
+          "id": "TryLockWithLease",
+          "label": "限时tryLock",
+          "code": "TryLockWithLease.java",
+          "note": "带有限等待时间的 tryLock，抢不到快速失败不拖垮线程池。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "业务跑超时锁提前过期，看门狗怎么自动续期？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "分布式锁的过期时间设多少最合适？**设短了，业务还没跑完锁就提前过期撞车；设长了，机器一宕机大家全干等几分钟**。Redisson 的 Watchdog（看门狗）就是为了终结这个两难。",
+          "say": "看门狗的原理其实很朴素：只要我还活着在干活，后台线程就每隔 1/3 租期帮我把锁续满；我一旦挂了，后台线程自然也跟着没了，锁最多 30 秒自动释放。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "Redisson 经典坑",
+              "q": "调用 `lock.lock(10, TimeUnit.SECONDS)` 显式指定了 10 秒超时，Redisson 看门狗还会帮你自动续期吗？",
+              "options": [
+                "不会！只有不传 leaseTime（或传 -1）时才启用看门狗",
+                "会，每 3.3 秒自动续期",
+                "会续期到 30 秒"
+              ],
+              "answer": 0,
+              "why": "这是面试高频坑：显式传了 leaseTime，Redisson 认为你明确只要锁这么多秒，到期直接释放不续期！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：偶发慢请求撞上固定 TTL",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "20 轮并发临界区测试，对比短 TTL、长 TTL 与 Watchdog 自动续期。",
+            "actors": [
+              "业务线程 A",
+              "Watchdog 后台定时"
+            ],
+            "shared": "lock:order TTL"
+          },
+          "say": "20 轮并发临界区测试，对比短 TTL、长 TTL 与 Watchdog 自动续期。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `ShortFixedTtl`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_watchdog.ShortFixedTtl",
+          "say": "这就是最常见的基线写法 `ShortFixedTtl`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`ShortFixedTtl` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`ShortFixedTtl`（TTL=2，慢业务跑 6 拍）在 20 轮里会出现多少次两个线程同时进入临界区？",
+          "options": [
+            "0 次",
+            "几乎每轮都双入（20 次左右）",
+            "只有 1 次"
+          ],
+          "answer": 1,
+          "say": "锁还没干完活就到期了，门外等着的线程立刻冲进来双双撞车。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`ShortFixedTtl` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_watchdog",
+          "show": [
+            "ShortFixedTtl"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "lockExpireTick.set(tick + 2);",
+            "for (int i = 0; i < 6; i++) { tick++; Thread.yield(); }"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `ShortFixedTtl` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_watchdog.ShortFixedTtl",
+          "lines": [
+            "lockExpireTick.set(tick + 2);",
+            "for (int i = 0; i < 6; i++) { tick++; Thread.yield(); }"
+          ],
+          "say": "业务耗时超过固定 TTL，互斥防线形同虚设。",
+          "answer": [
+            "lockExpireTick.set(tick + 2);",
+            "for (int i = 0; i < 6; i++) { tick++; Thread.yield(); }"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "业务耗时超过固定 TTL，互斥防线形同虚设。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "lock(30s) -> [every 10s: pexpire 30s] -> unlock()",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "业务线程 A",
+            "Watchdog 后台定时"
+          ],
+          "shared": {
+            "name": "lock:order TTL",
+            "start": "初始 30s"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "A 跑了 10 秒还没结束",
+              "say": "由于下游慢查询，A 执行了 10 秒还没走完。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "text": "Watchdog 到点（1/3 TTL）调 Lua 把 TTL 重置回 30s",
+              "say": "看门狗检查 A 仍持有锁，立刻发一条 pexpire 脚本把过期时间重新拉满 30 秒！"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "若 A 突然宕机，Watchdog 进程也一起没了",
+              "say": "因为看门狗跑在 A 所在 JVM 里，A 宕机后没人再续期，锁最多 30s 自动释放！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `LongFixedTtl`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "如果把超时设死 `LongFixedTtl`（如 10 分钟），业务不撞车了但有什么致命缺点？",
+          "options": [
+            "持锁机器一旦重启或宕机，10 分钟内全业务无法拿锁直接卡死",
+            "内存占用翻倍",
+            "Redis 会自动把它改成 30 秒"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`ShortFixedTtl` vs `LongFixedTtl`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_watchdog",
+          "show": [
+            "ShortFixedTtl",
+            "LongFixedTtl"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `LongFixedTtl` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_watchdog.LongFixedTtl",
+          "within": "work(boolean)",
+          "from": "0: getstatic",
+          "to": "return",
+          "say": "看 `LongFixedTtl.work`：一旦 `crash == true` 没走释放分支，长 TTL 让后续所有轮次全部卡死。",
+          "walk": [
+            {
+              "focus": [
+                "compareAndSet"
+              ],
+              "label": "崩溃后长租约卡死",
+              "say": "长固定 TTL 等于把系统可用性押在单机永不宕机上。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`WatchdogRenew` 与 `TryLockWithLease`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_watchdog",
+          "show": [
+            "ShortFixedTtl",
+            "LongFixedTtl",
+            "WatchdogRenew",
+            "TryLockWithLease"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_watchdog",
+          "variants": [
+            "ShortFixedTtl",
+            "LongFixedTtl",
+            "WatchdogRenew",
+            "TryLockWithLease"
+          ],
+          "notes": [
+            {
+              "focus": "ShortFixedTtl",
+              "key": "短固定 TTL 业务一超时就双入撞车，事故拉满",
+              "say": "永远不要拿赌博心态猜业务最大耗时去设短 TTL。"
+            },
+            {
+              "focus": "WatchdogRenew",
+              "key": "看门狗续期全程零双入、零死锁",
+              "say": "WatchdogRenew 是生产分布式锁的首选模式。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `TryLockWithLease` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_watchdog.WatchdogRenew",
+          "within": "workWithWatchdog(boolean)",
+          "from": "0: getstatic",
+          "to": "return",
+          "say": "看 `WatchdogRenew.workWithWatchdog`：无论业务快慢（10000 步还是 60000 步），看门狗保驾护航直到 `finally { lock.unlock(); }` 才停止续期并释放。",
+          "walk": [
+            {
+              "focus": [
+                "unlock"
+              ],
+              "label": "finally 释放并停续",
+              "key": "Watchdog 用「短租约 + 存活续期」同时兼顾了不提前过期与宕机快恢复",
+              "say": "记住：必须把 `unlock()` 放在 `finally` 块里，否则看门狗会一直续期到进程重启！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "Redisson 无参 lock() (看门狗)",
+              "solves": "业务偶尔慢也能自动续期，崩溃最多 30s 释放",
+              "cost": "约 {ms:m6_watchdog.WatchdogRenew} ms，忘记 unlock 会一直续期",
+              "when": "业务耗时不确定、需要严格互斥",
+              "say": "务必放进 `finally` 块释放，且注意 `lock(leaseTime)` 不触发看门狗！"
+            },
+            {
+              "name": "限时 tryLock(waitTime, -1, unit)",
+              "solves": "抢不到锁快速失败，不积压 Tomcat 线程，同时保留看门狗",
+              "cost": "约 {ms:m6_watchdog.TryLockWithLease} ms",
+              "when": "高并发秒杀/防重提交等不想无限排队等待的场景",
+              "say": "传 `leaseTime = -1` 即可同时拥有「等待超时快速失败」和「看门狗自动续期」。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "用 Redisson 锁怎么选 API？",
+          "branches": [
+            {
+              "when": "必须等拿到锁且业务耗时不确定",
+              "pick": "lock.lock() + finally unlock",
+              "eg": "后台对账/定时任务"
+            },
+            {
+              "when": "抢不到快速失败 + 拿到后自动续期",
+              "pick": "lock.tryLock(waitTime, -1, unit)",
+              "eg": "下单防重/抢券互斥"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "短固定 TTL",
+            "lock(10s)",
+            "lock() 看门狗",
+            "tryLock(wait, -1)"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "同事为了防死锁写了 `lock.lock(5, TimeUnit.SECONDS)`，结果某天 GC 卡了 6 秒导致双写。",
+              "answer": 2,
+              "why": "传了 5 秒导致看门狗根本没启动，应改用无参 `lock()` 或 `tryLock(wait, -1)`。"
+            },
+            {
+              "text": "高并发接口抢锁，要求最多等 500ms 拿不到锁就直接提示「操作频繁」。",
+              "answer": 3,
+              "why": "用 `tryLock(500, -1, MILLISECONDS)` 既防雪崩排队又保看门狗续期。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：Redisson 看门狗 (Watchdog)",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Redisson 看门狗 (Watchdog)",
+          "alias": "Redisson Watchdog · Auto Renewal",
+          "oneLine": "默认 ==30s TTL + 每 10s 自动续期==，既防业务超时锁提前失效，又保宕机后 30s 自动释放。",
+          "asked": [
+            "Redisson 看门狗默认多久续期一次？",
+            "什么情况下看门狗会停止续期？",
+            "如果业务代码忘了调 unlock() 会发生什么？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Redisson 看门狗默认的锁过期时间和续期检查间隔分别是多少？",
+          "options": [
+            {
+              "text": "默认过期 30 秒，每隔 10 秒（internalLockLeaseTime / 3）续期一次",
+              "ok": true,
+              "why": "每 1/3 租约续期一次，即使丢了一次心跳也还有两次机会。"
+            },
+            {
+              "text": "默认 60 秒，每秒续期",
+              "ok": false,
+              "why": "默认是 30 秒和 10 秒。"
+            }
+          ],
+          "say": "30s 与 10s 是必考数字。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "以下哪种写法**不会**触发 Redisson 看门狗自动续期？",
+          "options": [
+            {
+              "text": "lock.lock(30, TimeUnit.SECONDS)",
+              "ok": true,
+              "why": "只要显式指定了 >0 的 leaseTime，看门狗就不会启动。"
+            },
+            {
+              "text": "lock.lock()",
+              "ok": false,
+              "why": "无参 lock() 才会启动看门狗。"
+            }
+          ],
+          "say": "千万别踩传了 leaseTime 以为还会续期的坑。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果持锁线程因为某段死循环一直没调 `unlock()`，只要 JVM 进程还活着，看门狗会怎样？",
+          "options": [
+            {
+              "text": "只要锁还在且线程未释放，看门狗会不断续期，直到进程挂掉或手动删除",
+              "ok": true,
+              "why": "所以 `unlock()` 必须写在 `finally` 里，且最好加业务超时或监控。"
+            },
+            {
+              "text": "续期 3 次后自动放弃",
+              "ok": false,
+              "why": "看门狗没有次数上限，只要客户端还活着就会续。"
+            }
+          ],
+          "say": "记住 `finally { if (lock.isHeldByCurrentThread()) lock.unlock(); }`。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清 Redisson 看门狗（Watchdog）的工作原理、默认参数以及使用时的注意事项。",
+          "points": [
+            "解决「TTL 设短怕超时撞车、设长怕宕机死锁」的两难",
+            "默认租约 30s，通过 Netty HashedWheelTimer 每 10s（1/3 租约）发 Lua 续回 30s",
+            "只有不传 leaseTime（或传 -1）才开启看门狗；显式传了 leaseTime 不会续期",
+            "节点宕机后看门狗随之消亡，最多 30s 自动释放；业务必须 finally unlock 防无限续期"
+          ],
+          "model": "Redisson 的看门狗是为了解决分布式锁过期时间「设短了业务超时撞车、设长了宕机卡死」的两难问题。当调用无参 `lock()` 或 `tryLock(wait, -1, unit)` 时，Redisson 默认设置 30 秒过期时间，并由客户端的 Netty 时间轮每 10 秒（租约的 1/3）检查一次：只要当前客户端仍持有锁，就用 Lua 脚本把 TTL 重新续回 30 秒。一旦持锁节点宕机，看门狗线程也随之销毁，锁最多 30 秒自动释放。使用时要注意两点：显式传入正数 `leaseTime` 会禁用看门狗；且必须在 `finally` 块中释放锁以防无限续期。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "Watchdog 默认参数？",
+              "a": "30 秒租约（lockWatchdogTimeout），每 10 秒（1/3）自动续期一次。"
+            },
+            {
+              "q": "什么时候不触发 Watchdog？",
+              "a": "显式传入 >0 的 leaseTime 时不触发，到期直接释放。"
+            },
+            {
+              "q": "Watchdog 宕机怎么停？",
+              "a": "看门狗跑在持锁客户端进程内，进程挂了自动停续，最多 30s 释放。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

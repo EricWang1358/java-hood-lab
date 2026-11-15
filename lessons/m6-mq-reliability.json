@@ -1,0 +1,584 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-mq-reliability",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "发 MQ 不等确认、消费者自动 ACK，消息是怎么悄悄丢的？",
+  "lead": "消息队列丢消息只可能发生在三段路：生产者发丢、Broker 存丢、消费者还没处理完就自动 ACK 丢。把三端确认和本地消息表接起来才能做到零丢失。",
+  "minutes": 35,
+  "needs": [
+    "了解 MQ 生产者、Broker、消费者三段链路",
+    "知道事务与异步发送的基本概念"
+  ],
+  "after": [
+    "定位生产者、Broker、消费者三段各自丢消息的触发点",
+    "区分同步 Broker ACK、手动 ACK 与本地事务消息表",
+    "能讲清端到端消息零丢失的完整链路"
+  ],
+  "terms": {
+    "生产者Confirm": "Broker 落盘并同步副本后才向生产者返回 ACK，失败则触发重试或落兜底表。",
+    "手动ACK": "消费者必须等本地数据库事务真正提交后再向 Broker 发送 ACK，异常则 NACK 重投或进死信队列。"
+  },
+  "experiments": {
+    "m6_mqconfirm": {
+      "runner": "java",
+      "home": "lab.m6.mqconfirm",
+      "knob": {
+        "name": "threads",
+        "label": "并发发送线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "lostMessages",
+        "expectKey": "expected",
+        "label": "丢失消息条数",
+        "expect": "零丢失"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "FireAndForget",
+          "label": "发后即忘+自动ACK",
+          "code": "FireAndForget.java",
+          "note": "生产者不等回执且消费者拉到消息立即自动 ACK，网络抖动和宕机必丢消息。"
+        },
+        {
+          "id": "SyncBrokerAck",
+          "label": "仅开Broker同步确认",
+          "code": "SyncBrokerAck.java",
+          "note": "发送端拿到 Broker ACK 就不丢了，但消费端仍是自动 ACK，处理崩溃照样丢。"
+        },
+        {
+          "id": "ManualConsumerAck",
+          "label": "双向Confirm+手动ACK",
+          "code": "ManualConsumerAck.java",
+          "note": "生产者等 Broker 落盘回执、消费者处理完再手动 ACK，端到端零丢失。"
+        },
+        {
+          "id": "OutboxConfirm",
+          "label": "本地消息表+重试补偿",
+          "code": "OutboxConfirm.java",
+          "note": "即使 Broker 暂时不可用，业务库同事务记下待发消息，定时补偿实现最终零丢失。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "发 MQ 不等确认、消费者自动 ACK，消息是怎么悄悄丢的？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "面试问「MQ 怎么保证消息不丢」，别只背一句「开持久化」。**一条消息从生产到消费要过三道关：生产者→Broker、Broker 存盘、Broker→消费者**，任何一关偷懒都会悄悄吞消息。",
+          "say": "今天用 4 份代码把三段链路逐段拆开，看看只保一头为什么还是丢。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "MQ 三段式链路",
+              "q": "如果开启了消费者自动 ACK（autoAck=true），消费者刚拉到消息就 OOM 宕机了，这条消息会怎样？",
+              "options": [
+                "Broker 认为已消费并删除，消息永久丢失",
+                "Broker 会自动重发给别的消费者",
+                "消息会自动退回生产者"
+              ],
+              "answer": 0,
+              "why": "autoAck 在推送或拉取瞬间就标记已消费，后续业务崩了也无法补救。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：每线程发 200 条消息，途中叠加网络丢包与消费宕机",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "每条消息都要经过发送、Broker 落盘、消费者处理三步；模拟 10% 网络抖动和 5% 消费异常。",
+            "actors": [
+              "生产者",
+              "Broker + 消费者"
+            ],
+            "shared": "消息状态"
+          },
+          "say": "每条消息都要经过发送、Broker 落盘、消费者处理三步；模拟 10% 网络抖动和 5% 消费异常。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `FireAndForget`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_mqconfirm.FireAndForget",
+          "say": "这就是最常见的基线写法 `FireAndForget`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`FireAndForget` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`FireAndForget` 不等确认也不重试，在多线程并发发送下会怎样？",
+          "options": [
+            "全部送达",
+            "出现大量 lostMessages，且没人知道哪条丢了",
+            "只丢最后一条"
+          ],
+          "answer": 1,
+          "say": "既没等 Broker 回执，又没记录失败日志，丢了只能等用户投诉。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`FireAndForget` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqconfirm",
+          "show": [
+            "FireAndForget"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "if (seq % 10 == 0 || seq % 15 == 0) {",
+            "lostMessages.incrementAndGet();"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `FireAndForget` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_mqconfirm.FireAndForget",
+          "lines": [
+            "if (seq % 10 == 0 || seq % 15 == 0) {",
+            "lostMessages.incrementAndGet();"
+          ],
+          "say": "没有 ACK 回调和重试逻辑，网络一抖就直接 return 丢弃了。",
+          "answer": [
+            "if (seq % 10 == 0 || seq % 15 == 0) {",
+            "lostMessages.incrementAndGet();"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "没有 ACK 回调和重试逻辑，网络一抖就直接 return 丢弃了。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "Producer -> Broker(WAL) -> Consumer(Manual ACK)",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "生产者",
+            "Broker + 消费者"
+          ],
+          "shared": {
+            "name": "消息状态",
+            "start": "待发送"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "SyncBrokerAck：发送并阻塞/回调等 Broker 落盘 ACK",
+              "say": "发送失败就重试，先把生产端和 Broker 持久化守住。"
+            },
+            {
+              "lane": 1,
+              "op": "calc",
+              "text": "消费端若开自动 ACK，处理到一半宕机依然丢",
+              "say": "SyncBrokerAck 在消费端崩溃时还是会丢消息。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "text": "ManualConsumerAck：落库成功后再手动发送 ACK",
+              "say": "消费失败则重投，三段链路全部闭环，lostMessages 归零。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `SyncBrokerAck`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "为什么 `SyncBrokerAck` 已经等 Broker 确认落盘了，`lostMessages` 还是大于 0？",
+          "options": [
+            "消费者开了自动 ACK，拉到消息后处理崩溃导致丢消息",
+            "Broker 确认是假的",
+            "线程数太少"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`FireAndForget` vs `SyncBrokerAck`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqconfirm",
+          "show": [
+            "FireAndForget",
+            "SyncBrokerAck"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `SyncBrokerAck` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_mqconfirm.SyncBrokerAck",
+          "within": "sendAndConsume(int)",
+          "from": "0: iload_0",
+          "to": "return",
+          "say": "看 `SyncBrokerAck.sendAndConsume`：发送端重试保住了 Broker 接收，但 `seq % 20 == 0` 模拟消费者处理崩溃时由于已自动 ACK，依然记为丢失。",
+          "walk": [
+            {
+              "focus": [
+                "lostMessages"
+              ],
+              "label": "消费端自动 ACK 漏洞",
+              "say": "MQ 可靠性是木桶效应，生产、存储、消费三端缺一不可。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`ManualConsumerAck` 与 `OutboxConfirm`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqconfirm",
+          "show": [
+            "FireAndForget",
+            "SyncBrokerAck",
+            "ManualConsumerAck",
+            "OutboxConfirm"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_mqconfirm",
+          "variants": [
+            "FireAndForget",
+            "SyncBrokerAck",
+            "ManualConsumerAck",
+            "OutboxConfirm"
+          ],
+          "notes": [
+            {
+              "focus": "FireAndForget",
+              "key": "发后即忘丢消息最严重",
+              "say": "核心业务绝对不能用发后即忘或 autoAck。"
+            },
+            {
+              "focus": "ManualConsumerAck",
+              "key": "三端确认闭环即可实现零丢失",
+              "say": "加上本地消息表 Outbox 后，连 Broker 短暂不可用也能兜住。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `OutboxConfirm` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_mqconfirm.OutboxConfirm",
+          "within": "sendReliable(int)",
+          "from": "0: iload_0",
+          "to": "return",
+          "say": "看 `OutboxConfirm.sendReliable`：先写本地待发记录，发送遇阻时由补偿任务重试直到拿到确认并标记已送达。",
+          "walk": [
+            {
+              "focus": [
+                "incrementAndGet",
+                "addAndGet"
+              ],
+              "label": "本地消息表兜底",
+              "key": "生产端 Confirm/事务表 + Broker 同步刷盘主从 + 消费端手动 ACK",
+              "say": "这是金融级订单/支付链路零丢消息的标准三件套。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "Confirm + 持久化 + 手动 ACK",
+              "solves": "常规业务三端零丢失",
+              "cost": "约 {ms:m6_mqconfirm.ManualConsumerAck} ms，需要业务保证消费幂等",
+              "when": "绝大多数订单、通知、积分等可靠异步场景",
+              "say": "开启手动 ACK 后一定要配第 17 课的消费幂等，因为重试会带来重复消息。"
+            },
+            {
+              "name": "本地消息表 (Outbox) + 补偿",
+              "solves": "连本地事务与发 MQ 的原子性一起解决",
+              "cost": "约 {ms:m6_mqconfirm.OutboxConfirm} ms，多一次本地表写入与扫表任务",
+              "when": "支付、账务等不允许库改成功但 MQ 没发出的核心链路",
+              "say": "比 RocketMQ 半事务消息更通用，不绑定特定 MQ 产品。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "如何做到 MQ 全链路消息零丢失？",
+          "branches": [
+            {
+              "when": "防生产者发丢",
+              "pick": "Publisher Confirm + 失败重试 / 本地消息表",
+              "eg": "RabbitMQ confirm / Kafka acks=all"
+            },
+            {
+              "when": "防 Broker 存丢",
+              "pick": "消息持久化 + 同步刷盘 + 副本同步",
+              "eg": "RocketMQ SYNC_MASTER + SYNC_FLUSH"
+            },
+            {
+              "when": "防消费者丢",
+              "pick": "关闭 autoAck，业务落库后再手动 ACK",
+              "eg": "channel.basicAck / RocketMQ CONSUME_SUCCESS"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "发后即忘",
+            "三端确认(Confirm+持久化+手动ACK)",
+            "本地消息表 Outbox"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "埋点日志允许偶尔丢千分之一，追求极高吞吐与最低延迟。",
+              "answer": 0,
+              "why": "非核心日志链路可以用异步批量+容忍少量丢失换吞吐。"
+            },
+            {
+              "text": "用户下单扣库存后发通知到物流系统，绝不能漏单。",
+              "answer": 2,
+              "why": "下单写库和写本地消息表同事务提交，再异步投递+手动 ACK，最稳妥。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：MQ 消息零丢失",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "MQ 消息零丢失",
+          "alias": "End-to-End Reliability (Confirm + Persist + Manual ACK)",
+          "oneLine": "==生产者 Confirm== + ==Broker 持久化同步== + ==消费者手动 ACK==，缺一不可。",
+          "asked": [
+            "MQ 怎么保证消息不丢失？",
+            "开启了持久化为什么还是会丢消息？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Kafka 中要确保生产者发出的消息不因单台 Broker 宕机而丢失，关键配置组合是？",
+          "options": [
+            {
+              "text": "acks=all + min.insync.replicas>=2 + replication.factor>=3",
+              "ok": true,
+              "why": "Leader 与至少一个 ISR 副本都落盘后才返回 ACK。"
+            },
+            {
+              "text": "acks=0",
+              "ok": false,
+              "why": "acks=0 就是发后即忘，宕机必丢。"
+            }
+          ],
+          "say": "Kafka 可靠性面试高频参数组。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "消费者手动 ACK 应该在什么时候执行？",
+          "options": [
+            {
+              "text": "本地数据库事务提交成功之后",
+              "ok": true,
+              "why": "先落库再 ACK，就算刚落库还没 ACK 时宕机，重投后靠幂等也能安全处理。"
+            },
+            {
+              "text": "刚从 MQ 拉到消息时",
+              "ok": false,
+              "why": "那就退化成自动 ACK 了。"
+            }
+          ],
+          "say": "顺序千万不能反。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么说「消息零丢失」一定会伴随着「消息可能重复」？",
+          "options": [
+            {
+              "text": "因为网络超时重试或消费完未及 ACK 就重启，同一条消息会被投递多次",
+              "ok": true,
+              "why": "分布式环境下「至少一次 (At-Least-Once)」必然要求消费端做幂等。"
+            },
+            {
+              "text": "MQ 本身有 Bug",
+              "ok": false,
+              "why": "这是两军问题决定的，不是 Bug。"
+            }
+          ],
+          "say": "顺畅衔接到下一课：消费幂等。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：MQ 如何保证消息不丢失？生产、存储、消费三端分别怎么做？",
+          "points": [
+            "生产端开启 Publisher Confirm（如 Kafka acks=all），失败重试或配合本地消息表",
+            "Broker 端开启消息持久化、同步刷盘及多副本同步（如 min.insync.replicas>=2）",
+            "消费端关闭自动 ACK，必须等本地事务提交成功后再手动 ACK；重投带来的重复靠消费幂等兜底"
+          ],
+          "model": "保证 MQ 消息零丢失必须从生产、存储、消费三端闭环。第一，生产端开启发送确认机制，比如 RabbitMQ 的 Confirm 或 Kafka 的 acks=all，确认 Broker 落盘后再继续，核心业务还可以配合本地消息表保证写库和发消息的最终一致性；第二，Broker 端开启持久化与多副本同步，避免单机宕机丢数据；第三，消费端必须关闭自动 ACK，等业务逻辑和数据库事务真正提交成功后再手动 ACK。由于超时重试会导致消息重复投递，消费端还需要配套幂等设计。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "MQ 防丢三端各自靠什么？",
+              "a": "生产端 Confirm/本地消息表；Broker 持久化+副本；消费端业务落库后手动 ACK。"
+            },
+            {
+              "q": "为什么手动 ACK 必须放在事务提交后？",
+              "a": "放在前面一旦业务异常或宕机，Broker 已删消息，数据永久丢失。"
+            },
+            {
+              "q": "保不丢的副作用是什么？",
+              "a": "可能重复投递（At-Least-Once），需要消费端做幂等。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,616 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-generics-erasure",
+  "course": "Java 工程语法与集合",
+  "title": "泛型擦除、堆污染与 PECS 原则：运行期 List<Integer> 里怎么塞进了 String？",
+  "lead": "明明声明的是 List<Integer>，为什么通过原始类型引用塞进一个 \"bad-string\" 竟然编译运行都不报错，直到取出那一刻才炸出 ClassCastException？",
+  "minutes": 30,
+  "needs": [
+    "知道泛型是 JDK 5 引入的编译期语法糖",
+    "知道 Object 是所有类的父类"
+  ],
+  "after": [
+    "用 javap 字节码证明泛型擦除（Type Erasure）与编译器自动插入 checkcast 的真相",
+    "理解原始类型（Raw Type）导致的堆污染（Heap Pollution）及 Collections.checkedList 防护",
+    "掌握通配符 PECS 原则（Producer Extends, Consumer Super）"
+  ],
+  "terms": {
+    "类型擦除 (Type Erasure)": "Java 泛型只在编译期检查，`javac` 生成字节码时把 `List<Integer>` 擦成裸 `List`，并在读取处自动插入 `checkcast java/lang/Integer`。",
+    "堆污染 (Heap Pollution)": "一个 `List<Integer>` 变量在运行期被塞进了 `String` 等非预期类型对象，写入时不报错，读取时才炸 `ClassCastException`。",
+    "PECS 原则": "Producer Extends（只读数据源用 `? extends T`），Consumer Super（只写目标容器用 `? super T`）。"
+  },
+  "experiments": {
+    "generics": {
+      "runner": "java",
+      "home": "lab.generics",
+      "variants": [
+        {
+          "id": "RawTypeHeapPollution",
+          "code": "RawTypeHeapPollution.java",
+          "label": "原始类型绕过检查（堆污染）",
+          "note": "raw.add(\"bad-string\") 写入成功，直到 nums.get(0) 取出时才抛 ClassCastException，安全数 0。"
+        },
+        {
+          "id": "CheckedListRuntimeGuard",
+          "code": "CheckedListRuntimeGuard.java",
+          "label": "Collections.checkedList 运行期拦截",
+          "note": "在写入瞬间直接做类型校验并拦截非法写入，防止污染扩散。"
+        },
+        {
+          "id": "GenericCompileSafe",
+          "code": "GenericCompileSafe.java",
+          "label": "全程严格泛型（编译期拦截）",
+          "note": "不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。"
+        },
+        {
+          "id": "WildcardPecsSafe",
+          "code": "WildcardPecsSafe.java",
+          "label": "PECS 上下界通配符安全读写",
+          "note": "用 ? extends Number 读取、? super Integer 写入，兼顾灵活性与类型安全。"
+        }
+      ],
+      "knob": {
+        "label": "测试次数 N",
+        "values": [
+          "5000",
+          "10000",
+          "20000",
+          "50000"
+        ],
+        "default": "20000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "safeOk",
+        "expectKey": "expected",
+        "label": "类型安全保障次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "泛型擦除、堆污染与 PECS 原则：运行期 List<Integer> 里怎么塞进了 String？",
+      "bridge": "明明声明的是 List<Integer>，为什么通过原始类型引用塞进一个 \"bad-string\" 竟然编译运行都不报错，直到取出那一刻才炸出 ClassCastException？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "面试问「Java 泛型是真泛型还是伪泛型？」，今天用字节码直接掀开底牌：**运行期 JVM 根本不知道 `List<Integer>` 里的 `Integer` 是谁，那它怎么做到平时不出错、一用原始类型就堆污染？**",
+          "say": "弄清类型擦除、桥接方法与 `? extends` / `? super` 的 PECS 边界。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
+          "items": [
+            {
+              "have": "运行期类型",
+              "q": "`new ArrayList<String>().getClass() == new ArrayList<Integer>().getClass()` 的结果是？",
+              "options": [
+                "true（擦除后都是同一个 ArrayList.class）",
+                "false",
+                "编译报错"
+              ],
+              "answer": 0,
+              "why": "类型参数在编译期被擦除，运行期只有一份 `ArrayList` 字节码。"
+            },
+            {
+              "have": "PECS",
+              "q": "一个方法只从传入的列表里读取 `Number` 求和，不往里写，参数应声明为？",
+              "options": [
+                "List<? extends Number>",
+                "List<? super Number>",
+                "List<Object>"
+              ],
+              "answer": 0,
+              "why": "Producer Extends：只读场景用 `? extends Number`，这样 `List<Integer>` 和 `List<Double>` 都能传进来。"
+            },
+            {
+              "have": "不能 new T[]",
+              "q": "为什么在 Java 里不能写 `new T()` 或 `new T[10]`？",
+              "options": [
+                "类型擦除后运行期不知道 T 具体是什么类，无法分配对应内存",
+                "JVM 禁止泛型用数组",
+                "语法规定"
+              ],
+              "answer": 0,
+              "why": "需要运行期构造时，必须显式传入 `Class<T> clazz` 参数反射或用 `IntFunction<T[]>` 生成器。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (RawTypeHeapPollution)",
+              "安全写法 (GenericCompileSafe)"
+            ],
+            "shared": {
+              "name": "类型安全保障次数",
+              "value": "目标 20000"
+            }
+          },
+          "story": "明明声明的是 List<Integer>，为什么通过原始类型引用塞进一个 \"bad-string\" 竟然编译运行都不报错，直到取出那一刻才炸出 ClassCastException？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "类型擦除 (Type Erasure)",
+              "on": "shared",
+              "tag": "类型擦除 (Type E",
+              "code": "`RawTypeHeapPollution` vs `GenericCompileSafe`",
+              "say": "Java 泛型只在编译期检查，`javac` 生成字节码时把 `List<Integer>` 擦成裸 `List`，并在读取处自动插入 `checkcast java/lang/Integer`。"
+            },
+            {
+              "scene": "堆污染 (Heap Pollution)",
+              "on": "shared",
+              "tag": "堆污染 (Heap Po",
+              "code": "`RawTypeHeapPollution` vs `GenericCompileSafe`",
+              "say": "一个 `List<Integer>` 变量在运行期被塞进了 `String` 等非预期类型对象，写入时不报错，读取时才炸 `ClassCastException`。"
+            },
+            {
+              "scene": "PECS 原则",
+              "on": "shared",
+              "tag": "PECS 原则",
+              "code": "`RawTypeHeapPollution` vs `GenericCompileSafe`",
+              "say": "Producer Extends（只读数据源用 `? extends T`），Consumer Super（只写目标容器用 `? super T`）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`RawTypeHeapPollution`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "generics.RawTypeHeapPollution",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "@SuppressWarnings({\"rawtypes\", \"unchecked\"})"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "List<Integer> nums = new ArrayList<>();"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (v != null) safeOk++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：RawTypeHeapPollution 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`RawTypeHeapPollution` 执行 `raw.add(\"bad-string\")` 时会报错吗？",
+          "options": [
+            "add 时完全不报错，直到 nums.get(0) 取出强转时才炸 ClassCastException",
+            "add 时立刻报错",
+            "全程不报错"
+          ],
+          "answer": 0,
+          "say": "擦除后 `List` 底层就是 `Object[]`，`add` 任何对象都能放进去；只有读取时编译器插的 `checkcast Integer` 才会引爆异常。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：RawTypeHeapPollution 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "generics",
+          "show": [
+            "RawTypeHeapPollution"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "擦除后 `List` 底层就是 `Object[]`，`add` 任何对象都能放进去；只有读取时编译器插的 `checkcast Integer` 才会引爆异常。",
+          "say": "擦除后 `List` 底层就是 `Object[]`，`add` 任何对象都能放进去；只有读取时编译器插的 `checkcast Integer` 才会引爆异常。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「测试次数 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "generics",
+          "show": [
+            "RawTypeHeapPollution",
+            "GenericCompileSafe"
+          ],
+          "say": "左右拖动「测试次数 N」滑块，对比 `RawTypeHeapPollution` 与 `GenericCompileSafe` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`RawTypeHeapPollution`：raw.add(\"bad-string\") 写入成功，直到 nums.get(0) 取出时才抛 ClassCastException，安全数 0。；`GenericCompileSafe`：不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `RawTypeHeapPollution.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "generics.RawTypeHeapPollution",
+          "q": "在左边的 `RawTypeHeapPollution.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "raw.add(\"bad-string\");"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`raw.add(\"bad-string\");`）导致：raw.add(\"bad-string\") 写入成功，直到 nums.get(0) 取出时才抛 ClassCastException，安全数 0。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "generics.RawTypeHeapPollution",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "23: new           #19                 // class java/util/ArrayList"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "30: astore        6"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `GenericCompileSafe` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "generics.GenericCompileSafe",
+          "say": "不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "List<Integer> nums = new ArrayList<>();"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (v == 42) safeOk++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "generics",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "原始类型绕过检查（堆污染）（`RawTypeHeapPollution`）",
+              "solves": "raw.add(\"bad-string\") 写入成功，直到 nums.get(0) 取出时才抛 ClassCastException，安全数 0。",
+              "cost": "实测约 {ms:generics.RawTypeHeapPollution} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "raw.add(\"bad-string\") 写入成功，直到 nums.get(0) 取出时才抛 ClassCastException，安全数 0。"
+            },
+            {
+              "name": "Collections.checkedList 运行期拦截（`CheckedListRuntimeGuard`）",
+              "solves": "在写入瞬间直接做类型校验并拦截非法写入，防止污染扩散。",
+              "cost": "实测约 {ms:generics.CheckedListRuntimeGuard} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "在写入瞬间直接做类型校验并拦截非法写入，防止污染扩散。"
+            },
+            {
+              "name": "全程严格泛型（编译期拦截）（`GenericCompileSafe`）",
+              "solves": "不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。",
+              "cost": "实测约 {ms:generics.GenericCompileSafe} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。"
+            },
+            {
+              "name": "PECS 上下界通配符安全读写（`WildcardPecsSafe`）",
+              "solves": "用 ? extends Number 读取、? super Integer 写入，兼顾灵活性与类型安全。",
+              "cost": "实测约 {ms:generics.WildcardPecsSafe} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "用 ? extends Number 读取、? super Integer 写入，兼顾灵活性与类型安全。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "类型擦除 (Type Erasure)",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "Java 泛型只在编译期检查，`javac` 生成字节码时把 `List<Integer>` 擦成裸 `List`，并在读取处自动插入 `checkcast java/lang/Integer`。",
+          "asked": [
+            "泛型擦除、堆污染与 PECS 原则：运行期 List<Integer> 里怎么塞进了 String？——底层原理是什么？",
+            "为什么 `RawTypeHeapPollution` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `GenericCompileSafe` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`RawTypeHeapPollution` 执行 `raw.add(\"bad-string\")` 时会报错吗？",
+          "options": [
+            {
+              "text": "add 时完全不报错，直到 nums.get(0) 取出强转时才炸 ClassCastException",
+              "ok": true,
+              "why": "擦除后 `List` 底层就是 `Object[]`，`add` 任何对象都能放进去；只有读取时编译器插的 `checkcast Integer` 才会引爆异常。"
+            },
+            {
+              "text": "add 时立刻报错",
+              "ok": false,
+              "why": "再想一想：擦除后 `List` 底层就是 `Object[]`，`add` 任何对象都能放进去；只有读取时编译器插的 `checkcast Integer` 才会引爆异常。"
+            },
+            {
+              "text": "全程不报错",
+              "ok": false,
+              "why": "再想一想：擦除后 `List` 底层就是 `Object[]`，`add` 任何对象都能放进去；只有读取时编译器插的 `checkcast Integer` 才会引爆异常。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：运行期类型",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`new ArrayList<String>().getClass() == new ArrayList<Integer>().getClass()` 的结果是？",
+          "options": [
+            {
+              "text": "true（擦除后都是同一个 ArrayList.class）",
+              "ok": true,
+              "why": "类型参数在编译期被擦除，运行期只有一份 `ArrayList` 字节码。"
+            },
+            {
+              "text": "false",
+              "ok": false,
+              "why": "再想一想：类型参数在编译期被擦除，运行期只有一份 `ArrayList` 字节码。"
+            },
+            {
+              "text": "编译报错",
+              "ok": false,
+              "why": "再想一想：类型参数在编译期被擦除，运行期只有一份 `ArrayList` 字节码。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：PECS",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "一个方法只从传入的列表里读取 `Number` 求和，不往里写，参数应声明为？",
+          "options": [
+            {
+              "text": "List<? extends Number>",
+              "ok": true,
+              "why": "Producer Extends：只读场景用 `? extends Number`，这样 `List<Integer>` 和 `List<Double>` 都能传进来。"
+            },
+            {
+              "text": "List<? super Number>",
+              "ok": false,
+              "why": "再想一想：Producer Extends：只读场景用 `? extends Number`，这样 `List<Integer>` 和 `List<Double>` 都能传进来。"
+            },
+            {
+              "text": "List<Object>",
+              "ok": false,
+              "why": "再想一想：Producer Extends：只读场景用 `? extends Number`，这样 `List<Integer>` 和 `List<Double>` 都能传进来。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `GenericCompileSafe`（全程严格泛型（编译期拦截））替代 `RawTypeHeapPollution`（原始类型绕过检查（堆污染））？",
+          "options": [
+            {
+              "text": "因为 不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。",
+              "ok": true,
+              "why": "`RawTypeHeapPollution`：raw.add(\"bad-string\") 写入成功，直到 nums.get(0) 取出时才抛 ClassCastException，安全数 0。；而 `GenericCompileSafe`：不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。"
+            },
+            {
+              "text": "因为 `RawTypeHeapPollution` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`RawTypeHeapPollution`：raw.add(\"bad-string\") 写入成功，直到 nums.get(0) 取出时才抛 ClassCastException，安全数 0。；而 `GenericCompileSafe`：不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`RawTypeHeapPollution`：raw.add(\"bad-string\") 写入成功，直到 nums.get(0) 取出时才抛 ClassCastException，安全数 0。；而 `GenericCompileSafe`：不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 什么是 Java 泛型擦除，擦除后字节码里靠什么保证类型转换；2) 什么是堆污染；3) ? extends T 和 ? super T（PECS）分别怎么用。",
+          "points": [
+            "用 javap 字节码证明泛型擦除（Type Erasure）与编译器自动插入 checkcast 的真相",
+            "理解原始类型（Raw Type）导致的堆污染（Heap Pollution）及 Collections.checkedList 防护",
+            "掌握通配符 PECS 原则（Producer Extends, Consumer Super）"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：明明声明的是 List<Integer>，为什么通过原始类型引用塞进一个 \"bad-string\" 竟然编译运行都不报错，直到取出那一刻才炸出 ClassCastException？；**② 再讲底层原理**：类型擦除 (Type Erasure)（Java 泛型只在编译期检查，`javac` 生成字节码时把 `List<Integer>` 擦成裸 `List`，并在读取处自动插入 `checkcast java/lang/Integer`。）；堆污染 (Heap Pollution)（一个 `List<Integer>` 变量在运行期被塞进了 `String` 等非预期类型对象，写入时不报错，读取时才炸 `ClassCastException`。）；**③ 最后给工程方案**：生产里优先采用「全程严格泛型（编译期拦截）」（`GenericCompileSafe`），不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「类型擦除 (Type Erasure)」？它在这节课里起了什么关键作用？",
+              "a": "Java 泛型只在编译期检查，`javac` 生成字节码时把 `List<Integer>` 擦成裸 `List`，并在读取处自动插入 `checkcast java/lang/Integer`。"
+            },
+            {
+              "q": "面试官问：什么是「堆污染 (Heap Pollution)」？它在这节课里起了什么关键作用？",
+              "a": "一个 `List<Integer>` 变量在运行期被塞进了 `String` 等非预期类型对象，写入时不报错，读取时才炸 `ClassCastException`。"
+            },
+            {
+              "q": "面试官问：什么是「PECS 原则」？它在这节课里起了什么关键作用？",
+              "a": "Producer Extends（只读数据源用 `? extends T`），Consumer Super（只写目标容器用 `? super T`）。"
+            },
+            {
+              "q": "实战避坑：`RawTypeHeapPollution` 为什么会出问题，应该怎么改？",
+              "a": "raw.add(\"bad-string\") 写入成功，直到 nums.get(0) 取出时才抛 ClassCastException，安全数 0。 正确做法是改用 `GenericCompileSafe`（全程严格泛型（编译期拦截））：不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "用 javap 字节码证明泛型擦除（Type Erasure）与编译器自动插入 checkcast 的真相",
+            "理解原始类型（Raw Type）导致的堆污染（Heap Pollution）及 Collections.checkedList 防护",
+            "掌握通配符 PECS 原则（Producer Extends, Consumer Super）"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `RawTypeHeapPollution`（原始类型绕过检查（堆污染）），优先选用 `GenericCompileSafe`（全程严格泛型（编译期拦截））：不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,871 @@
+{
+ "id": "sqldeadlock",
+ "variants": {
+  "GapPlusInsertIntention": {
+   "hash": "9b1f5f00ca7828eb",
+   "repeat": 10,
+   "runs": {
+    "50": [
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 28
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 38
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 19
+     }
+    ],
+    "100": [
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 59
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 57
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 55
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 66
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 57
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 57
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 59
+     }
+    ],
+    "200": [
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 128
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 115
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 121
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 115
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 114
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 104
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 116
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 117
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 136
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 105
+     }
+    ],
+    "400": [
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 175
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 175
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 223
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 193
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 150
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 169
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 198
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 195
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 171
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 185
+     }
+    ]
+   },
+   "inside": "Compiled from \"GapPlusInsertIntention.java\"\npublic class lab.sqldeadlock.GapPlusInsertIntention {\n  public lab.sqldeadlock.GapPlusInsertIntention();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: new           #19                 // class java/util/concurrent/atomic/AtomicInteger\n      14: dup\n      15: iconst_0\n      16: invokespecial #21                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":(I)V\n      19: astore        4\n      21: iconst_0\n      22: istore        5\n      24: iload         5\n      26: iload_1\n      27: if_icmpge     100\n      30: new           #24                 // class java/util/concurrent/CountDownLatch\n      33: dup\n      34: iconst_2\n      35: invokespecial #26                 // Method java/util/concurrent/CountDownLatch.\"<init>\":(I)V\n      38: astore        6\n      40: new           #27                 // class java/lang/Thread\n      43: dup\n      44: aload         6\n      46: aload         4\n      48: invokedynamic #29,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CountDownLatch;Ljava/util/concurrent/atomic/AtomicInteger;)Ljava/lang/Runnable;\n      53: invokespecial #33                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      56: astore        7\n      58: new           #27                 // class java/lang/Thread\n      61: dup\n      62: aload         6\n      64: invokedynamic #36,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CountDownLatch;)Ljava/lang/Runnable;\n      69: invokespecial #33                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      72: astore        8\n      74: aload         7\n      76: invokevirtual #39                 // Method java/lang/Thread.start:()V\n      79: aload         8\n      81: invokevirtual #39                 // Method java/lang/Thread.start:()V\n      84: aload         7\n      86: invokevirtual #42                 // Method java/lang/Thread.join:()V\n      89: aload         8\n      91: invokevirtual #42                 // Method java/lang/Thread.join:()V\n      94: iinc          5, 1\n      97: goto          24\n     100: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     103: lload_2\n     104: lsub\n     105: ldc2_w        #45                 // long 1000000l\n     108: ldiv\n     109: lstore        5\n     111: getstatic     #47                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     114: aload         4\n     116: invokevirtual #51                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     119: invokedynamic #55,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     124: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     127: getstatic     #47                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     130: ldc           #65                 // String expected=0\n     132: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     135: getstatic     #47                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     138: lload         5\n     140: invokedynamic #67,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     145: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     148: return\n\n  private static void lambda$main$1(java.util.concurrent.CountDownLatch);\n    Code:\n       0: aload_0\n       1: invokevirtual #70                 // Method java/util/concurrent/CountDownLatch.countDown:()V\n       4: aload_0\n       5: invokevirtual #73                 // Method java/util/concurrent/CountDownLatch.await:()V\n       8: goto          12\n      11: astore_1\n      12: return\n    Exception table:\n       from    to  target type\n           4     8    11   Class java/lang/InterruptedException\n\n  private static void lambda$main$0(java.util.concurrent.CountDownLatch, java.util.concurrent.atomic.AtomicInteger);\n    Code:\n       0: aload_0\n       1: invokevirtual #70                 // Method java/util/concurrent/CountDownLatch.countDown:()V\n       4: aload_0\n       5: invokevirtual #73                 // Method java/util/concurrent/CountDownLatch.await:()V\n       8: goto          12\n      11: astore_2\n      12: aload_1\n      13: invokevirtual #78                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      16: pop\n      17: return\n    Exception table:\n       from    to  target type\n           4     8    11   Class java/lang/InterruptedException\n}"
+  },
+  "TwoOrderUpdateReverse": {
+   "hash": "dc9227c0f8147d94",
+   "repeat": 10,
+   "runs": {
+    "50": [
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 50,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "100": [
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 100,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "200": [
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 200,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "400": [
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "deadlocks": 400,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"TwoOrderUpdateReverse.java\"\npublic class lab.sqldeadlock.TwoOrderUpdateReverse {\n  public lab.sqldeadlock.TwoOrderUpdateReverse();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     48\n      23: iconst_1\n      24: istore        6\n      26: iconst_1\n      27: istore        7\n      29: iload         6\n      31: ifeq          42\n      34: iload         7\n      36: ifeq          42\n      39: iinc          4, 1\n      42: iinc          5, 1\n      45: goto          17\n      48: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      51: lload_2\n      52: lsub\n      53: ldc2_w        #19                 // long 1000000l\n      56: ldiv\n      57: lstore        5\n      59: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      62: iload         4\n      64: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      69: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      72: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      75: ldc           #35                 // String expected=0\n      77: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      80: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      83: lload         5\n      85: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      90: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      93: return\n}"
+  },
+  "OrderedLockAcquire": {
+   "hash": "c84794b53bce390e",
+   "repeat": 10,
+   "runs": {
+    "50": [
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 21
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 33
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 35
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 33
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 37
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 45
+     }
+    ],
+    "100": [
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 50
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 57
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 66
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 60
+     }
+    ],
+    "200": [
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 120
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 86
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 96
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 115
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 102
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 89
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 96
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 83
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 65
+     }
+    ],
+    "400": [
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 210
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 163
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 180
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 93
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 90
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 93
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 94
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 86
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 92
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 87
+     }
+    ]
+   },
+   "inside": "Compiled from \"OrderedLockAcquire.java\"\npublic class lab.sqldeadlock.OrderedLockAcquire {\n  public lab.sqldeadlock.OrderedLockAcquire();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: new           #19                 // class java/util/concurrent/locks/ReentrantLock\n      14: dup\n      15: invokespecial #21                 // Method java/util/concurrent/locks/ReentrantLock.\"<init>\":()V\n      18: astore        4\n      20: new           #19                 // class java/util/concurrent/locks/ReentrantLock\n      23: dup\n      24: invokespecial #21                 // Method java/util/concurrent/locks/ReentrantLock.\"<init>\":()V\n      27: astore        5\n      29: iconst_0\n      30: istore        6\n      32: iconst_0\n      33: istore        7\n      35: iload         7\n      37: iload_1\n      38: if_icmpge     103\n      41: new           #22                 // class java/lang/Thread\n      44: dup\n      45: aload         4\n      47: aload         5\n      49: invokedynamic #24,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/locks/ReentrantLock;Ljava/util/concurrent/locks/ReentrantLock;)Ljava/lang/Runnable;\n      54: invokespecial #28                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      57: astore        8\n      59: new           #22                 // class java/lang/Thread\n      62: dup\n      63: aload         4\n      65: aload         5\n      67: invokedynamic #31,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/locks/ReentrantLock;Ljava/util/concurrent/locks/ReentrantLock;)Ljava/lang/Runnable;\n      72: invokespecial #28                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      75: astore        9\n      77: aload         8\n      79: invokevirtual #32                 // Method java/lang/Thread.start:()V\n      82: aload         9\n      84: invokevirtual #32                 // Method java/lang/Thread.start:()V\n      87: aload         8\n      89: invokevirtual #35                 // Method java/lang/Thread.join:()V\n      92: aload         9\n      94: invokevirtual #35                 // Method java/lang/Thread.join:()V\n      97: iinc          7, 1\n     100: goto          35\n     103: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     106: lload_2\n     107: lsub\n     108: ldc2_w        #38                 // long 1000000l\n     111: ldiv\n     112: lstore        7\n     114: getstatic     #40                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     117: iload         6\n     119: invokedynamic #44,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     124: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     127: getstatic     #40                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     130: ldc           #54                 // String expected=0\n     132: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     135: getstatic     #40                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     138: lload         7\n     140: invokedynamic #56,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     145: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     148: return\n\n  private static void lambda$main$1(java.util.concurrent.locks.ReentrantLock, java.util.concurrent.locks.ReentrantLock);\n    Code:\n       0: aload_0\n       1: invokevirtual #59                 // Method java/util/concurrent/locks/ReentrantLock.lock:()V\n       4: aload_1\n       5: invokevirtual #59                 // Method java/util/concurrent/locks/ReentrantLock.lock:()V\n       8: aload_1\n       9: invokevirtual #62                 // Method java/util/concurrent/locks/ReentrantLock.unlock:()V\n      12: aload_0\n      13: invokevirtual #62                 // Method java/util/concurrent/locks/ReentrantLock.unlock:()V\n      16: goto          26\n      19: astore_2\n      20: aload_0\n      21: invokevirtual #62                 // Method java/util/concurrent/locks/ReentrantLock.unlock:()V\n      24: aload_2\n      25: athrow\n      26: return\n    Exception table:\n       from    to  target type\n           4    12    19   any\n\n  private static void lambda$main$0(java.util.concurrent.locks.ReentrantLock, java.util.concurrent.locks.ReentrantLock);\n    Code:\n       0: aload_0\n       1: invokevirtual #59                 // Method java/util/concurrent/locks/ReentrantLock.lock:()V\n       4: aload_1\n       5: invokevirtual #59                 // Method java/util/concurrent/locks/ReentrantLock.lock:()V\n       8: aload_1\n       9: invokevirtual #62                 // Method java/util/concurrent/locks/ReentrantLock.unlock:()V\n      12: aload_0\n      13: invokevirtual #62                 // Method java/util/concurrent/locks/ReentrantLock.unlock:()V\n      16: goto          26\n      19: astore_2\n      20: aload_0\n      21: invokevirtual #62                 // Method java/util/concurrent/locks/ReentrantLock.unlock:()V\n      24: aload_2\n      25: athrow\n      26: return\n    Exception table:\n       from    to  target type\n           4    12    19   any\n}"
+  },
+  "InsertIgnoreOrRc": {
+   "hash": "26b0079177e8d86b",
+   "repeat": 10,
+   "runs": {
+    "50": [
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 16
+     }
+    ],
+    "100": [
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 33
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 35
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 33
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 33
+     }
+    ],
+    "200": [
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 55
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 64
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 59
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 55
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 65
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 60
+     }
+    ],
+    "400": [
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 107
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 101
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 100
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 105
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 103
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 105
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 104
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 112
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 110
+     },
+     {
+      "deadlocks": 0,
+      "expected": 0,
+      "ms": 103
+     }
+    ]
+   },
+   "inside": "Compiled from \"InsertIgnoreOrRc.java\"\npublic class lab.sqldeadlock.InsertIgnoreOrRc {\n  public lab.sqldeadlock.InsertIgnoreOrRc();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: new           #19                 // class java/util/concurrent/ConcurrentHashMap\n      17: dup\n      18: invokespecial #21                 // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n      21: astore        5\n      23: iconst_0\n      24: istore        6\n      26: iload         6\n      28: iload_1\n      29: if_icmpge     98\n      32: iload         6\n      34: istore        7\n      36: new           #22                 // class java/lang/Thread\n      39: dup\n      40: aload         5\n      42: iload         7\n      44: invokedynamic #24,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/ConcurrentHashMap;I)Ljava/lang/Runnable;\n      49: invokespecial #28                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      52: astore        8\n      54: new           #22                 // class java/lang/Thread\n      57: dup\n      58: aload         5\n      60: iload         7\n      62: invokedynamic #31,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/ConcurrentHashMap;I)Ljava/lang/Runnable;\n      67: invokespecial #28                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      70: astore        9\n      72: aload         8\n      74: invokevirtual #32                 // Method java/lang/Thread.start:()V\n      77: aload         9\n      79: invokevirtual #32                 // Method java/lang/Thread.start:()V\n      82: aload         8\n      84: invokevirtual #35                 // Method java/lang/Thread.join:()V\n      87: aload         9\n      89: invokevirtual #35                 // Method java/lang/Thread.join:()V\n      92: iinc          6, 1\n      95: goto          26\n      98: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     101: lload_2\n     102: lsub\n     103: ldc2_w        #38                 // long 1000000l\n     106: ldiv\n     107: lstore        6\n     109: getstatic     #40                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     112: iload         4\n     114: invokedynamic #44,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     119: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     122: getstatic     #40                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     125: ldc           #54                 // String expected=0\n     127: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     130: getstatic     #40                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     133: lload         6\n     135: invokedynamic #56,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     140: invokevirtual #48                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     143: return\n\n  private static void lambda$main$1(java.util.concurrent.ConcurrentHashMap, int);\n    Code:\n       0: aload_0\n       1: iload_1\n       2: invokestatic  #59                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n       5: ldc           #63                 // String B\n       7: invokevirtual #65                 // Method java/util/concurrent/ConcurrentHashMap.putIfAbsent:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      10: pop\n      11: return\n\n  private static void lambda$main$0(java.util.concurrent.ConcurrentHashMap, int);\n    Code:\n       0: aload_0\n       1: iload_1\n       2: invokestatic  #59                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n       5: ldc           #69                 // String A\n       7: invokevirtual #65                 // Method java/util/concurrent/ConcurrentHashMap.putIfAbsent:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      10: pop\n      11: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

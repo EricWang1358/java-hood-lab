@@ -1,0 +1,608 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "col-arrays-aslist",
+  "course": "Java 工程语法与集合",
+  "title": "Arrays.asList、List.of 与 subList：三个假 List 视图的连环坑",
+  "lead": "用 Arrays.asList 转了个列表，一调 add() 就炸 UnsupportedOperationException；调 set() 居然把原数组也改掉了；更隐蔽的是 subList 切片竟能导致几百 MB 大列表永不 GC！",
+  "minutes": 30,
+  "needs": [
+    "知道 List 接口可以有不同实现类",
+    "知道内部类持有外部类隐式引用"
+  ],
+  "after": [
+    "区分 Arrays.asList()（定长透传数组视图）、List.of()（真不可变集合）与 new ArrayList<>()（独立可变列表）",
+    "解释为什么 Arrays.asList().set() 会穿透修改原数组且 add/remove 必炸",
+    "理解 ArrayList.subList() 视图强引用原大列表导致的 OOM 风险与独立拷贝解法"
+  ],
+  "terms": {
+    "Arrays$ArrayList": "`Arrays.asList()` 返回的并不是 `java.util.ArrayList`，而是 `Arrays` 的私有静态内部类，直接把传入数组当底层存储，禁止增删（固定长度），但允许 `set()` 改写原数组！",
+    "List.of()": "JDK 9+ 提供的真不可变集合：既不能 `add`/`remove`，也不能 `set`，且不允许 `null` 元素。",
+    "subList 视图泄漏": "`list.subList(0, 2)` 返回的是原列表的切片视图（内部持有 `parent` 强引用）；只要 `subList` 活着，哪怕原列表有 1000 万个元素也无法被 GC 回收！"
+  },
+  "experiments": {
+    "aslist": {
+      "runner": "java",
+      "home": "lab.aslist",
+      "variants": [
+        {
+          "id": "ArraysAsListAddCrash",
+          "code": "ArraysAsListAddCrash.java",
+          "label": "Arrays.asList().add() 增删必炸",
+          "note": "Arrays$ArrayList 未重写 add/remove，每次调用直接抛出 UnsupportedOperationException，成功数 0。"
+        },
+        {
+          "id": "ArraysAsListBackArray",
+          "code": "ArraysAsListBackArray.java",
+          "label": "Arrays.asList().set() 改脏原数组",
+          "note": "视图与原数组共享内存，list.set(0, \"Z\") 直接把原 arr[0] 改掉，隔离数 0。"
+        },
+        {
+          "id": "CopyToNewArrayList",
+          "code": "CopyToNewArrayList.java",
+          "label": "new ArrayList<>(Arrays.asList(arr))",
+          "note": "拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。"
+        },
+        {
+          "id": "SubListIndependentCopy",
+          "code": "SubListIndependentCopy.java",
+          "label": "new ArrayList<>(big.subList(...))",
+          "note": "切片后立刻拷贝成独立新列表，断开对原大列表的强引用视图，互不干扰。"
+        }
+      ],
+      "knob": {
+        "label": "操作次数 N",
+        "values": [
+          "5000",
+          "10000",
+          "20000",
+          "50000"
+        ],
+        "default": "20000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "ok",
+        "expectKey": "expected",
+        "label": "安全独立操作次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "Arrays.asList、List.of 与 subList：三个假 List 视图的连环坑",
+      "bridge": "用 Arrays.asList 转了个列表，一调 add() 就炸 UnsupportedOperationException；调 set() 居然把原数组也改掉了；更隐蔽的是 subList 切片竟能导致几百 MB 大列表永不 GC！",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "Java 集合里有三个长得很像 `ArrayList`、但行为完全反直觉的「假 List 视图」：**`Arrays.asList()`、`List.of()`、`list.subList()`**。今天一次看清它们为什么会抛出 `UnsupportedOperationException`、`ConcurrentModificationException` 甚至引发隐蔽内存泄漏！",
+          "say": "这三个坑在日常业务开发里几乎每周都会遇到。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
+          "items": [
+            {
+              "have": "Arrays.asList",
+              "q": "`List<String> l = Arrays.asList(\"a\", \"b\");` 能否调用 `l.set(0, \"x\")` 和 `l.add(\"c\")`？",
+              "options": [
+                "set 可以（且会改原数组），add 直接抛 UnsupportedOperationException",
+                "都可以",
+                "都不行"
+              ],
+              "answer": 0,
+              "why": "`Arrays$ArrayList` 是定长数组适配器，只支持改元素不支持改长度。"
+            },
+            {
+              "have": "subList 修改",
+              "q": "从 `bigList` 切出 `sub = bigList.subList(0, 2)` 后，往 `bigList` 里 `add` 了一个新元素，再遍历 `sub` 会怎样？",
+              "options": [
+                "抛出 ConcurrentModificationException（父列表 modCount 变了）",
+                "正常遍历",
+                "sub 自动同步"
+              ],
+              "answer": 0,
+              "why": "`subList` 和原列表共用底层数组和 `modCount`，任何一方结构性增删都会让另一方视图失效！"
+            },
+            {
+              "have": "Stream.toList()",
+              "q": "JDK 16 新增的 `stream.toList()` 返回的列表可以 `add()` 或 `set()` 吗？",
+              "options": [
+                "都不可以，它返回的是类似 List.of() 的不可变列表（允许 null）",
+                "可以 add",
+                "可以 set"
+              ],
+              "answer": 0,
+              "why": "如果需要继续往结果列表里 `add`，请用 `.collect(Collectors.toCollection(ArrayList::new))`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (ArraysAsListAddCrash)",
+              "安全写法 (CopyToNewArrayList)"
+            ],
+            "shared": {
+              "name": "安全独立操作次数",
+              "value": "目标 20000"
+            }
+          },
+          "story": "用 Arrays.asList 转了个列表，一调 add() 就炸 UnsupportedOperationException；调 set() 居然把原数组也改掉了；更隐蔽的是 subList 切片竟能导致几百 MB 大列表永不 GC！",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "Arrays$ArrayList",
+              "on": "shared",
+              "tag": "Arrays$Array",
+              "code": "`ArraysAsListAddCrash` vs `CopyToNewArrayList`",
+              "say": "`Arrays.asList()` 返回的并不是 `java.util.ArrayList`，而是 `Arrays` 的私有静态内部类，直接把传入数组当底层存储，禁止增删（固定长度），但允许 `set()` 改写原数组！"
+            },
+            {
+              "scene": "List.of()",
+              "on": "shared",
+              "tag": "List.of()",
+              "code": "`ArraysAsListAddCrash` vs `CopyToNewArrayList`",
+              "say": "JDK 9+ 提供的真不可变集合：既不能 `add`/`remove`，也不能 `set`，且不允许 `null` 元素。"
+            },
+            {
+              "scene": "subList 视图泄漏",
+              "on": "shared",
+              "tag": "subList 视图泄漏",
+              "code": "`ArraysAsListAddCrash` vs `CopyToNewArrayList`",
+              "say": "`list.subList(0, 2)` 返回的是原列表的切片视图（内部持有 `parent` 强引用）；只要 `subList` 活着，哪怕原列表有 1000 万个元素也无法被 GC 回收！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`ArraysAsListAddCrash`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "aslist.ArraysAsListAddCrash",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "for (int i = 0; i < n; i++) {"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "list.add(\"c\");"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：ArraysAsListAddCrash 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`ArraysAsListBackArray` 执行 `list.set(0, \"Z\")` 后，原数组 `arr[0]` 还是 `\"a\"` 的次数是？",
+          "options": [
+            "0 次（每次都被 list.set 穿透改成了 \"Z\"）",
+            "20000 次",
+            "10000 次"
+          ],
+          "answer": 0,
+          "say": "`Arrays.asList(arr)` 没有拷贝数组，它直接把 `arr` 引用存进自己的 `private final E[] a` 字段里。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：ArraysAsListAddCrash 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "aslist",
+          "show": [
+            "ArraysAsListAddCrash"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "`Arrays.asList(arr)` 没有拷贝数组，它直接把 `arr` 引用存进自己的 `private final E[] a` 字段里。",
+          "say": "`Arrays.asList(arr)` 没有拷贝数组，它直接把 `arr` 引用存进自己的 `private final E[] a` 字段里。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「操作次数 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "aslist",
+          "show": [
+            "ArraysAsListAddCrash",
+            "CopyToNewArrayList"
+          ],
+          "say": "左右拖动「操作次数 N」滑块，对比 `ArraysAsListAddCrash` 与 `CopyToNewArrayList` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`ArraysAsListAddCrash`：Arrays$ArrayList 未重写 add/remove，每次调用直接抛出 UnsupportedOperationException，成功数 0。；`CopyToNewArrayList`：拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `ArraysAsListAddCrash.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "aslist.ArraysAsListAddCrash",
+          "q": "在左边的 `ArraysAsListAddCrash.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "list.add(\"c\");"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`list.add(\"c\");`）导致：Arrays$ArrayList 未重写 add/remove，每次调用直接抛出 UnsupportedOperationException，成功数 0。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "aslist.ArraysAsListAddCrash",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "31: aastore"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `CopyToNewArrayList` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "aslist.CopyToNewArrayList",
+          "say": "拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "String[] arr = new String[]{\"a\", \"b\"};"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (list.size() == 3 && \"a\".equals(arr[0])) ok++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "aslist",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "Arrays.asList().add() 增删必炸（`ArraysAsListAddCrash`）",
+              "solves": "Arrays$ArrayList 未重写 add/remove，每次调用直接抛出 UnsupportedOperationException，成功数 0。",
+              "cost": "实测约 {ms:aslist.ArraysAsListAddCrash} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "Arrays$ArrayList 未重写 add/remove，每次调用直接抛出 UnsupportedOperationException，成功数 0。"
+            },
+            {
+              "name": "Arrays.asList().set() 改脏原数组（`ArraysAsListBackArray`）",
+              "solves": "视图与原数组共享内存，list.set(0, \"Z\") 直接把原 arr[0] 改掉，隔离数 0。",
+              "cost": "实测约 {ms:aslist.ArraysAsListBackArray} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "视图与原数组共享内存，list.set(0, \"Z\") 直接把原 arr[0] 改掉，隔离数 0。"
+            },
+            {
+              "name": "new ArrayList<>(Arrays.asList(arr))（`CopyToNewArrayList`）",
+              "solves": "拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。",
+              "cost": "实测约 {ms:aslist.CopyToNewArrayList} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。"
+            },
+            {
+              "name": "new ArrayList<>(big.subList(...))（`SubListIndependentCopy`）",
+              "solves": "切片后立刻拷贝成独立新列表，断开对原大列表的强引用视图，互不干扰。",
+              "cost": "实测约 {ms:aslist.SubListIndependentCopy} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "切片后立刻拷贝成独立新列表，断开对原大列表的强引用视图，互不干扰。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Arrays$ArrayList",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "`Arrays.asList()` 返回的并不是 `java.util.ArrayList`，而是 `Arrays` 的私有静态内部类，直接把传入数组当底层存储，禁止增删（固定长度），但允许 `set()` 改写原数组！",
+          "asked": [
+            "Arrays.asList、List.of 与 subList：三个假 List 视图的连环坑——底层原理是什么？",
+            "为什么 `ArraysAsListAddCrash` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `CopyToNewArrayList` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`ArraysAsListBackArray` 执行 `list.set(0, \"Z\")` 后，原数组 `arr[0]` 还是 `\"a\"` 的次数是？",
+          "options": [
+            {
+              "text": "0 次（每次都被 list.set 穿透改成了 \"Z\"）",
+              "ok": true,
+              "why": "`Arrays.asList(arr)` 没有拷贝数组，它直接把 `arr` 引用存进自己的 `private final E[] a` 字段里。"
+            },
+            {
+              "text": "20000 次",
+              "ok": false,
+              "why": "再想一想：`Arrays.asList(arr)` 没有拷贝数组，它直接把 `arr` 引用存进自己的 `private final E[] a` 字段里。"
+            },
+            {
+              "text": "10000 次",
+              "ok": false,
+              "why": "再想一想：`Arrays.asList(arr)` 没有拷贝数组，它直接把 `arr` 引用存进自己的 `private final E[] a` 字段里。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：Arrays.asList",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`List<String> l = Arrays.asList(\"a\", \"b\");` 能否调用 `l.set(0, \"x\")` 和 `l.add(\"c\")`？",
+          "options": [
+            {
+              "text": "set 可以（且会改原数组），add 直接抛 UnsupportedOperationException",
+              "ok": true,
+              "why": "`Arrays$ArrayList` 是定长数组适配器，只支持改元素不支持改长度。"
+            },
+            {
+              "text": "都可以",
+              "ok": false,
+              "why": "再想一想：`Arrays$ArrayList` 是定长数组适配器，只支持改元素不支持改长度。"
+            },
+            {
+              "text": "都不行",
+              "ok": false,
+              "why": "再想一想：`Arrays$ArrayList` 是定长数组适配器，只支持改元素不支持改长度。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：subList 修改",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "从 `bigList` 切出 `sub = bigList.subList(0, 2)` 后，往 `bigList` 里 `add` 了一个新元素，再遍历 `sub` 会怎样？",
+          "options": [
+            {
+              "text": "抛出 ConcurrentModificationException（父列表 modCount 变了）",
+              "ok": true,
+              "why": "`subList` 和原列表共用底层数组和 `modCount`，任何一方结构性增删都会让另一方视图失效！"
+            },
+            {
+              "text": "正常遍历",
+              "ok": false,
+              "why": "再想一想：`subList` 和原列表共用底层数组和 `modCount`，任何一方结构性增删都会让另一方视图失效！"
+            },
+            {
+              "text": "sub 自动同步",
+              "ok": false,
+              "why": "再想一想：`subList` 和原列表共用底层数组和 `modCount`，任何一方结构性增删都会让另一方视图失效！"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `CopyToNewArrayList`（new ArrayList<>(Arrays.asList(arr))）替代 `ArraysAsListAddCrash`（Arrays.asList().add() 增删必炸）？",
+          "options": [
+            {
+              "text": "因为 拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。",
+              "ok": true,
+              "why": "`ArraysAsListAddCrash`：Arrays$ArrayList 未重写 add/remove，每次调用直接抛出 UnsupportedOperationException，成功数 0。；而 `CopyToNewArrayList`：拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。"
+            },
+            {
+              "text": "因为 `ArraysAsListAddCrash` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`ArraysAsListAddCrash`：Arrays$ArrayList 未重写 add/remove，每次调用直接抛出 UnsupportedOperationException，成功数 0。；而 `CopyToNewArrayList`：拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`ArraysAsListAddCrash`：Arrays$ArrayList 未重写 add/remove，每次调用直接抛出 UnsupportedOperationException，成功数 0。；而 `CopyToNewArrayList`：拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) Arrays.asList() 的三大坑（不能 add、改元素透传原数组、基本类型数组变单元素）；2) Arrays.asList() 和 List.of() 的区别；3) 为什么 subList() 长期持有会导致内存泄漏。",
+          "points": [
+            "区分 Arrays.asList()（定长透传数组视图）、List.of()（真不可变集合）与 new ArrayList<>()（独立可变列表）",
+            "解释为什么 Arrays.asList().set() 会穿透修改原数组且 add/remove 必炸",
+            "理解 ArrayList.subList() 视图强引用原大列表导致的 OOM 风险与独立拷贝解法"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：用 Arrays.asList 转了个列表，一调 add() 就炸 UnsupportedOperationException；调 set() 居然把原数组也改掉了；更隐蔽的是 subList 切片竟能导致几百 MB 大列表永不 GC！；**② 再讲底层原理**：Arrays$ArrayList（`Arrays.asList()` 返回的并不是 `java.util.ArrayList`，而是 `Arrays` 的私有静态内部类，直接把传入数组当底层存储，禁止增删（固定长度），但允许 `set()` 改写原数组！）；List.of()（JDK 9+ 提供的真不可变集合：既不能 `add`/`remove`，也不能 `set`，且不允许 `null` 元素。）；**③ 最后给工程方案**：生产里优先采用「new ArrayList<>(Arrays.asList(arr))」（`CopyToNewArrayList`），拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「Arrays$ArrayList」？它在这节课里起了什么关键作用？",
+              "a": "`Arrays.asList()` 返回的并不是 `java.util.ArrayList`，而是 `Arrays` 的私有静态内部类，直接把传入数组当底层存储，禁止增删（固定长度），但允许 `set()` 改写原数组！"
+            },
+            {
+              "q": "面试官问：什么是「List.of()」？它在这节课里起了什么关键作用？",
+              "a": "JDK 9+ 提供的真不可变集合：既不能 `add`/`remove`，也不能 `set`，且不允许 `null` 元素。"
+            },
+            {
+              "q": "面试官问：什么是「subList 视图泄漏」？它在这节课里起了什么关键作用？",
+              "a": "`list.subList(0, 2)` 返回的是原列表的切片视图（内部持有 `parent` 强引用）；只要 `subList` 活着，哪怕原列表有 1000 万个元素也无法被 GC 回收！"
+            },
+            {
+              "q": "实战避坑：`ArraysAsListAddCrash` 为什么会出问题，应该怎么改？",
+              "a": "Arrays$ArrayList 未重写 add/remove，每次调用直接抛出 UnsupportedOperationException，成功数 0。 正确做法是改用 `CopyToNewArrayList`（new ArrayList<>(Arrays.asList(arr))）：拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "区分 Arrays.asList()（定长透传数组视图）、List.of()（真不可变集合）与 new ArrayList<>()（独立可变列表）",
+            "解释为什么 Arrays.asList().set() 会穿透修改原数组且 add/remove 必炸",
+            "理解 ArrayList.subList() 视图强引用原大列表导致的 OOM 风险与独立拷贝解法"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `ArraysAsListAddCrash`（Arrays.asList().add() 增删必炸），优先选用 `CopyToNewArrayList`（new ArrayList<>(Arrays.asList(arr))）：拷贝一份独立可变 ArrayList，既支持 add/remove 又彻底隔离原数组，100% 安全。"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,617 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "tx-dirty-read",
+  "course": "MySQL 索引、事务与锁",
+  "title": "不加隔离，怎么读到了别人回滚掉的假数据？",
+  "lead": "线程 A 把余额改成 900 还没提交，线程 B 读走 900 后发了货；接着线程 A 回滚成 100，钱货两空！",
+  "minutes": 40,
+  "needs": [
+    "知道事务提交（commit）和回滚（rollback）"
+  ],
+  "after": [
+    "复现 Read Uncommitted 下的脏读事故",
+    "讲清 Read Committed 如何沿 Undo 版本链（roll_ptr）消灭脏读",
+    "记住四大隔离级别的最低生产底线是 RC"
+  ],
+  "terms": {
+    "脏读（Dirty Read）": "一个事务读到了另一个事务**尚未提交**且随时可能回滚的修改。",
+    "Read Uncommitted（RU）": "读未提交：连快照和活跃事务列表都不看，直接读最新头节点，哪怕对方还没 commit。",
+    "Read Committed（RC）": "读已提交：只允许读已经提交的事务版本，是生产环境的最低底线。",
+    "UndoNode": "本课用来模拟数据库记录和 Undo 历史版本链表节点的 Java 类，包含值 `val`、事务号 `trxId` 和指向上个版本的 `prev`（即 `roll_ptr`）。",
+    "roll_ptr": "InnoDB 每行记录里的隐藏指针，串起一条由新到旧的 Undo 历史版本链。",
+    "trx_id": "InnoDB 给每个写事务分配的递增事务 ID，用来判断版本是谁改的。"
+  },
+  "experiments": {
+    "dirtyread": {
+      "runner": "java",
+      "home": "lab.dirtyread",
+      "variants": [
+        {
+          "id": "ReadUncommitted",
+          "label": "RU (读未提交)",
+          "note": "直接读最新链表头节点，对方一旦回滚就酿成脏读事故。"
+        },
+        {
+          "id": "ReadCommitted",
+          "label": "RC (读已提交)",
+          "note": "发现修改者还在活跃列表里，沿 roll_ptr 退回已提交版本，0 脏读。"
+        },
+        {
+          "id": "RepeatableRead",
+          "label": "RR (可重复读)",
+          "note": "InnoDB 默认级别，0 脏读且支持可重复读。"
+        },
+        {
+          "id": "Serializable",
+          "label": "Serializable (串行化)",
+          "note": "读写加锁排队，0 脏读但并发最差。"
+        }
+      ],
+      "knob": {
+        "label": "并发事务轮数",
+        "values": [
+          "100",
+          "500",
+          "1000",
+          "2000"
+        ],
+        "default": "1000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "dirtyReads",
+        "expectKey": "expected",
+        "label": "脏读次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "不加隔离，怎么读到了别人回滚掉的假数据？",
+      "bridge": "今天不背八股定义，先看一个真实工程场景，跑出数据后再拆底层机制。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "数据库隔离级别共有 4 档。今天从最危险的第 1 档 **Read Uncommitted** 开始：看看「读到未提交数据」为什么会直接把账搞劈。",
+          "say": "生产环境绝不允许开 Read Uncommitted，我们先建出 Undo 版本链，亲眼看看它是怎么读到假数据的。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，热个身",
+      "bridge": "这节课会用到三个基础概念，咱们先花一分钟确认一下。忘了也没关系，选完当场给你补齐。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题，每题点一个答案就行。选完马上告诉你对不对，下面那句话就是这节课要用到的前置底座。",
+          "items": [
+            {
+              "have": "事务提交",
+              "q": "一个事务还没执行 `COMMIT` 前，它对数据的修改算最终生效了吗？",
+              "options": [
+                "算，别人可以放心当真",
+                "不算，随时可能 `ROLLBACK` 撤销",
+                "自动保存"
+              ],
+              "answer": 1,
+              "why": "未提交的修改处于不确定状态，随时可能回滚成原值。"
+            },
+            {
+              "have": "链表指针",
+              "q": "`UndoNode head = new UndoNode(900, 20, committed);` 里，`head.prev` 指向谁？",
+              "options": [
+                "null",
+                "指向旧版本 committed (100)",
+                "指向自己"
+              ],
+              "answer": 1,
+              "why": "每条记录都用 `prev`（roll_ptr）连着历史旧版本，这就是 Undo 版本链。"
+            },
+            {
+              "have": "隔离级别",
+              "q": "MySQL InnoDB 的默认隔离级别是？",
+              "options": [
+                "Read Uncommitted",
+                "Read Committed",
+                "Repeatable Read"
+              ],
+              "answer": 2,
+              "why": "MySQL 默认是 Repeatable Read（可重复读）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个生活场景",
+      "bridge": "热身完了。看代码之前，先在脑子里放一个画面。后面所有的数据库和 Java 机制，都可以往这个画面上套。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "改账人 A (未交卷)",
+              "查账人 B"
+            ],
+            "shared": {
+              "name": "草稿黑板",
+              "value": "900 (未提交)"
+            }
+          },
+          "story": "会计 A 正在草稿本上把余额 100 划掉改写成 900（还没盖章交卷），B 跑来直接抄走了 900 去给客户发货！一分钟后 A 发现算错了把草稿撕掉还原回 100，B 却已经把 900 块钱的货发走了！",
+          "say": "怎么防？B 查账时看到 900 后面写着「A 还没交卷」，就顺着底下的历史底单退回到已经盖章的 100！",
+          "map": [
+            {
+              "scene": "历史底单 100",
+              "on": "shared",
+              "tag": "已提交版本",
+              "code": "`UndoNode committed = new UndoNode(100, 10, null);`",
+              "say": "事务 10 已经盖章提交的真实余额。"
+            },
+            {
+              "scene": "草稿上未交卷的 900",
+              "on": "actors",
+              "tag": "未提交头节点",
+              "code": "`UndoNode head = new UndoNode(900, 20, committed);`",
+              "say": "事务 20 改成了 900，但还没 commit。"
+            },
+            {
+              "scene": "直接抄走草稿 900",
+              "on": "action",
+              "tag": "Read Uncommitted",
+              "code": "`int seen = head.val;`",
+              "say": "RU 不看 `trxId`，直接抄走 900，一旦对方回滚就成了假账。"
+            },
+            {
+              "scene": "退回已盖章底单",
+              "on": "actors",
+              "tag": "Read Committed",
+              "code": "`cur = cur.prev;`",
+              "say": "RC 发现 `trxId=20` 还没提交，顺着 `prev` 退回 `100`！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "对方改完还没 commit，我能读吗？",
+      "bridge": "直观感觉是一回事，高并发/异常真的撞上来时，结果往往完全相反。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "1000 次并发读写里，每次写线程改完 900 后都会回滚回 100。`ReadUncommitted` 直接读 `head.val`，会有多少次读到假账？",
+          "say": "看 `ReadUncommitted` 的版本链读取代码。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "把场景写成程序：ReadUncommitted",
+      "bridge": "我们用纯 JDK 把这个底层过程真实模拟出来。重点看标出来的几行，不认识的词点一下虚线就有大白话解释。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "dirtyread.ReadUncommitted",
+          "say": "`ReadUncommitted` 压根不检查 `head.trxId` 是不是活跃未提交事务，直接把 `head.val`（900）拿走了。",
+          "walk": [
+            {
+              "focus": [
+                "UndoNode committed = new UndoNode(100, 10, null);"
+              ],
+              "say": "历史上已经提交的真实数据是 100。"
+            },
+            {
+              "focus": [
+                "UndoNode head = new UndoNode(900, 20, committed);"
+              ],
+              "say": "未提交事务 20 把最新节点改成了 900，用 `prev` 连着旧版本 100。"
+            },
+            {
+              "focus": [
+                "int seen = head.val;"
+              ],
+              "say": "RU 根本不查活跃事务，直接读走 900！对方随后回滚，900 就成了彻头彻尾的脏数据。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一个答案",
+      "bridge": "代码看完了。先别急着看结果，按你刚才对场景的理解，先猜一猜程序跑完会打印出什么。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "1000 轮中写线程每次都回滚，使用 `ReadUncommitted` 会出现多少次脏读？",
+          "options": [
+            "0 次",
+            "1000 次",
+            "随机几次"
+          ],
+          "answer": 1,
+          "say": "选一个你觉得最可能的，猜错完全没关系，猜过再看实测印象最深。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一次一次看真实运行结果",
+      "bridge": "你已经下注了。这组程序在本地 JDK 实测跑了多轮，现在把真实数据放出来核对。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "dirtyread",
+          "show": [
+            "ReadUncommitted"
+          ],
+          "hand": true,
+          "focus": [
+            "UndoNode committed = new UndoNode(100, 10, null);"
+          ],
+          "say": "先点运行看看基准表现，留意指标和预期是不是对得上。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "say": "实测 `dirtyReads = 1000`，100% 踩雷！而 `RC`、`RR`、`Serializable` 全是 0。",
+          "key": "脏读与隔离级别基线"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "出事的是哪一行？",
+      "bridge": "结果摆在眼前了。现在回到代码里，把直接导致这个现象的关键一行找出来。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "dirtyread.ReadUncommitted",
+          "q": "回到 `ReadUncommitted`，点击**不管事务是否提交、直接读走最新节点值**的那一行：",
+          "answer": [
+            "int seen = head.val;"
+          ],
+          "hint": "找把 `head.val` 赋给 `seen` 的那一行。",
+          "found": "就是它！跳过事务可见性判断直接读头节点，就是脏读的根源。",
+          "say": "直接在代码上点你怀疑的那一行，点错了会给你提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "拆开字节码 / 底层指令看一眼",
+      "bridge": "光看表面现象还不够，用 JDK 自带的 `javap -c -p` 看一眼机器到底执行了什么。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "dirtyread.ReadUncommitted",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "看 `javap -c -p`：`getfield` 直接从 `head` 对象取出 `val` 后做 `if_icmpeq` 比较，中间没有任何活跃事务列表过滤。",
+          "walk": [
+            {
+              "focus": [
+                "getfield"
+              ],
+              "label": "直接读头节点",
+              "say": "不顺着 `prev` 指针回退，直接取 `head.val`。"
+            },
+            {
+              "focus": [
+                "if_icmpeq"
+              ],
+              "label": "与真实提交值冲突",
+              "say": "读到的 900 和最终回滚后的 100 彻底对不上。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "RC 是怎么沿 Undo 版本链避开脏读的？",
+      "bridge": "把两条执行流或两个阶段摊在时间轴上，每一步谁先谁后、哪里卡住，一眼看穿。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "SELECT balance FROM acc WHERE id = 1; -- 对方 UPDATE 900 后 ROLLBACK",
+          "parts": {
+            "read": "读版本",
+            "calc": "核对 trxId",
+            "write": "结果"
+          },
+          "lanes": [
+            "写事务 (trx=20)",
+            "读事务 (RC)"
+          ],
+          "shared": {
+            "name": "Undo 链",
+            "start": "100 (trx=10)"
+          },
+          "say": "看 RC 遇到未提交版本时是怎么沿 `roll_ptr` 往回退的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "write",
+              "value": "900(trx=20) -> 100",
+              "text": "UPDATE 900（未提交）",
+              "say": "写事务把头节点改成 900，此时 `trx=20` 还在活跃事务列表里。"
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "查余额，先看到头节点 trx=20",
+              "say": "RC 读事务生成 ReadView，看到 `trx=20` 属于未提交的活跃事务。",
+              "ask": {
+                "q": "RC 发现头节点是活跃未提交的 trx=20 修改的，它会怎么处理？",
+                "options": [
+                  "直接返回 900",
+                  "顺着 roll_ptr (prev) 找上一个已提交版本 100"
+                ],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 1,
+              "op": "calc",
+              "text": "沿 prev 退回 trx=10 -> 100",
+              "say": "顺着 `prev` 找到 `trx=10` 的版本 `100`，安全返回！"
+            },
+            {
+              "lane": 0,
+              "op": "note",
+              "tone": "fail",
+              "text": "写事务 ROLLBACK 回 100",
+              "say": "哪怕写事务随后回滚，读事务拿到的依然是正确的 100，0 脏读！"
+            }
+          ],
+          "verdict": "从 ==Read Committed== 开始，顺着 Undo 版本链只读已提交版本，彻底消灭脏读。",
+          "verdictSay": "任何线上业务库，隔离级别最低底线必须是 RC（如 Oracle/阿里常用 RC，MySQL 默认 RR）。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "先猜：怎么改才能彻底修好？",
+      "bridge": "病根找到了。在看几种修法前，先判断一下哪种思路真正对症。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "从哪个隔离级别开始，MySQL 利用 Undo 版本链彻底消灭了脏读？",
+          "options": [
+            "Read Uncommitted",
+            "Read Committed (RC)",
+            "没有任何级别能消灭"
+          ],
+          "answer": 1,
+          "say": "想清楚「为什么出事」，再选一个你认为能根治的方案。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测对比",
+      "bridge": "不争论，把四种写法放在同一个开关下实测，高下立判。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "dirtyread",
+          "show": [
+            "ReadUncommitted",
+            "ReadCommitted",
+            "RepeatableRead",
+            "Serializable"
+          ],
+          "select": "ReadCommitted",
+          "say": "切到 `ReadCommitted`：代码里加了一层 `while (cur != null && cur.trxId == activeWriterTrx) cur = cur.prev;`，脏读立刻归零！"
+        },
+        {
+          "t": "reveal",
+          "of": "p2",
+          "say": "切到 `ReadCommitted` 后问题彻底清零，同时兼顾性能与正确性。"
+        },
+        {
+          "t": "try",
+          "say": "自己拨动上面的规模开关，对比错误数和耗时随规模的变化。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修好了，各自代价是多少？",
+      "bridge": "把四种方案在不同规模下的耗时和正确性画成折线图，工程选型靠数据说话。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "dirtyread",
+          "say": "只有 `ReadUncommitted` 随轮数飙到 2000，RC / RR / Serializable 全部稳稳贴在 0。",
+          "walk": [
+            {
+              "focus": "ReadUncommitted",
+              "say": "看 `RU (读未提交)`：直接读最新链表头节点，对方一旦回滚就酿成脏读事故。"
+            },
+            {
+              "focus": "ReadCommitted",
+              "say": "看 `RC (读已提交)`：发现修改者还在活跃列表里，沿 roll_ptr 退回已提交版本，0 脏读。"
+            },
+            {
+              "focus": "RepeatableRead",
+              "say": "看 `RR (可重复读)`：InnoDB 默认级别，0 脏读且支持可重复读。"
+            },
+            {
+              "focus": "Serializable",
+              "say": "看 `Serializable (串行化)`：读写加锁排队，0 脏读但并发最差。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上到底怎么选？",
+      "bridge": "没有银弹，只有适用边界。把每种方案的优点、代价和适用场景摆成一张表。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "线上高频业务主要在 RC 与 RR 之间选择，RU 绝不上生产。",
+          "options": [
+            {
+              "name": "Read Uncommitted",
+              "solves": "省掉版本链判断",
+              "cost": "脏读泛滥",
+              "when": "生产严禁",
+              "say": "假账制造机。"
+            },
+            {
+              "name": "Read Committed (RC)",
+              "solves": "杜绝脏读，无间隙锁死锁风险更低",
+              "cost": "0 脏读：{ms:dirtyread.ReadCommitted} ms",
+              "when": "互联网大厂高并发首选",
+              "say": "兼顾并发与安全。"
+            },
+            {
+              "name": "Repeatable Read (RR)",
+              "solves": "杜绝脏读与不可重复读，MySQL 默认",
+              "cost": "0 脏读：{ms:dirtyread.RepeatableRead} ms",
+              "when": "MySQL 开箱默认",
+              "say": "对账事务首选。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "两道巩固题：检验是否真懂",
+      "bridge": "学完立刻做两道高频面试陷阱题，看看能不能一眼识破。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "id": "q1",
+          "q": "下面哪个问题在 `Read Committed`（读已提交）级别下**已经被彻底解决**了？",
+          "options": [
+            {
+              "text": "脏读（读到未提交并回滚的数据）",
+              "ok": true,
+              "why": "RC 保证只读已提交版本，彻底消灭脏读。"
+            },
+            {
+              "text": "不可重复读",
+              "ok": false,
+              "why": "RC 每次 SELECT 新建 ReadView，依然存在不可重复读。"
+            },
+            {
+              "text": "幻读",
+              "ok": false,
+              "why": "RC 不解决幻读。"
+            }
+          ],
+          "say": "第一题：选最精准的那一项。"
+        },
+        {
+          "t": "quiz",
+          "id": "q2",
+          "q": "RC 级别下普通 SELECT 不加锁，那它怎么做到不读到别人未提交的修改？",
+          "options": [
+            {
+              "text": "通过 ReadView 判断头节点的 trx_id 未提交，沿 Undo 版本链（roll_ptr）回溯到已提交版本",
+              "ok": true,
+              "why": "这就是 MVCC 无锁多版本并发控制的核心。"
+            },
+            {
+              "text": "写事务写完后必须等所有读事务结束才能写",
+              "ok": false,
+              "why": "读写互不阻塞。"
+            },
+            {
+              "text": "把未提交的数据写进临时表",
+              "ok": false,
+              "why": "未提交修改直接改在数据页，靠 Undo 链保留历史版本。"
+            }
+          ],
+          "say": "第二题：换个问法考同一个底层原理。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把概念装进脑子：标准叫法与面试原题",
+      "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
+      "blocks": [
+        {
+          "t": "callout",
+          "tone": "note",
+          "title": "脏读与隔离级别基线（Dirty Read & Isolation Levels）",
+          "md": "读到其他事务==尚未提交==的修改即为脏读；从 ==Read Committed== 起沿 ==Undo 版本链==彻底解决。",
+          "say": "记住这一句核心定义，面试时先抛结论再展开。"
+        },
+        {
+          "t": "points",
+          "items": [
+            "MySQL 有哪四种隔离级别？分别解决什么问题？",
+            "什么是脏读？RC 是怎么防止脏读的？"
+          ],
+          "say": "这几道都是真实一二面原题，下一页直接练习脱稿讲。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上课件，开口讲一遍",
+      "bridge": "看懂不等于讲得出来。对着计时器，按要点一口气讲顺。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚什么是脏读，RC 如何通过 Undo 版本链防脏读，以及四大隔离级别各自解决什么问题？",
+          "seconds": 90,
+          "points": [
+            "脏读：读到未提交且可能回滚的数据",
+            "RU：啥都不防；RC：防脏读；RR（MySQL默认）：防脏读+不可重复读（+快照幻读）；Serializable：全防但串行加锁",
+            "RC 原理：通过 ReadView 识别未提交 trx_id，沿 Undo roll_ptr 找历史已提交版本"
+          ],
+          "model": "脏读是指一个事务读到了另一个事务还没有提交的修改，一旦对方回滚，读到的就是假数据。MySQL 四种隔离级别从低到高分别是：Read Uncommitted（啥都不防）、Read Committed（通过 ReadView 和 Undo 版本链只读已提交版本，防住了脏读）、Repeatable Read（MySQL 默认，复用 ReadView 防住了不可重复读）、Serializable（全加锁串行，防住所有问题但并发最低）。",
+          "say": "先自己组织语言讲一遍，再点开参考答案对照漏了哪个得分点。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张复习卡片",
+      "bridge": "最后留三张一问一答卡片，考前扫一眼就能全部唤醒。",
+      "blocks": [
+        {
+          "t": "cards",
+          "cards": [
+            {
+              "q": "什么是脏读？",
+              "a": "读到别的事务未提交（可能回滚）的修改。"
+            },
+            {
+              "q": "哪个级别开始解决脏读？",
+              "a": "Read Committed（读已提交）。"
+            },
+            {
+              "q": "MySQL 默认隔离级别是？",
+              "a": "Repeatable Read（可重复读）。"
+            }
+          ],
+          "say": "这三张卡片就是本课的最小精华，全部通关，进入下一课！"
+        }
+      ]
+    }
+  ]
+}

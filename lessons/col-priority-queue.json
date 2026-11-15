@@ -1,0 +1,616 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "col-priority-queue",
+  "course": "Java 工程语法与集合",
+  "title": "PriorityQueue 小顶堆 Top-K vs 全排序：10 万条数据取前 10 为啥快这么多？",
+  "lead": "排行榜只取前 10 名，却把 10 万条数据全量 Arrays.sort 或全塞进大顶堆！换成容量固定为 10 的小顶堆，时间与内存分别省下多少？",
+  "minutes": 30,
+  "needs": [
+    "知道堆是一棵完全二叉树（数组存储）",
+    "知道 PriorityQueue 默认是小顶堆"
+  ],
+  "after": [
+    "说清 PriorityQueue 底层数组下标关系（parent=(i-1)/2, left=2i+1）与上浮/下沉 O(log K)",
+    "用实测耗时对比全排序 O(N log N)、全量入堆 O(N log N) 与定长小顶堆 O(N log K) 的差距",
+    "掌握「求最大 Top-K 用小顶堆，求最小 Top-K 用大顶堆」的逆向守门员直觉"
+  ],
+  "terms": {
+    "小顶堆求最大 Top-K": "堆里只留目前最大的 K 个数，堆顶是这 K 个里**最小**的（守门员）；新元素只有比堆顶大才能踢掉堆顶上位，最终堆里剩下的就是全局最大的 K 个。",
+    "PriorityQueue": "JDK 优先级队列，底层是自动扩容的 `Object[]` 完全二叉树，默认小顶堆，非线程安全且不允许 `null`。",
+    "原生 int[] 堆": "算法竞赛与极致性能场景直接用 `int[K]` 手写 `siftDown`，彻底消除 `Integer` 装箱与对象头开销。"
+  },
+  "experiments": {
+    "heaptopk": {
+      "runner": "java",
+      "home": "lab.heaptopk",
+      "variants": [
+        {
+          "id": "FullSortTopK",
+          "code": "FullSortTopK.java",
+          "label": "全量排序 Arrays.sort（O(N log N)）",
+          "note": "为了取前 10 名把全部 N 个元素排了一遍，做了大量无用功。"
+        },
+        {
+          "id": "MaxHeapAllElements",
+          "code": "MaxHeapAllElements.java",
+          "label": "全量入大顶堆（O(N log N) + 装箱）",
+          "note": "把全部 N 个元素装箱塞进 PriorityQueue，内存和 GC 压力最大，最慢。"
+        },
+        {
+          "id": "MinHeapSizeK",
+          "code": "MinHeapSizeK.java",
+          "label": "定长 K=10 小顶堆（O(N log K)）",
+          "note": "堆内存永远只有 10 个元素，绝大多数元素只需 O(1) 跟堆顶比一下直接跳过！"
+        },
+        {
+          "id": "PrimitiveMinHeapTopK",
+          "code": "PrimitiveMinHeapTopK.java",
+          "label": "原生 int[10] 小顶堆（零装箱最快）",
+          "note": "O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。"
+        }
+      ],
+      "knob": {
+        "label": "数据总量 N (Top-10)",
+        "values": [
+          "20000",
+          "50000",
+          "100000",
+          "200000"
+        ],
+        "default": "100000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "topCount",
+        "expectKey": "expected",
+        "label": "成功取出 Top-K 个数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "PriorityQueue 小顶堆 Top-K vs 全排序：10 万条数据取前 10 为啥快这么多？",
+      "bridge": "排行榜只取前 10 名，却把 10 万条数据全量 Arrays.sort 或全塞进大顶堆！换成容量固定为 10 的小顶堆，时间与内存分别省下多少？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "求海量数据里的 Top-10（比如热销商品榜、慢 SQL 榜），为什么高手从不用「全排序」也不用「全量入大顶堆」，而是用**容量为 K 的小顶堆**？今天用 20 万条数据实测给你看！",
+          "say": "这也是算法笔试 Top-K 题目的标准最优解之一。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
+          "items": [
+            {
+              "have": "守门员原则",
+              "q": "要在 100 万个数里找出**最大的 10 个数**，应该维护一个容量为 10 的什么堆？",
+              "options": [
+                "小顶堆（堆顶是第 10 大的门槛，比它大才配进）",
+                "大顶堆",
+                "无所谓"
+              ],
+              "answer": 0,
+              "why": "如果用大顶堆，堆顶是最大的，你根本不知道新来的数比堆里最小的那个大还是小！"
+            },
+            {
+              "have": "默认顺序",
+              "q": "`new PriorityQueue<Integer>()` 默认是小顶堆还是大顶堆？",
+              "options": [
+                "小顶堆（每次 poll() 弹出最小值）",
+                "大顶堆",
+                "先进先出"
+              ],
+              "answer": 0,
+              "why": "改成大顶堆需传 `(a, b) -> Integer.compare(b, a)` 或 `Comparator.reverseOrder()`。"
+            },
+            {
+              "have": "遍历顺序",
+              "q": "对 `PriorityQueue` 直接用 `for (Integer x : pq)` 遍历打印，输出一定是严格从小到大有序的吗？",
+              "options": [
+                "不一定，数组里只是堆序（父<=子），只有反复 poll() 才严格有序",
+                "一定有序",
+                "逆序"
+              ],
+              "answer": 0,
+              "why": "堆只保证堆顶是极值，不保证整张底层数组完全有序。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (MaxHeapAllElements)",
+              "安全写法 (PrimitiveMinHeapTopK)"
+            ],
+            "shared": {
+              "name": "成功取出 Top-K 个数",
+              "value": "目标 100000"
+            }
+          },
+          "story": "排行榜只取前 10 名，却把 10 万条数据全量 Arrays.sort 或全塞进大顶堆！换成容量固定为 10 的小顶堆，时间与内存分别省下多少？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "小顶堆求最大 Top-K",
+              "on": "shared",
+              "tag": "小顶堆求最大 Top-K",
+              "code": "`MaxHeapAllElements` vs `PrimitiveMinHeapTopK`",
+              "say": "堆里只留目前最大的 K 个数，堆顶是这 K 个里**最小**的（守门员）；新元素只有比堆顶大才能踢掉堆顶上位，最终堆里剩下的就是全局最大的 K 个。"
+            },
+            {
+              "scene": "PriorityQueue",
+              "on": "shared",
+              "tag": "PriorityQueu",
+              "code": "`MaxHeapAllElements` vs `PrimitiveMinHeapTopK`",
+              "say": "JDK 优先级队列，底层是自动扩容的 `Object[]` 完全二叉树，默认小顶堆，非线程安全且不允许 `null`。"
+            },
+            {
+              "scene": "原生 int[] 堆",
+              "on": "shared",
+              "tag": "原生 int[] 堆",
+              "code": "`MaxHeapAllElements` vs `PrimitiveMinHeapTopK`",
+              "say": "算法竞赛与极致性能场景直接用 `int[K]` 手写 `siftDown`，彻底消除 `Integer` 装箱与对象头开销。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`MaxHeapAllElements`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "heaptopk.MaxHeapAllElements",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "for (int i = 0; i < n; i++) arr[i] = (i * 31) % n;"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "for (int i = 0; i < k; i++) sum += pq.poll();"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：MaxHeapAllElements 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "N=200000 取 Top-10 时，为什么 `MinHeapSizeK` 比 `MaxHeapAllElements` 快得多？",
+          "options": [
+            "99.9% 的元素小于堆顶，一次 O(1) peek() 比较直接跳过，且堆大小恒为 10 几乎不触发装箱与扩容",
+            "因为小顶堆不用比较",
+            "因为 Arrays.sort 更慢"
+          ],
+          "answer": 0,
+          "say": "全量入堆要分配 20 万个 Integer 并做 20 万次 O(log N) 上浮；定长堆绝大多数时候只做一次整数比较！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：MaxHeapAllElements 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "heaptopk",
+          "show": [
+            "MaxHeapAllElements"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "全量入堆要分配 20 万个 Integer 并做 20 万次 O(log N) 上浮；定长堆绝大多数时候只做一次整数比较！",
+          "say": "全量入堆要分配 20 万个 Integer 并做 20 万次 O(log N) 上浮；定长堆绝大多数时候只做一次整数比较！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「数据总量 N (Top-10)」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "heaptopk",
+          "show": [
+            "MaxHeapAllElements",
+            "PrimitiveMinHeapTopK"
+          ],
+          "say": "左右拖动「数据总量 N (Top-10)」滑块，对比 `MaxHeapAllElements` 与 `PrimitiveMinHeapTopK` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`MaxHeapAllElements`：把全部 N 个元素装箱塞进 PriorityQueue，内存和 GC 压力最大，最慢。；`PrimitiveMinHeapTopK`：O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `MaxHeapAllElements.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "heaptopk.MaxHeapAllElements",
+          "q": "在左边的 `MaxHeapAllElements.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "for (int i = 0; i < k; i++) sum += pq.poll();"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`for (int i = 0; i < k; i++) sum += pq.poll();`）导致：把全部 N 个元素装箱塞进 PriorityQueue，内存和 GC 压力最大，最慢。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "heaptopk.MaxHeapAllElements",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "45: new           #19                 // class java/util/PriorityQueue"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "13: astore_3"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `PrimitiveMinHeapTopK` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "heaptopk.PrimitiveMinHeapTopK",
+          "say": "O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "siftDown(heap, 0, k);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "h[i] = val;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "heaptopk",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "全量排序 Arrays.sort（O(N log N)）（`FullSortTopK`）",
+              "solves": "为了取前 10 名把全部 N 个元素排了一遍，做了大量无用功。",
+              "cost": "实测约 {ms:heaptopk.FullSortTopK} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "为了取前 10 名把全部 N 个元素排了一遍，做了大量无用功。"
+            },
+            {
+              "name": "全量入大顶堆（O(N log N) + 装箱）（`MaxHeapAllElements`）",
+              "solves": "把全部 N 个元素装箱塞进 PriorityQueue，内存和 GC 压力最大，最慢。",
+              "cost": "实测约 {ms:heaptopk.MaxHeapAllElements} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "把全部 N 个元素装箱塞进 PriorityQueue，内存和 GC 压力最大，最慢。"
+            },
+            {
+              "name": "定长 K=10 小顶堆（O(N log K)）（`MinHeapSizeK`）",
+              "solves": "堆内存永远只有 10 个元素，绝大多数元素只需 O(1) 跟堆顶比一下直接跳过！",
+              "cost": "实测约 {ms:heaptopk.MinHeapSizeK} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "堆内存永远只有 10 个元素，绝大多数元素只需 O(1) 跟堆顶比一下直接跳过！"
+            },
+            {
+              "name": "原生 int[10] 小顶堆（零装箱最快）（`PrimitiveMinHeapTopK`）",
+              "solves": "O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。",
+              "cost": "实测约 {ms:heaptopk.PrimitiveMinHeapTopK} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "小顶堆求最大 Top-K",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "堆里只留目前最大的 K 个数，堆顶是这 K 个里**最小**的（守门员）；新元素只有比堆顶大才能踢掉堆顶上位，最终堆里剩下的就是全局最大的 K 个。",
+          "asked": [
+            "PriorityQueue 小顶堆 Top-K vs 全排序：10 万条数据取前 10 为啥快这么多？——底层原理是什么？",
+            "为什么 `MaxHeapAllElements` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `PrimitiveMinHeapTopK` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "N=200000 取 Top-10 时，为什么 `MinHeapSizeK` 比 `MaxHeapAllElements` 快得多？",
+          "options": [
+            {
+              "text": "99.9% 的元素小于堆顶，一次 O(1) peek() 比较直接跳过，且堆大小恒为 10 几乎不触发装箱与扩容",
+              "ok": true,
+              "why": "全量入堆要分配 20 万个 Integer 并做 20 万次 O(log N) 上浮；定长堆绝大多数时候只做一次整数比较！"
+            },
+            {
+              "text": "因为小顶堆不用比较",
+              "ok": false,
+              "why": "再想一想：全量入堆要分配 20 万个 Integer 并做 20 万次 O(log N) 上浮；定长堆绝大多数时候只做一次整数比较！"
+            },
+            {
+              "text": "因为 Arrays.sort 更慢",
+              "ok": false,
+              "why": "再想一想：全量入堆要分配 20 万个 Integer 并做 20 万次 O(log N) 上浮；定长堆绝大多数时候只做一次整数比较！"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：守门员原则",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "要在 100 万个数里找出**最大的 10 个数**，应该维护一个容量为 10 的什么堆？",
+          "options": [
+            {
+              "text": "小顶堆（堆顶是第 10 大的门槛，比它大才配进）",
+              "ok": true,
+              "why": "如果用大顶堆，堆顶是最大的，你根本不知道新来的数比堆里最小的那个大还是小！"
+            },
+            {
+              "text": "大顶堆",
+              "ok": false,
+              "why": "再想一想：如果用大顶堆，堆顶是最大的，你根本不知道新来的数比堆里最小的那个大还是小！"
+            },
+            {
+              "text": "无所谓",
+              "ok": false,
+              "why": "再想一想：如果用大顶堆，堆顶是最大的，你根本不知道新来的数比堆里最小的那个大还是小！"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：默认顺序",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`new PriorityQueue<Integer>()` 默认是小顶堆还是大顶堆？",
+          "options": [
+            {
+              "text": "小顶堆（每次 poll() 弹出最小值）",
+              "ok": true,
+              "why": "改成大顶堆需传 `(a, b) -> Integer.compare(b, a)` 或 `Comparator.reverseOrder()`。"
+            },
+            {
+              "text": "大顶堆",
+              "ok": false,
+              "why": "再想一想：改成大顶堆需传 `(a, b) -> Integer.compare(b, a)` 或 `Comparator.reverseOrder()`。"
+            },
+            {
+              "text": "先进先出",
+              "ok": false,
+              "why": "再想一想：改成大顶堆需传 `(a, b) -> Integer.compare(b, a)` 或 `Comparator.reverseOrder()`。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `PrimitiveMinHeapTopK`（原生 int[10] 小顶堆（零装箱最快））替代 `MaxHeapAllElements`（全量入大顶堆（O(N log N) + 装箱））？",
+          "options": [
+            {
+              "text": "因为 O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。",
+              "ok": true,
+              "why": "`MaxHeapAllElements`：把全部 N 个元素装箱塞进 PriorityQueue，内存和 GC 压力最大，最慢。；而 `PrimitiveMinHeapTopK`：O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。"
+            },
+            {
+              "text": "因为 `MaxHeapAllElements` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`MaxHeapAllElements`：把全部 N 个元素装箱塞进 PriorityQueue，内存和 GC 压力最大，最慢。；而 `PrimitiveMinHeapTopK`：O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`MaxHeapAllElements`：把全部 N 个元素装箱塞进 PriorityQueue，内存和 GC 压力最大，最慢。；而 `PrimitiveMinHeapTopK`：O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) PriorityQueue 的底层数据结构与时间复杂度；2) 为什么求最大 Top-K 要用小顶堆而不是大顶堆；3) Top-K 相比全排序在时间和空间上的优势。",
+          "points": [
+            "说清 PriorityQueue 底层数组下标关系（parent=(i-1)/2, left=2i+1）与上浮/下沉 O(log K)",
+            "用实测耗时对比全排序 O(N log N)、全量入堆 O(N log N) 与定长小顶堆 O(N log K) 的差距",
+            "掌握「求最大 Top-K 用小顶堆，求最小 Top-K 用大顶堆」的逆向守门员直觉"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：排行榜只取前 10 名，却把 10 万条数据全量 Arrays.sort 或全塞进大顶堆！换成容量固定为 10 的小顶堆，时间与内存分别省下多少？；**② 再讲底层原理**：小顶堆求最大 Top-K（堆里只留目前最大的 K 个数，堆顶是这 K 个里**最小**的（守门员）；新元素只有比堆顶大才能踢掉堆顶上位，最终堆里剩下的就是全局最大的 K 个。）；PriorityQueue（JDK 优先级队列，底层是自动扩容的 `Object[]` 完全二叉树，默认小顶堆，非线程安全且不允许 `null`。）；**③ 最后给工程方案**：生产里优先采用「原生 int[10] 小顶堆（零装箱最快）」（`PrimitiveMinHeapTopK`），O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「小顶堆求最大 Top-K」？它在这节课里起了什么关键作用？",
+              "a": "堆里只留目前最大的 K 个数，堆顶是这 K 个里**最小**的（守门员）；新元素只有比堆顶大才能踢掉堆顶上位，最终堆里剩下的就是全局最大的 K 个。"
+            },
+            {
+              "q": "面试官问：什么是「PriorityQueue」？它在这节课里起了什么关键作用？",
+              "a": "JDK 优先级队列，底层是自动扩容的 `Object[]` 完全二叉树，默认小顶堆，非线程安全且不允许 `null`。"
+            },
+            {
+              "q": "面试官问：什么是「原生 int[] 堆」？它在这节课里起了什么关键作用？",
+              "a": "算法竞赛与极致性能场景直接用 `int[K]` 手写 `siftDown`，彻底消除 `Integer` 装箱与对象头开销。"
+            },
+            {
+              "q": "实战避坑：`MaxHeapAllElements` 为什么会出问题，应该怎么改？",
+              "a": "把全部 N 个元素装箱塞进 PriorityQueue，内存和 GC 压力最大，最慢。 正确做法是改用 `PrimitiveMinHeapTopK`（原生 int[10] 小顶堆（零装箱最快））：O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "说清 PriorityQueue 底层数组下标关系（parent=(i-1)/2, left=2i+1）与上浮/下沉 O(log K)",
+            "用实测耗时对比全排序 O(N log N)、全量入堆 O(N log N) 与定长小顶堆 O(N log K) 的差距",
+            "掌握「求最大 Top-K 用小顶堆，求最小 Top-K 用大顶堆」的逆向守门员直觉"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `MaxHeapAllElements`（全量入大顶堆（O(N log N) + 装箱）），优先选用 `PrimitiveMinHeapTopK`（原生 int[10] 小顶堆（零装箱最快））：O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。"
+        }
+      ]
+    }
+  ]
+}

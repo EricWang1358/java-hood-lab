@@ -1,0 +1,243 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "nio-selector",
+  "course": "网络与操作系统",
+  "title": "一个线程怎么同时盯住上千个连接？",
+  "lead": "epoll/Selector 多路复用原理，以及从单线程 Reactor 到 Netty 主从多线程 Reactor 的演进。",
+  "minutes": 35,
+  "needs": ["知道 BIO vs NIO", "知道 Selector.select()", "知道线程池"],
+  "after": [
+    "讲清 select / poll / epoll（Java Selector 底层）的时间复杂度与工作原理",
+    "对比单 Reactor 单线程（Redis）与主从 Reactor 多线程（Netty）的分工",
+    "说清 Selector 空轮询 Bug 与「别在 IO 线程做耗时业务」的铁律"
+  ],
+  "terms": {
+    "Selector": "Java NIO 多路复用器：在 Linux 上底层封装 epoll，用一条线程监听成百上千个 Channel 的读写就绪事件。",
+    "epoll": "Linux 高性能 I/O 多路复用机制：靠内核红黑树管理 fd，事件就绪时回调放入就绪链表，epoll_wait 只取就绪者（O(1)）。",
+    "Reactor": "反应器模式：由事件循环监听就绪事件并分发给对应处理器。",
+    "主从 Reactor": "Boss Selector 专接 OP_ACCEPT 新连接，分发给多个 Worker Selector 并行处理 OP_READ/WRITE（Netty 标配）。"
+  },
+  "experiments": {
+    "selector": {
+      "runner": "java",
+      "home": "lab.selector",
+      "variants": [
+        { "id": "BioPool", "code": "BioPool.java", "label": "8 线程 BIO 池", "note": "1 个 accept 线程 + 8 个阻塞工作线程轮流处理 N 个连接。" },
+        { "id": "SingleReactor", "code": "SingleReactor.java", "label": "单线程 Reactor", "note": "仅用 1 条 Selector 线程同时负责 OP_ACCEPT 与 OP_READ（Redis 模型）。" },
+        { "id": "MultiReactor", "code": "MultiReactor.java", "label": "主从 Reactor (1+4)", "note": "1 个 Boss Selector 接连接，轮询分发给 4 个 Worker Selector 并行读写（Netty 模型）。" },
+        { "id": "CachedPoolBio", "code": "CachedPoolBio.java", "label": "无界缓冲池 BIO", "note": "每连接临时起/复用线程，线程数随并发数暴涨，高并发下内存与调度压力大。" }
+      ],
+      "knob": { "label": "并发连接数", "values": ["50", "100", "200", "400"], "default": "200" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "成功处理连接数" },
+      "time": { "key": "ms", "label": "总耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "一个线程怎么同时盯住上千个连接？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**`Selector.select()` 凭什么能用 1 条线程盯住成千上万个连接，Redis 用单 Reactor、Netty 用主从 Reactor 又分别是怎么分工的？**",
+          "say": "面试官问完 BIO/NIO 区别，下一句必问 select/poll/epoll 和 Netty 主从 Reactor。今天我们用真代码跑通这两套 Reactor 模型。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：select / poll / epoll 演进",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先确认三个多路复用的核心知识点。",
+          "items": [
+            {
+              "have": "select vs epoll",
+              "q": "早期 `select` 每次都要把所有 fd 从用户态拷贝到内核态并 O(N) 轮询；`epoll` 为什么能做到 O(1)？",
+              "options": ["因为 epoll 不需要内核", "epoll 把 fd 存在内核红黑树里，网卡有数据时通过回调把就绪 fd 放进就绪链表", "因为 epoll 只支持 10 个连接"],
+              "answer": 1,
+              "why": "`epoll_wait` 只返回真正就绪的那几个 fd，不扫描全部空闲连接。"
+            },
+            {
+              "have": "OP_ACCEPT / OP_READ",
+              "q": "一个 `ServerSocketChannel` 注册到 `Selector` 时，监听的是哪种事件？",
+              "options": ["OP_ACCEPT", "OP_READ", "OP_WRITE"],
+              "answer": 0,
+              "why": "监听套接字只关心新连接到达（`OP_ACCEPT`），接到的 `SocketChannel` 才注册 `OP_READ`。"
+            },
+            {
+              "have": "铁律",
+              "q": "如果把耗时的查数据库/复杂计算直接写在 Worker `Selector` 线程里，会发生什么？",
+              "options": ["速度更快", "同一 Worker 上挂着的其余上千个连接全部卡死", "自动开新线程"],
+              "answer": 1,
+              "why": "Worker 线程要高速循环处理 `OP_READ/WRITE`，耗时业务必须丢进独立的业务线程池！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「前台迎宾 + 4 名传菜员」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["Boss(OP_ACCEPT)", "4 个 Worker(OP_READ)"], "shared": { "name": "就绪事件链表", "value": "epoll" } },
+          "story": "单线程 Reactor 是老板一个人既在门口迎宾（`OP_ACCEPT`）又跑去桌边点菜端茶（`OP_READ`），Redis 纯内存操作极快所以一人够用；主从 Reactor 则是门口站 1 个迎宾（Boss）专接新客人，轮流分给 4 个传菜员（Worker Selector）并行端茶，充分利用多核 CPU！",
+          "say": "这就是 Netty `NioEventLoopGroup` 拆成 `bossGroup` 和 `workerGroup` 的全部秘密。",
+          "map": [
+            { "scene": "门口专职迎宾", "on": "actors", "tag": "Boss Selector", "code": "`ssc.register(boss, SelectionKey.OP_ACCEPT)`", "say": "只管接新连接，轮询派发给 Worker。" },
+            { "scene": "4 个并行传菜员", "on": "actors", "tag": "Worker Selector", "code": "`workers[idx].wakeup()`", "say": "每个 Worker 各自管几百条连接的读写事件。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "现场对比：单线程 Reactor vs 主从 Reactor",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "selector.SingleReactor",
+          "say": "看 `SingleReactor.java`：全程序服务端只有 1 条 `reactor` 线程，靠 `Selector` 自己同时搞定 200 条连接的建连与读写！"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：仅用 1 条线程的 SingleReactor 能全部接住 200 并发吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`SingleReactor` 服务端只开 1 条线程，面对 200 个并发客户端同时建连发收，结果会怎样？",
+          "options": ["200 个全部成功，且耗时和 8 线程池差不多", "会丢一半连接", "直接报 OOM"],
+          "answer": 0,
+          "say": "靠 `Selector` 事件驱动，1 条线程也能轻松接住 200 个并发连接，省下大量线程上下文切换。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测结果：1 条线程轻松跑赢或持平多线程池",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "selector",
+          "show": ["BioPool", "SingleReactor", "MultiReactor", "CachedPoolBio"],
+          "knob": "200",
+          "hand": "SingleReactor",
+          "focus": "ms",
+          "say": "四条线全部 200/200 成功！而 `SingleReactor` 只用了 1 条服务端线程，`MultiReactor` 则把多核并行读写也发挥了出来。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "Selector 让单线程靠 epoll 就绪列表即可同时管理海量连接",
+          "say": "把线程数从上百降到 1～CPU 核数，彻底消灭了无意义的线程栈与调度开销。"
+        },
+        {
+          "t": "try",
+          "key": "selector",
+          "say": "切到 400 并发连接试试，对比四种模型的表现。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：主从 Reactor 的跨线程唤醒",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "selector.MultiReactor",
+          "within": "lambda$main$1",
+          "from": "Selector.select",
+          "to": "Selector.wakeup",
+          "say": "Boss 线程接到 `SocketChannel` 后放进 Worker 的无锁队列 `ConcurrentLinkedQueue`，并调用 `workers[idx].wakeup()` 唤醒可能正在 `select()` 阻塞的 Worker 去注册 `OP_READ`。",
+          "walk": [
+            { "focus": ["Selector.wakeup"], "label": "唤醒 Worker", "say": "这就是 Netty `NioEventLoop` 跨线程提交任务并唤醒 Selector 的标准套路。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "Reactor 模型怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "根据业务耗时与多核利用需求选型。",
+          "options": [
+            { "name": "单线程 Reactor", "solves": "零锁竞争、架构最简单", "cost": "耗时 {ms:selector.SingleReactor} ms（仅吃 1 核）", "when": "纯内存极速操作（如 Redis 6.0 前命令执行）", "say": "一旦出现慢操作就会卡住所有连接。" },
+            { "name": "主从多线程 Reactor", "solves": "吃满多核 + accept 与读写隔离", "cost": "耗时 {ms:selector.MultiReactor} ms（1 Boss + N Worker）", "when": "Netty、Dubbo、RocketMQ、API 网关", "say": "耗时 DB/RPC 业务再额外丢给独立业务线程池，绝不堵死 Worker。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住这个核心架构",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "I/O 多路复用与主从 Reactor",
+          "alias": "epoll & Boss-Worker Reactor",
+          "oneLine": "epoll 靠红黑树+就绪链表实现 O(1) 事件通知；主从 Reactor 用 Boss 接连接、Worker 并行读写、业务线程池跑重逻辑。",
+          "asked": "select/poll/epoll 有什么区别？Netty 的线程模型是怎样的？",
+          "say": "这两问在 Java 后端一二面几乎绑定出现。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Netty 服务端开发中，如果在一个 `ChannelInboundHandler` 的 `channelRead()` 里直接同步查 MySQL（耗时 50ms），应该怎么改？",
+          "options": [
+            { "text": "把耗时查库逻辑提交到独立的业务线程池，立刻释放 Worker EventLoop 线程", "ok": true, "why": "正确！绝不能让耗时业务阻塞 Worker IO 线程。" },
+            { "text": "把 Boss 线程数调成 100", "ok": false, "why": "Boss 只管 accept，管不了 channelRead 里的阻塞。" },
+            { "text": "改成阻塞 BIO", "ok": false, "why": "这会直接丧失多路复用高并发优势。" }
+          ],
+          "say": "选出 Netty 开发的黄金铁律。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：epoll 与 Netty 主从 Reactor",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：讲讲 epoll 的原理，以及 Netty 为什么要用主从 Reactor 线程模型？",
+          "points": [
+            "epoll 原理：内核用红黑树存注册的 fd，不必每次全量拷贝；事件就绪时回调放入就绪链表，epoll_wait 只返回就绪 fd（O(1)）",
+            "单 Reactor 局限：单线程既接连接又读写，吃不满多核且容易被慢连接拖慢 accept",
+            "主从 Reactor：BossGroup 专接 OP_ACCEPT 并分发；WorkerGroup（通常 2×CPU 核数）并行处理 OP_READ/WRITE；耗时业务再丢给独立业务线程池"
+          ],
+          "model": "Linux 的 epoll 解决了传统 select/poll 每次全量拷贝和 O(N) 轮询的瓶颈：它用内核红黑树长期维护监听的 fd，当网卡收到数据时通过回调函数把就绪的 fd 挂到就绪链表，epoll_wait 只需 O(1) 取走就绪事件即可。在此之上，Netty 采用主从多线程 Reactor 模型：BossGroup 专门监听 OP_ACCEPT 接收新连接并轮询注册到 WorkerGroup；WorkerGroup 里的多个 EventLoop 各自绑定一条线程并行处理读写与编解码；遇到查库或 RPC 等耗时业务再丢进独立业务线程池，绝不阻塞 I/O 线程。",
+          "say": "把 epoll 底层和 Netty 三层线程分工讲清楚。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "收好这三张卡，多路复用与 Netty 线程模型稳稳拿下。",
+          "items": [
+            { "front": "epoll 凭什么快？", "back": "红黑树存 fd + 回调挂就绪链表，epoll_wait 只取就绪事件（O(1)）。" },
+            { "front": "主从 Reactor 怎么分工？", "back": "Boss 专接 OP_ACCEPT，Worker 并行处理 OP_READ/WRITE。" },
+            { "front": "Worker 线程铁律？", "back": "绝不在 Worker 线程里做查库/RPC 等阻塞操作，丢给业务线程池。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

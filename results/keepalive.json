@@ -1,0 +1,1671 @@
+{
+ "id": "keepalive",
+ "variants": {
+  "CloseConn": {
+   "hash": "e42dc7d1d9dd6a31",
+   "repeat": 20,
+   "runs": {
+    "50": [
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 21
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 18
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 20
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 20
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 24
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 24
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 21
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 22
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 25
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 19
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 24
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 22
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 25
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 21
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 21
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 21
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 23
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 22
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 22
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 22
+     }
+    ],
+    "100": [
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 37
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 32
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 39
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 33
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 37
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 36
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 34
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 37
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 35
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 37
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 38
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 44
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 32
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 37
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 34
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 37
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 36
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 34
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 35
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 31
+     }
+    ],
+    "200": [
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 55
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 51
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 61
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 62
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 60
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 53
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 54
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 68
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 54
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 58
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 53
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 53
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 65
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 54
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 53
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 61
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 52
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 67
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 52
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 61
+     }
+    ],
+    "400": [
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 93
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 115
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 108
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 93
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 86
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 93
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 129
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 102
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 112
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 85
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 120
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 105
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 116
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 102
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 101
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 104
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 81
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 86
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 107
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 83
+     }
+    ]
+   },
+   "inside": "Compiled from \"CloseConn.java\"\npublic class lab.keepalive.CloseConn {\n  static final byte[] RESP;\n\n  public lab.keepalive.CloseConn();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/net/ServerSocket\n      10: dup\n      11: iconst_0\n      12: invokespecial #15                 // Method java/net/ServerSocket.\"<init>\":(I)V\n      15: astore_2\n      16: aload_2\n      17: invokevirtual #18                 // Method java/net/ServerSocket.getLocalPort:()I\n      20: istore_3\n      21: new           #22                 // class java/lang/Thread\n      24: dup\n      25: iload_1\n      26: aload_2\n      27: invokedynamic #24,  0             // InvokeDynamic #0:run:(ILjava/net/ServerSocket;)Ljava/lang/Runnable;\n      32: invokespecial #28                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      35: astore        4\n      37: aload         4\n      39: invokevirtual #31                 // Method java/lang/Thread.start:()V\n      42: ldc           #34                 // String GET /ping HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\n      44: getstatic     #36                 // Field java/nio/charset/StandardCharsets.UTF_8:Ljava/nio/charset/Charset;\n      47: invokevirtual #42                 // Method java/lang/String.getBytes:(Ljava/nio/charset/Charset;)[B\n      50: astore        5\n      52: iconst_0\n      53: istore        6\n      55: invokestatic  #48                 // Method java/lang/System.nanoTime:()J\n      58: lstore        7\n      60: iconst_0\n      61: istore        9\n      63: iload         9\n      65: iload_1\n      66: if_icmpge     263\n      69: new           #54                 // class java/net/Socket\n      72: dup\n      73: ldc           #56                 // String 127.0.0.1\n      75: iload_3\n      76: invokespecial #58                 // Method java/net/Socket.\"<init>\":(Ljava/lang/String;I)V\n      79: astore        10\n      81: aload         10\n      83: invokevirtual #61                 // Method java/net/Socket.getOutputStream:()Ljava/io/OutputStream;\n      86: astore        11\n      88: new           #65                 // class java/io/BufferedReader\n      91: dup\n      92: new           #67                 // class java/io/InputStreamReader\n      95: dup\n      96: aload         10\n      98: invokevirtual #69                 // Method java/net/Socket.getInputStream:()Ljava/io/InputStream;\n     101: invokespecial #73                 // Method java/io/InputStreamReader.\"<init>\":(Ljava/io/InputStream;)V\n     104: invokespecial #76                 // Method java/io/BufferedReader.\"<init>\":(Ljava/io/Reader;)V\n     107: astore        12\n     109: aload         11\n     111: aload         5\n     113: invokevirtual #79                 // Method java/io/OutputStream.write:([B)V\n     116: aload         11\n     118: invokevirtual #85                 // Method java/io/OutputStream.flush:()V\n     121: aload         12\n     123: invokevirtual #88                 // Method java/io/BufferedReader.readLine:()Ljava/lang/String;\n     126: astore        13\n     128: aload         13\n     130: ifnull        146\n     133: aload         13\n     135: ldc           #92                 // String 200\n     137: invokevirtual #94                 // Method java/lang/String.contains:(Ljava/lang/CharSequence;)Z\n     140: ifeq          146\n     143: iinc          6, 1\n     146: aload         12\n     148: invokevirtual #88                 // Method java/io/BufferedReader.readLine:()Ljava/lang/String;\n     151: ifnull        157\n     154: goto          146\n     157: aload         12\n     159: invokevirtual #98                 // Method java/io/BufferedReader.close:()V\n     162: goto          187\n     165: astore        13\n     167: aload         12\n     169: invokevirtual #98                 // Method java/io/BufferedReader.close:()V\n     172: goto          184\n     175: astore        14\n     177: aload         13\n     179: aload         14\n     181: invokevirtual #103                // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     184: aload         13\n     186: athrow\n     187: aload         11\n     189: ifnull        227\n     192: aload         11\n     194: invokevirtual #107                // Method java/io/OutputStream.close:()V\n     197: goto          227\n     200: astore        12\n     202: aload         11\n     204: ifnull        224\n     207: aload         11\n     209: invokevirtual #107                // Method java/io/OutputStream.close:()V\n     212: goto          224\n     215: astore        13\n     217: aload         12\n     219: aload         13\n     221: invokevirtual #103                // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     224: aload         12\n     226: athrow\n     227: aload         10\n     229: invokevirtual #108                // Method java/net/Socket.close:()V\n     232: goto          257\n     235: astore        11\n     237: aload         10\n     239: invokevirtual #108                // Method java/net/Socket.close:()V\n     242: goto          254\n     245: astore        12\n     247: aload         11\n     249: aload         12\n     251: invokevirtual #103                // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     254: aload         11\n     256: athrow\n     257: iinc          9, 1\n     260: goto          63\n     263: invokestatic  #48                 // Method java/lang/System.nanoTime:()J\n     266: lload         7\n     268: lsub\n     269: ldc2_w        #109                // long 1000000l\n     272: ldiv\n     273: lstore        9\n     275: aload         4\n     277: invokevirtual #111                // Method java/lang/Thread.join:()V\n     280: getstatic     #114                // Field java/lang/System.out:Ljava/io/PrintStream;\n     283: iload         6\n     285: invokedynamic #118,  0            // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     290: invokevirtual #122                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     293: getstatic     #114                // Field java/lang/System.out:Ljava/io/PrintStream;\n     296: iload_1\n     297: invokedynamic #128,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     302: invokevirtual #122                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     305: getstatic     #114                // Field java/lang/System.out:Ljava/io/PrintStream;\n     308: lload         9\n     310: invokedynamic #129,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     315: invokevirtual #122                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     318: aload_2\n     319: invokevirtual #132                // Method java/net/ServerSocket.close:()V\n     322: goto          343\n     325: astore_3\n     326: aload_2\n     327: invokevirtual #132                // Method java/net/ServerSocket.close:()V\n     330: goto          341\n     333: astore        4\n     335: aload_3\n     336: aload         4\n     338: invokevirtual #103                // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     341: aload_3\n     342: athrow\n     343: return\n    Exception table:\n       from    to  target type\n         109   157   165   Class java/lang/Throwable\n         167   172   175   Class java/lang/Throwable\n          88   187   200   Class java/lang/Throwable\n         207   212   215   Class java/lang/Throwable\n          81   227   235   Class java/lang/Throwable\n         237   242   245   Class java/lang/Throwable\n          16   318   325   Class java/lang/Throwable\n         326   330   333   Class java/lang/Throwable\n\n  private static void lambda$main$0(int, java.net.ServerSocket);\n    Code:\n       0: iconst_0\n       1: istore_2\n       2: iload_2\n       3: iload_0\n       4: if_icmpge     189\n       7: aload_1\n       8: invokevirtual #133                // Method java/net/ServerSocket.accept:()Ljava/net/Socket;\n      11: astore_3\n      12: new           #65                 // class java/io/BufferedReader\n      15: dup\n      16: new           #67                 // class java/io/InputStreamReader\n      19: dup\n      20: aload_3\n      21: invokevirtual #69                 // Method java/net/Socket.getInputStream:()Ljava/io/InputStream;\n      24: invokespecial #73                 // Method java/io/InputStreamReader.\"<init>\":(Ljava/io/InputStream;)V\n      27: invokespecial #76                 // Method java/io/BufferedReader.\"<init>\":(Ljava/io/Reader;)V\n      30: astore        4\n      32: aload_3\n      33: invokevirtual #61                 // Method java/net/Socket.getOutputStream:()Ljava/io/OutputStream;\n      36: astore        5\n      38: aload         4\n      40: invokevirtual #88                 // Method java/io/BufferedReader.readLine:()Ljava/lang/String;\n      43: dup\n      44: astore        6\n      46: ifnull        60\n      49: aload         6\n      51: invokevirtual #137                // Method java/lang/String.isEmpty:()Z\n      54: ifne          60\n      57: goto          38\n      60: aload         5\n      62: getstatic     #141                // Field RESP:[B\n      65: invokevirtual #79                 // Method java/io/OutputStream.write:([B)V\n      68: aload         5\n      70: invokevirtual #85                 // Method java/io/OutputStream.flush:()V\n      73: aload         5\n      75: ifnull        113\n      78: aload         5\n      80: invokevirtual #107                // Method java/io/OutputStream.close:()V\n      83: goto          113\n      86: astore        6\n      88: aload         5\n      90: ifnull        110\n      93: aload         5\n      95: invokevirtual #107                // Method java/io/OutputStream.close:()V\n      98: goto          110\n     101: astore        7\n     103: aload         6\n     105: aload         7\n     107: invokevirtual #103                // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     110: aload         6\n     112: athrow\n     113: aload         4\n     115: invokevirtual #98                 // Method java/io/BufferedReader.close:()V\n     118: goto          143\n     121: astore        5\n     123: aload         4\n     125: invokevirtual #98                 // Method java/io/BufferedReader.close:()V\n     128: goto          140\n     131: astore        6\n     133: aload         5\n     135: aload         6\n     137: invokevirtual #103                // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     140: aload         5\n     142: athrow\n     143: aload_3\n     144: ifnull        179\n     147: aload_3\n     148: invokevirtual #108                // Method java/net/Socket.close:()V\n     151: goto          179\n     154: astore        4\n     156: aload_3\n     157: ifnull        176\n     160: aload_3\n     161: invokevirtual #108                // Method java/net/Socket.close:()V\n     164: goto          176\n     167: astore        5\n     169: aload         4\n     171: aload         5\n     173: invokevirtual #103                // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     176: aload         4\n     178: athrow\n     179: goto          183\n     182: astore_3\n     183: iinc          2, 1\n     186: goto          2\n     189: return\n    Exception table:\n       from    to  target type\n          38    73    86   Class java/lang/Throwable\n          93    98   101   Class java/lang/Throwable\n          32   113   121   Class java/lang/Throwable\n         123   128   131   Class java/lang/Throwable\n          12   143   154   Class java/lang/Throwable\n         160   164   167   Class java/lang/Throwable\n           7   179   182   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: ldc           #149                // String HTTP/1.1 200 OK\\r\\nContent-Length: 2\\r\\nConnection: close\\r\\n\\r\\nOK\n       2: getstatic     #36                 // Field java/nio/charset/StandardCharsets.UTF_8:Ljava/nio/charset/Charset;\n       5: invokevirtual #42                 // Method java/lang/String.getBytes:(Ljava/nio/charset/Charset;)[B\n       8: putstatic     #141                // Field RESP:[B\n      11: return\n}"
+  },
+  "KeepAlive": {
+   "hash": "8de0a1884b536f4a",
+   "repeat": 20,
+   "runs": {
+    "50": [
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 7
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 6
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 6
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 8
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 9
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 10
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 7
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 9
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 6
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 8
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 8
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 6
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 8
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 6
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 6
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 10
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 9
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 8
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 9
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 5
+     }
+    ],
+    "100": [
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 9
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 10
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 7
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 7
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 11
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 10
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 9
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 7
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 10
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 12
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 10
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 10
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 12
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 11
+     }
+    ],
+    "200": [
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 12
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 18
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 13
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 11
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 16
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 12
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 11
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 17
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 11
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 10
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 13
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 12
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 11
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 11
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 12
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 18
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 10
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 11
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 18
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 11
+     }
+    ],
+    "400": [
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 18
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 17
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 16
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 14
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 25
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 16
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 23
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 16
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 16
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 20
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 18
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 15
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 18
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 19
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 24
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 20
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 16
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 17
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 17
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 20
+     }
+    ]
+   },
+   "inside": "Compiled from \"KeepAlive.java\"\npublic class lab.keepalive.KeepAlive {\n  static final byte[] RESP;\n\n  public lab.keepalive.KeepAlive();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void readHeaders(java.io.InputStream) throws java.lang.Exception;\n    Code:\n       0: iconst_0\n       1: istore_1\n       2: iload_1\n       3: iconst_4\n       4: if_icmpge     76\n       7: aload_0\n       8: invokevirtual #7                  // Method java/io/InputStream.read:()I\n      11: istore_2\n      12: iload_2\n      13: iconst_m1\n      14: if_icmpne     18\n      17: return\n      18: iload_1\n      19: ifeq          27\n      22: iload_1\n      23: iconst_2\n      24: if_icmpne     39\n      27: iload_2\n      28: bipush        13\n      30: if_icmpne     39\n      33: iinc          1, 1\n      36: goto          73\n      39: iload_1\n      40: iconst_1\n      41: if_icmpeq     49\n      44: iload_1\n      45: iconst_3\n      46: if_icmpne     61\n      49: iload_2\n      50: bipush        10\n      52: if_icmpne     61\n      55: iinc          1, 1\n      58: goto          73\n      61: iload_2\n      62: bipush        13\n      64: if_icmpne     71\n      67: iconst_1\n      68: goto          72\n      71: iconst_0\n      72: istore_1\n      73: goto          2\n      76: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #13                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #19                 // class java/net/ServerSocket\n      10: dup\n      11: iconst_0\n      12: invokespecial #21                 // Method java/net/ServerSocket.\"<init>\":(I)V\n      15: astore_2\n      16: aload_2\n      17: invokevirtual #24                 // Method java/net/ServerSocket.getLocalPort:()I\n      20: istore_3\n      21: new           #27                 // class java/lang/Thread\n      24: dup\n      25: aload_2\n      26: iload_1\n      27: invokedynamic #29,  0             // InvokeDynamic #0:run:(Ljava/net/ServerSocket;I)Ljava/lang/Runnable;\n      32: invokespecial #33                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      35: astore        4\n      37: aload         4\n      39: invokevirtual #36                 // Method java/lang/Thread.start:()V\n      42: ldc           #39                 // String GET /ping HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: keep-alive\\r\\n\\r\\n\n      44: getstatic     #41                 // Field java/nio/charset/StandardCharsets.UTF_8:Ljava/nio/charset/Charset;\n      47: invokevirtual #47                 // Method java/lang/String.getBytes:(Ljava/nio/charset/Charset;)[B\n      50: astore        5\n      52: iconst_0\n      53: istore        6\n      55: invokestatic  #53                 // Method java/lang/System.nanoTime:()J\n      58: lstore        7\n      60: new           #59                 // class java/net/Socket\n      63: dup\n      64: ldc           #61                 // String 127.0.0.1\n      66: iload_3\n      67: invokespecial #63                 // Method java/net/Socket.\"<init>\":(Ljava/lang/String;I)V\n      70: astore        9\n      72: aload         9\n      74: invokevirtual #66                 // Method java/net/Socket.getOutputStream:()Ljava/io/OutputStream;\n      77: astore        10\n      79: new           #70                 // class java/io/BufferedInputStream\n      82: dup\n      83: aload         9\n      85: invokevirtual #72                 // Method java/net/Socket.getInputStream:()Ljava/io/InputStream;\n      88: invokespecial #76                 // Method java/io/BufferedInputStream.\"<init>\":(Ljava/io/InputStream;)V\n      91: astore        11\n      93: iconst_0\n      94: istore        12\n      96: iload         12\n      98: iload_1\n      99: if_icmpge     156\n     102: aload         10\n     104: aload         5\n     106: invokevirtual #79                 // Method java/io/OutputStream.write:([B)V\n     109: aload         10\n     111: invokevirtual #85                 // Method java/io/OutputStream.flush:()V\n     114: aload         11\n     116: invokestatic  #88                 // Method readHeaders:(Ljava/io/InputStream;)V\n     119: aload         11\n     121: invokevirtual #7                  // Method java/io/InputStream.read:()I\n     124: istore        13\n     126: aload         11\n     128: invokevirtual #7                  // Method java/io/InputStream.read:()I\n     131: istore        14\n     133: iload         13\n     135: bipush        79\n     137: if_icmpne     150\n     140: iload         14\n     142: bipush        75\n     144: if_icmpne     150\n     147: iinc          6, 1\n     150: iinc          12, 1\n     153: goto          96\n     156: aload         11\n     158: invokevirtual #93                 // Method java/io/InputStream.close:()V\n     161: goto          186\n     164: astore        12\n     166: aload         11\n     168: invokevirtual #93                 // Method java/io/InputStream.close:()V\n     171: goto          183\n     174: astore        13\n     176: aload         12\n     178: aload         13\n     180: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     183: aload         12\n     185: athrow\n     186: aload         10\n     188: ifnull        226\n     191: aload         10\n     193: invokevirtual #102                // Method java/io/OutputStream.close:()V\n     196: goto          226\n     199: astore        11\n     201: aload         10\n     203: ifnull        223\n     206: aload         10\n     208: invokevirtual #102                // Method java/io/OutputStream.close:()V\n     211: goto          223\n     214: astore        12\n     216: aload         11\n     218: aload         12\n     220: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     223: aload         11\n     225: athrow\n     226: aload         9\n     228: invokevirtual #103                // Method java/net/Socket.close:()V\n     231: goto          256\n     234: astore        10\n     236: aload         9\n     238: invokevirtual #103                // Method java/net/Socket.close:()V\n     241: goto          253\n     244: astore        11\n     246: aload         10\n     248: aload         11\n     250: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     253: aload         10\n     255: athrow\n     256: invokestatic  #53                 // Method java/lang/System.nanoTime:()J\n     259: lload         7\n     261: lsub\n     262: ldc2_w        #104                // long 1000000l\n     265: ldiv\n     266: lstore        9\n     268: aload         4\n     270: invokevirtual #106                // Method java/lang/Thread.join:()V\n     273: getstatic     #109                // Field java/lang/System.out:Ljava/io/PrintStream;\n     276: iload         6\n     278: invokedynamic #113,  0            // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     283: invokevirtual #117                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     286: getstatic     #109                // Field java/lang/System.out:Ljava/io/PrintStream;\n     289: iload_1\n     290: invokedynamic #123,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     295: invokevirtual #117                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     298: getstatic     #109                // Field java/lang/System.out:Ljava/io/PrintStream;\n     301: lload         9\n     303: invokedynamic #124,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     308: invokevirtual #117                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     311: aload_2\n     312: invokevirtual #127                // Method java/net/ServerSocket.close:()V\n     315: goto          336\n     318: astore_3\n     319: aload_2\n     320: invokevirtual #127                // Method java/net/ServerSocket.close:()V\n     323: goto          334\n     326: astore        4\n     328: aload_3\n     329: aload         4\n     331: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     334: aload_3\n     335: athrow\n     336: return\n    Exception table:\n       from    to  target type\n          93   156   164   Class java/lang/Throwable\n         166   171   174   Class java/lang/Throwable\n          79   186   199   Class java/lang/Throwable\n         206   211   214   Class java/lang/Throwable\n          72   226   234   Class java/lang/Throwable\n         236   241   244   Class java/lang/Throwable\n          16   311   318   Class java/lang/Throwable\n         319   323   326   Class java/lang/Throwable\n\n  private static void lambda$main$0(java.net.ServerSocket, int);\n    Code:\n       0: aload_0\n       1: invokevirtual #128                // Method java/net/ServerSocket.accept:()Ljava/net/Socket;\n       4: astore_2\n       5: new           #70                 // class java/io/BufferedInputStream\n       8: dup\n       9: aload_2\n      10: invokevirtual #72                 // Method java/net/Socket.getInputStream:()Ljava/io/InputStream;\n      13: invokespecial #76                 // Method java/io/BufferedInputStream.\"<init>\":(Ljava/io/InputStream;)V\n      16: astore_3\n      17: aload_2\n      18: invokevirtual #66                 // Method java/net/Socket.getOutputStream:()Ljava/io/OutputStream;\n      21: astore        4\n      23: iconst_0\n      24: istore        5\n      26: iload         5\n      28: iload_1\n      29: if_icmpge     55\n      32: aload_3\n      33: invokestatic  #88                 // Method readHeaders:(Ljava/io/InputStream;)V\n      36: aload         4\n      38: getstatic     #132                // Field RESP:[B\n      41: invokevirtual #79                 // Method java/io/OutputStream.write:([B)V\n      44: aload         4\n      46: invokevirtual #85                 // Method java/io/OutputStream.flush:()V\n      49: iinc          5, 1\n      52: goto          26\n      55: aload         4\n      57: ifnull        95\n      60: aload         4\n      62: invokevirtual #102                // Method java/io/OutputStream.close:()V\n      65: goto          95\n      68: astore        5\n      70: aload         4\n      72: ifnull        92\n      75: aload         4\n      77: invokevirtual #102                // Method java/io/OutputStream.close:()V\n      80: goto          92\n      83: astore        6\n      85: aload         5\n      87: aload         6\n      89: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n      92: aload         5\n      94: athrow\n      95: aload_3\n      96: invokevirtual #93                 // Method java/io/InputStream.close:()V\n      99: goto          123\n     102: astore        4\n     104: aload_3\n     105: invokevirtual #93                 // Method java/io/InputStream.close:()V\n     108: goto          120\n     111: astore        5\n     113: aload         4\n     115: aload         5\n     117: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     120: aload         4\n     122: athrow\n     123: aload_2\n     124: ifnull        156\n     127: aload_2\n     128: invokevirtual #103                // Method java/net/Socket.close:()V\n     131: goto          156\n     134: astore_3\n     135: aload_2\n     136: ifnull        154\n     139: aload_2\n     140: invokevirtual #103                // Method java/net/Socket.close:()V\n     143: goto          154\n     146: astore        4\n     148: aload_3\n     149: aload         4\n     151: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     154: aload_3\n     155: athrow\n     156: goto          160\n     159: astore_2\n     160: return\n    Exception table:\n       from    to  target type\n          23    55    68   Class java/lang/Throwable\n          75    80    83   Class java/lang/Throwable\n          17    95   102   Class java/lang/Throwable\n         104   108   111   Class java/lang/Throwable\n           5   123   134   Class java/lang/Throwable\n         139   143   146   Class java/lang/Throwable\n           0   156   159   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: ldc           #138                // String HTTP/1.1 200 OK\\r\\nContent-Length: 2\\r\\nConnection: keep-alive\\r\\n\\r\\nOK\n       2: getstatic     #41                 // Field java/nio/charset/StandardCharsets.UTF_8:Ljava/nio/charset/Charset;\n       5: invokevirtual #47                 // Method java/lang/String.getBytes:(Ljava/nio/charset/Charset;)[B\n       8: putstatic     #132                // Field RESP:[B\n      11: return\n}"
+  },
+  "PooledHttp": {
+   "hash": "8e08b332870a77c3",
+   "repeat": 20,
+   "runs": {
+    "50": [
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 11
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 13
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 11
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 14
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 11
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 16
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 11
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 20
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 12
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 12
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 11
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 12
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 10
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 11
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 11
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 21
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 11
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 11
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 15
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 13
+     }
+    ],
+    "100": [
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 15
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 13
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 14
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 33
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 14
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 14
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 15
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 14
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 13
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 14
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 16
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 31
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 16
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 13
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 18
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 14
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 23
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 15
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 15
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 15
+     }
+    ],
+    "200": [
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 28
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 33
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 26
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 30
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 30
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 42
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 21
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 27
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 21
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 24
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 23
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 29
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 28
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 20
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 42
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 20
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 22
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 19
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 26
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 22
+     }
+    ],
+    "400": [
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 29
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 48
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 30
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 32
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 31
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 51
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 30
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 75
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 38
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 30
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 30
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 48
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 29
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 46
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 41
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 59
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 30
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 59
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 30
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 55
+     }
+    ]
+   },
+   "inside": "Compiled from \"PooledHttp.java\"\npublic class lab.keepalive.PooledHttp {\n  static final byte[] RESP;\n\n  public lab.keepalive.PooledHttp();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void readHeaders(java.io.InputStream) throws java.lang.Exception;\n    Code:\n       0: iconst_0\n       1: istore_1\n       2: iload_1\n       3: iconst_4\n       4: if_icmpge     76\n       7: aload_0\n       8: invokevirtual #7                  // Method java/io/InputStream.read:()I\n      11: istore_2\n      12: iload_2\n      13: iconst_m1\n      14: if_icmpne     18\n      17: return\n      18: iload_1\n      19: ifeq          27\n      22: iload_1\n      23: iconst_2\n      24: if_icmpne     39\n      27: iload_2\n      28: bipush        13\n      30: if_icmpne     39\n      33: iinc          1, 1\n      36: goto          73\n      39: iload_1\n      40: iconst_1\n      41: if_icmpeq     49\n      44: iload_1\n      45: iconst_3\n      46: if_icmpne     61\n      49: iload_2\n      50: bipush        10\n      52: if_icmpne     61\n      55: iinc          1, 1\n      58: goto          73\n      61: iload_2\n      62: bipush        13\n      64: if_icmpne     71\n      67: iconst_1\n      68: goto          72\n      71: iconst_0\n      72: istore_1\n      73: goto          2\n      76: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #13                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iconst_4\n       8: istore_2\n       9: new           #19                 // class java/net/ServerSocket\n      12: dup\n      13: iconst_0\n      14: invokespecial #21                 // Method java/net/ServerSocket.\"<init>\":(I)V\n      17: astore_3\n      18: aload_3\n      19: invokevirtual #24                 // Method java/net/ServerSocket.getLocalPort:()I\n      22: istore        4\n      24: iload_2\n      25: anewarray     #27                 // class java/lang/Thread\n      28: astore        5\n      30: iconst_0\n      31: istore        6\n      33: iload         6\n      35: iload_2\n      36: if_icmpge     71\n      39: aload         5\n      41: iload         6\n      43: new           #27                 // class java/lang/Thread\n      46: dup\n      47: aload_3\n      48: invokedynamic #29,  0             // InvokeDynamic #0:run:(Ljava/net/ServerSocket;)Ljava/lang/Runnable;\n      53: invokespecial #33                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      56: aastore\n      57: aload         5\n      59: iload         6\n      61: aaload\n      62: invokevirtual #36                 // Method java/lang/Thread.start:()V\n      65: iinc          6, 1\n      68: goto          33\n      71: new           #39                 // class java/util/concurrent/ArrayBlockingQueue\n      74: dup\n      75: iload_2\n      76: invokespecial #41                 // Method java/util/concurrent/ArrayBlockingQueue.\"<init>\":(I)V\n      79: astore        6\n      81: iconst_0\n      82: istore        7\n      84: iload         7\n      86: iload_2\n      87: if_icmpge     115\n      90: aload         6\n      92: new           #42                 // class java/net/Socket\n      95: dup\n      96: ldc           #44                 // String 127.0.0.1\n      98: iload         4\n     100: invokespecial #46                 // Method java/net/Socket.\"<init>\":(Ljava/lang/String;I)V\n     103: invokeinterface #49,  2           // InterfaceMethod java/util/concurrent/BlockingQueue.add:(Ljava/lang/Object;)Z\n     108: pop\n     109: iinc          7, 1\n     112: goto          84\n     115: ldc           #55                 // String GET /ping HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: keep-alive\\r\\n\\r\\n\n     117: getstatic     #57                 // Field java/nio/charset/StandardCharsets.UTF_8:Ljava/nio/charset/Charset;\n     120: invokevirtual #63                 // Method java/lang/String.getBytes:(Ljava/nio/charset/Charset;)[B\n     123: astore        7\n     125: iconst_0\n     126: istore        8\n     128: invokestatic  #69                 // Method java/lang/System.nanoTime:()J\n     131: lstore        9\n     133: iconst_0\n     134: istore        11\n     136: iload         11\n     138: iload_1\n     139: if_icmpge     222\n     142: aload         6\n     144: invokeinterface #75,  1           // InterfaceMethod java/util/concurrent/BlockingQueue.take:()Ljava/lang/Object;\n     149: checkcast     #42                 // class java/net/Socket\n     152: astore        12\n     154: aload         12\n     156: invokevirtual #79                 // Method java/net/Socket.getOutputStream:()Ljava/io/OutputStream;\n     159: aload         7\n     161: invokevirtual #83                 // Method java/io/OutputStream.write:([B)V\n     164: aload         12\n     166: invokevirtual #79                 // Method java/net/Socket.getOutputStream:()Ljava/io/OutputStream;\n     169: invokevirtual #89                 // Method java/io/OutputStream.flush:()V\n     172: aload         12\n     174: invokevirtual #92                 // Method java/net/Socket.getInputStream:()Ljava/io/InputStream;\n     177: astore        13\n     179: aload         13\n     181: invokestatic  #96                 // Method readHeaders:(Ljava/io/InputStream;)V\n     184: aload         13\n     186: invokevirtual #7                  // Method java/io/InputStream.read:()I\n     189: bipush        79\n     191: if_icmpne     207\n     194: aload         13\n     196: invokevirtual #7                  // Method java/io/InputStream.read:()I\n     199: bipush        75\n     201: if_icmpne     207\n     204: iinc          8, 1\n     207: aload         6\n     209: aload         12\n     211: invokeinterface #102,  2          // InterfaceMethod java/util/concurrent/BlockingQueue.put:(Ljava/lang/Object;)V\n     216: iinc          11, 1\n     219: goto          136\n     222: invokestatic  #69                 // Method java/lang/System.nanoTime:()J\n     225: lload         9\n     227: lsub\n     228: ldc2_w        #106                // long 1000000l\n     231: ldiv\n     232: lstore        11\n     234: aload         6\n     236: invokeinterface #108,  1          // InterfaceMethod java/util/concurrent/BlockingQueue.iterator:()Ljava/util/Iterator;\n     241: astore        13\n     243: aload         13\n     245: invokeinterface #112,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z\n     250: ifeq          273\n     253: aload         13\n     255: invokeinterface #118,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n     260: checkcast     #42                 // class java/net/Socket\n     263: astore        14\n     265: aload         14\n     267: invokevirtual #121                // Method java/net/Socket.close:()V\n     270: goto          243\n     273: aload         5\n     275: astore        13\n     277: aload         13\n     279: arraylength\n     280: istore        14\n     282: iconst_0\n     283: istore        15\n     285: iload         15\n     287: iload         14\n     289: if_icmpge     310\n     292: aload         13\n     294: iload         15\n     296: aaload\n     297: astore        16\n     299: aload         16\n     301: invokevirtual #124                // Method java/lang/Thread.join:()V\n     304: iinc          15, 1\n     307: goto          285\n     310: getstatic     #127                // Field java/lang/System.out:Ljava/io/PrintStream;\n     313: iload         8\n     315: invokedynamic #131,  0            // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     320: invokevirtual #135                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     323: getstatic     #127                // Field java/lang/System.out:Ljava/io/PrintStream;\n     326: iload_1\n     327: invokedynamic #141,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     332: invokevirtual #135                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     335: getstatic     #127                // Field java/lang/System.out:Ljava/io/PrintStream;\n     338: lload         11\n     340: invokedynamic #142,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     345: invokevirtual #135                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     348: aload_3\n     349: invokevirtual #145                // Method java/net/ServerSocket.close:()V\n     352: goto          376\n     355: astore        4\n     357: aload_3\n     358: invokevirtual #145                // Method java/net/ServerSocket.close:()V\n     361: goto          373\n     364: astore        5\n     366: aload         4\n     368: aload         5\n     370: invokevirtual #148                // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     373: aload         4\n     375: athrow\n     376: return\n    Exception table:\n       from    to  target type\n          18   348   355   Class java/lang/Throwable\n         357   361   364   Class java/lang/Throwable\n\n  private static void lambda$main$0(java.net.ServerSocket);\n    Code:\n       0: aload_0\n       1: invokevirtual #152                // Method java/net/ServerSocket.accept:()Ljava/net/Socket;\n       4: astore_1\n       5: new           #156                // class java/io/BufferedInputStream\n       8: dup\n       9: aload_1\n      10: invokevirtual #92                 // Method java/net/Socket.getInputStream:()Ljava/io/InputStream;\n      13: invokespecial #158                // Method java/io/BufferedInputStream.\"<init>\":(Ljava/io/InputStream;)V\n      16: astore_2\n      17: aload_1\n      18: invokevirtual #79                 // Method java/net/Socket.getOutputStream:()Ljava/io/OutputStream;\n      21: astore_3\n      22: aload_2\n      23: iconst_1\n      24: invokevirtual #160                // Method java/io/InputStream.mark:(I)V\n      27: aload_2\n      28: invokevirtual #7                  // Method java/io/InputStream.read:()I\n      31: iconst_m1\n      32: if_icmpne     38\n      35: goto          60\n      38: aload_2\n      39: invokevirtual #163                // Method java/io/InputStream.reset:()V\n      42: aload_2\n      43: invokestatic  #96                 // Method readHeaders:(Ljava/io/InputStream;)V\n      46: aload_3\n      47: getstatic     #166                // Field RESP:[B\n      50: invokevirtual #83                 // Method java/io/OutputStream.write:([B)V\n      53: aload_3\n      54: invokevirtual #89                 // Method java/io/OutputStream.flush:()V\n      57: goto          22\n      60: aload_3\n      61: ifnull        96\n      64: aload_3\n      65: invokevirtual #170                // Method java/io/OutputStream.close:()V\n      68: goto          96\n      71: astore        4\n      73: aload_3\n      74: ifnull        93\n      77: aload_3\n      78: invokevirtual #170                // Method java/io/OutputStream.close:()V\n      81: goto          93\n      84: astore        5\n      86: aload         4\n      88: aload         5\n      90: invokevirtual #148                // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n      93: aload         4\n      95: athrow\n      96: aload_2\n      97: invokevirtual #171                // Method java/io/InputStream.close:()V\n     100: goto          121\n     103: astore_3\n     104: aload_2\n     105: invokevirtual #171                // Method java/io/InputStream.close:()V\n     108: goto          119\n     111: astore        4\n     113: aload_3\n     114: aload         4\n     116: invokevirtual #148                // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     119: aload_3\n     120: athrow\n     121: aload_1\n     122: ifnull        152\n     125: aload_1\n     126: invokevirtual #121                // Method java/net/Socket.close:()V\n     129: goto          152\n     132: astore_2\n     133: aload_1\n     134: ifnull        150\n     137: aload_1\n     138: invokevirtual #121                // Method java/net/Socket.close:()V\n     141: goto          150\n     144: astore_3\n     145: aload_2\n     146: aload_3\n     147: invokevirtual #148                // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     150: aload_2\n     151: athrow\n     152: goto          156\n     155: astore_1\n     156: return\n    Exception table:\n       from    to  target type\n          22    60    71   Class java/lang/Throwable\n          77    81    84   Class java/lang/Throwable\n          17    96   103   Class java/lang/Throwable\n         104   108   111   Class java/lang/Throwable\n           5   121   132   Class java/lang/Throwable\n         137   141   144   Class java/lang/Throwable\n           0   152   155   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: ldc           #174                // String HTTP/1.1 200 OK\\r\\nContent-Length: 2\\r\\nConnection: keep-alive\\r\\n\\r\\nOK\n       2: getstatic     #57                 // Field java/nio/charset/StandardCharsets.UTF_8:Ljava/nio/charset/Charset;\n       5: invokevirtual #63                 // Method java/lang/String.getBytes:(Ljava/nio/charset/Charset;)[B\n       8: putstatic     #166                // Field RESP:[B\n      11: return\n}"
+  },
+  "Pipelined": {
+   "hash": "8cec810ca7b8ba38",
+   "repeat": 20,
+   "runs": {
+    "50": [
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 5
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 6
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 4
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 6
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 5
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 6
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 4
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 7
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 4
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 6
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 5
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 5
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 4
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 5
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 8
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 6
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 8
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 8
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 5
+     },
+     {
+      "ok": 50,
+      "expected": 50,
+      "ms": 5
+     }
+    ],
+    "100": [
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 6
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 6
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 6
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 5
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 7
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 5
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 7
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 7
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 7
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 7
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 9
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 7
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 8
+     },
+     {
+      "ok": 100,
+      "expected": 100,
+      "ms": 7
+     }
+    ],
+    "200": [
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 8
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 14
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 9
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 7
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 12
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 8
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 9
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 9
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 10
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 8
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 8
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 13
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 9
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 8
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 10
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 9
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 9
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 9
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 8
+     },
+     {
+      "ok": 200,
+      "expected": 200,
+      "ms": 7
+     }
+    ],
+    "400": [
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 12
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 14
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 12
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 12
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 17
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 12
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 11
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 20
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 10
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 12
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 14
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 15
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 13
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 15
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 11
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 12
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 18
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 11
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 12
+     },
+     {
+      "ok": 400,
+      "expected": 400,
+      "ms": 10
+     }
+    ]
+   },
+   "inside": "Compiled from \"Pipelined.java\"\npublic class lab.keepalive.Pipelined {\n  static final byte[] RESP;\n\n  public lab.keepalive.Pipelined();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void readHeaders(java.io.InputStream) throws java.lang.Exception;\n    Code:\n       0: iconst_0\n       1: istore_1\n       2: iload_1\n       3: iconst_4\n       4: if_icmpge     76\n       7: aload_0\n       8: invokevirtual #7                  // Method java/io/InputStream.read:()I\n      11: istore_2\n      12: iload_2\n      13: iconst_m1\n      14: if_icmpne     18\n      17: return\n      18: iload_1\n      19: ifeq          27\n      22: iload_1\n      23: iconst_2\n      24: if_icmpne     39\n      27: iload_2\n      28: bipush        13\n      30: if_icmpne     39\n      33: iinc          1, 1\n      36: goto          73\n      39: iload_1\n      40: iconst_1\n      41: if_icmpeq     49\n      44: iload_1\n      45: iconst_3\n      46: if_icmpne     61\n      49: iload_2\n      50: bipush        10\n      52: if_icmpne     61\n      55: iinc          1, 1\n      58: goto          73\n      61: iload_2\n      62: bipush        13\n      64: if_icmpne     71\n      67: iconst_1\n      68: goto          72\n      71: iconst_0\n      72: istore_1\n      73: goto          2\n      76: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #13                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #19                 // class java/net/ServerSocket\n      10: dup\n      11: iconst_0\n      12: invokespecial #21                 // Method java/net/ServerSocket.\"<init>\":(I)V\n      15: astore_2\n      16: aload_2\n      17: invokevirtual #24                 // Method java/net/ServerSocket.getLocalPort:()I\n      20: istore_3\n      21: new           #27                 // class java/lang/Thread\n      24: dup\n      25: aload_2\n      26: iload_1\n      27: invokedynamic #29,  0             // InvokeDynamic #0:run:(Ljava/net/ServerSocket;I)Ljava/lang/Runnable;\n      32: invokespecial #33                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      35: astore        4\n      37: aload         4\n      39: invokevirtual #36                 // Method java/lang/Thread.start:()V\n      42: ldc           #39                 // String GET /ping HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: keep-alive\\r\\n\\r\\n\n      44: getstatic     #41                 // Field java/nio/charset/StandardCharsets.UTF_8:Ljava/nio/charset/Charset;\n      47: invokevirtual #47                 // Method java/lang/String.getBytes:(Ljava/nio/charset/Charset;)[B\n      50: astore        5\n      52: iconst_0\n      53: istore        6\n      55: invokestatic  #53                 // Method java/lang/System.nanoTime:()J\n      58: lstore        7\n      60: new           #59                 // class java/net/Socket\n      63: dup\n      64: ldc           #61                 // String 127.0.0.1\n      66: iload_3\n      67: invokespecial #63                 // Method java/net/Socket.\"<init>\":(Ljava/lang/String;I)V\n      70: astore        9\n      72: aload         9\n      74: invokevirtual #66                 // Method java/net/Socket.getOutputStream:()Ljava/io/OutputStream;\n      77: astore        10\n      79: new           #70                 // class java/io/BufferedInputStream\n      82: dup\n      83: aload         9\n      85: invokevirtual #72                 // Method java/net/Socket.getInputStream:()Ljava/io/InputStream;\n      88: invokespecial #76                 // Method java/io/BufferedInputStream.\"<init>\":(Ljava/io/InputStream;)V\n      91: astore        11\n      93: iconst_0\n      94: istore        12\n      96: iload         12\n      98: iload_1\n      99: if_icmpge     115\n     102: aload         10\n     104: aload         5\n     106: invokevirtual #79                 // Method java/io/OutputStream.write:([B)V\n     109: iinc          12, 1\n     112: goto          96\n     115: aload         10\n     117: invokevirtual #85                 // Method java/io/OutputStream.flush:()V\n     120: iconst_0\n     121: istore        12\n     123: iload         12\n     125: iload_1\n     126: if_icmpge     163\n     129: aload         11\n     131: invokestatic  #88                 // Method readHeaders:(Ljava/io/InputStream;)V\n     134: aload         11\n     136: invokevirtual #7                  // Method java/io/InputStream.read:()I\n     139: bipush        79\n     141: if_icmpne     157\n     144: aload         11\n     146: invokevirtual #7                  // Method java/io/InputStream.read:()I\n     149: bipush        75\n     151: if_icmpne     157\n     154: iinc          6, 1\n     157: iinc          12, 1\n     160: goto          123\n     163: aload         11\n     165: invokevirtual #93                 // Method java/io/InputStream.close:()V\n     168: goto          193\n     171: astore        12\n     173: aload         11\n     175: invokevirtual #93                 // Method java/io/InputStream.close:()V\n     178: goto          190\n     181: astore        13\n     183: aload         12\n     185: aload         13\n     187: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     190: aload         12\n     192: athrow\n     193: aload         10\n     195: ifnull        233\n     198: aload         10\n     200: invokevirtual #102                // Method java/io/OutputStream.close:()V\n     203: goto          233\n     206: astore        11\n     208: aload         10\n     210: ifnull        230\n     213: aload         10\n     215: invokevirtual #102                // Method java/io/OutputStream.close:()V\n     218: goto          230\n     221: astore        12\n     223: aload         11\n     225: aload         12\n     227: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     230: aload         11\n     232: athrow\n     233: aload         9\n     235: invokevirtual #103                // Method java/net/Socket.close:()V\n     238: goto          263\n     241: astore        10\n     243: aload         9\n     245: invokevirtual #103                // Method java/net/Socket.close:()V\n     248: goto          260\n     251: astore        11\n     253: aload         10\n     255: aload         11\n     257: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     260: aload         10\n     262: athrow\n     263: invokestatic  #53                 // Method java/lang/System.nanoTime:()J\n     266: lload         7\n     268: lsub\n     269: ldc2_w        #104                // long 1000000l\n     272: ldiv\n     273: lstore        9\n     275: aload         4\n     277: invokevirtual #106                // Method java/lang/Thread.join:()V\n     280: getstatic     #109                // Field java/lang/System.out:Ljava/io/PrintStream;\n     283: iload         6\n     285: invokedynamic #113,  0            // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     290: invokevirtual #117                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     293: getstatic     #109                // Field java/lang/System.out:Ljava/io/PrintStream;\n     296: iload_1\n     297: invokedynamic #123,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     302: invokevirtual #117                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     305: getstatic     #109                // Field java/lang/System.out:Ljava/io/PrintStream;\n     308: lload         9\n     310: invokedynamic #124,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     315: invokevirtual #117                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     318: aload_2\n     319: invokevirtual #127                // Method java/net/ServerSocket.close:()V\n     322: goto          343\n     325: astore_3\n     326: aload_2\n     327: invokevirtual #127                // Method java/net/ServerSocket.close:()V\n     330: goto          341\n     333: astore        4\n     335: aload_3\n     336: aload         4\n     338: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     341: aload_3\n     342: athrow\n     343: return\n    Exception table:\n       from    to  target type\n          93   163   171   Class java/lang/Throwable\n         173   178   181   Class java/lang/Throwable\n          79   193   206   Class java/lang/Throwable\n         213   218   221   Class java/lang/Throwable\n          72   233   241   Class java/lang/Throwable\n         243   248   251   Class java/lang/Throwable\n          16   318   325   Class java/lang/Throwable\n         326   330   333   Class java/lang/Throwable\n\n  private static void lambda$main$0(java.net.ServerSocket, int);\n    Code:\n       0: aload_0\n       1: invokevirtual #128                // Method java/net/ServerSocket.accept:()Ljava/net/Socket;\n       4: astore_2\n       5: new           #70                 // class java/io/BufferedInputStream\n       8: dup\n       9: aload_2\n      10: invokevirtual #72                 // Method java/net/Socket.getInputStream:()Ljava/io/InputStream;\n      13: invokespecial #76                 // Method java/io/BufferedInputStream.\"<init>\":(Ljava/io/InputStream;)V\n      16: astore_3\n      17: aload_2\n      18: invokevirtual #66                 // Method java/net/Socket.getOutputStream:()Ljava/io/OutputStream;\n      21: astore        4\n      23: iconst_0\n      24: istore        5\n      26: iload         5\n      28: iload_1\n      29: if_icmpge     50\n      32: aload_3\n      33: invokestatic  #88                 // Method readHeaders:(Ljava/io/InputStream;)V\n      36: aload         4\n      38: getstatic     #132                // Field RESP:[B\n      41: invokevirtual #79                 // Method java/io/OutputStream.write:([B)V\n      44: iinc          5, 1\n      47: goto          26\n      50: aload         4\n      52: invokevirtual #85                 // Method java/io/OutputStream.flush:()V\n      55: aload         4\n      57: ifnull        95\n      60: aload         4\n      62: invokevirtual #102                // Method java/io/OutputStream.close:()V\n      65: goto          95\n      68: astore        5\n      70: aload         4\n      72: ifnull        92\n      75: aload         4\n      77: invokevirtual #102                // Method java/io/OutputStream.close:()V\n      80: goto          92\n      83: astore        6\n      85: aload         5\n      87: aload         6\n      89: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n      92: aload         5\n      94: athrow\n      95: aload_3\n      96: invokevirtual #93                 // Method java/io/InputStream.close:()V\n      99: goto          123\n     102: astore        4\n     104: aload_3\n     105: invokevirtual #93                 // Method java/io/InputStream.close:()V\n     108: goto          120\n     111: astore        5\n     113: aload         4\n     115: aload         5\n     117: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     120: aload         4\n     122: athrow\n     123: aload_2\n     124: ifnull        156\n     127: aload_2\n     128: invokevirtual #103                // Method java/net/Socket.close:()V\n     131: goto          156\n     134: astore_3\n     135: aload_2\n     136: ifnull        154\n     139: aload_2\n     140: invokevirtual #103                // Method java/net/Socket.close:()V\n     143: goto          154\n     146: astore        4\n     148: aload_3\n     149: aload         4\n     151: invokevirtual #98                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n     154: aload_3\n     155: athrow\n     156: goto          160\n     159: astore_2\n     160: return\n    Exception table:\n       from    to  target type\n          23    55    68   Class java/lang/Throwable\n          75    80    83   Class java/lang/Throwable\n          17    95   102   Class java/lang/Throwable\n         104   108   111   Class java/lang/Throwable\n           5   123   134   Class java/lang/Throwable\n         139   143   146   Class java/lang/Throwable\n           0   156   159   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: ldc           #138                // String HTTP/1.1 200 OK\\r\\nContent-Length: 2\\r\\nConnection: keep-alive\\r\\n\\r\\nOK\n       2: getstatic     #41                 // Field java/nio/charset/StandardCharsets.UTF_8:Ljava/nio/charset/Charset;\n       5: invokevirtual #47                 // Method java/lang/String.getBytes:(Ljava/nio/charset/Charset;)[B\n       8: putstatic     #132                // Field RESP:[B\n      11: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux",
+  "date": "2026-11-15"
+ }
+}
