@@ -97,6 +97,18 @@
 | 31 | **换上虚拟线程，共享计数还需要锁吗** | 只把平台线程换成 Thread.ofVirtual()，百万次 count++ 会少掉吗？ | `lab.virtrace` | [网页课件](./pages/virtual-race.html) · [JSON](./lessons/virtual-race.json) · [源码](./src/lab/virtrace/) |
 | 32 | **库与缓存各用原子数组，为啥还会写反？** | 更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？ | `lab.txoutbox` | [网页课件](./pages/tx-outbox.html) · [JSON](./lessons/tx-outbox.json) · [源码](./src/lab/txoutbox/) |
 
+### 模块三 · 第一章：TCP 传输与 Socket 底层（M3-01～M3-05）
+
+用真实 Socket 实测三次握手建连成本、`TIME_WAIT` 端口复用、全连接队列 `backlog` 拥堵、TCP 粘包拆包与 Nagle 延迟 ACK 撞车。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M3-01 | **短连接每次都要三次握手，有多慢？** | 同样发 200 次小请求，每次新建 Socket 挥手断开 vs 复用长连接，耗时差多少？ | `lab.tcphandshake` | [网页课件](./pages/tcp-handshake.html) · [JSON](./lessons/tcp-handshake.json) · [源码](./src/lab/tcphandshake/) |
+| M3-02 | **压测刚跑几千次就 BindException？** | 服务端或客户端频繁主动断开连接时，为什么端口很快被 `TIME_WAIT` 占满报错？ | `lab.timewait` | [网页课件](./pages/tcp-timewait.html) · [JSON](./lessons/tcp-timewait.json) · [源码](./src/lab/timewait/) |
+| M3-03 | **accept 慢了一拍，新连接怎么直接被拒？** | 服务端 `ServerSocket` 来不及 `accept()` 时，内核全连接队列 `backlog` 装满会发生什么？ | `lab.backlog` | [网页课件](./pages/tcp-backlog.html) · [JSON](./lessons/tcp-backlog.json) · [源码](./src/lab/backlog/) |
+| M3-04 | **连发 100 条消息，怎么粘成一坨还缺半截？** | TCP 是无边界的字节流，连发 100 条 `"MSG-i"`，为什么接收方按 `read(buf)` 读出来个数不对？ | `lab.sticky` | [网页课件](./pages/tcp-sticky.html) · [JSON](./lessons/tcp-sticky.json) · [源码](./src/lab/sticky/) |
+| M3-05 | **小包发得越勤反而越慢？** | 连续发送小数据包并等待确认时，为什么 Nagle 算法撞上延迟 ACK 会让耗时暴涨？ | `lab.nagle` | [网页课件](./pages/tcp-nagle.html) · [JSON](./lessons/tcp-nagle.json) · [源码](./src/lab/nagle/) |
+
 ### 模块四 · 第一章：SQL 必知必会、联表与深分页改写（第 33～37 课）
 
 | # | 课程标题 | 一句话引子 | 代码包 | 入口 |
