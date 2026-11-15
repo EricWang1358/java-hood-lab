@@ -1,0 +1,215 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "spring-bean-lifecycle",
+  "course": "Spring 全家桶与持久层",
+  "title": "Bean 生命周期顺序：为什么 @PostConstruct 里事务代理还没生效？",
+  "lead": "在 @PostConstruct 里调自己的 @Transactional 方法预热数据，或者在初始化前访问注入字段——不是 NPE 就是代理没包上！",
+  "minutes": 35,
+  "needs": ["知道 Bean 要经历实例化、属性注入、初始化", "知道 @PostConstruct 与 AOP 代理", "了解 BeanPostProcessor"],
+  "after": ["背出 Spring Bean 核心生命周期 4 大阶段", "解释为什么 @PostConstruct 中 AOP 代理尚未生效", "知道 ApplicationReadyEvent 才是全容器代理就绪后的安全预热时机"],
+  "terms": {
+    "populateBean": "属性填充阶段：完成 @Autowired / @Value 依赖注入，在此之前字段都是 null。",
+    "@PostConstruct": "初始化回调阶段：在属性注入之后执行，但还在 BeanPostProcessor 后置代理之前。",
+    "BeanPostProcessor": "Bean 后置处理器：postProcessAfterInitialization 阶段才把原始 Bean 包装成 AOP 动态代理。",
+    "ApplicationReadyEvent": "Spring Boot 应用启动完成事件：所有单例 Bean 与 AOP 代理均已就绪。"
+  },
+  "experiments": {
+    "lifecycle": {
+      "runner": "java",
+      "home": "lab.lifecycle",
+      "variants": [
+        { "id": "InitBeforePopulate", "label": "注入前就初始化", "note": "在 populateBean 之前调 @PostConstruct，依赖字段为 null 直接 NPE。" },
+        { "id": "WrongProxyTiming", "label": "@PostConstruct 期待代理", "note": "BPP.after 还没跑，@PostConstruct 阶段代理和事务都没包上。" },
+        { "id": "BppOrdered", "label": "标准生命周期顺序", "note": "实例化 -> 注入 -> @PostConstruct -> BPP.after 生成代理，稳妥就绪。" },
+        { "id": "SmartInit", "label": "ApplicationReadyEvent", "note": "在所有代理就绪后执行预热逻辑，事务/切面 100% 生效。" }
+      ],
+      "knob": { "label": "初始化次数(千)", "values": ["1", "2", "4", "8"], "default": "2" },
+      "repeat": 20,
+      "metric": { "key": "ready", "expectKey": "expected", "label": "完整就绪次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "Bean 生命周期顺序：为什么 @PostConstruct 里事务代理还没生效？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "写启动预热代码时最容易踩两个坑：**在构造器里用 `@Autowired` 字段（NPE），以及在 `@PostConstruct` 里调事务/异步方法（代理还没生成）**。",
+          "say": "只要把 Spring Bean 生命周期的四个阶段排成一条线，这两个问题一眼就能看穿。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "2000 次容器启动初始化，代理生效了几次？",
+      "bridge": "预期 `ready = 2000`。",
+      "blocks": [
+        { "t": "text", "md": "看 `WrongProxyTiming` 的执行顺序。", "say": "如果 `@PostConstruct` 跑在 `BPP.after` 之前，会发生什么？" }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看清 @PostConstruct 与 BPP.after 的先后",
+      "bridge": "注意 `raw.postConstruct()` 和 `wrapProxy(raw)` 的顺序。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "lifecycle.WrongProxyTiming",
+          "say": "重点看 `main` 里的初始化顺序。",
+          "walk": [
+            { "focus": ["raw.postConstruct(); // 此时还没生成代理"], "say": "Spring 在 `AbstractAutowireCapableBeanFactory` 里先执行 `@PostConstruct` / `afterPropertiesSet`，最后一步才调 `BeanPostProcessor.postProcessAfterInitialization` 生成 AOP 代理！", "key": "@PostConstruct 跑在 AOP 代理生成之前" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：`WrongProxyTiming` 能成功几次？",
+      "bridge": "跑之前押一个答案。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "lc_guess",
+          "q": "运行 `WrongProxyTiming`（2000 次），成功带着事务代理完成预热的次数是？",
+          "options": ["2000", "0"],
+          "answer": 1,
+          "say": "此时代理根本还没生成。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "四种生命周期时机实测对比",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "lifecycle",
+          "show": ["InitBeforePopulate", "WrongProxyTiming", "BppOrdered", "SmartInit"],
+          "select": "WrongProxyTiming",
+          "say": "`InitBeforePopulate`（NPE）和 `WrongProxyTiming`（代理未就绪）全是 0；`BppOrdered` 和 `SmartInit` 全是 2000。"
+        },
+        {
+          "t": "reveal",
+          "of": "lc_guess",
+          "say": "需要依赖 AOP 代理的启动预热，必须放到 `ApplicationReadyEvent` 或 `CommandLineRunner`。",
+          "key": "无代理逻辑放 @PostConstruct；带事务/AOP 预热放 ApplicationReadyEvent"
+        },
+        { "t": "try", "say": "切换挡位 4 和 8 观察。" }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "耗时对比",
+      "bridge": "四种写法耗时折线。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "lifecycle",
+          "say": "`BppOrdered` 和 `SmartInit` 全程实心点。",
+          "walk": [
+            { "focus": "SmartInit", "say": "监听 `ApplicationReadyEvent`，全容器所有代理都已经就绪。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "初始化时机选型",
+      "layout": "split",
+      "bridge": "什么时候用构造器、什么时候用 `@PostConstruct`、什么时候用 `ApplicationReadyEvent`？",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "启动时执行逻辑放哪里？",
+          "branches": [
+            { "when": "纯本类字段初始化（不依赖注入/代理）", "pick": "构造器", "eg": "new ConcurrentHashMap<>()" },
+            { "when": "需要用到 @Autowired / @Value 字段（不依赖代理）", "pick": "@PostConstruct / InitializingBean", "eg": "校验配置项" },
+            { "when": "需要调用 @Transactional / @Async / RPC", "pick": "ApplicationReadyEvent / CommandLineRunner", "eg": "@EventListener(ApplicationReadyEvent.class)" }
+          ],
+          "say": "按依赖层级选时机。"
+        },
+        {
+          "t": "cases",
+          "tools": ["构造器", "@PostConstruct", "ApplicationReadyEvent"],
+          "say": "三个启动任务选位置。",
+          "items": [
+            { "text": "初始化一个本地正则缓存 Pattern。", "answer": 0, "why": "无外部依赖，构造器即可。" },
+            { "text": "读取 `@Value` 注入的私钥配置并解析成 `PublicKey` 对象。", "answer": 1, "why": "需要等 `@Value` 注入完成，放 `@PostConstruct`。" },
+            { "text": "应用启动后从数据库查热点配置刷进 Redis（方法上有 `@Transactional`）。", "answer": 2, "why": "需要代理与完整容器就绪，放 `ApplicationReadyEvent`。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频八股。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Spring Bean 生命周期",
+          "alias": "实例化 -> 属性填充 -> 初始化 -> BPP 后置代理",
+          "oneLine": "顺序是==实例化 -> populateBean -> Aware -> BPP.before -> @PostConstruct / afterPropertiesSet -> BPP.after(AOP代理)==。",
+          "asked": ["Spring Bean 的生命周期有哪些阶段？", "为什么 @PostConstruct 里不能调 @Async/@Transactional？"],
+          "say": "把 BPP 后置处理和代理时机点出来，面试直接满分。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "快速检验。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "关于 Spring Bean 生命周期，顺序排得对的是？",
+          "options": [
+            { "text": "实例化 -> 属性注入 -> @PostConstruct -> BPP.after(生成AOP代理)", "ok": true, "why": "正确！" },
+            { "text": "实例化 -> BPP.after(生成AOP代理) -> 属性注入 -> @PostConstruct", "ok": false, "why": "AOP 代理是最后一步才包装的。" }
+          ],
+          "say": "选出正确顺序。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "Spring Bean 的完整生命周期是怎样的？为什么 @PostConstruct 里 AOP 代理可能不生效？",
+          "points": [
+            "1. 实例化（反射调构造器）",
+            "2. 属性填充 populateBean（完成 @Autowired/@Value 注入）",
+            "3. 初始化（Aware 回调 -> BPP.before -> @PostConstruct -> InitializingBean -> init-method）",
+            "4. BPP.afterPropertiesInitialization（这里才生成 AOP 动态代理）",
+            "因此 @PostConstruct 执行时代理还没包上，需用代理的预热应放到 ApplicationReadyEvent"
+          ],
+          "model": "Spring Bean 生命周期核心分四步：先实例化对象，再做属性填充（`populateBean` 完成依赖注入），接着进入初始化阶段（依次执行 `Aware` 接口、`BeanPostProcessor.postProcessBeforeInitialization`、`@PostConstruct`、`InitializingBean.afterPropertiesSet`），最后一步才是 `BeanPostProcessor.postProcessAfterInitialization`，Spring AOP 正是在这最后一步把原始 Bean 包装成动态代理的。所以如果在 `@PostConstruct` 里调用需要事务或异步代理的方法，此时代理还没生成，切面是不会生效的，应该放到容器全部就绪后的 `ApplicationReadyEvent` 里。",
+          "say": "点击开始自述。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "Bean 生命周期核心 4 步？", "a": "实例化 -> 属性注入 -> 初始化（`@PostConstruct`/`InitializingBean`） -> `BPP.after`（AOP 代理）。" },
+            { "q": "为什么构造器里读 `@Autowired` 字段会 NPE？", "a": "属性填充在实例化之后执行。" },
+            { "q": "为什么 `@PostConstruct` 里调 `@Transactional` 不生效？", "a": "AOP 代理在 `BPP.after` 才包装，此时还没生成代理。" }
+          ],
+          "say": "三张卡收好。"
+        }
+      ]
+    }
+  ]
+}
