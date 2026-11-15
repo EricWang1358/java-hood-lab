@@ -1,0 +1,569 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-bigkey-pipeline",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "BigKey 阻塞单线程 + Pipeline 批量往返代价",
+  "lead": "一次查 40 条数据，用 `for` 循环调 40 次 `get` 和用 Pipeline 差多少？大 Key 又是怎么把 Redis 单线程卡死的？",
+  "minutes": 35,
+  "needs": [
+    "了解 Redis 网络命令执行的单线程模型",
+    "知道 RTT 网络往返耗时概念"
+  ],
+  "after": [
+    "量化对比循环单条命令与 Pipeline 批量打包的 RTT 次数差异",
+    "解释 BigKey 在序列化、传输和同步 `DEL` 时为何阻塞其他请求",
+    "掌握 BigKey 拆分与 `UNLINK` 异步释放的工程规范"
+  ],
+  "terms": {
+    "Pipeline": "把多条无依赖的 Redis 命令一次性打包发给服务端并一次性收回响应，将 N 次 RTT 降为 1 次。",
+    "BigKey": "Value 过大（如 String > 10KB，或集合元素 > 5000 个）的 Key，会拖慢序列化与阻塞主线程。",
+    "UNLINK": "Redis 4.0+ 异步删除命令：主线程只把 Key 从字典摘除（O(1)），大内存由后台线程异步回收。"
+  },
+  "experiments": {
+    "m6_bigkey": {
+      "runner": "java",
+      "home": "lab.m6.bigkey",
+      "knob": {
+        "name": "threads",
+        "label": "并发客户端线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "rttCount",
+        "expectKey": "expected",
+        "label": "网络往返/阻塞次数",
+        "expect": "理想RTT数"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "LoopRoundTrip",
+          "label": "循环单条RTT",
+          "code": "LoopRoundTrip.java",
+          "note": "for 循环逐条发 40 次命令，RTT 次数暴涨 40 倍。"
+        },
+        {
+          "id": "BigKeyBlocking",
+          "label": "BigKey阻塞",
+          "code": "BigKeyBlocking.java",
+          "note": "把 40 条塞进一个 BigKey，单线程长时间独占锁阻塞他人。"
+        },
+        {
+          "id": "PipelineBatch",
+          "label": "Pipeline批量",
+          "code": "PipelineBatch.java",
+          "note": "40 条命令打 1 个包发往服务端，RTT 骤降至理想基线。"
+        },
+        {
+          "id": "SplitSmallKeys",
+          "label": "拆小Key+分片",
+          "code": "SplitSmallKeys.java",
+          "note": "拆成小 Key 分散到多节点且单次操作极短，互不阻塞。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "BigKey 阻塞单线程 + Pipeline 批量往返代价",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "业务代码里写了一个 `for` 循环连调 40 次 `redis.get(id)`，或者图省事把几万条数据全塞进一个大 JSON `String` 里——**这两种写法都是线上延迟毛刺的头号元凶**。",
+          "say": "Redis 本身执行一条命令只要微秒级，真正的慢往往慢在网络 RTT 往返，或者被某个大 Key 堵住了主线程。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "Redis 单线程执行",
+              "q": "为什么一个 10MB 的 BigKey 执行 `DEL` 删除时，会让其他正常小 Key 请求全部超时？",
+              "options": [
+                "Redis 命令执行主线程同步释放大内存期间无法处理其他请求",
+                "因为 Redis 磁盘坏了",
+                "因为客户端拒绝重连"
+              ],
+              "answer": 0,
+              "why": "同步 `DEL` 会在主线程逐个释放大对象内存，耗时可达几十到几百毫秒，期间整个节点卡死。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：每批读取 40 个元素",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "每个线程跑 25 批查询，对比循环单发、BigKey 独占、Pipeline 与拆小 Key。",
+            "actors": [
+              "线程 A (小请求)",
+              "线程 B (BigKey)"
+            ],
+            "shared": "Redis 主线程"
+          },
+          "say": "每个线程跑 25 批查询，对比循环单发、BigKey 独占、Pipeline 与拆小 Key。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `LoopRoundTrip`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_bigkey.LoopRoundTrip",
+          "say": "这就是最常见的基线写法 `LoopRoundTrip`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`LoopRoundTrip` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "4 个线程各跑 25 批（每批 40 项），`LoopRoundTrip` 的网络往返（RTT）总数是多少？",
+          "options": [
+            "100 次",
+            "4000 次（每项一次往返）",
+            "40 次"
+          ],
+          "answer": 1,
+          "say": "4 线程 × 25 批 × 40 项 = 4000 次往返，绝大部分时间全浪费在路上。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`LoopRoundTrip` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_bigkey",
+          "show": [
+            "LoopRoundTrip"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "for (int i = 0; i < ITEMS; i++) rtt(600);"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `LoopRoundTrip` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_bigkey.LoopRoundTrip",
+          "lines": [
+            "for (int i = 0; i < ITEMS; i++) rtt(600);"
+          ],
+          "say": "在循环里逐条请求外部缓存，每一次迭代都在付一次完整网络 RTT。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "40 * get(k_i) vs Pipeline(40) vs BigKey",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "线程 A (小请求)",
+            "线程 B (BigKey)"
+          ],
+          "shared": {
+            "name": "Redis 主线程",
+            "start": "空闲"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 1,
+              "op": "calc",
+              "text": "B 占住主线程读写 BigKey",
+              "say": "B 发来一个超大 Key，Redis 主线程花很长时间序列化/释放。"
+            },
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "A 的小请求在队列干等",
+              "say": "A 明明只查 10 字节小数据，却被 B 的 BigKey 拖成几百毫秒慢查询！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `BigKeyBlocking`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "把 40 条命令打成一个 `PipelineBatch` 后，RTT 次数会降多少？",
+          "options": [
+            "从 4000 次直接降到 100 次（降 40 倍）",
+            "依然是 4000 次",
+            "降到 2000 次"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`LoopRoundTrip` vs `BigKeyBlocking`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_bigkey",
+          "show": [
+            "LoopRoundTrip",
+            "BigKeyBlocking"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `BigKeyBlocking` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_bigkey.BigKeyBlocking",
+          "within": "fetchBigKey()",
+          "from": "0: getstatic",
+          "to": "return",
+          "say": "看 `BigKeyBlocking.fetchBigKey`：虽然 RTT 降到了 1，但单次持锁循环高达 60000 次，把别的线程全堵在门外。",
+          "walk": [
+            {
+              "focus": [
+                "ReentrantLock.lock"
+              ],
+              "label": "长耗时独占主线程",
+              "say": "BigKey 不仅拖慢自身，还会连累同一实例上的所有其他请求。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`PipelineBatch` 与 `SplitSmallKeys`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_bigkey",
+          "show": [
+            "LoopRoundTrip",
+            "BigKeyBlocking",
+            "PipelineBatch",
+            "SplitSmallKeys"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_bigkey",
+          "variants": [
+            "LoopRoundTrip",
+            "BigKeyBlocking",
+            "PipelineBatch",
+            "SplitSmallKeys"
+          ],
+          "notes": [
+            {
+              "focus": "LoopRoundTrip",
+              "key": "循环单条 RTT 次数暴涨 40 倍，网络往返开销巨大",
+              "say": "千万别在 for 循环里逐条调 Redis！"
+            },
+            {
+              "focus": "BigKeyBlocking",
+              "key": "BigKey 虽只有 1 次 RTT，但单次阻塞主线程拖垮并发耗时",
+              "say": "8 线程下 BigKey 排队阻塞最明显。"
+            },
+            {
+              "focus": "PipelineBatch",
+              "key": "Pipeline 兼顾低 RTT 与高吞吐",
+              "say": "批量操作首选 Pipeline 或 MGET/MSET。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `SplitSmallKeys` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_bigkey.SplitSmallKeys",
+          "within": "fetchSmallKey(int)",
+          "from": "0: getstatic",
+          "to": "return",
+          "say": "看 `SplitSmallKeys.fetchSmallKey`：拆成小 Key 后路由到不同分片，每次持锁极短，多核吞吐彻底释放。",
+          "walk": [
+            {
+              "focus": [
+                "shardLoops"
+              ],
+              "label": "小粒度多节点并行",
+              "key": "既减少 RTT 又避免单次阻塞主线程",
+              "say": "大集合拆分成小 Hash 分桶（如 `key:{id%100}`）是治理 BigKey 的标准做法。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "Pipeline / MGET",
+              "solves": "把多次网络 RTT 合并成一次往返",
+              "cost": "约 {ms:m6_bigkey.PipelineBatch} ms，不保证原子性",
+              "when": "批量读取/写入几十上百个互不依赖的小 Key",
+              "say": "注意单次 Pipeline 别塞太多（建议几百条一批），避免大包阻塞。"
+            },
+            {
+              "name": "拆小 Key + UNLINK",
+              "solves": "消除单主线程长耗时阻塞与网卡打满",
+              "cost": "约 {ms:m6_bigkey.SplitSmallKeys} ms，需业务层做分桶聚合",
+              "when": "大 List/Hash（>5000 元素）或大 String（>10KB）",
+              "say": "删 BigKey 一律用 `UNLINK` 或 `HSCAN` 分批删，禁用同步 `DEL`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "批量查和超大 Key 分别怎么治？",
+          "branches": [
+            {
+              "when": "大量小 Key 需要批量读写",
+              "pick": "Pipeline / MGET（分批每批 100~500 条）",
+              "eg": "批量查 50 个商品摘要"
+            },
+            {
+              "when": "单个 Key 体积或元素过多",
+              "pick": "按哈希取模拆小 Key + UNLINK 异步删",
+              "eg": "大 Hash 拆成 100 个小桶"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "Pipeline / MGET",
+            "拆小 Key + UNLINK"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "列表页一次展示 30 个订单，代码里循环调了 30 次 `redis.get`，P99 延迟居高不下。",
+              "answer": 0,
+              "why": "直接改用 `MGET` 或 `Pipeline` 一次打包取回，RTT 从 30 降到 1。"
+            },
+            {
+              "text": "一个保存了 50 万粉丝 ID 的 Set 需要下线清理，直接执行 `DEL` 会发生什么？",
+              "answer": 1,
+              "why": "直接 `DEL` 会卡死 Redis 主线程，必须用 `UNLINK` 或 `SSCAN` 分批 `SREM`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：BigKey 与 Pipeline",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "BigKey 与 Pipeline",
+          "alias": "BigKey Avoidance · Pipeline & UNLINK",
+          "oneLine": "==Pipeline== 合并多次网络 RTT；==拆小 Key + UNLINK== 避免大对象堵死 Redis 主线程。",
+          "asked": [
+            "Pipeline 和 MGET 有什么区别？Pipeline 保证原子性吗？",
+            "线上怎么排查和优雅删除一个 BigKey？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "关于 Redis Pipeline 的说法，哪一项是正确的？",
+          "options": [
+            {
+              "text": "Pipeline 只打包减少网络 RTT，不保证这批命令的原子性",
+              "ok": true,
+              "why": "服务端仍按顺序逐条执行，中间可能穿插其他客户端命令；要原子需用 Lua。"
+            },
+            {
+              "text": "Pipeline 里的命令全部原子执行且失败自动回滚",
+              "ok": false,
+              "why": "Redis 连事务都不支持回滚，Pipeline 更不保证原子。"
+            }
+          ],
+          "say": "高频面试辨析题：Pipeline 不保证原子性。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "线上发现一个 200MB 的 Hash BigKey 需要删除，最安全的命令是？",
+          "options": [
+            {
+              "text": "先 HSCAN 分批 HDEL，或直接用 UNLINK 异步删除",
+              "ok": true,
+              "why": "避免主线程同步释放大内存导致整个 Redis 卡顿。"
+            },
+            {
+              "text": "直接执行 DEL",
+              "ok": false,
+              "why": "同步 DEL 大集合会直接阻塞主线程。"
+            }
+          ],
+          "say": "牢记 `UNLINK` 替代 `DEL`。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么单个 Pipeline 也不建议一次性塞入 10 万条命令？",
+          "options": [
+            {
+              "text": "客户端与服务端缓冲区会暴涨，且占住主线程导致其他请求饥饿",
+              "ok": true,
+              "why": "一般建议每批控制在 100~500 条左右分批发送。"
+            },
+            {
+              "text": "因为 Redis Pipeline 最多只能写 10 条",
+              "ok": false,
+              "why": "协议没限制 10 条，主要是内存和阻塞问题。"
+            }
+          ],
+          "say": "任何批量操作都要控批大小。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "什么是 BigKey？它有什么危害怎么治理？Pipeline 为什么快，有什么注意事项？",
+          "points": [
+            "BigKey 指 String>10KB 或集合元素>5000，会阻塞主线程、打满网卡、引发集群内存倾斜",
+            "治理：业务拆分大 Key（分桶/压缩），删除用 UNLINK 或 SCAN 分批删",
+            "Pipeline 把多次网络 RTT 合并为 1 次，大幅提升批量吞吐",
+            "注意：Pipeline 不保证原子性，且单批条数需控制（如 100~500）防缓冲区暴涨"
+          ],
+          "model": "BigKey 是指 Value 体积过大（如 String 超 10KB）或元素过多（如集合超 5000 个）的 Key。由于 Redis 执行命令是单线程的，读写或同步 DEL BigKey 会长时间阻塞主线程导致其他请求超时，还会打满网卡和造成分片内存倾斜。治理上应在写入前拆分成小桶或压缩，删除时使用 UNLINK 异步释放或 SCAN 分批删。对于批量小请求，应使用 Pipeline 或 MGET 把多次网络 RTT 合并成一次；但要注意 Pipeline 不保证原子性，且单批条数应控制防阻塞和缓冲区溢出。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "BigKey 三大危害？",
+              "a": "阻塞单线程主循环、打满网络带宽、集群分片内存/CPU 倾斜。"
+            },
+            {
+              "q": "优雅删 BigKey？",
+              "a": "Redis 4.0+ 用 UNLINK 异步释放，或用 SCAN + 分批删。"
+            },
+            {
+              "q": "Pipeline 两大注意？",
+              "a": "1. 不保证原子性；2. 控制单批数量（100~500）防撑爆缓冲区。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}
