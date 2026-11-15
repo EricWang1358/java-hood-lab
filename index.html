@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>147</strong> 节循序渐进实验课</span>
-        <span><strong>588</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>152</strong> 节循序渐进实验课</span>
+        <span><strong>608</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,16 +374,17 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 147 / 147 课</span>
+        <span id="shownCount" class="count-note">显示 152 / 152 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (147)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (152)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
         <button type="button" class="pill" data-filter="ch4">第四章 · 线程封闭与线程池 (6)</button>
         <button type="button" class="pill" data-filter="ch5">第五章 · 工程模式与新特性 (11)</button>
         <button type="button" class="pill" data-filter="m1ch1">基础 1 · 值传递与精度 (5)</button>
+        <button type="button" class="pill" data-filter="m1ch2">基础 2 · 对象与泛型 (5)</button>
         <button type="button" class="pill" data-filter="m2ch1">JVM 1 · 类加载与栈堆 (4)</button>
         <button type="button" class="pill" data-filter="m2ch2">JVM 2 · 锁升级与 GC (5)</button>
         <button type="button" class="pill" data-filter="m2ch3">JVM 3 · OOM 与排障 (5)</button>
@@ -896,6 +897,75 @@
           </div>
           <h3 class="card__title">浅拷贝污染事故：改了副本，原对象的数组/列表怎么也跟着变了？</h3>
           <p class="card__lead">好不容易实现了 Cloneable 并调用 super.clone() 复制出一个用户副本，可一改副本的 scores[0]，原用户的分数竟然也被改掉了！</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m1ch2">
+        <div class="chapter__head">
+          <h2>模块一 · 第二章：equals/hashCode、不可变类、泛型与枚举（M1-06～M1-10）</h2>
+          <p>实测 HashMap 丢键与退化、不可变防御拷贝、泛型擦除堆污染、Comparator 减法溢出与 EnumMap 数组直寻址。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/java-equals-hashcode.html" data-ch="m1ch2" data-search="m1-06 java-equals-hashcode equals 与 hashcode 契约：为什么只重写 equals 会让 hashmap 丢键？ 明明两个 key 的 id 完全一样、equals() 也返回 true，为什么 put 进 hashmap 后再 get(new key(id)) 竟然返回 null？ lab.eqhash">
+          <div class="card__top">
+            <span class="card__num">#M1-06</span>
+            <span class="card__pkg">lab.eqhash</span>
+          </div>
+          <h3 class="card__title">equals 与 hashCode 契约：为什么只重写 equals 会让 HashMap 丢键？</h3>
+          <p class="card__lead">明明两个 Key 的 id 完全一样、equals() 也返回 true，为什么 put 进 HashMap 后再 get(new Key(id)) 竟然返回 null？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-immutable-class.html" data-ch="m1ch2" data-search="m1-07 java-immutable-class 不可变类设计：final 字段加上 private，为什么 list 还是被外面改坏了？ 类加了 final、字段也加了 private final list&lt;string&gt; roles，可为什么外面调用方往原 list 里 add 一条，配置竟然被悄悄篡改？ lab.immut">
+          <div class="card__top">
+            <span class="card__num">#M1-07</span>
+            <span class="card__pkg">lab.immut</span>
+          </div>
+          <h3 class="card__title">不可变类设计：final 字段加上 private，为什么 List 还是被外面改坏了？</h3>
+          <p class="card__lead">类加了 final、字段也加了 private final List&lt;String&gt; roles，可为什么外面调用方往原 list 里 add 一条，配置竟然被悄悄篡改？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-generics-erasure.html" data-ch="m1ch2" data-search="m1-08 java-generics-erasure 泛型擦除、堆污染与 pecs 原则：运行期 list&lt;integer&gt; 里怎么塞进了 string？ 明明声明的是 list&lt;integer&gt;，为什么通过原始类型引用塞进一个 "bad-string" 竟然编译运行都不报错，直到取出那一刻才炸出 classcastexception？ lab.generics">
+          <div class="card__top">
+            <span class="card__num">#M1-08</span>
+            <span class="card__pkg">lab.generics</span>
+          </div>
+          <h3 class="card__title">泛型擦除、堆污染与 PECS 原则：运行期 List&lt;Integer&gt; 里怎么塞进了 String？</h3>
+          <p class="card__lead">明明声明的是 List&lt;Integer&gt;，为什么通过原始类型引用塞进一个 "bad-string" 竟然编译运行都不报错，直到取出那一刻才炸出 ClassCastException？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-comparable-sort.html" data-ch="m1ch2" data-search="m1-09 java-comparable-sort comparator 减法溢出坑与 treeset 神秘吞元素 图省事写了个 (a, b) -&gt; a - b 排序，遇到负数直接排反；更诡异的是往 treeset 里加 1000 个不同 id 的同分元素，size() 竟然只有 1！ lab.compsort">
+          <div class="card__top">
+            <span class="card__num">#M1-09</span>
+            <span class="card__pkg">lab.compsort</span>
+          </div>
+          <h3 class="card__title">Comparator 减法溢出坑与 TreeSet 神秘吞元素</h3>
+          <p class="card__lead">图省事写了个 (a, b) -&gt; a - b 排序，遇到负数直接排反；更诡异的是往 TreeSet 里加 1000 个不同 ID 的同分元素，size() 竟然只有 1！</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-enum-state.html" data-ch="m1ch2" data-search="m1-10 java-enum-state enum 枚举本质、enummap 加速与状态机模式 为什么《effective java》盛赞 enum 是最佳单例？把订单状态存在 enummap 里，比 hashmap&lt;orderstate, string&gt; 和魔法数字快在哪里？ lab.enumstate">
+          <div class="card__top">
+            <span class="card__num">#M1-10</span>
+            <span class="card__pkg">lab.enumstate</span>
+          </div>
+          <h3 class="card__title">Enum 枚举本质、EnumMap 加速与状态机模式</h3>
+          <p class="card__lead">为什么《Effective Java》盛赞 Enum 是最佳单例？把订单状态存在 EnumMap 里，比 HashMap&lt;OrderState, String&gt; 和魔法数字快在哪里？</p>
           <div class="card__foot">
             <span>12 页 · 约 25 分钟</span>
             <span class="card__go">进入实验 →</span>

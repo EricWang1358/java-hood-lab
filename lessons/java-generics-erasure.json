@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-generics-erasure",
+  "course": "Java 工程语法与集合",
+  "title": "泛型擦除、堆污染与 PECS 原则：运行期 List<Integer> 里怎么塞进了 String？",
+  "lead": "明明声明的是 List<Integer>，为什么通过原始类型引用塞进一个 \"bad-string\" 竟然编译运行都不报错，直到取出那一刻才炸出 ClassCastException？",
+  "minutes": 25,
+  "needs": ["知道泛型是 JDK 5 引入的编译期语法糖", "知道 Object 是所有类的父类"],
+  "after": [
+    "用 javap 字节码证明泛型擦除（Type Erasure）与编译器自动插入 checkcast 的真相",
+    "理解原始类型（Raw Type）导致的堆污染（Heap Pollution）及 Collections.checkedList 防护",
+    "掌握通配符 PECS 原则（Producer Extends, Consumer Super）"
+  ],
+  "terms": {
+    "类型擦除 (Type Erasure)": "Java 泛型只在编译期检查，`javac` 生成字节码时把 `List<Integer>` 擦成裸 `List`，并在读取处自动插入 `checkcast java/lang/Integer`。",
+    "堆污染 (Heap Pollution)": "一个 `List<Integer>` 变量在运行期被塞进了 `String` 等非预期类型对象，写入时不报错，读取时才炸 `ClassCastException`。",
+    "PECS 原则": "Producer Extends（只读数据源用 `? extends T`），Consumer Super（只写目标容器用 `? super T`）。"
+  },
+  "experiments": {
+    "generics": {
+      "runner": "java",
+      "home": "lab.generics",
+      "variants": [
+        { "id": "RawTypeHeapPollution", "code": "RawTypeHeapPollution.java", "label": "原始类型绕过检查（堆污染）", "note": "raw.add(\"bad-string\") 写入成功，直到 nums.get(0) 取出时才抛 ClassCastException，安全数 0。" },
+        { "id": "CheckedListRuntimeGuard", "code": "CheckedListRuntimeGuard.java", "label": "Collections.checkedList 运行期拦截", "note": "在写入瞬间直接做类型校验并拦截非法写入，防止污染扩散。" },
+        { "id": "GenericCompileSafe", "code": "GenericCompileSafe.java", "label": "全程严格泛型（编译期拦截）", "note": "不使用原始类型，编译期即封死类型错误，零额外运行期包装开销。" },
+        { "id": "WildcardPecsSafe", "code": "WildcardPecsSafe.java", "label": "PECS 上下界通配符安全读写", "note": "用 ? extends Number 读取、? super Integer 写入，兼顾灵活性与类型安全。" }
+      ],
+      "knob": { "label": "测试次数 N", "values": ["5000", "10000", "20000", "50000"], "default": "20000" },
+      "repeat": 20,
+      "metric": { "key": "safeOk", "expectKey": "expected", "label": "类型安全保障次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "泛型擦除与 PECS 原则",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "面试问「Java 泛型是真泛型还是伪泛型？」，今天用字节码直接掀开底牌：**运行期 JVM 根本不知道 `List<Integer>` 里的 `Integer` 是谁，那它怎么做到平时不出错、一用原始类型就堆污染？**",
+          "say": "弄清类型擦除、桥接方法与 `? extends` / `? super` 的 PECS 边界。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：泛型常见考题",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先检验对 Java 泛型的直觉。",
+          "items": [
+            {
+              "have": "运行期类型",
+              "q": "`new ArrayList<String>().getClass() == new ArrayList<Integer>().getClass()` 的结果是？",
+              "options": ["true（擦除后都是同一个 ArrayList.class）", "false", "编译报错"],
+              "answer": 0,
+              "why": "类型参数在编译期被擦除，运行期只有一份 `ArrayList` 字节码。"
+            },
+            {
+              "have": "PECS",
+              "q": "一个方法只从传入的列表里读取 `Number` 求和，不往里写，参数应声明为？",
+              "options": ["List<? extends Number>", "List<? super Number>", "List<Object>"],
+              "answer": 0,
+              "why": "Producer Extends：只读场景用 `? extends Number`，这样 `List<Integer>` 和 `List<Double>` 都能传进来。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：RawTypeHeapPollution vs CheckedListRuntimeGuard",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "generics",
+          "variants": ["RawTypeHeapPollution", "CheckedListRuntimeGuard"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：raw.add(\"bad-string\") 能在哪一步被拦住？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "generics",
+          "question": "`RawTypeHeapPollution` 执行 `raw.add(\"bad-string\")` 时会报错吗？",
+          "options": ["add 时完全不报错，直到 nums.get(0) 取出强转时才炸 ClassCastException", "add 时立刻报错", "全程不报错"],
+          "answer": 0,
+          "why": "擦除后 `List` 底层就是 `Object[]`，`add` 任何对象都能放进去；只有读取时编译器插的 `checkcast Integer` 才会引爆异常。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种写法类型安全实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "generics",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：编译器自动插入的 checkcast",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "generics",
+          "variant": "RawTypeHeapPollution",
+          "explain": "在字节码中，`List.get(0)` 返回的是 `Ljava/lang/Object;`，紧接着编译器自动插入了一条 `checkcast java/lang/Integer`——这就是泛型擦除后还能保证类型安全的秘密。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：严禁原始类型与 PECS 通配符",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "generics",
+          "variants": ["GenericCompileSafe", "WildcardPecsSafe"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：运行时包装校验 vs 编译期零开销",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "generics",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "泛型使用三原则",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**① 绝不在新代码里写原始类型 `List`（必带 `<T>` 或 `<?>`）；② 对外接收老代码集合时可用 `Collections.checkedList` 兜底；③ 工具方法遵循 PECS（读用 `extends`，写用 `super`）。**",
+          "say": "顺便记住：`List<Integer>` 不是 `List<Number>` 的子类，泛型是不变的（Invariant）。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个经典问题。",
+          "items": [
+            {
+              "have": "不能 new T[]",
+              "q": "为什么在 Java 里不能写 `new T()` 或 `new T[10]`？",
+              "options": ["类型擦除后运行期不知道 T 具体是什么类，无法分配对应内存", "JVM 禁止泛型用数组", "语法规定"],
+              "answer": 0,
+              "why": "需要运行期构造时，必须显式传入 `Class<T> clazz` 参数反射或用 `IntFunction<T[]>` 生成器。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 什么是 Java 泛型擦除，擦除后字节码里靠什么保证类型转换；2) 什么是堆污染；3) ? extends T 和 ? super T（PECS）分别怎么用。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "伪泛型本质", "v": "编译期检查 + 擦除为 Object/上界 + 读取处自动插 `checkcast`。" },
+            { "k": "堆污染防护", "v": "禁用原始类型 `List`；必要时用 `Collections.checkedList` 在写入瞬间拦截。" },
+            { "k": "PECS 口诀", "v": "只读生产者用 `? extends T`，只写消费者用 `? super T`。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

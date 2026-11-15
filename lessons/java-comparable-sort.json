@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-comparable-sort",
+  "course": "Java 工程语法与集合",
+  "title": "Comparator 减法溢出坑与 TreeSet 神秘吞元素",
+  "lead": "图省事写了个 (a, b) -> a - b 排序，遇到负数直接排反；更诡异的是往 TreeSet 里加 1000 个不同 ID 的同分元素，size() 竟然只有 1！",
+  "minutes": 25,
+  "needs": ["知道 Comparable 与 Comparator 的返回值语义", "知道 int 有符号取值范围 [-2³¹, 2³¹-1]"],
+  "after": [
+    "说清 `(a, b) -> a - b` 在大整数/正负跨界时的 int 溢出翻车原理",
+    "理解 TreeSet / TreeMap 靠 `compare() == 0` 而不是 `equals()` 去重的底层机制",
+    "熟练使用 `Integer.compare` 与 `Comparator.comparingInt().thenComparingInt()`"
+  ],
+  "terms": {
+    "减法溢出": "`(Integer.MIN_VALUE + 10) - (Integer.MAX_VALUE - 10)` 超出 int 负下界发生二进制回绕，结果变成正数，把最小数判成「大于」最大数！",
+    "compare() == 0 去重": "`TreeSet` 底层是 `TreeMap` 红黑树，插入时只看比较器是否返回 `0`；返回 `0` 就认定是重复元素直接丢弃（或覆盖 value）。",
+    "Tie-Breaker 次级比较": "按分数排序时如果分数相同但业务实体不同，必须链式接上 `.thenComparingInt(id)` 打破平局，否则同分元素全被 TreeSet 吞掉。"
+  },
+  "experiments": {
+    "compsort": {
+      "runner": "java",
+      "home": "lab.compsort",
+      "variants": [
+        { "id": "SubtractOverflowCmp", "code": "SubtractOverflowCmp.java", "label": "减法比较 (a, b) -> a - b（溢出）", "note": "极小负数减极大正数发生 int 溢出回绕成正数，排序判断正确数 0。" },
+        { "id": "TreeSetDedupByCmp", "code": "TreeSetDedupByCmp.java", "label": "TreeSet 只按分数比较（吞掉同分）", "note": "N 个不同 id 的同分元素，compare 返回 0 全被去重，TreeSet 最终只剩 1 个！" },
+        { "id": "IntegerCompareSafe", "code": "IntegerCompareSafe.java", "label": "Integer.compare(a, b)（安全）", "note": "用大小比较符而非减法，绝不溢出，100% 正确。" },
+        { "id": "TreeSetTieBreakerSafe", "code": "TreeSetTieBreakerSafe.java", "label": "comparingInt + thenComparingInt", "note": "分数相同时再比 id 打破平局，N 个元素 100% 保留且有序。" }
+      ],
+      "knob": { "label": "元素/比较次数 N", "values": ["500", "1000", "2000", "4000"], "default": "1000" },
+      "repeat": 20,
+      "metric": { "key": "orderedOk", "expectKey": "expected", "label": "正确比较/保留数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "Comparator 减法溢出与 TreeSet 吞元素",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天抓出排序场景两个高频隐蔽 Bug：**一个是在刷题和业务里随手写的 `a - b` 减法比较器（一遇极值直接排反或 TimSort 抛异常），另一个是 `TreeSet` 按非唯一字段排序时悄悄把同分数据吞光！**",
+          "say": "两个坑都是上线前测不出来、一碰极端数据就炸的经典案例。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：排序接口的两点常识",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先测一下对排序和有序集合的认知。",
+          "items": [
+            {
+              "have": "Comparable vs Comparator",
+              "q": "以下关于 `Comparable` 和 `Comparator` 的说法正确的是？",
+              "options": ["Comparable 是类自身实现的自然排序；Comparator 是外部策略比较器，更灵活", "Comparator 只能比整数", "两者完全一样"],
+              "answer": 0,
+              "why": "一个类只能有一种 `Comparable` 自然序，但可以写多个 `Comparator` 应对不同业务排序。"
+            },
+            {
+              "have": "TreeSet 去重依据",
+              "q": "`TreeSet` 判断两个元素是否重复，依据的是？",
+              "options": ["compareTo / compare 是否返回 0", "equals 和 hashCode", "对象 == 地址"],
+              "answer": 0,
+              "why": "`TreeSet` 基于红黑树而非哈希表，完全不看 `hashCode()` 和 `equals()`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：SubtractOverflowCmp vs TreeSetDedupByCmp",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "compsort",
+          "variants": ["SubtractOverflowCmp", "TreeSetDedupByCmp"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：往只按 score 排序的 TreeSet 加 1000 个同分不同 id 的对象，size 是几？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "compsort",
+          "question": "`TreeSetDedupByCmp` 循环加入 1000 个 `(score=100, id=0..999)` 对象，最后 `set.size()` 是多少？",
+          "options": ["1（其余 999 个全被当成重复元素吞掉了）", "1000", "0"],
+          "answer": 0,
+          "why": "所有对象 `score` 都是 100，比较器每次都返回 `0`，`TreeSet` 认为它们全相等！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：溢出与吞元素实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "compsort",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：isub 指令的静默溢出回绕",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "compsort",
+          "variant": "SubtractOverflowCmp",
+          "explain": "Lambda 里的 `a - b` 编译成单条 `isub` 指令，Java 整数减法溢出不抛异常，直接高位截断回绕成正数，导致 `min < max` 判错。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：Integer.compare 与 thenComparingInt",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "compsort",
+          "variants": ["IntegerCompareSafe", "TreeSetTieBreakerSafe"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：四种写法的耗时对比",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "compsort",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "排序编写两条规范",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**① 永远禁止写 `(a, b) -> a - b`（哪怕刷算法题也一样），一律用 `Integer.compare(a, b)` 或 `Comparator.comparingInt(...)`；② 放进 `TreeSet`/`TreeMap` 的比较器必须和业务唯一性一致，平局时接 `.thenComparingInt(id)`。**",
+          "say": "这还能顺便避免 TimSort 报 `Comparison method violates its general contract` 异常。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个高频异常。",
+          "items": [
+            {
+              "have": "TimSort 异常",
+              "q": "线上 `Collections.sort()` 偶尔抛出 `IllegalArgumentException: Comparison method violates its general contract`，常见原因是？",
+              "options": ["比较器不满足传递性/反对称性（如减法溢出，或返回了非 -1/0/1 的混乱结果）", "数组太大", "空指针"],
+              "answer": 0,
+              "why": "JDK 7+ 的 TimSort 严格校验比较器自反、对称与传递性，减法溢出一旦破坏传递性就会直接炸掉整个排序。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 为什么不能用 a - b 写 Comparator；2) TreeSet 去重靠什么，为什么按非唯一字段排序会丢数据；3) Comparable 和 Comparator 的区别。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "禁写 a - b", "v": "整数减法会静默溢出回绕，一律用 `Integer.compare` / `Comparator.comparingInt`。" },
+            { "k": "TreeSet 去重", "v": "红黑树只认 `compare() == 0`，平局必须加 `.thenComparing(uniqueId)`。" },
+            { "k": "契约一致", "v": "尽量保持 `compareTo == 0` 与 `equals == true` 一致，防止有序集合丢数据。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
