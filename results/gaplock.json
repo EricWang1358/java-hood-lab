@@ -1,0 +1,871 @@
+{
+ "id": "gaplock",
+ "variants": {
+  "RrUniqueMissGap": {
+   "hash": "e0dba50001c2ed38",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "300": [
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"RrUniqueMissGap.java\"\npublic class lab.gaplock.RrUniqueMissGap {\n  public lab.gaplock.RrUniqueMissGap();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     54\n      23: bipush        6\n      25: iload         5\n      27: iconst_4\n      28: irem\n      29: iadd\n      30: istore        6\n      32: iload         6\n      34: iconst_5\n      35: if_icmple     48\n      38: iload         6\n      40: bipush        10\n      42: if_icmpge     48\n      45: iinc          4, 1\n      48: iinc          5, 1\n      51: goto          17\n      54: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      57: lload_2\n      58: lsub\n      59: ldc2_w        #19                 // long 1000000l\n      62: ldiv\n      63: lstore        5\n      65: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      68: iload         4\n      70: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      75: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      78: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      81: ldc           #35                 // String expected=0\n      83: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      86: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      89: lload         5\n      91: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      96: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      99: return\n}"
+  },
+  "RrRangeNextKey": {
+   "hash": "2b4a5902a22aa9c8",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 100,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "300": [
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 300,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 500,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 1000,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"RrRangeNextKey.java\"\npublic class lab.gaplock.RrRangeNextKey {\n  public lab.gaplock.RrRangeNextKey();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     54\n      23: bipush        6\n      25: iload         5\n      27: iconst_4\n      28: irem\n      29: iadd\n      30: istore        6\n      32: iload         6\n      34: iconst_5\n      35: if_icmple     48\n      38: iload         6\n      40: bipush        10\n      42: if_icmpgt     48\n      45: iinc          4, 1\n      48: iinc          5, 1\n      51: goto          17\n      54: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      57: lload_2\n      58: lsub\n      59: ldc2_w        #19                 // long 1000000l\n      62: ldiv\n      63: lstore        5\n      65: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      68: iload         4\n      70: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      75: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      78: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      81: ldc           #35                 // String expected=0\n      83: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      86: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      89: lload         5\n      91: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      96: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      99: return\n}"
+  },
+  "RrUniqueHit": {
+   "hash": "5791f8df478ef4bb",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "300": [
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"RrUniqueHit.java\"\npublic class lab.gaplock.RrUniqueHit {\n  public lab.gaplock.RrUniqueHit();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_5\n      15: istore        5\n      17: iconst_0\n      18: istore        6\n      20: iload         6\n      22: iload_1\n      23: if_icmpge     51\n      26: bipush        6\n      28: iload         6\n      30: iconst_4\n      31: irem\n      32: iadd\n      33: istore        7\n      35: iload         7\n      37: iload         5\n      39: if_icmpne     45\n      42: iinc          4, 1\n      45: iinc          6, 1\n      48: goto          20\n      51: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      54: lload_2\n      55: lsub\n      56: ldc2_w        #19                 // long 1000000l\n      59: ldiv\n      60: lstore        6\n      62: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      65: iload         4\n      67: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      72: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      75: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      78: ldc           #35                 // String expected=0\n      80: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      83: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      86: lload         6\n      88: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      93: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      96: return\n}"
+  },
+  "RcRecordLockOnly": {
+   "hash": "9af2654f5e868d5a",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "300": [
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "blockedInserts": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"RcRecordLockOnly.java\"\npublic class lab.gaplock.RcRecordLockOnly {\n  public lab.gaplock.RcRecordLockOnly();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     40\n      23: iconst_0\n      24: istore        6\n      26: iload         6\n      28: ifeq          34\n      31: iinc          4, 1\n      34: iinc          5, 1\n      37: goto          17\n      40: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      43: lload_2\n      44: lsub\n      45: ldc2_w        #19                 // long 1000000l\n      48: ldiv\n      49: lstore        5\n      51: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      54: iload         4\n      56: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      61: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      64: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      67: ldc           #35                 // String expected=0\n      69: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      72: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      75: lload         5\n      77: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      82: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      85: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

@@ -163,6 +163,17 @@
 | 58 | **RR 级快照读防住了幻读，一 UPDATE 怎么又冒出新行？** | 面试常问「MySQL RR 到底有没有彻底解决幻读？」答案是：没有！一旦混用快照读和当前读，幻影行立刻现身。 | `lab.phantom` | [网页课件](./pages/tx-phantom-read.html) · [JSON](./lessons/tx-phantom-read.json) · [源码](./src/lab/phantom/) |
 | 59 | **一个长事务挂着不提交，Undo 日志怎么把磁盘撑爆？** | 线上突然告警 ibdata1 / undo 表空间暴涨几十 GB、所有查询变慢——罪魁祸首往往只是一个忘了 commit 的长事务！ | `lab.longtrx` | [网页课件](./pages/mvcc-purge-longtx.html) · [JSON](./lessons/mvcc-purge-longtx.json) · [源码](./src/lab/longtrx/) |
 
+### 模块四 · 第五章：日志两阶段提交、行锁/间隙锁死锁与乐观锁（第 60～65 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 60 | **写内存不立刻刷盘，断电怎么不丢数据？WAL Redo 与 Undo 职责拆解** | 每次改一行就随机刷 16KB 数据页慢如蜗牛；先写顺序 Redo 呢？那为什么还需要 Undo 日志？ | `lab.walredo` | [网页课件](./pages/wal-redo-undo.html) · [JSON](./lessons/wal-redo-undo.json) · [源码](./src/lab/walredo/) |
+| 61 | **Redo 和 Binlog 拆开写，主从数据怎么就劈叉了？两阶段提交真相** | InnoDB 有 Redo Log，Server 层有 Binlog。如果先写完一个就断电，主库和从库立刻出现幽灵数据或丢数据！ | `lab.twopc` | [网页课件](./pages/two-phase-commit.html) · [JSON](./lessons/two-phase-commit.json) · [源码](./src/lab/twopc/) |
+| 62 | **明明只改一行，怎么把整张表都锁死了？行锁升级表锁现场** | 很多人以为 InnoDB 的行锁就是「按行号加锁」，其实它是「加在索引记录上的」！一旦 WHERE 没走索引，整张表直接锁死。 | `lab.rowlock` | [网页课件](./pages/row-lock-index.html) · [JSON](./lessons/row-lock-index.json) · [源码](./src/lab/rowlock/) |
+| 63 | **表里根本没有 id=7，为什么插入 id=7 却被别人卡死？间隙锁与临键锁** | 别人只是用 FOR UPDATE 查了一个根本不存在的 id=7，为什么你去 INSERT id=7 甚至 id=8 全被阻塞了？ | `lab.gaplock` | [网页课件](./pages/gap-nextkey-lock.html) · [JSON](./lessons/gap-nextkey-lock.json) · [源码](./src/lab/gaplock/) |
+| 64 | **两事务同时「先查不存在再插入」，怎么双双死锁报错？Gap 锁 + 插入意向锁** | 生产最常见的神秘死锁 Deadlock found：两个并发请求都先 SELECT ... FOR UPDATE 查无此单，再各自 INSERT，直接双双撞死！ | `lab.sqldeadlock` | [网页课件](./pages/deadlock-insert-gap.html) · [JSON](./lessons/deadlock-insert-gap.json) · [源码](./src/lab/sqldeadlock/) |
+| 65 | **高并发扣库存：FOR UPDATE 排长队 vs CAS 版本号乐观锁怎么选？** | 秒杀扣库存有四条路：不加锁直接扣、悲观 FOR UPDATE、版本号乐观锁、单条 SQL 条件原子扣减。高并发下谁超卖、谁最稳？ | `lab.optlock` | [网页课件](./pages/optimistic-vs-pessimistic.html) · [JSON](./lessons/optimistic-vs-pessimistic.json) · [源码](./src/lab/optlock/) |
+
 ### 模块五 · 第一章：Spring 事务失效、动态代理与 AOP 切面（第 38～42 课）
 
 用纯 JDK 动态代理与字节码证据，亲手复现同类自调用、异常吞没、传播行为连坐回滚、JDK/CGLIB 代理坑与多切面洋葱错序。
