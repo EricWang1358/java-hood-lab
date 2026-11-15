@@ -1,0 +1,217 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "sql-deep-paging",
+  "course": "MySQL 索引、事务与锁",
+  "title": "翻到第 10 万页，LIMIT 为啥突然卡死？",
+  "lead": "同样每页只取 20 条，LIMIT 0, 20 只要 1 毫秒，LIMIT 100000, 20 为什么突然变成慢查询？",
+  "minutes": 35,
+  "needs": ["知道 SELECT ... LIMIT offset, size", "知道主键是有序的"],
+  "after": [
+    "讲清 LIMIT offset, 20 并不是直接跳到第 offset 行",
+    "用延迟关联（Deferred Join）把回表次数从 10 万次压到 20 次",
+    "分清深分页场景何时用延迟关联、何时用游标翻页"
+  ],
+  "terms": {
+    "LIMIT offset, N": "跳过前 offset 行，取后面的 N 行。MySQL 必须先把前 offset + N 行都查出来再扔掉前 offset 行。",
+    "回表": "通过二级索引拿到主键 id 后，再回到聚簇索引查整行数据的过程。",
+    "延迟关联": "Deferred Join：内层子查询只查覆盖索引拿 20 个主键 id，外层再 JOIN 原表回表 20 次。",
+    "游标翻页": "Cursor / Seek Paging：记住上一页最后一条的 id，下一页用 WHERE id > lastId LIMIT 20，直接 B+ 树定位。"
+  },
+  "experiments": {
+    "deeppage": {
+      "runner": "java",
+      "home": "lab.deeppage",
+      "variants": [
+        { "id": "OffsetScan", "label": "普通 LIMIT offset,20", "note": "从头扫描 offset+20 行并逐行取完整记录，再丢弃前 offset 行。" },
+        { "id": "DeferredJoin", "label": "延迟关联", "note": "内层只扫覆盖索引拿 20 个 id，外层只回表 20 次。" },
+        { "id": "CursorSeek", "label": "游标翻页 id > lastId", "note": "直接 B+ 树二分定位到 lastId+1，只扫 20 行。" },
+        { "id": "IdAnchor", "label": "主键区间锚定", "note": "已知 id 区间 BETWEEN min AND max，直接扫描 20 行。" }
+      ],
+      "knob": { "label": "跳过行数 offset", "values": ["1000", "20000", "100000", "300000"], "default": "100000" },
+      "repeat": 20,
+      "metric": { "key": "scanned", "expectKey": "expected", "label": "整行回表扫描数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "翻到第 10 万页，LIMIT 为啥突然卡死？",
+      "blocks": [
+        { "t": "text", "md": "后台管理系统常见的事故：刚上线翻前几页飞快，半年后数据上百万，运营点「跳到第 5000 页」，数据库 CPU 直接飙红。", "say": "明明只要 20 条数据，为什么 offset 越大越慢？今天把它的扫描代价量出来。" }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "只要 20 条，MySQL 真的只读 20 行吗？",
+      "blocks": [
+        { "t": "text", "md": "执行 `SELECT * FROM orders ORDER BY id LIMIT 100000, 20`，最终只返回 **20** 行。", "say": "MySQL 并没有「瞬间跳过 10 万行」的魔法——它老老实实读了多少行，我们直接看代码。" }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 OffsetScan 干了什么",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "deeppage.OffsetScan",
+          "say": "注意看 `rowFetchCost()` 放在了 `if (i >= offset)` 外面——每一行都要先取出来，再扔掉。",
+          "walk": [
+            { "focus": ["for (int i = 0; i < TOTAL_ROWS && i < offset + PAGE_SIZE; i++)"], "say": "循环从 0 开始，一直跑到 `offset + 20`。", "focusLines": [22] },
+            { "focus": ["rowFetchCost();", "if (i >= offset)"], "say": "前 10 万行也要逐行取出完整记录再丢掉，只有最后 20 行留了下来。", "focusLines": [24, 25] }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "scan",
+          "q": "`offset = 100000`、每页 20 条时，`OffsetScan` 实际扫描并取出了多少行？",
+          "options": ["20 行", "1000 行", "100020 行", "400000 行"],
+          "answer": 2,
+          "say": "先猜一下：它是只拿 20 行，还是把前 10 万行也一起读了？"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看：100,020 次整行读取",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "deeppage",
+          "show": ["OffsetScan"],
+          "knob": false,
+          "hand": false,
+          "say": "实测结果：`scanned = 100020`，为了返回 20 行，白白读了 10 万次整行数据！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：为什么不能直接跳过？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "deeppage.OffsetScan",
+          "within": "static void main",
+          "from": "37: iconst_0",
+          "to": "84: goto",
+          "say": "InnoDB 的 B+ 树叶子节点按页链表组织，没有记录「前面一共有多少行」的全局偏移量，只能从头顺着叶子节点数过去。",
+          "walk": [
+            { "focus": ["rowFetchCost"], "say": "如果还是 `SELECT *` 走二级索引排序，前 10 万行还要额外发生 10 万次随机回表！" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "怎么修：延迟关联 vs 游标翻页",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "deeppage",
+          "show": ["OffsetScan", "DeferredJoin", "CursorSeek", "IdAnchor"],
+          "select": "DeferredJoin",
+          "say": "切到 `DeferredJoin`（延迟关联）：内层只扫紧凑的索引拿到 20 个 id，外层只回表 20 次！再切到 `CursorSeek`（游标翻页）：直接二分定位 `id > lastId`，连前 10 万个索引项都不用数！"
+        },
+        {
+          "t": "chart",
+          "of": "deeppage",
+          "say": "看折线：`OffsetScan` 随 offset 线性恶化；`DeferredJoin` 省掉了 10 万次回表；`CursorSeek` 无论翻到第几页永远是一条水平线。",
+          "walk": [
+            { "focus": ["OffsetScan"], "say": "offset 到 30 万时，直接扫整行已经慢得离谱。" },
+            { "focus": ["CursorSeek"], "say": "游标翻页始终只扫 20 行，耗时恒定。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "两种改法怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "业务允许「上一页/下一页」就上 CursorSeek；必须支持「跳到第 N 页」就用 DeferredJoin。",
+          "options": [
+            { "name": "OffsetScan (LIMIT offset, N)", "solves": "写法简单，支持任意跳页", "cost": "回表 offset+N 次：{ms:deeppage.OffsetScan} ms", "when": "数据量小或限制最大翻页数（如最多看前 100 页）", "say": "很多电商搜索直接禁止翻超过 100 页。" },
+            { "name": "DeferredJoin (延迟关联)", "solves": "依然支持跳任意页，把回表压到 N 次", "cost": "仅回表 20 次：{ms:deeppage.DeferredJoin} ms", "when": "后台管理系统必须保留「跳页码」功能", "say": "写法：`SELECT o.* FROM orders o JOIN (SELECT id FROM orders ORDER BY id LIMIT 100000, 20) t ON o.id = t.id`。" },
+            { "name": "CursorSeek (游标翻页)", "solves": "彻底消除 offset，恒定 O(log N + 20)", "cost": "只扫 20 行：{ms:deeppage.CursorSeek} ms", "when": "App 瀑布流、信息流、数据导出批处理", "say": "前端传 `last_id`，SQL 写 `WHERE id > last_id ORDER BY id LIMIT 20`。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "一个需要导出一千万条历史订单的定时任务，用哪种分页拉取最合适？",
+          "options": [
+            { "text": "`LIMIT 0, 1000`、`LIMIT 1000, 1000` 一直往后翻", "ok": false, "why": "越往后越慢，最后几百万行会把数据库拖死。" },
+            { "text": "记录每批最大 `id`，下一批用 `WHERE id > lastId ORDER BY id LIMIT 1000`", "ok": true, "why": "游标翻页直接走主键 B+ 树定位，从头到尾每一批耗时恒定。" },
+            { "text": "一次性 `SELECT * FROM orders` 不加 LIMIT", "ok": false, "why": "直接把应用和数据库内存打爆 OOM。" }
+          ],
+          "say": "跑批导出是游标翻页的典型主场。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "深分页（Deep Pagination）",
+          "alias": "LIMIT offset, N 性能退化",
+          "oneLine": "`LIMIT offset, N` 需要先扫描并抛弃前 `offset` 行，导致==回表和扫描代价随页码线性暴涨==。",
+          "asked": [
+            "MySQL 深分页怎么优化？",
+            "什么是延迟关联？为什么能加速？",
+            "游标翻页有什么局限性？"
+          ],
+          "say": "游标翻页的局限就是不能直接跳到任意第 N 页，所以和延迟关联刚好互补。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么 MySQL 的 LIMIT 100000, 20 会变慢？怎么优化？",
+          "points": [
+            "MySQL 必须先查出前 100020 行（含大量无用回表），再扔掉前 10 万行",
+            "支持跳页时用延迟关联：子查询只扫覆盖索引拿 20 个 id 再 JOIN 回表",
+            "瀑布流/批处理用游标翻页：WHERE id > last_id LIMIT 20，恒定走索引定位",
+            "业务兜底：限制最大翻页深度（如最多翻 100 页）"
+          ],
+          "model": "LIMIT 100000, 20 慢是因为 MySQL 无法直接定位到第 10 万行，必须先取出前 100020 行（如果走二级索引还会发生 10 万次随机回表），然后把前 10 万行丢弃。优化看场景：如果必须支持任意跳页，用延迟关联，先在子查询里用覆盖索引只取 20 个主键 id，外层再 JOIN 回表 20 次；如果是瀑布流或全表导出，用游标翻页 WHERE id > last_id ORDER BY id LIMIT 20，直接通过 B+ 树定位，耗时恒定。",
+          "say": "照着这四点开口讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "LIMIT 100000, 20 为什么慢？", "a": "InnoDB 会扫描前 100020 行（甚至回表 10 万次）再丢弃前 10 万行。" },
+            { "q": "延迟关联怎么写？", "a": "SELECT a.* FROM t a JOIN (SELECT id FROM t ORDER BY id LIMIT 100000, 20) b ON a.id = b.id，把回表压成 20 次。" },
+            { "q": "什么时候用游标翻页？", "a": "信息流、数据导出等无需跳页的场景，用 WHERE id > last_id LIMIT 20，性能恒定。" }
+          ],
+          "say": "下一课看一个面试高频争论：COUNT(*) 和 COUNT(1) 到底谁快。"
+        }
+      ]
+    }
+  ]
+}
