@@ -26,6 +26,9 @@ public class SeckillOrder {
     @Column(nullable = false, length = 24)
     private OrderStatus status = OrderStatus.PENDING;
 
+    @Column(name = "trace_id", length = 64)
+    private String traceId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
@@ -35,13 +38,18 @@ public class SeckillOrder {
     protected SeckillOrder() {
     }
 
-    public SeckillOrder(String orderNo, Long campaignId, Long userId) {
+    public SeckillOrder(String orderNo, Long campaignId, Long userId, String traceId) {
         this.orderNo = orderNo;
         this.campaignId = campaignId;
         this.userId = userId;
+        this.traceId = traceId;
         this.status = OrderStatus.PENDING;
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
+    }
+
+    public SeckillOrder(String orderNo, Long campaignId, Long userId) {
+        this(orderNo, campaignId, userId, null);
     }
 
     public Long getId() {
@@ -62,6 +70,10 @@ public class SeckillOrder {
 
     public OrderStatus getStatus() {
         return status;
+    }
+
+    public String getTraceId() {
+        return traceId;
     }
 
     public Instant getCreatedAt() {

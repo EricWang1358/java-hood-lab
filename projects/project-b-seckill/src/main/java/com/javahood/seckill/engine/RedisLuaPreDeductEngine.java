@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 @ConditionalOnProperty(name = "app.redis.enabled", havingValue = "true")
@@ -38,7 +39,7 @@ public class RedisLuaPreDeductEngine implements PreDeductEngine {
 
     @Override
     public PreDeductResult tryPreDeduct(Long campaignId, Long userId) {
-        int start = (int) (Math.abs(userId.hashCode()) % shardCount);
+        int start = Math.floorMod(userId.hashCode(), shardCount);
         String uKey = usersKey(campaignId);
         for (int offset = 0; offset < shardCount; offset++) {
             int idx = (start + offset) % shardCount;
@@ -66,6 +67,12 @@ public class RedisLuaPreDeductEngine implements PreDeductEngine {
             redisTemplate.opsForValue().increment(stockKey(campaignId, shardIndex));
         }
         redisTemplate.opsForSet().remove(usersKey(campaignId), String.valueOf(userId));
+    }
+
+    @Override
+    public void restoreStockAfterClose(Long campaignId) {
+        int bucket = ThreadLocalRandom.current().nextInt(shardCount);
+        redisTemplate.opsForValue().increment(stockKey(campaignId, bucket));
     }
 
     @Override
