@@ -1,0 +1,249 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "jvm-heap-oom",
+  "course": "JVM 内存与 GC",
+  "title": "堆内存 OOM 与泄漏排查：如何区分「真不够用」与「缓慢泄漏」？",
+  "lead": "同样报 OutOfMemoryError: Java heap space，是 `-Xmx` 给小了还是代码里有只进不出的静态 Map 在慢性泄漏？",
+  "minutes": 35,
+  "needs": ["知道堆内存 -Xms/-Xmx", "知道 Memory Leak vs Memory Overflow", "知道 jmap / MAT"],
+  "after": [
+    "分清「内存溢出（Overflow：真不够用）」与「内存泄漏（Leak：垃圾占着坑收不掉）」",
+    "用有界 LRU 缓存、SoftReference 限流或流式处理彻底根治无界缓存 OOM",
+    "掌握线上堆 OOM 的标准排障流程（-XX:+HeapDumpOnOutOfMemoryError → jmap/MAT 看 Dominator Tree）"
+  ],
+  "terms": {
+    "内存溢出 (OOM)": "系统确实需要这么多存活对象，但超过 `-Xmx` 上限导致分配失败。",
+    "内存泄漏 (Memory Leak)": "本该废弃的对象因为被无界 Map、静态集合、ThreadLocal 等强引用拽住，GC 收不掉，最终拖垮整个堆。",
+    "HeapDumpOnOutOfMemoryError": "JVM 关键救命参数：发生 OOM 瞬间自动导出 `.hprof` 堆快照，事后用 MAT / VisualVM 分析大对象支配树。"
+  },
+  "experiments": {
+    "heapoom": {
+      "runner": "java",
+      "home": "lab.heapoom",
+      "variants": [
+        { "id": "UnboundedCacheLeak", "code": "UnboundedCacheLeak.java", "label": "无界 HashMap 慢性泄漏", "note": "只 put 不淘汰，冲破 16MB 容器堆预算立刻触发 OOM 中断，仅撑过 128 次！" },
+        { "id": "LruBoundedCache", "code": "LruBoundedCache.java", "label": "有界 LRU 淘汰缓存", "note": "LinkedHashMap 限制最多保留 64 个热点项，稳稳扛住 800 次请求 0 溢出。" },
+        { "id": "SoftRefCacheGuard", "code": "SoftRefCacheGuard.java", "label": "软引用有界缓冲", "note": "限制槽位上限并包裹 SoftReference，内存吃紧时自动让路。" },
+        { "id": "StreamBatchDiscard", "code": "StreamBatchDiscard.java", "label": "流式处理即用即丢", "note": "不囤积历史数据，处理完立即丢弃引用，堆内存占用始终维持常量。" }
+      ],
+      "knob": { "label": "请求批次数 (128KB/次)", "values": ["100", "200", "400", "800"], "default": "400" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "OOM 前安全处理数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "堆内存 OOM 与泄漏排查",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**线上容器半夜突然报 `OutOfMemoryError: Java heap space`，你是盲目把 `-Xmx` 从 2G 调到 4G，还是怎么一眼看出它只是在慢性泄漏？**",
+          "say": "如果是无界 Map 泄漏，你把 `-Xmx` 调到 16G 也只是把崩溃时间从凌晨 2 点推迟到早上 8 点而已！"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：区分内存泄漏与内存溢出",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先对齐堆 OOM 排查的三个基本判断。",
+          "items": [
+            {
+              "have": "GC 曲线特征",
+              "q": "观察监控面板的 Old Gen（老年代）使用率曲线，每次 Full GC 后最低点呈**阶梯状一路向上直到 100%**，这通常是？",
+              "options": ["内存泄漏（有只增不减的垃圾对象收不掉）", "CPU 飙高", "网络抖动"],
+              "answer": 0,
+              "why": "正常系统 Full GC 后老年代会回落到稳定基线；基线不断抬升就是典型的内存泄漏信号！"
+            },
+            {
+              "have": "现场保留",
+              "q": "生产服务必须配哪个 JVM 参数，才能在 OOM 重启后依然有证据可查？",
+              "options": ["-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=...", "-Xms1g", "-XX:+PrintGC"],
+              "answer": 0,
+              "why": "没有现场 `.hprof` dump，OOM 重启后就死无对证了。"
+            },
+            {
+              "have": "GC overhead",
+              "q": "`OutOfMemoryError: GC overhead limit exceeded` 说明了什么？",
+              "options": ["JVM 花了 98% 以上的时间做 GC，却只回收了不到 2% 的堆空间", "栈溢出了", "元空间满了"],
+              "answer": 0,
+              "why": "这是堆快满但还没彻底满前，JVM 一直在做无用 Full GC 的绝望警告。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「仓库只进不出」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["400 批货物"], "shared": { "name": "16MB 堆内存仓库", "value": "只进不出 128 批就爆仓" } },
+          "story": "仓库上限只有 16MB（128 个 128KB 货箱）。`UnboundedCacheLeak` 每次来新货都塞进仓库且从不清理旧货，第 129 批直接爆仓报错；而 `LruBoundedCache` 最多只留最近常用的 64 个货箱，旧的自动淘汰，`StreamBatchDiscard` 更是验完货直接送走，400 批、800 批统统稳过！",
+          "say": "任何本地缓存如果不设 `maximumSize` 或 `expireAfterWrite`，本质上都是定时炸弹。",
+          "map": [
+            { "scene": "只 put 不淘汰", "on": "shared", "tag": "无界泄漏 OOM", "code": "`leakMap.put(i, payload)`", "say": "到达 16MB 预算立刻炸毁。" },
+            { "scene": "满 64 条淘汰最老", "on": "actors", "tag": "有界 LRU", "code": "`removeEldestEntry`", "say": "内存封顶可控，稳稳扛住任意流量。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：无界 HashMap 爆仓 vs 有界 LRU",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "heapoom.UnboundedCacheLeak",
+          "say": "看 `UnboundedCacheLeak.java` 和 `LruBoundedCache.java`：仅仅差了一个 `removeEldestEntry` 淘汰上限，命运截然不同。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：400 次请求（每次 128KB），在 16MB 预算下各自能撑过多少次？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "400 次请求，`UnboundedCacheLeak`、`LruBoundedCache`、`StreamBatchDiscard` 各自安全处理多少次？",
+          "options": ["全都能过 400 次", "UnboundedCacheLeak 卡死在 128 次爆仓，后两者稳稳 400/400", "LruBoundedCache 也会爆"],
+          "answer": 1,
+          "say": "16MB / 128KB = 128，超过第 128 次无界缓存必炸。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测撞墙：128 次爆仓 vs 400/400 稳过",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "heapoom",
+          "show": ["UnboundedCacheLeak", "LruBoundedCache", "SoftRefCacheGuard", "StreamBatchDiscard"],
+          "knob": "400",
+          "hand": "LruBoundedCache",
+          "focus": "ok",
+          "say": "看柱状图：`UnboundedCacheLeak` 死死卡在 128 次触发 OOM，而有界 LRU、软引用保护和流式丢弃全部 400/400 过关！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "本地缓存必须有界（容量上限 + TTL 过期），大批量导入导出必须流式分页处理避免一次全加载进堆",
+          "say": "生产中推荐直接用 Caffeine（`Caffeine.newBuilder().maximumSize(10000).expireAfterWrite(...)`）替代手写 HashMap。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：LruBoundedCache 的淘汰机制",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "heapoom.LruBoundedCache",
+          "within": "main",
+          "from": "newarray",
+          "to": "Map.put",
+          "say": "每次分配 128KB 后调用 `lru.put`，`LinkedHashMap` 在插入后自动回调 `removeEldestEntry`，一旦超过 64 条就摘掉最老节点，让老数组失去强引用被 Young GC 秒收。",
+          "walk": [
+            { "focus": ["newarray"], "label": "分配本次请求数据", "say": "128KB 字节数组。" },
+            { "focus": ["Map.put"], "label": "写入并触发淘汰检查", "say": "超过 `MAX_ENTRIES` 自动摘除最久未访问节点，内存永远封顶在 8MB。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "拉到 800 次请求再试",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "heapoom",
+          "say": "把请求数拉到 800，验证有界方案无论多少倍流量都不会越过内存红线。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "线上堆 OOM 排查与预防清单",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "遇到 OOM 别慌，按「保现场 → 看支配树 → 断引用/加边界」三步走。",
+          "options": [
+            { "name": "预防：有界缓存 + 流式分页", "solves": "本地缓存用 Caffeine 设上限与 TTL；Excel 导出用 EasyExcel 流式写；SQL 禁全表不分页查", "cost": "需评估合理缓存大小与分页游标", "when": "所有线上 Java 服务", "say": "90% 的堆 OOM 都是无界集合或一次性加载百万行 SQL 结果集。" },
+            { "name": "排查：HeapDump + MAT 支配树", "solves": "通过 `-XX:+HeapDumpOnOutOfMemoryError` 或 `jmap -dump:live,format=b,file=heap.hprof <pid>` 定位最大 Retained Heap", "cost": "jmap dump 时会触发一次 STW，线上建议先摘流量或依赖 OOM 自动 dump", "when": "线上突发或慢性 OOM 定位", "say": "打开 MAT 看 Dominator Tree（支配树）和 Path to GC Roots，一分钟抓出元凶。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住堆 OOM 排查标准套路",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "堆内存 OOM 与泄漏排查",
+          "alias": "Java heap space / MAT Dominator Tree",
+          "oneLine": "Full GC 后老年代基线持续抬升是内存泄漏；用 HeapDump + MAT 支配树找 Retained Heap 最大对象及 GC Root 链，用有界缓存与流式处理治本。",
+          "asked": "线上发生 Java heap space OOM 怎么排查？内存泄漏和内存溢出的区别？",
+          "say": "背熟排查工具链：`top` → `jstat -gcutil` → `jmap -histo` / `HeapDump` → MAT 支配树。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "用 `jstat -gcutil <pid> 1000` 观察线上服务时，发现 `O`（Old 区使用率）始终在 99%，`FGC` 次数每秒狂涨，但程序还没立刻退出，下一步最安全的诊断命令是？",
+          "options": [
+            { "text": "先看 `jmap -histo:live <pid> | head -n 20` 快速统计存活大对象分布，或先摘除该实例流量再 `jmap -dump`", "ok": true, "why": "正确！直接对在线承压实例做全量 `jmap -dump` 会长时间 STW 导致请求雪崩，先摘流或用 `histo` 初筛最稳妥。" },
+            { "text": "直接重启然后把 -Xmx 调大 10 倍", "ok": false, "why": "不留证据盲目扩堆，泄漏问题很快会再次复发。" },
+            { "text": "用 jstack 查死锁", "ok": false, "why": "jstack 查线程阻塞/死锁/CPU 飙高，查堆对象分布要用 jmap/MAT。" }
+          ],
+          "say": "线上排障铁律：先保服务可用（摘流），再留证据（dump/histo）。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：线上堆 OOM 排查全流程",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：如果线上服务报了 OutOfMemoryError: Java heap space，你会怎么排查和解决？",
+          "points": [
+            "区分溢出与泄漏：看监控 Full GC 后老年代水位是否持续抬升（内存泄漏），还是并发瞬时大对象/大查询导致真不够用（内存溢出）",
+            "保留与导出快照：提前配好 -XX:+HeapDumpOnOutOfMemoryError 自动导出 hprof；若存活中则先摘流再用 jmap -histo / jmap -dump 导出堆转储",
+            "分析与治理：用 MAT/VisualVM 看 Dominator Tree（支配树）找出 Retained Heap 最大的对象，再顺着 Path to GC Roots 找到泄漏点（常见如无界 static Map、ThreadLocal 未 remove、一次性查询百万行数据），改用 Caffeine 有界缓存或流式分页解决"
+          ],
+          "model": "遇到 Java heap space OOM，我首先会通过监控和 `jstat -gcutil` 区分是内存泄漏还是纯粹内存不够用：如果每次 Full GC 后老年代回收基线都在阶梯式上升，通常是内存泄漏；如果是瞬间大流量或大导出导致的溢出，基线在平时是平稳的。排查时，生产上一定要提前配置 `-XX:+HeapDumpOnOutOfMemoryError` 在崩溃瞬间自动保留 hprof 快照；如果进程还在但频繁 Full GC，我会先摘除这台机器的流量，再用 `jmap -histo` 初筛或 `jmap -dump` 导出堆文件。拿到快照后用 MAT 打开 Dominator Tree（支配树），看谁占用了最多的 Retained Heap，再查它的 Path to GC Roots。常见的元凶主要是无界静态缓存、ThreadLocal 用完没 remove、或者一次 SQL 查出几十万条全加载进内存，对应改用 Caffeine 有界缓存、try-finally remove 和流式分页查询即可治本。",
+          "say": "「监控区分 → 摘流留快照 → MAT 支配树 + GC Roots → 常见元凶与解法」四步走。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "堆 OOM 排查三张卡收好。",
+          "items": [
+            { "front": "泄漏 vs 溢出怎么看？", "back": "看 Full GC 后老年代最低水位：持续抬升=泄漏；平时平稳突增=溢出。" },
+            { "front": "必配救命 JVM 参数", "back": "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=..." },
+            { "front": "MAT 分析核心视图", "back": "Dominator Tree（找最大支配对象）+ Path to GC Roots（找谁没松手）。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

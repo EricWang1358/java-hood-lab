@@ -1,0 +1,249 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "jvm-string-table",
+  "course": "JVM 内存与 GC",
+  "title": "StringTable 常量池与 intern()：JDK 7 搬进堆里后怎么防 OOM？",
+  "lead": "同样存 4 万条重复标签字符串，为什么直接 new String() 堆内存暴涨、intern() 又可能把 StringTable 哈希表打退化？",
+  "minutes": 30,
+  "needs": ["知道 String 不可变性", "知道字符串常量池位置变化", "知道 String.intern()"],
+  "after": [
+    "说清 StringTable 从永久代（JDK 6）搬到堆内存（JDK 7+）后对 intern() 行为的影响",
+    "对比重复 new String、String.intern() 与有界 Map 去重的内存与 CPU 开销",
+    "知道为什么高基数随机字符串（如 UUID）绝对不能调 intern()"
+  ],
+  "terms": {
+    "StringTable (字符串常量池)": "HotSpot 底层一张固定桶数的 C++ 哈希表（JDK 7+ 存放在堆中），用来全局去重复用相同的 String 对象。",
+    "String.intern()": "若 StringTable 里已有 equals 字符串则返回池中引用；否则在 JDK 7+ 直接把堆上该 String 的引用登记进池，不再复制一份。",
+    "StringTable 桶退化": "如果往池里塞入海量不重复的随机 UUID，固定桶数的哈希表退化成超长链表，intern() 速度暴跌且池内强引用难以回收。"
+  },
+  "experiments": {
+    "stringtable": {
+      "runner": "java",
+      "home": "lab.stringtable",
+      "variants": [
+        { "id": "RawDuplicateStrings", "code": "RawDuplicateStrings.java", "label": "重复 new String（不去重）", "note": "100 个标签重复造了 N 份独立 String 对象，堆上全是重复副本，去重复用率 = 0。" },
+        { "id": "InternDedup", "code": "InternDedup.java", "label": "String.intern() 池化去重", "note": "全部复用常量池里的同一批 String 引用（100% 命中 ==），大幅节省堆内存。" },
+        { "id": "BoundedInternCache", "code": "BoundedInternCache.java", "label": "有界 HashMap 规范化", "note": "用应用层有界 Map 映射低基数常量，既 100% 复用又避开全局 StringTable 锁争用。" },
+        { "id": "StringBuilderReuse", "code": "StringBuilderReuse.java", "label": "StringBuilder 复用 + intern", "note": "复用 StringBuilder 拼接再 intern，减少临时字符数组垃圾。" }
+      ],
+      "knob": { "label": "处理字符串总次数", "values": ["10000", "20000", "40000", "80000"], "default": "40000" },
+      "repeat": 20,
+      "metric": { "key": "dedupOk", "expectKey": "expected", "label": "成功复用规范引用数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "StringTable 常量池与 intern()",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**为什么低基数高频词（如城市名、状态码）用 `intern()` 能省下几百 MB 堆内存，而对订单号/UUID 调 `intern()` 却能把服务拖死？**",
+          "say": "StringTable 是面试高频细节，既考底层内存位置变迁（JDK 6 vs 7+），也考线上慎用 `intern()` 的工程判断。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：StringTable 的三个关键事实",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先对齐字符串常量池的核心变化。",
+          "items": [
+            {
+              "have": "常量池位置",
+              "q": "JDK 7 及以后，字符串常量池（StringTable）存放在 JVM 哪块内存？",
+              "options": ["元空间 Metaspace", "Java 堆（Heap）中", "虚拟机栈"],
+              "answer": 1,
+              "why": "JDK 6 在永久代（极易 PermGen OOM）；JDK 7 搬进堆里，可随堆 GC 回收，元空间只留类元数据。"
+            },
+            {
+              "have": "intern() 行为",
+              "q": "执行 `String s = new StringBuilder(\"ja\").append(\"va\").toString().intern();` 时，为什么 `s == \"java\"` 常常是 false，而换个新词 `\"javahood\"` 却是 true？",
+              "options": ["\"java\" 在 JVM 启动时早已被放进常量池了", "intern() 有 bug", "随机结果"],
+              "answer": 0,
+              "why": "经典面试题！`\"java\"` 早已在 `Version`/`System` 类初始化进池，所以 `intern()` 返回的是池里已有引用，而不是新建的堆对象。"
+            },
+            {
+              "have": "高基数坑",
+              "q": "如果对每笔请求的随机 `UUID` 都调用 `uuid.intern()`，主要危害是？",
+              "options": ["StringTable 哈希冲突链表变长导致越来越慢，且占用大量堆内常量池空间", "会编译报错", "UUID 会变短"],
+              "answer": 0,
+              "why": "JDK 8 默认 `-XX:StringTableSize=60013`，塞几百万随机串进去链表长到每次 `intern()` 都在 O(N) 扫链表！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「印名片 vs 查通讯录」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["4 万次标签请求"], "shared": { "name": "100 个规范引用 (StringTable)", "value": "全员复用 vs 现印 4 万张" } },
+          "story": "全公司就 100 个部门名。`RawDuplicateStrings` 每次收到请求都重新印一张独立名片（`new String`），堆里瞬间多出 4 万张废纸；`InternDedup` 和 `BoundedInternCache` 则去通讯录查到那 100 个规范引用直接返回，4 万次请求全指向同一批 100 个对象！",
+          "say": "只对「枚举有限、重复极高」的字段做规范化去重；随机唯一串绝不进池。",
+          "map": [
+            { "scene": "每次现印新名片", "on": "actors", "tag": "堆内存膨胀", "code": "`new String(\"key-\" + idx)`", "say": "内容相同但地址全不同，GC 压力大。" },
+            { "scene": "查通讯录复用引用", "on": "shared", "tag": "常量池去重", "code": "`(\"key-\" + idx).intern()`", "say": "100% 复用既有对象，省内存且可用 == 比较。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：RawDuplicateStrings vs InternDedup",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "stringtable.InternDedup",
+          "say": "看 `InternDedup.java`：4 万次循环拼接字符串后调 `.intern()`，对比不去重的 `RawDuplicateStrings.java`。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：4 万次生成 100 个重复键，各自命中规范引用多少次？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "用 `==` 比较是否复用了规范对象，`RawDuplicateStrings`、`InternDedup`、`BoundedInternCache` 各自命中多少？",
+          "options": ["全都是 40000", "RawDuplicateStrings 是 0，InternDedup 和 BoundedInternCache 是 40000", "InternDedup 是 100"],
+          "answer": 1,
+          "say": "`new String` 每次造新对象，`==` 全为 false；去重方案全部返回规范引用。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测去重率与耗时：0 vs 40000",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "stringtable",
+          "show": ["RawDuplicateStrings", "InternDedup", "BoundedInternCache", "StringBuilderReuse"],
+          "knob": "40000",
+          "hand": "BoundedInternCache",
+          "focus": "dedupOk",
+          "say": "看结果：`RawDuplicateStrings` 复用数为 0（白白造了 4 万个副本），后三种全数 40000/40000 复用！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "低基数重复字符串用有界缓存或 intern() 去重能大幅降低堆占用；其中应用层有界 Map 性能更优且可控",
+          "say": "切换到耗时视角看看：`BoundedInternCache` 比调用原生 `String.intern()` 更快！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的 String.intern() 与引用比较",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "stringtable.InternDedup",
+          "within": "main",
+          "from": "String.intern",
+          "to": "if_acmp",
+          "say": "调用 `String.intern()` 进入 JVM C++ 本地方法查全局 `StringTable`，返回的引用再直接用 `if_acmp` 指令做指针相等比较。",
+          "walk": [
+            { "focus": ["String.intern"], "label": "查全局 StringTable", "say": "需要计算哈希并跨 JNI 访问全局表。" },
+            { "focus": ["if_acmp"], "label": "指针直接相等", "say": "命中同一个堆对象引用，O(1) 指针比较。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "拉到 8 万次再看耗时对比",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "stringtable",
+          "say": "把次数调到 8 万，切到耗时指标对比 `InternDedup` 与 `BoundedInternCache`。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "字符串去重怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "高并发服务里尽量别无脑调 `String.intern()`。",
+          "options": [
+            { "name": "应用层有界 Cache（如 Caffeine / HashMap）", "solves": "不污染全局 StringTable，容量可上限控制，速度比 JNI intern() 更快", "cost": "需自己维护固定词表或淘汰上限", "when": "高频枚举标签、城市编码、HTTP Header 名去重", "say": "既省内存又绝对安全可控。" },
+            { "name": "String.intern()", "solves": "一行代码全局去重，适合启动期/低频加载有限词表", "cost": "原生全局表有桶竞争与高基数退化风险", "when": "启动加载少量配置枚举（绝不用于请求级随机字符串）", "say": "G1 下还可配合 `-XX:+UseStringDeduplication` 自动后台去重重复字符数组。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住 StringTable 的核心考点",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "StringTable 常量池与 intern()",
+          "alias": "String Pool / String Deduplication",
+          "oneLine": "JDK 7+ StringTable 迁入堆内存，intern() 直接登记堆对象引用；低基数词可去重省内存，高基数随机串调 intern() 会拖垮哈希表。",
+          "asked": "StringTable 在哪块内存？new String(\"a\") + new String(\"b\") 建了几个对象？intern() 有什么坑？",
+          "say": "答出「JDK 7 迁入堆」「JDK 7+ intern 存引用」「高基数链表退化与并发开销」。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "解析 JSON 日志时，以下哪个字段**最不适合**调用 `.intern()` 去重？",
+          "options": [
+            { "text": "每次请求唯一生成的 traceId / orderNo（高基数几乎不重复）", "ok": true, "why": "正确！几乎不重复的字段调 intern() 不仅去重率为 0，还会把 StringTable 哈希表塞爆并拖慢所有线程的 intern 查询。" },
+            { "text": "省份名称 province（全国仅 30 多个值）", "ok": false, "why": "极低基数高重复，去重收益很大。" },
+            { "text": "HTTP 方法名 GET/POST", "ok": false, "why": "固定几个枚举值，适合复用。" }
+          ],
+          "say": "去重只对「低基数、高重复」有效！"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：StringTable 演进与 intern() 避坑",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：String.intern() 的原理是什么？为什么 JDK 7 要把字符串常量池移到堆里，生产上用 intern() 要注意什么？",
+          "points": [
+            "位置演进：JDK 6 在永久代（PermGen），容量小且 Full GC 才回收易 OOM；JDK 7 移入堆中，可随正常堆 GC 回收",
+            "intern() 差异：JDK 6 首次放入会拷贝一份到永久代；JDK 7+ 若堆上已有该对象，只在 StringTable 登记它的引用，省去拷贝",
+            "生产避坑：StringTable 底层是固定桶数的 C++ 哈希表，绝不能对高基数随机串（如 UUID/订单号）调 intern()，否则会引发哈希碰撞链表退化与线程阻塞；高频去重优先用应用层有界缓存或 G1 字符串去重"
+          ],
+          "model": "String.intern() 的作用是在运行时把字符串放进全局的 StringTable 常量池里去重复用。在 JDK 6 时 StringTable 放在永久代，不仅容量有限极易报 PermGen OOM，而且 intern() 如果发现池里没有会把对象拷贝一份放进永久代；从 JDK 7 开始，HotSpot 把 StringTable 移到了堆内存里，这样一方面能跟着堆 GC 正常回收，另一方面首次 intern() 时只需要在池里登记堆上现有对象的引用，不用再复制一份。不过在生产上千万不能对高基数的随机字符串（比如 traceId、UUID）调用 intern()，因为 StringTable 底层是固定桶数的哈希表，塞入大量不重复字符串会导致哈希冲突链表急剧变长，拖慢所有线程的查找速度；对于低基数枚举词去重，更推荐用应用层有界缓存或开启 G1 的字符串去重参数。",
+          "say": "把「JDK 6 vs 7 位置与拷贝差异」「高基数链表退化坑」「替代方案」讲透。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "StringTable 三张卡收好。",
+          "items": [
+            { "front": "JDK 7+ StringTable 在哪？", "back": "在 Java 堆中（而非元空间），intern() 直接登记堆对象引用。" },
+            { "front": "什么情况适合去重？", "back": "低基数、高重复字符串（状态/城市/标签）；优先用有界 Map。" },
+            { "front": "高基数调 intern() 的坑", "back": "UUID/订单号等随机串会导致 StringTable 哈希链表退化与性能暴跌。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

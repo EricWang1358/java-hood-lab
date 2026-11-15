@@ -121,6 +121,18 @@
 | M2-08 | **GC Roots 可达性分析** | A↔B 循环引用为什么不会内存泄漏？哪些对象能当 GC Roots？ | `lab.gcroots` | [网页课件](./pages/jvm-gcroots.html) · [JSON](./lessons/jvm-gcroots.json) · [源码](./src/lab/gcroots/) |
 | M2-09 | **分代回收与 GC 停顿** | 朝生夕灭的小对象秒收，1MB 大数组直奔老年代怎么把 GC 耗时拖垮？ | `lab.gcpause` | [网页课件](./pages/jvm-gc-pause.html) · [JSON](./lessons/jvm-gc-pause.json) · [源码](./src/lab/gcpause/) |
 
+### 模块二 · 第三章：常量池、OOM 复现与线上排障实战（M2-10～M2-14）
+
+实测 StringTable 去重与高基数坑、无界缓存堆 OOM、动态代理类元空间爆炸、CPU 100% 正则/死循环定位与 ThreadMXBean 死锁检测。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M2-10 | **StringTable 常量池与 intern()** | JDK 7 搬进堆里后，为什么低基数词 intern() 省内存而随机 UUID 调 intern() 会拖垮服务？ | `lab.stringtable` | [网页课件](./pages/jvm-string-table.html) · [JSON](./lessons/jvm-string-table.json) · [源码](./src/lab/stringtable/) |
+| M2-11 | **堆内存 OOM 与泄漏排查** | 同样报 Java heap space，如何区分真不够用与无界 Map 慢性泄漏？ | `lab.heapoom` | [网页课件](./pages/jvm-heap-oom.html) · [JSON](./lessons/jvm-heap-oom.json) · [源码](./src/lab/heapoom/) |
+| M2-12 | **元空间 Metaspace OOM** | 堆内存还剩一半，动态代理类无限生成怎么把容器内存吃穿？ | `lab.metaspace` | [网页课件](./pages/jvm-metaspace.html) · [JSON](./lessons/jvm-metaspace.json) · [源码](./src/lab/metaspace/) |
+| M2-13 | **线上 CPU 100% 飙高排障** | 如何用 top -Hp + printf %x + jstack 三连招，10 秒内揪出死循环与 ReDoS 正则？ | `lab.cpudiag` | [网页课件](./pages/jvm-cpu-diag.html) · [JSON](./lessons/jvm-cpu-diag.json) · [源码](./src/lab/cpudiag/) |
+| M2-14 | **线上卡死与死锁排查** | CPU 很低接口全超时，如何用 jstack -l 与 ThreadMXBean 一秒查出死锁并根治？ | `lab.deadlockdiag` | [网页课件](./pages/jvm-deadlock-diag.html) · [JSON](./lessons/jvm-deadlock-diag.json) · [源码](./src/lab/deadlockdiag/) |
+
 ### 模块三 · 第一章：TCP 传输与 Socket 底层（M3-01～M3-05）
 
 用真实 Socket 实测三次握手建连成本、`TIME_WAIT` 端口复用、全连接队列 `backlog` 拥堵、TCP 粘包拆包与 Nagle 延迟 ACK 撞车。

@@ -1,0 +1,249 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "jvm-metaspace",
+  "course": "JVM 内存与 GC",
+  "title": "元空间 Metaspace OOM：动态代理类无限生成怎么把容器内存吃穿？",
+  "lead": "堆内存还剩一大半，为什么服务突然报 OutOfMemoryError: Metaspace？不断创建不同 ClassLoader 和动态代理类怎么把元空间撑爆？",
+  "minutes": 30,
+  "needs": ["知道方法区与元空间 Metaspace", "知道 JDK 动态代理 / CGLIB", "知道本地内存限制"],
+  "after": [
+    "说清 JDK 8 元空间 Metaspace 位于本地内存（Native Memory）以及存了哪些类元数据",
+    "理解为什么每次用新 ClassLoader + Proxy/CGLIB 动态生成代理类会导致类数量线性爆炸",
+    "知道必须设置 `-XX:MaxMetaspaceSize` 防止撑爆宿主机容器物理内存被 OOM Killer 杀掉"
+  ],
+  "terms": {
+    "Metaspace (元空间)": "JDK 8 取代永久代的区域，使用操作系统本地内存（Native Memory）存放类的元数据（Klass、方法字节码、常量池等）。",
+    "动态代理类生成": "Proxy.newProxyInstance 或 CGLIB Enhancer 会在运行时动态拼接字节码并 defineClass 生成 `$ProxyN` 新类放进元空间。",
+    "-XX:MaxMetaspaceSize": "限制元空间上限的必配参数；若不设上限，元空间泄漏会一路吃光容器物理内存直到触发 Linux OOM Killer。"
+  },
+  "experiments": {
+    "metaspace": {
+      "runner": "java",
+      "home": "lab.metaspace",
+      "variants": [
+        { "id": "NewProxyClassEvery", "code": "NewProxyClassEvery.java", "label": "每次新建加载器生成代理类", "note": "每次换新 ClassLoader 调 Proxy.newProxyInstance，元空间类数量直接飙到 N 个，极易 Metaspace OOM！" },
+        { "id": "SharedProxyClassCache", "code": "SharedProxyClassCache.java", "label": "缓存代理 Class 复用构造器", "note": "只生成 1 个代理 Class，后续通过 Constructor.newInstance 复用，元空间零增长！" },
+        { "id": "SingleInvocationHandler", "code": "SingleInvocationHandler.java", "label": "同 ClassLoader 复用代理类", "note": "JDK Proxy 内部对同一组 (ClassLoader, Interfaces) 有 WeakCache，元空间只占 1 个类。" },
+        { "id": "StaticDirectCall", "code": "StaticDirectCall.java", "label": "静态实现类直接调用", "note": "编译期确定类，元空间固定 1 个类且无反射代理开销。" }
+      ],
+      "knob": { "label": "生成代理实例次数", "values": ["50", "100", "200", "400"], "default": "200" },
+      "repeat": 20,
+      "metric": { "key": "classesCreated", "expectKey": "expected", "label": "元空间新增 Class 数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "元空间 Metaspace OOM",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**为什么堆内存还很空，不断动态生成 CGLIB/Proxy 代理类或热加载脚本（如 Groovy/SpEL）却能把整个容器内存吃穿？**",
+          "say": "元空间 Metaspace OOM 是 Spring/RPC/规则引擎场景下最常见的非堆内存故障。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：关于 Metaspace 的三个常见误区",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先检验你对元空间内存归属的理解。",
+          "items": [
+            {
+              "have": "默认上限",
+              "q": "JDK 8+ 如果**不配置** `-XX:MaxMetaspaceSize`，元空间最大能用多少内存？",
+              "options": ["默认 256MB", "理论上只受操作系统本地可用物理内存限制，不设上限极易吃光容器内存被 Linux OOM Killer 杀掉", "和 -Xmx 一样大"],
+              "answer": 1,
+              "why": "生产容器一定要显式配 `-XX:MetaspaceSize` 和 `-XX:MaxMetaspaceSize`！"
+            },
+            {
+              "have": "存放内容",
+              "q": "JDK 8 之后，元空间（Metaspace）里主要放什么？",
+              "options": ["类的元数据（Klass 结构、方法信息、运行时常量池等），而 StringTable 和静态变量已移入堆", "所有 new 出来的对象", "所有 byte[] 数组"],
+              "answer": 0,
+              "why": "记住：JDK 7 StringTable 进堆；JDK 8 静态变量和类对象都在堆，元空间只留类元数据。"
+            },
+            {
+              "have": "类卸载条件",
+              "q": "一个动态生成的类在什么严苛条件下才能被 GC 从元空间卸载？",
+              "options": ["该类所有实例被回收 + 加载它的 ClassLoader 被回收 + 该类的 Class 对象无任何引用", "只要实例为 0 就立刻卸载", "永远不能卸载"],
+              "answer": 0,
+              "why": "只要用系统 `AppClassLoader` 加载的动态类，因为 `AppClassLoader` 永远不死，生成的类就永远卸载不掉！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「印模具 vs 印产品」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["200 次代理请求"], "shared": { "name": "元空间模具库 (Metaspace)", "value": "每次重铸新模具 vs 复用 1 套模具" } },
+          "story": "一个 `Class<?>` 就像一套重型钢模具，放在本地内存的模具库（Metaspace）里；`SharedProxyClassCache` 是用同一套模具印出 200 个塑料零件（实例），模具库只占 1 套位置；而 `NewProxyClassEvery` 则是每次换一个车间（新 `ClassLoader`）重新铸一套一模一样的钢模具，200 次就铸了 200 套，模具库瞬间爆仓！",
+          "say": "动态代理（Proxy / CGLIB / Javassist / Groovy）必须在外部按「接口/类/脚本内容」做好缓存，绝不能在每次请求里无缓存重新生成类！",
+          "map": [
+            { "scene": "每次铸新模具", "on": "shared", "tag": "元空间类爆炸", "code": "`new IsolatedLoader(...)` + `Proxy.newProxyInstance`", "say": "生成 N 个不同 $Proxy 类，撑爆 Metaspace。" },
+            { "scene": "复用 1 套模具造实例", "on": "actors", "tag": "缓存代理 Class", "code": "`ctor.newInstance(handler)`", "say": "元空间新增类数始终为 1。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：Proxy 缓存失效 vs 复用代理 Class",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "metaspace.NewProxyClassEvery",
+          "say": "看 `NewProxyClassEvery.java`：每次传入新的 `IsolatedLoader`，绕过了 `Proxy` 内部的 `(ClassLoader, Interfaces)` 缓存，导致 200 次循环造出 200 个全新的代理类！"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：循环 200 次，元空间各自新增了多少个 Class？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "200 次调用下，`NewProxyClassEvery` 和 `SharedProxyClassCache` / `SingleInvocationHandler` 各自在元空间新增几个类？",
+          "options": ["全是 1 个", "NewProxyClassEvery 新增 200 个，另外三个始终只有 1 个", "全是 200 个"],
+          "answer": 1,
+          "say": "CGLIB `Enhancer.create()` 如果禁用 `useCache` 或每次传入动态生成的 `NamingPolicy` 也会犯完全一样的错误！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测新增类数量：200 类爆炸 vs 恒定 1 类",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "metaspace",
+          "show": ["NewProxyClassEvery", "SharedProxyClassCache", "SingleInvocationHandler", "StaticDirectCall"],
+          "knob": "200",
+          "hand": "SharedProxyClassCache",
+          "focus": "classesCreated",
+          "say": "看柱状图：`NewProxyClassEvery` 新增了整整 200 个类且耗时明显更慢；而复用代理 Class 的方案始终稳定在 1 个类！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "运行时动态生成字节码必须缓存 Class，否则元空间加载类数量线性增长直至 Metaspace OOM",
+          "say": "这也是 Fastjson/Jackson/Spring/Groovy 脚本引擎都极其强调复用生成类或使用独立可卸载 ClassLoader 的原因。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的 Proxy.newProxyInstance",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "metaspace.NewProxyClassEvery",
+          "within": "main",
+          "from": "Proxy.newProxyInstance",
+          "to": "HashSet.add",
+          "say": "每次用新 `ClassLoader` 调用 `Proxy.newProxyInstance`，底层都会触发 `ProxyBuilder` 动态拼装 `$ProxyN` 字节码并调用 `defineClass` 注册进元空间。",
+          "walk": [
+            { "focus": ["Proxy.newProxyInstance"], "label": "动态定义新代理类", "say": "在元空间分配 Klass 元数据与方法表。" },
+            { "focus": ["HashSet.add"], "label": "类数量线性膨胀", "say": "200 次产生 200 个互不相等的代理 `Class<?>`。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "拉到 400 次再观察",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "metaspace",
+          "say": "把次数调到 400，对比类数量与生成耗时。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "Metaspace 防爆配置与排障",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "线上必须同时做好「参数兜底」和「动态类监控」。",
+          "options": [
+            { "name": "必配 -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m", "solves": "设为等值避免启动期反复扩容触发 Full GC，同时用 Max 上限防止吃光宿主机内存", "cost": "达到上限直接报 Metaspace OOM 快速暴露问题", "when": "所有 JDK 8+ 生产容器", "say": "注意：`MetaspaceSize` 不是初始大小，而是第一次触发元空间 GC 的阈值！" },
+            { "name": "jstat -gcmetacapacity / -XX:+TraceClassLoading", "solves": "实时监控已加载类数量（Loaded）与元空间已提交内存（MCMN/MC）", "cost": "TraceClassLoading 日志较多，仅排障时临时开启", "when": "排查 Groovy 脚本、CGLIB、反射生成类泄漏", "say": "看到 Loaded Class Count 持续只增不减，基本实锤动态类泄漏。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住 Metaspace 核心考点",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "元空间 Metaspace 与动态类泄漏",
+          "alias": "OutOfMemoryError: Metaspace",
+          "oneLine": "Metaspace 在本地内存存类元数据，默认无上限；高频动态生成 Proxy/CGLIB/脚本类未缓存或 ClassLoader 无法卸载会撑爆 Metaspace。",
+          "asked": "Metaspace 存什么？为什么会 Metaspace OOM？怎么排查？",
+          "say": "答出「本地内存」「存 Klass 元数据」「动态代理/CGLIB/Groovy 泄漏」「MaxMetaspaceSize 与类卸载条件」。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "线上配了 `-XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m`，其中 `-XX:MetaspaceSize=256m` 的真实含义是？",
+          "options": [
+            { "text": "元空间使用量首次达到 256MB 时才会触发因元空间引起的 Full GC（高水位阈值），并非一启动就分配 256MB", "ok": true, "why": "正确！很多同学误以为它是初始值；默认才 21MB 左右，生产设成 256m 是为了防止启动加载几万个 Spring 类时反复扩容 Full GC。" },
+            { "text": "JVM 启动时立刻向 OS 申请死 256MB", "ok": false, "why": "它是 GC 触发阈值（High-water mark），不是初始占用。" },
+            { "text": "等价于 -Xms256m", "ok": false, "why": "-Xms 是堆内存初始大小，跟元空间无关。" }
+          ],
+          "say": "这个参数细节面试官一听就知道你有真实调优经验！"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：Metaspace 原理与 OOM 排查",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：JDK 8 的元空间 Metaspace 存了什么？什么情况下会报 Metaspace OOM，怎么排查？",
+          "points": [
+            "位置与内容：JDK 8 用元空间替代永久代，直接位于操作系统本地内存（Native Memory），存放类的元数据（Klass、方法信息、运行时常量池等）；StringTable 和静态变量在堆中",
+            "OOM 原因：加载的类太多，常见原因包括：微服务依赖 Jar 包过大、或者代码里不断用 CGLIB/JDK Proxy/Groovy 动态生成新类且未缓存，或旧 ClassLoader 引用未断开导致无法卸载",
+            "排查与调优：用 jstat -gcmetacapacity 或 jcmd GC.class_stats 观察 Loaded 类数量是否持续上涨；生产上务必配置 -XX:MetaspaceSize 与 -XX:MaxMetaspaceSize 防止吃穿宿主机物理内存"
+          ],
+          "model": "JDK 8 以后用元空间 Metaspace 取代了永久代，它直接使用操作系统的本地内存（Native Memory），主要存放类的元数据信息，比如类结构 Klass、方法字节码、运行时常量池等，而像 StringTable 和静态变量都在堆里。如果堆还很空却报了 Metaspace OOM，通常是因为加载的类实在太多了，比如系统动态生成了大量新类：常见像 CGLIB 动态代理、Groovy 动态脚本或者反射字节码增强没有做好缓存，每次请求都生成新类；或者是热部署时旧的 ClassLoader 被静态引用拽住无法回收，导致旧类卸载不掉。排查时可以用 `jstat -gcmetacapacity` 看已加载类数量是不是一直在涨，或者用 `jcmd GC.class_stats` 看具体是哪类字节码占了大头。另外生产环境一定要显式配好 `-XX:MetaspaceSize` 和 `-XX:MaxMetaspaceSize`，防止它不设上限把宿主机容器内存吃光。",
+          "say": "「本地内存存元数据 → 动态类泄漏原因 → 排查命令与双参数配置」完整作答。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "Metaspace 三张卡收好。",
+          "items": [
+            { "front": "Metaspace 在哪？", "back": "OS 本地内存，存类元数据；不配 MaxMetaspaceSize 默认无上限。" },
+            { "front": "Metaspace OOM 元凶", "back": "无缓存动态生成 Proxy/CGLIB/脚本类，或 ClassLoader 泄漏致类无法卸载。" },
+            { "front": "类卸载三大条件", "back": "该类实例全回收 + 加载它的 ClassLoader 被回收 + Class 对象无引用。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
