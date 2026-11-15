@@ -1,0 +1,107 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "hikari-pool-size",
+  "course": "Spring 全家桶与持久层",
+  "title": "数据库连接池不是越大越好？为什么设到 200 反而比设 9 更慢？",
+  "lead": "为了应对高并发把 HikariCP 的 maximum-pool-size 从 10 调到 200，结果接口响应时间直接翻了 3 倍！",
+  "minutes": 25,
+  "needs": ["知道数据库连接池复用 TCP 连接的原理", "了解 CPU 上下文切换与数据库锁竞争的开销"],
+  "after": ["讲清 HikariCP 官方经验公式 connections = core_count * 2 + effective_spindle_count", "解释连接数远大于数据库 CPU 核数时为什么吞吐反而暴跌", "掌握 HikariCP 极速原因（ConcurrentBag、FastList、字节码优化）"],
+  "terms": {
+    "HikariCP 连接数公式": "connections = ((core_count * 2) + effective_spindle_count)。4 核 SSD 数据库大约设 9～10 个连接就够吃满，而不是动辄几百。",
+    "上下文切换与锁争用": "数据库只有少数 CPU 核，同时涌入 200 个活跃查询只会让数据库线程疯狂抢锁、频繁上下文切换，整体吞吐不升反降。",
+    "ConcurrentBag": "HikariCP 独创的无锁/ThreadLocal 借还数据结构：线程优先拿自己上次用过的连接，减少 CAS 争用，这是它比 Druid/DBCP 快的关键。"
+  },
+  "experiments": {
+    "hikarisize": {
+      "runner": "java",
+      "home": "lab.hikarisize",
+      "variants": [
+        { "id": "TinyPool", "label": "过小连接池 (2)", "note": "连接数低于数据库 4 核并发度，算力吃不满，排队慢。" },
+        { "id": "TooManyConns", "label": "超大连接池 (200)", "note": "200 个连接同时冲进 4 核数据库，引发严重锁竞争与调度抖动，耗时暴涨！" },
+        { "id": "FormulaPool", "label": "官方公式池 (2*4+1=9)", "note": "刚好吃满 4 核且零过度争用，吞吐最高、耗时最短！" },
+        { "id": "ConcurrentBagPool", "label": "9 连接 + 本地复用", "note": "模拟 HikariCP ConcurrentBag 策略，稳定高效。" }
+      ],
+      "knob": { "label": "并发线程", "values": ["4", "8", "16", "32"], "default": "16" },
+      "repeat": 20,
+      "metric": { "key": "completed", "expectKey": "expected", "label": "完成数据库任务数(满分160)" },
+      "time": { "key": "ms", "label": "总耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "数据库连接池不是越大越好？为什么设到 200 反而比设 9 更慢？",
+      "blocks": [{ "t": "text", "md": "很多同学优化慢接口的第一反应就是把 `maximum-pool-size` 从默认的 10 改成 100 甚至 200，结果压测一看：**QPS 不升反降，数据库 CPU 直接飙到 100%！**", "say": "数据库不是连接越多跑得越快，它只有那么多核，**排队等连接比在数据库里抢锁快得多**。" }]
+    },
+    {
+      "beat": "hook",
+      "title": "16 个业务线程并发执行 160 次查询，设 200 个连接和设 9 个连接谁更快？",
+      "bridge": "模拟 4 核数据库，4 种连接池配置跑完 160 次查询对比耗时。",
+      "blocks": [{ "t": "text", "md": "重点看耗时折线图里 `TooManyConns(200)` 和 `FormulaPool(9)` 的差距。", "say": "先猜再跑。" }]
+    },
+    {
+      "beat": "code",
+      "title": "看清连接数过多如何在数据库侧引发争用",
+      "bridge": "注意 `TooManyConns.java` 与 `FormulaPool.java`。",
+      "blocks": [{ "t": "code", "of": "hikarisize.TooManyConns", "say": "看第 28～31 行。", "walk": [{ "focus": ["if (active > 4) {"], "say": "当活跃连接数远超数据库 4 个物理核时，大量并发查询在数据库内部互相抢行锁、页锁和 CPU 时间片，调度抖动急剧放大！", "key": "在应用层连接池排队，远好于把几百个请求同时放进数据库抢锁" }] }]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：16 并发下，poolSize=200 和 poolSize=9 谁耗时更短？",
+      "bridge": "跑之前下注。",
+      "blocks": [{ "t": "predict", "id": "hs_guess", "q": "面对 4 核数据库，16 个线程并发执行 160 次查询，哪种池大小总耗时最短？", "options": ["poolSize = 200（连接管够不用等）", "poolSize = 9（2*核数+1，避免数据库争用）"], "answer": 1, "say": "选出你的判断。" }]
+    },
+    {
+      "beat": "run",
+      "title": "四种连接池大小实测对比",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        { "t": "experiment", "lab": "hikarisize", "show": ["TinyPool", "TooManyConns", "FormulaPool", "ConcurrentBagPool"], "select": "TooManyConns", "say": "看下面的耗时图：`FormulaPool(9)` 仅 ~50ms 跑完，而 `TooManyConns(200)` 高达 200ms+，慢了 4 倍！" },
+        { "t": "reveal", "of": "hs_guess", "say": "HikariCP 官方用大量压测证明：**一个 4 核机器 + SSD 的数据库，连接池设 9～10 个就能打出最高吞吐。**", "key": "连接池大小公式：2 * 数据库核心数 + 有效磁盘数" },
+        { "t": "try", "say": "把并发线程调到 32，看看 `TooManyConns` 恶化得多厉害。" }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "总耗时 U 型曲线对比",
+      "bridge": "典型的先降后升 U 型曲线。",
+      "blocks": [{ "t": "chart", "of": "hikarisize", "say": "太小（2）吃不满算力，太大（200）互相踩踏，中间黄金点（9）最快！", "walk": [{ "focus": "FormulaPool", "say": "稳稳站在 U 型曲线最低谷。" }] }]
+    },
+    {
+      "beat": "choose",
+      "title": "生产连接池参数选型",
+      "layout": "split",
+      "bridge": "实际工程里怎么配连接池？",
+      "blocks": [
+        { "t": "decide", "q": "线上应用多实例部署，连接池怎么配？", "branches": [{ "when": "单台应用直连 4 核数据库", "pick": "maximum-pool-size = 10（或略高于 2*cores+1）", "eg": "HikariCP 默认就是 10" }, { "when": "10 台应用实例同时连同一台数据库", "pick": "单实例适当调小（如 5～10），控制总连接数不超 DB 上限", "eg": "防 10*50=500 连接打爆 DB" }], "say": "千万记得算「应用实例数 × 单实例池大小」！。" },
+        { "t": "cases", "tools": ["保持默认 10 左右", "调小单机池大小", "加只读库或异步削峰"], "say": "三个场景怎么调？", "items": [{ "text": "Spring Boot 单体连 4 核 RDS，开发觉得默认 10 太小想改成 100。", "answer": 0, "why": "不要乱改！4 核 RDS 最佳并发连接数就在 10 左右，改成 100 只会更慢。" }, { "text": "微服务扩容到 30 个 Pod，每个 Pod 配了 20 个连接，RDS 报 Too many connections。", "answer": 1, "why": "30*20=600 远超负荷，应缩减单 Pod 池大小到 5～8 或引入连接池代理。" }, { "text": "慢 SQL 拖着连接不还导致连接池不够用。", "answer": 2, "why": "根本解法是优化慢 SQL 缩短单次持有时间，而不是盲目放大连接池。" }] }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频提问。",
+      "blocks": [{ "t": "name", "term": "HikariCP 连接池容量与高性能原理", "alias": "2*cores+1 · ConcurrentBag · FastList", "oneLine": "连接池并非越大越好，官方公式 ==2 * 核数 + 1== 可在吃满算力与避免上下文切换间取最优；HikariCP 凭 ==ConcurrentBag== 无锁借还与字节码优化成为性能标杆。", "asked": ["数据库连接池大小怎么设置？为什么不是越大越好？HikariCP 为什么这么快？"], "say": "公式 + U型曲线 + ConcurrentBag，完美回答。" }]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "快速检验。",
+      "blocks": [{ "t": "quiz", "q": "一台 8 核 CPU + NVMe SSD 的 MySQL 服务器，按照 HikariCP 官方经验公式，总有效并发连接数大约设置在多少最合适？", "options": [{ "text": "17 左右（8 * 2 + 1）", "ok": true, "why": "正确！`core_count * 2 + effective_spindle_count = 17`，实际工程常取 16～20 之间。" }, { "text": "800 左右（核数 * 100）", "ok": false, "why": "800 个并发查询会让 8 核数据库在上下文切换和锁竞争中彻底卡死。" }], "say": "选出正确答案。" }]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [{ "t": "say", "prompt": "数据库连接池为什么不是越大越好？HikariCP 推荐怎么配，它为什么快？", "points": ["不是越大越好：数据库 CPU 核数和磁盘 IO 有限，连接过多会导致大量线程在 DB 内部抢锁、频繁 CPU 上下文切换，吞吐呈 U 型曲线下降", "官方经验公式：connections = core_count * 2 + effective_spindle_count（如 4 核 SSD 约 9~10，正好是 HikariCP 默认值 10）", "集群注意：要算 实例数 × maximum-pool-size，避免扩容后打爆数据库 max_connections", "HikariCP 快的原因：1) ConcurrentBag 使用 ThreadLocal + 无锁 CAS 优先复用本线程上次连接；2) FastList 替代 ArrayList 省去越界检查和全遍历；3) 字节码级优化（Javassist 代理）"], "model": "数据库连接池绝对不是越大越好。因为数据库只有固定的 CPU 核数和磁盘 IO 通道，如果连接池设到几百，几百个查询同时打进数据库，只会引发严重的锁争用和 CPU 上下文切换，整体耗时反而暴涨。按照 HikariCP 官方经验公式 `2 * 核心数 + 有效磁盘数`，4 核 SSD 设 9 到 10 个连接就能吃满性能（这也是它默认 `maximum-pool-size=10` 的原因），多实例部署还要注意总连接数不能打爆 DB 上限。至于 HikariCP 为什么快，主要是它用了独创的 `ConcurrentBag`（优先从 `ThreadLocal` 拿连接减少 CAS 竞争）、`FastList` 省去范围检查，以及精简到极致的 Javassist 动态代理。", "say": "点击开始自述。" }]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [{ "t": "cards", "items": [{ "q": "HikariCP 连接池经验公式？", "a": "`2 * CPU 核心数 + 有效磁盘数`（默认 10 适合大多数 4 核库）。" }, { "q": "连接池设太大为什么更慢？", "a": "超出 DB 核数后引发锁竞争与 CPU 上下文切换雪崩。" }, { "q": "HikariCP 核心数据结构？", "a": "`ConcurrentBag`（ThreadLocal 优先复用）+ `FastList`。" }], "say": "三张卡收好。" }]
+    }
+  ]
+}

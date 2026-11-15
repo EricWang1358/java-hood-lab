@@ -1,0 +1,107 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "mybatis-dollar-hash",
+  "course": "Spring 全家桶与持久层",
+  "title": "MyBatis 里 #{id} 和 ${id} 只差一个符号，为什么上线就遭 SQL 注入？",
+  "lead": "为了图省事在模糊查询和排序里写了 ${kw}，结果渗透测试一扫直接脱库，还把数据库执行计划缓存打爆！",
+  "minutes": 25,
+  "needs": ["写过 MyBatis XML 或注解 SQL", "知道 JDBC PreparedStatement 预编译占位符 ?"],
+  "after": ["讲清 #{} 预编译占位符与 ${} 字符串直接拼接的底层差异", "说清为什么 LIKE '%#{kw}%' 不能直接用、正确写法是什么", "掌握动态 ORDER BY/表名必须用 ${} 时的白名单兜底规范"],
+  "terms": {
+    "#{} 预编译占位符": "MyBatis 把 #{} 解析为 JDBC 的 ? 占位符，参数通过 PreparedStatement.setString() 作为纯字面量绑定，绝不参与 SQL 语法解析，天然防注入且复用执行计划。",
+    "${} 字符串拼接": "MyBatis 在解析 SQL 阶段直接做文本替换，把参数原封不动拼进 SQL 文本，既可注入任意 SQL 语法，又会让每条 SQL 变成不同文本导致执行计划缓存失效。",
+    "白名单校验": "当必须动态传入列名（ORDER BY）或表名时，#{} 会加单引号导致语法失效，只能用 ${}，但必须先用 Set 白名单严格校验合法列名。"
+  },
+  "experiments": {
+    "sqlinject": {
+      "runner": "java",
+      "home": "lab.sqlinject",
+      "variants": [
+        { "id": "DollarConcat", "label": "${input} 直接拼接", "note": "恶意输入 ' OR '1'='1 直接改变 SQL 语法树，约 1/7 请求被注入。" },
+        { "id": "LikeConcatTrap", "label": "LIKE '%${kw}%' 踩坑", "note": "图省事在 LIKE 里用 ${}，同样被 UNION SELECT 注入脱库。" },
+        { "id": "HashPrepared", "label": "#{} 预编译绑定", "note": "编译为 ? 占位符 + CONCAT('%', ?, '%')，100% 免疫注入且复用执行计划。" },
+        { "id": "WhitelistOrderBy", "label": "ORDER BY 白名单+${}", "note": "先用 ALLOWED_COLS.contains() 校验列名再拼接，安全完成动态排序。" }
+      ],
+      "knob": { "label": "请求数(千)", "values": ["1", "2", "4", "8"], "default": "4" },
+      "repeat": 20,
+      "metric": { "key": "safe_queries", "expectKey": "expected", "label": "安全且未遭注入的查询数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "MyBatis 里 #{id} 和 ${id} 只差一个符号，为什么上线就遭 SQL 注入？",
+      "blocks": [{ "t": "text", "md": "很多新人写 MyBatis 时遇到 `LIKE` 报错或者动态 `ORDER BY` 不生效，顺手把 `#{}` 改成 `${}`——**功能确实跑通了，但等于把数据库大门钥匙直接交给了前端用户。**", "say": "`#{}` 和 `${}` 差的不只是符号，而是**语法树阶段还是参数绑定阶段**。" }]
+    },
+    {
+      "beat": "hook",
+      "title": "4000 次请求里混入恶意载荷，四种写法能防住多少？",
+      "bridge": "目标：4000 次查询必须 4000 次全部安全（`safe_queries = 4000`）。",
+      "blocks": [{ "t": "text", "md": "对比 `${input}` 拼接、`LIKE '%${kw}%'`、`#{}` 预编译与白名单排序。", "say": "看 `DollarConcat` 和 `HashPrepared` 的差距。" }]
+    },
+    {
+      "beat": "code",
+      "title": "看清 ${} 拼串与 #{} 占位的本质差异",
+      "bridge": "注意 `DollarConcat.java` 与 `HashPrepared.java`。",
+      "blocks": [{ "t": "code", "of": "sqlinject.DollarConcat", "say": "看第 9 行。", "walk": [{ "focus": ["String sql = \"SELECT id, name FROM users WHERE name = '\" + input + \"'\";"], "say": "当 `input` 是 `' OR '1'='1` 时，单引号被提前闭合，SQL 语义被彻底改写！", "key": "${} 是纯字符串替换，输入直接变成 SQL 语法的一部分" }] }]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：LIKE '%${kw}%' 能挡住 UNION SELECT 注入吗？",
+      "bridge": "跑之前下注。",
+      "blocks": [{ "t": "predict", "id": "sql_guess", "q": "4000 次查询里每 7 次混入一次 `%' UNION SELECT password FROM admin --`，`LikeConcatTrap` 能安全防住几次？", "options": ["4000 次全防住（在引号里面不会注入）", "约 3428 次（其余约 572 次全部遭 SQL 注入）"], "answer": 1, "say": "选出你的判断。" }]
+    },
+    {
+      "beat": "run",
+      "title": "四种 SQL 构造实测对比",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        { "t": "experiment", "lab": "sqlinject", "show": ["DollarConcat", "LikeConcatTrap", "HashPrepared", "WhitelistOrderBy"], "select": "LikeConcatTrap", "say": "`DollarConcat` 和 `LikeConcatTrap` 全部在 3428 左右失守；`HashPrepared` 和 `WhitelistOrderBy` 稳稳 4000/4000！" },
+        { "t": "reveal", "of": "sql_guess", "say": "模糊查询必须用 `LIKE CONCAT('%', #{kw}, '%')`（或在 Java 里提前拼 `%kw%` 再传 `#{kw}`），绝不能偷懒写成 `LIKE '%${kw}%'`。", "key": "模糊查询用 CONCAT('%', #{kw}, '%')，动态排序先过白名单再 ${}" },
+        { "t": "try", "say": "把请求数调到 8 千再看一次。" }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "执行耗时对比",
+      "bridge": "四种写法耗时折线。",
+      "blocks": [{ "t": "chart", "of": "sqlinject", "say": "`HashPrepared` 还能复用数据库预编译执行计划，避免硬解析开销。", "walk": [{ "focus": "HashPrepared", "say": "又安全又快。" }] }]
+    },
+    {
+      "beat": "choose",
+      "title": "MyBatis 动态 SQL 选型",
+      "layout": "split",
+      "bridge": "什么时候用 #{}，什么时候不得不 ${}？",
+      "blocks": [
+        { "t": "decide", "q": "业务需要动态传参，怎么选？", "branches": [{ "when": "WHERE 条件值 / INSERT / UPDATE 值 / LIKE 关键字", "pick": "一律用 #{}（LIKE 配合 CONCAT('%', #{kw}, '%')）", "eg": "PreparedStatement ? 绑定" }, { "when": "动态 ORDER BY 列名、ASC/DESC 或分表表名", "pick": "白名单 Set/Enum 校验后再用 ${}", "eg": "ALLOWED_COLS.contains(col)" }], "say": "99% 用 `#{}`, 1% 元数据用白名单+`${}`。" },
+        { "t": "cases", "tools": ["#{kw} + CONCAT", "白名单校验 + ${col}", "<foreach> + #{item}"], "say": "三个高频场景怎么写？", "items": [{ "text": "商品标题模糊搜索。", "answer": 0, "why": "写 `title LIKE CONCAT('%', #{kw}, '%')`，绝不能写 `'%${kw}%'`。" }, { "text": "前端传 `sortField` 按价格或销量动态排序。", "answer": 1, "why": "`ORDER BY #{sortField}` 会变成 `ORDER BY 'price'` 无效，必须后端白名单映射后再 `${}`。" }, { "text": "批量查询 `WHERE id IN (...)`。", "answer": 2, "why": "用 `<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach>`，依然是安全的 `?` 占位符。" }] }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频提问。",
+      "blocks": [{ "t": "name", "term": "MyBatis #{} 与 ${} 原理差异", "alias": "PreparedStatement 预编译 · SQL 注入 · 执行计划复用", "oneLine": "==#{}== 解析为 JDBC `?` 占位符，参数按纯字面量绑定并复用执行计划；==${}== 直接字符串拼接，有 SQL 注入风险，仅在动态列名/表名配合白名单时使用。", "asked": ["MyBatis 中 #{} 和 ${} 的区别是什么？哪些场景必须用 ${}？"], "say": "答到白名单和执行计划缓存，直接加分。" }]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "快速检验。",
+      "blocks": [{ "t": "quiz", "q": "为什么在 MyBatis 中写 `ORDER BY #{sortCol}` 无法按指定列排序？", "options": [{ "text": "#{} 会把参数当成字符串字面量加上单引号，变成 ORDER BY 'price' 常量排序", "ok": true, "why": "正确！SQL 常量排序不会报错但完全不按列值排，所以必须校验白名单后用 `${}`。" }, { "text": "#{} 不支持在 SELECT 语句末尾使用", "ok": false, "why": "不是位置问题，而是引号/类型绑定问题。" }], "say": "选出正确答案。" }]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [{ "t": "say", "prompt": "MyBatis 里 #{} 和 ${} 有什么区别？动态排序怎么写才安全？", "points": ["本质区别：#{} 在 JDBC 层编译为 ? 占位符，通过 PreparedStatement 绑定参数，参数不参与 SQL 语法解析；${} 在解析阶段直接做纯文本字符串拼接", "安全性：#{} 天然防止 SQL 注入；${} 遇到 ' OR 1=1 等载荷会改变 SQL 语法树导致注入", "性能：#{} 生成固定 SQL 模板，可以复用数据库执行计划缓存；${} 每次参数不同都生成新 SQL 引发硬解析", "常见误区：LIKE 不能写 '%${kw}%'，要写 CONCAT('%', #{kw}, '%')；IN 用 <foreach> 配 #{item}", "必须用 ${} 的场景：动态表名、ORDER BY 列名/排序方向，必须先通过服务端 Set/枚举白名单校验再拼接"], "model": "`#{}` 和 `${}` 的核心区别在于编译时机：`#{}` 会被 MyBatis 解析成 JDBC 的 `?` 占位符，通过 `PreparedStatement` 把参数当作纯字面量绑定，既能天然防 SQL 注入，又能复用数据库的执行计划缓存；而 `${}` 是纯文本替换，参数直接拼进 SQL 语法树，不仅有严重的注入漏洞，还会导致每次参数不同就触发硬解析。日常像 `LIKE` 要用 `CONCAT('%', #{kw}, '%')`，`IN` 要用 `<foreach>` 配 `#{item}`，都不要用 `${}`。唯一必须用 `${}` 的场景是动态表名或 `ORDER BY` 列名——因为 `#{}` 会加单引号导致排序失效——此时必须在 Java 代码里先过严格的白名单校验，再拼进 `${}`。", "say": "点击开始自述。" }]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [{ "t": "cards", "items": [{ "q": "能用 #{} 的地方能用 ${} 吗？", "a": "绝对禁止！99% 的参数传值一律用 `#{}`，防注入且复用执行计划。" }, { "q": "LIKE 模糊查询正确写法？", "a": "`LIKE CONCAT('%', #{kw}, '%')`，不要写成 `'%${kw}%'`。" }, { "q": "ORDER BY 动态列名怎么防注入？", "a": "服务端用 `Set` 白名单或枚举映射校验合法列名后，再用 `${}`。" }], "say": "三张卡收好。" }]
+    }
+  ]
+}

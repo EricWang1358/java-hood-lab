@@ -206,6 +206,16 @@
 | 51 | **全局异常 @RestControllerAdvice 为什么兜不住 Filter 抛出的异常？** | 配了 @RestControllerAdvice 统一返回 JSON 错误码，可 JWT Filter 一抛过期异常，前端收到的竟还是 Tomcat 默认 500 网页！ | `lab.exchandler` | [网页课件](./pages/mvc-global-exception.html) · [JSON](./lessons/mvc-global-exception.json) · [源码](./src/lab/exchandler/) |
 | 52 | **Tomcat 线程全被慢接口堵死，连健康检查都挂了？** | 一个导出报表慢接口拖垮了整个 Spring Boot 应用：所有核心下单接口和 /actuator/health 全部超时雪崩！ | `lab.mvcthread` | [网页课件](./pages/mvc-thread-pool.html) · [JSON](./lessons/mvc-thread-pool.json) · [源码](./src/lab/mvcthread/) |
 
+### 模块五 · 第四章：MyBatis 持久层与 HikariCP 连接池（第 53～57 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 53 | **MyBatis 里 #{id} 和 ${id} 只差一个符号，为什么上线就遭 SQL 注入？** | 为了图省事在模糊查询和排序里写了 ${kw}，结果渗透测试一扫直接脱库，还把数据库执行计划缓存打爆！ | `lab.sqlinject` | [网页课件](./pages/mybatis-dollar-hash.html) · [JSON](./lessons/mybatis-dollar-hash.json) · [源码](./src/lab/sqlinject/) |
+| 54 | **同一个事务里查了两次余额，怎么第二次读到的还是旧值？** | 账务线程明明已经把余额从 1000 扣成了 800，结果上游方法在同一个 @Transactional 里再查一次，还是 1000！ | `lab.l1cache` | [网页课件](./pages/mybatis-l1-cache.html) · [JSON](./lessons/mybatis-l1-cache.json) · [源码](./src/lab/l1cache/) |
+| 55 | **开了 MyBatis 二级缓存，怎么联表查询查出半年前的脏数据？** | 用户早就把昵称从 Alice 改成了 Bob，结果 OrderMapper 联表查订单时，显示的用户名永远是 Alice！ | `lab.l2cache` | [网页课件](./pages/mybatis-l2-cache.html) · [JSON](./lessons/mybatis-l2-cache.json) · [源码](./src/lab/l2cache/) |
+| 56 | **数据库连接池不是越大越好？为什么设到 200 反而比设 9 更慢？** | 为了应对高并发把 HikariCP 的 maximum-pool-size 从 10 调到 200，结果接口响应时间直接翻了 3 倍！ | `lab.hikarisize` | [网页课件](./pages/hikari-pool-size.html) · [JSON](./lessons/hikari-pool-size.json) · [源码](./src/lab/hikarisize/) |
+| 57 | **服务跑了半小时突然全部 Connection is not available，怎么排查？** | QPS 明明很低，但只要跑够 10 次某个接口，整个系统所有数据库请求就全部超时卡死！ | `lab.hikarileak` | [网页课件](./pages/hikari-leak-trap.html) · [JSON](./lessons/hikari-leak-trap.json) · [源码](./src/lab/hikarileak/) |
+
 
 
 
