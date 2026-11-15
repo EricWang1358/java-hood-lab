@@ -4,14 +4,21 @@ public class NoIndexFullScan {
     public static void main(String[] args) {
         int rows = Integer.parseInt(args[0]);
         long start = System.nanoTime();
-        int extraLockedRows = 0;
-        int targetRow = rows / 2;
-        // No index on WHERE column -> InnoDB scans all clustered rows and locks every scanned row!
+        String[] orderNo = new String[rows];
+        boolean[] rowLocked = new boolean[rows];
+        for (int i = 0; i < rows; i++) orderNo[i] = "ORD-" + i;
+
+        String target = "ORD-" + (rows / 2);
+        // No index on orderNo -> InnoDB scans every clustered row and acquires lock!
         for (int i = 0; i < rows; i++) {
-            boolean locked = true;
-            if (locked && i != targetRow) {
-                extraLockedRows++;
+            rowLocked[i] = true; // Lock acquired on scanned clustered record
+            if (orderNo[i].equals(target)) {
+                // Even after finding target, scan continues to end of table!
             }
+        }
+        int extraLockedRows = 0;
+        for (int i = 0; i < rows; i++) {
+            if (rowLocked[i] && !orderNo[i].equals(target)) extraLockedRows++;
         }
         long ms = (System.nanoTime() - start) / 1_000_000;
         System.out.println("extraLockedRows=" + extraLockedRows);

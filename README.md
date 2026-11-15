@@ -121,6 +121,18 @@
 | M3-08 | **发个 POST 怎么先发一次 OPTIONS？** | 前端带个自定义头发跨域 POST，后端日志怎么每次收到双倍请求？CORS 预检与缓存实测。 | `lab.corspreflight` | [网页课件](./pages/http-cors.html) · [JSON](./lessons/http-cors.json) · [源码](./src/lab/corspreflight/) |
 | M3-09 | **Session 查表 vs 无状态 JWT，怎么选？** | 全局锁 Session 表、`ConcurrentHashMap`、无状态 HMAC-SHA256 验签与短效缓存黑名单，性能与扩展性差多少？ | `lab.authjwt` | [网页课件](./pages/auth-jwt.html) · [JSON](./lessons/auth-jwt.json) · [源码](./src/lab/authjwt/) |
 
+### 模块三 · 第三章：BIO、NIO 多路复用与 OS I/O（M3-10～M3-14）
+
+实测慢连接饿死 BIO 线程池、单/多 Reactor 多路复用、`transferTo` 零拷贝、PageCache 顺序写与 Group Commit 组提交、池化 DirectBuffer 堆外内存。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M3-10 | **一连接一线程：慢客户端怎么拖垮服务端？** | 只要混进几个慢客户端，单线程 BIO 卡死、线程池被饿死、一连接一线程内存暴涨，NIO 怎么破？ | `lab.biooom` | [网页课件](./pages/bio-oom.html) · [JSON](./lessons/bio-oom.json) · [源码](./src/lab/biooom/) |
+| M3-11 | **NIO Selector 多路复用：1 条线程如何扛住百并发？** | 同样面对高并发请求，BIO 线程池、单 Reactor 与主从多 Reactor 各自的性能瓶颈在哪里？ | `lab.selector` | [网页课件](./pages/nio-selector.html) · [JSON](./lessons/nio-selector.json) · [源码](./src/lab/selector/) |
+| M3-12 | **零拷贝：为什么 transferTo 比传统读写快一个数量级？** | 发一个静态文件走传统 read()+write() 要经历 4 次上下文切换和 4 次内存拷贝，sendfile/transferTo 怎么砍掉一半？ | `lab.zerocopy` | [网页课件](./pages/io-zerocopy.html) · [JSON](./lessons/io-zerocopy.json) · [源码](./src/lab/zerocopy/) |
+| M3-13 | **PageCache 顺序写与刷盘：fsync 为什么这么慢？** | Kafka 号称磁盘顺序写比内存随机写还快，MySQL 用组提交扛住高并发写入——秘密全在 PageCache 和 fsync 的博弈里。 | `lab.pagecache` | [网页课件](./pages/page-cache.html) · [JSON](./lessons/page-cache.json) · [源码](./src/lab/pagecache/) |
+| M3-14 | **堆外内存 DirectBuffer：省了一次拷贝，为什么还可能 OOM？** | Netty 为什么默认用池化 DirectBuffer 而不是 HeapByteBuffer？每次 allocateDirect 又会踩什么大坑？ | `lab.directbuf` | [网页课件](./pages/direct-buffer.html) · [JSON](./lessons/direct-buffer.json) · [源码](./src/lab/directbuf/) |
+
 ### 模块四 · 第一章：SQL 必知必会、联表与深分页改写（第 33～37 课）
 
 | # | 课程标题 | 一句话引子 | 代码包 | 入口 |
@@ -219,7 +231,8 @@
 
 
 
-### 模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-15）
+
+### 模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-20）
 
 纯 JDK 零依赖仿真实验室：覆盖缓存高并发灾难与底层原理、分布式锁与看门狗、MQ 可靠幂等积压、微服务注册/重试/限流熔断。
 
@@ -240,6 +253,11 @@
 | M6-13 | **get 判断锁归属再 del，为什么还是删了别人的锁？** | 就算在 Java 代码里先 `get` 校验 UUID 再 `del`，两步之间的一次 GC 停顿就足够让锁过期易主，照样删掉别人的锁！看懂 Lua 脚本与 Fencing Token 的必要性。 | `lab.m6.luaunlock` | [网页课件](./pages/m6-lua-unlock.html) · [JSON](./lessons/m6-lua-unlock.json) · [源码](./src/lab/m6/luaunlock/) |
 | M6-14 | **业务跑超时锁提前过期，看门狗怎么自动续期？** | 锁 TTL 设 3 秒，结果业务跑了 5 秒，另一个线程立刻闯进来双写撞车；设 5 分钟又怕机器挂了卡死。看懂 Redisson Watchdog 看门狗的续期与停续逻辑。 | `lab.m6.watchdog` | [网页课件](./pages/m6-watchdog-renew.html) · [JSON](./lessons/m6-watchdog-renew.json) · [源码](./src/lab/m6/watchdog/) |
 | M6-15 | **主从异步复制丢锁 vs 分段分布式锁吞吐对比** | Redis 主从异步复制时，刚加完锁 Master 就宕机，Slave 升主后锁直接蒸发！此外，一把全局大锁怎么拆成分段锁把吞吐翻倍？ | `lab.m6.redlock` | [网页课件](./pages/m6-lock-granularity.html) · [JSON](./lessons/m6-lock-granularity.json) · [源码](./src/lab/m6/redlock/) |
+| M6-16 | **发 MQ 不等确认、消费者自动 ACK，消息是怎么悄悄丢的？** | 消息队列丢消息只可能发生在三段路：生产者发丢、Broker 存丢、消费者还没处理完就自动 ACK 丢。把三端确认和本地消息表接起来才能做到零丢失。 | `lab.m6.mqconfirm` | [网页课件](./pages/m6-mq-reliability.html) · [JSON](./lessons/m6-mq-reliability.json) · [源码](./src/lab/m6/mqconfirm/) |
+| M6-17 | **MQ 重试发了两次消息，为什么用户被扣了两次钱？** | 第 16 课的「至少一次投递」保证了消息不丢，但也带来了重复消息。只靠内存/Redis 判断 `if (exists) return` 依然会有并发竞态，真正稳的是数据库唯一索引和状态机 CAS。 | `lab.m6.mqidem` | [网页课件](./pages/m6-mq-idempotent.html) · [JSON](./lessons/m6-mq-idempotent.json) · [源码](./src/lab/m6/mqidem/) |
+| M6-18 | **订单创建、支付、发货三条消息并发消费，怎么乱序了？** | MQ 默认把消息轮询分散到多个分区并由多线程并发消费，同一笔订单的「创建→支付→发货」落到不同分区或不同线程就会彻底乱序。按业务 Key 哈希路由 + 分区内串行（或局部有序缓冲）才能既保顺序又保吞吐。 | `lab.m6.mqorder` | [网页课件](./pages/m6-mq-order.html) · [JSON](./lessons/m6-mq-order.json) · [源码](./src/lab/m6/mqorder/) |
+| M6-19 | **30 分钟未支付自动关单：定时扫表、时间轮还是延迟队列+死信？** | 定时扫数据库全表会随订单膨胀把 DB 扫崩；为每个订单开一个睡眠线程会瞬间耗尽线程池。延迟消息底层靠时间轮/分层队列把扫描次数降到 O(1)，配合死信队列还能兜底异常消息。 | `lab.m6.mqdelay` | [网页课件](./pages/m6-mq-delay-dlq.html) · [JSON](./lessons/m6-mq-delay-dlq.json) · [源码](./src/lab/m6/mqdelay/) |
+| M6-20 | **百万消息积压在 MQ 里，为什么加机器反而可能把消费者打 OOM？** | 大促突发流量或下游故障恢复后，MQ 积压几十万条消息。盲目用无界线程池/无界队列狂拉消息会瞬间撑爆消费者内存 OOM；正确姿势是「扩容分区 + 临时 Topic 分片转移 + 有界批量拉取反压」。 | `lab.m6.mqbacklog` | [网页课件](./pages/m6-mq-backlog.html) · [JSON](./lessons/m6-mq-backlog.json) · [源码](./src/lab/m6/mqbacklog/) |
 
 ## 本地动手运行实验代码
 

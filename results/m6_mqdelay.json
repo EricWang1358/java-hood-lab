@@ -1,0 +1,1665 @@
+{
+ "id": "m6_mqdelay",
+ "variants": {
+  "PollingScanDb": {
+   "hash": "27f8fc84ab14edb7",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 4
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 5
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 5
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 6
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 6000,
+      "expected": 400,
+      "ms": 1
+     }
+    ],
+    "2": [
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 6
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 4
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 5
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 4
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 4
+     },
+     {
+      "scanOps": 12000,
+      "expected": 400,
+      "ms": 4
+     }
+    ],
+    "4": [
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 5
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 5
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 4
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 7
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 6
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 5
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 7
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 24000,
+      "expected": 400,
+      "ms": 1
+     }
+    ],
+    "8": [
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 4
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 6
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 8
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 5
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 5
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 4
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 4
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 10
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 5
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 48000,
+      "expected": 400,
+      "ms": 5
+     }
+    ]
+   },
+   "inside": "Compiled from \"PollingScanDb.java\"\npublic class lab.m6.mqdelay.PollingScanDb {\n  static final int ORDERS;\n\n  static final int TICKS;\n\n  static final int[] dueTick;\n\n  static final java.util.concurrent.atomic.AtomicInteger scanOps;\n\n  public lab.m6.mqdelay.PollingScanDb();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iload         4\n      16: bipush        30\n      18: if_icmpge     66\n      21: iconst_0\n      22: istore        5\n      24: iload         5\n      26: iload_1\n      27: if_icmpge     60\n      30: iconst_0\n      31: istore        6\n      33: iload         6\n      35: sipush        200\n      38: if_icmpge     54\n      41: getstatic     #21                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n      44: invokevirtual #25                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      47: pop\n      48: iinc          6, 1\n      51: goto          33\n      54: iinc          5, 1\n      57: goto          24\n      60: iinc          4, 1\n      63: goto          14\n      66: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      69: lload_2\n      70: lsub\n      71: ldc2_w        #31                 // long 1000000l\n      74: ldiv\n      75: lstore        4\n      77: getstatic     #33                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: getstatic     #21                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n      83: invokevirtual #37                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n      86: invokedynamic #40,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      91: invokevirtual #44                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      94: getstatic     #33                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      97: ldc           #50                 // String expected=400\n      99: invokevirtual #44                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     102: getstatic     #33                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     105: lload         4\n     107: invokedynamic #52,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     112: invokevirtual #44                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     115: return\n\n  static {};\n    Code:\n       0: sipush        200\n       3: newarray       int\n       5: putstatic     #55                 // Field dueTick:[I\n       8: new           #26                 // class java/util/concurrent/atomic/AtomicInteger\n      11: dup\n      12: invokespecial #59                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      15: putstatic     #21                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n      18: iconst_0\n      19: istore_0\n      20: iload_0\n      21: sipush        200\n      24: if_icmpge     45\n      27: getstatic     #55                 // Field dueTick:[I\n      30: iload_0\n      31: bipush        10\n      33: iload_0\n      34: bipush        15\n      36: irem\n      37: iadd\n      38: iastore\n      39: iinc          0, 1\n      42: goto          20\n      45: return\n}\n"
+  },
+  "SleepWaitThread": {
+   "hash": "fcd49759417ddd4d",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 6
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     }
+    ],
+    "2": [
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     }
+    ],
+    "4": [
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     }
+    ],
+    "8": [
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 6
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 6
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 5
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 3200,
+      "expected": 400,
+      "ms": 1
+     }
+    ]
+   },
+   "inside": "Compiled from \"SleepWaitThread.java\"\npublic class lab.m6.mqdelay.SleepWaitThread {\n  static final int ORDERS;\n\n  static final java.util.PriorityQueue<java.lang.Integer> minHeap;\n\n  static final java.util.concurrent.atomic.AtomicInteger scanOps;\n\n  public lab.m6.mqdelay.SleepWaitThread();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iload         4\n      16: sipush        200\n      19: if_icmpge     55\n      22: getstatic     #21                 // Field minHeap:Ljava/util/PriorityQueue;\n      25: bipush        10\n      27: iload         4\n      29: bipush        15\n      31: irem\n      32: iadd\n      33: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      36: invokevirtual #29                 // Method java/util/PriorityQueue.offer:(Ljava/lang/Object;)Z\n      39: pop\n      40: getstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n      43: bipush        8\n      45: invokevirtual #39                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n      48: pop\n      49: iinc          4, 1\n      52: goto          14\n      55: getstatic     #21                 // Field minHeap:Ljava/util/PriorityQueue;\n      58: invokevirtual #45                 // Method java/util/PriorityQueue.isEmpty:()Z\n      61: ifne          83\n      64: getstatic     #21                 // Field minHeap:Ljava/util/PriorityQueue;\n      67: invokevirtual #49                 // Method java/util/PriorityQueue.poll:()Ljava/lang/Object;\n      70: pop\n      71: getstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n      74: bipush        8\n      76: invokevirtual #39                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n      79: pop\n      80: goto          55\n      83: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      86: lload_2\n      87: lsub\n      88: ldc2_w        #53                 // long 1000000l\n      91: ldiv\n      92: lstore        4\n      94: getstatic     #55                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      97: getstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n     100: invokevirtual #59                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     103: invokedynamic #63,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     108: invokevirtual #67                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     111: getstatic     #55                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     114: ldc           #73                 // String expected=400\n     116: invokevirtual #67                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     119: getstatic     #55                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     122: lload         4\n     124: invokedynamic #75,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     129: invokevirtual #67                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     132: return\n\n  static {};\n    Code:\n       0: new           #30                 // class java/util/PriorityQueue\n       3: dup\n       4: invokespecial #78                 // Method java/util/PriorityQueue.\"<init>\":()V\n       7: putstatic     #21                 // Field minHeap:Ljava/util/PriorityQueue;\n      10: new           #40                 // class java/util/concurrent/atomic/AtomicInteger\n      13: dup\n      14: invokespecial #79                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      17: putstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n      20: return\n}\n"
+  },
+  "TimingWheelDelay": {
+   "hash": "b14c4af2521b76f9",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     }
+    ],
+    "2": [
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     }
+    ],
+    "4": [
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     }
+    ],
+    "8": [
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"TimingWheelDelay.java\"\npublic class lab.m6.mqdelay.TimingWheelDelay {\n  static final int ORDERS;\n\n  static final int SLOTS;\n\n  static final java.util.ArrayList<java.lang.Integer>[] wheel;\n\n  static final java.util.concurrent.atomic.AtomicInteger scanOps;\n\n  public lab.m6.mqdelay.TimingWheelDelay();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iload         4\n      16: sipush        200\n      19: if_icmpge     63\n      22: bipush        10\n      24: iload         4\n      26: bipush        15\n      28: irem\n      29: iadd\n      30: bipush        32\n      32: irem\n      33: istore        5\n      35: getstatic     #21                 // Field wheel:[Ljava/util/ArrayList;\n      38: iload         5\n      40: aaload\n      41: iload         4\n      43: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      46: invokevirtual #29                 // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z\n      49: pop\n      50: getstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n      53: invokevirtual #39                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      56: pop\n      57: iinc          4, 1\n      60: goto          14\n      63: iconst_0\n      64: istore        4\n      66: iload         4\n      68: bipush        32\n      70: if_icmpge     131\n      73: getstatic     #21                 // Field wheel:[Ljava/util/ArrayList;\n      76: iload         4\n      78: aaload\n      79: invokevirtual #45                 // Method java/util/ArrayList.iterator:()Ljava/util/Iterator;\n      82: astore        5\n      84: aload         5\n      86: invokeinterface #49,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n      91: ifeq          116\n      94: aload         5\n      96: invokeinterface #55,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n     101: checkcast     #8                  // class java/lang/Integer\n     104: astore        6\n     106: getstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n     109: invokevirtual #39                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n     112: pop\n     113: goto          84\n     116: getstatic     #21                 // Field wheel:[Ljava/util/ArrayList;\n     119: iload         4\n     121: aaload\n     122: invokevirtual #59                 // Method java/util/ArrayList.clear:()V\n     125: iinc          4, 1\n     128: goto          66\n     131: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     134: lload_2\n     135: lsub\n     136: ldc2_w        #62                 // long 1000000l\n     139: ldiv\n     140: lstore        4\n     142: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     145: getstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n     148: invokevirtual #68                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     151: invokedynamic #71,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     156: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     159: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     162: ldc           #81                 // String expected=400\n     164: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     167: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     170: lload         4\n     172: invokedynamic #83,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     177: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     180: return\n\n  static {};\n    Code:\n       0: bipush        32\n       2: anewarray     #30                 // class java/util/ArrayList\n       5: putstatic     #21                 // Field wheel:[Ljava/util/ArrayList;\n       8: new           #40                 // class java/util/concurrent/atomic/AtomicInteger\n      11: dup\n      12: invokespecial #86                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      15: putstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n      18: iconst_0\n      19: istore_0\n      20: iload_0\n      21: bipush        32\n      23: if_icmpge     44\n      26: getstatic     #21                 // Field wheel:[Ljava/util/ArrayList;\n      29: iload_0\n      30: new           #30                 // class java/util/ArrayList\n      33: dup\n      34: invokespecial #87                 // Method java/util/ArrayList.\"<init>\":()V\n      37: aastore\n      38: iinc          0, 1\n      41: goto          20\n      44: return\n}\n"
+  },
+  "DelayWithDlq": {
+   "hash": "9ff920eaabd385f9",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     }
+    ],
+    "2": [
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     }
+    ],
+    "4": [
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 11
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     }
+    ],
+    "8": [
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 3
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 2
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 1
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 0
+     },
+     {
+      "scanOps": 400,
+      "expected": 400,
+      "ms": 2
+     }
+    ]
+   },
+   "inside": "Compiled from \"DelayWithDlq.java\"\npublic class lab.m6.mqdelay.DelayWithDlq {\n  static final int ORDERS;\n\n  static final int SLOTS;\n\n  static final java.util.ArrayList<java.lang.Integer>[] ttlQueue;\n\n  static final java.util.ArrayList<java.lang.Integer> dlq;\n\n  static final java.util.concurrent.atomic.AtomicInteger scanOps;\n\n  public lab.m6.mqdelay.DelayWithDlq();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iload         4\n      16: sipush        200\n      19: if_icmpge     59\n      22: getstatic     #21                 // Field ttlQueue:[Ljava/util/ArrayList;\n      25: bipush        10\n      27: iload         4\n      29: bipush        15\n      31: irem\n      32: iadd\n      33: bipush        32\n      35: irem\n      36: aaload\n      37: iload         4\n      39: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      42: invokevirtual #29                 // Method java/util/ArrayList.add:(Ljava/lang/Object;)Z\n      45: pop\n      46: getstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n      49: invokevirtual #39                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      52: pop\n      53: iinc          4, 1\n      56: goto          14\n      59: iconst_0\n      60: istore        4\n      62: iload         4\n      64: bipush        32\n      66: if_icmpge     97\n      69: getstatic     #45                 // Field dlq:Ljava/util/ArrayList;\n      72: getstatic     #21                 // Field ttlQueue:[Ljava/util/ArrayList;\n      75: iload         4\n      77: aaload\n      78: invokevirtual #49                 // Method java/util/ArrayList.addAll:(Ljava/util/Collection;)Z\n      81: pop\n      82: getstatic     #21                 // Field ttlQueue:[Ljava/util/ArrayList;\n      85: iload         4\n      87: aaload\n      88: invokevirtual #53                 // Method java/util/ArrayList.clear:()V\n      91: iinc          4, 1\n      94: goto          62\n      97: getstatic     #45                 // Field dlq:Ljava/util/ArrayList;\n     100: invokevirtual #56                 // Method java/util/ArrayList.iterator:()Ljava/util/Iterator;\n     103: astore        4\n     105: aload         4\n     107: invokeinterface #60,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n     112: ifeq          137\n     115: aload         4\n     117: invokeinterface #66,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n     122: checkcast     #8                  // class java/lang/Integer\n     125: astore        5\n     127: getstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n     130: invokevirtual #39                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n     133: pop\n     134: goto          105\n     137: getstatic     #45                 // Field dlq:Ljava/util/ArrayList;\n     140: invokevirtual #53                 // Method java/util/ArrayList.clear:()V\n     143: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     146: lload_2\n     147: lsub\n     148: ldc2_w        #70                 // long 1000000l\n     151: ldiv\n     152: lstore        4\n     154: getstatic     #72                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     157: getstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n     160: invokevirtual #76                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     163: invokedynamic #79,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     168: invokevirtual #83                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     171: getstatic     #72                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     174: ldc           #89                 // String expected=400\n     176: invokevirtual #83                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     179: getstatic     #72                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     182: lload         4\n     184: invokedynamic #91,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     189: invokevirtual #83                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     192: return\n\n  static {};\n    Code:\n       0: bipush        32\n       2: anewarray     #30                 // class java/util/ArrayList\n       5: putstatic     #21                 // Field ttlQueue:[Ljava/util/ArrayList;\n       8: new           #30                 // class java/util/ArrayList\n      11: dup\n      12: invokespecial #94                 // Method java/util/ArrayList.\"<init>\":()V\n      15: putstatic     #45                 // Field dlq:Ljava/util/ArrayList;\n      18: new           #40                 // class java/util/concurrent/atomic/AtomicInteger\n      21: dup\n      22: invokespecial #95                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      25: putstatic     #35                 // Field scanOps:Ljava/util/concurrent/atomic/AtomicInteger;\n      28: iconst_0\n      29: istore_0\n      30: iload_0\n      31: bipush        32\n      33: if_icmpge     54\n      36: getstatic     #21                 // Field ttlQueue:[Ljava/util/ArrayList;\n      39: iload_0\n      40: new           #30                 // class java/util/ArrayList\n      43: dup\n      44: invokespecial #94                 // Method java/util/ArrayList.\"<init>\":()V\n      47: aastore\n      48: iinc          0, 1\n      51: goto          30\n      54: return\n}\n"
+  }
+ }
+}

@@ -1,0 +1,250 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "page-cache",
+  "course": "网络与操作系统",
+  "title": "PageCache 顺序写与刷盘：fsync 为什么这么慢？",
+  "lead": "Kafka 号称磁盘顺序写比内存随机写还快，MySQL 用组提交扛住高并发写入——秘密全在 PageCache 和 fsync 的博弈里。",
+  "minutes": 35,
+  "needs": ["知道磁盘寻道与顺序写", "知道操作系统页缓存 PageCache", "知道 fsync / FileChannel.force"],
+  "after": [
+    "理解写文件默认只写到内存 PageCache（异步脏页回写），断电会丢",
+    "对比每条 fsync 刷盘与 Group Commit 组提交的吞吐量级差异",
+    "讲清 Kafka 顺序写 + 异步刷盘与 MySQL Redo Log 组提交的设计权衡"
+  ],
+  "terms": {
+    "PageCache (页缓存)": "OS 内核在空闲内存中划出的磁盘缓存区（每页 4KB）；普通 write() 写进 PageCache 就直接返回成功。",
+    "fsync / force()": "强制把内核 PageCache 里的脏页刷进物理磁盘扇区，必须等磁盘控制器落盘确认才返回。",
+    "Group Commit (组提交)": "把一段时间内攒到的多条日志合并成一次顺序写 + 一次 fsync，摊薄昂贵的磁盘落盘开销。"
+  },
+  "experiments": {
+    "pagecache": {
+      "runner": "java",
+      "home": "lab.pagecache",
+      "variants": [
+        { "id": "RandomSeekWrite", "code": "RandomSeekWrite.java", "label": "随机偏移写", "note": "每次 write 前先随机 seek 跳位置，破坏空间局部性与预读/合并写优化。" },
+        { "id": "PageCacheSeq", "code": "PageCacheSeq.java", "label": "顺序写 PageCache（不刷盘）", "note": "只写入内核 PageCache 就返回，速度飞快但机器掉电会丢未刷盘数据。" },
+        { "id": "SyncEveryWrite", "code": "SyncEveryWrite.java", "label": "每条强制 fsync", "note": "每写 1KB 就调一次 fc.force(false)，磁盘 IOPS 瞬间成为死瓶颈。" },
+        { "id": "GroupCommit", "code": "GroupCommit.java", "label": "组提交（50 条一刷）", "note": "连续顺序写 50 条再做一次 force()，兼顾持久化安全与高吞吐。" }
+      ],
+      "knob": { "label": "写入记录数 (1KB/条)", "values": ["50", "100", "200", "400"], "default": "100" },
+      "repeat": 20,
+      "metric": { "key": "written", "expectKey": "expected", "label": "成功写入条数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "PageCache 顺序写与刷盘：fsync 为什么这么慢？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**为什么写文件只要加一句 `fc.force(false)` 性能就暴跌几十倍，而数据库和 MQ 又是怎么兼顾「不丢数据」和「高并发」的？**",
+          "say": "这道题横跨操作系统、MySQL Redo Log（双一配置）和 Kafka 刷盘策略，面试极高频。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：write() 返回成功 = 数据已经在硬盘上了吗？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先搞清操作系统写入文件的真实落点。",
+          "items": [
+            {
+              "have": "write() 落点",
+              "q": "Java 调用 `FileChannel.write(buf)` 返回时，字节通常写到了哪里？",
+              "options": ["已经焊死在物理磁盘上", "写进了操作系统的内存 PageCache（脏页），由内核后台 pdflush 异步刷盘", "写进了 CPU L1 缓存"],
+              "answer": 1,
+              "why": "正因为先写内存 PageCache 就返回，普通顺序写才快到飞起；但进程崩溃不怕，机器突然断电会丢！"
+            },
+            {
+              "have": "fsync 代价",
+              "q": "调用 `FileChannel.force(false)`（对应 Linux `fsync`/`fdatasync`）为什么慢？",
+              "options": ["因为要等物理磁盘控制器真正落盘完成才返回", "因为 Java 反射慢", "因为需要重新打开文件"],
+              "answer": 0,
+              "why": "内存写是纳秒级，磁盘（哪怕 SSD）一次同步刷盘也是毫秒/百微秒级，差了好几个数量级。"
+            },
+            {
+              "have": "顺序写优势",
+              "q": "为什么 Kafka 写磁盘能跑出几百 MB/s，几乎接近内存速度？",
+              "options": ["只追加（Append-Only）顺序写 + 充分利用 PageCache 合并刷盘", "Kafka 不用硬盘", "Kafka 压缩率 100%"],
+              "answer": 0,
+              "why": "顺序写免去了磁头寻道/FTL 随机擦写，加上操作系统预读与脏页批量合并，吞吐极其惊人。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「快递站发车」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["50 个包裹", "物流卡车"], "shared": { "name": "快递站货架(PageCache)", "value": "攒满发车 vs 一件一发" } },
+          "story": "`PageCacheSeq` 是把包裹扔上货架就算完事，秒收完但货架着火（断电）就全没；`SyncEveryWrite` 是每来一个 1KB 小包裹就单独发一辆大卡车（`fsync`）去机场，路费炸穿；`GroupCommit` 则是等凑够 50 个包裹再发一趟车，既安全落盘又把车费摊薄 50 倍！",
+          "say": "Group Commit（组提交）是 MySQL、Kafka、Raft 日志落盘的共同核心武器。",
+          "map": [
+            { "scene": "扔上货架就返回", "on": "shared", "tag": "仅写 PageCache", "code": "`fc.write(buf)`", "say": "极快，依赖副本或可容忍极端断电丢失。" },
+            { "scene": "每来一件发一辆卡车", "on": "actors", "tag": "每条 fsync", "code": "`fc.write(buf); fc.force(false);`", "say": "最安全，但磁盘同步刷盘拖垮吞吐。" },
+            { "scene": "攒 50 件发一趟车", "on": "actors", "tag": "组提交 Group Commit", "code": "`if ((i+1)%50==0) fc.force(false)`", "say": "用极小的批处理窗口换取数十倍吞吐提升。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：仅差一个 force() 周期，性能差多少？",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "pagecache.GroupCommit",
+          "say": "看 `GroupCommit.java`：前 49 条只调 `fc.write(buf)` 进 PageCache，第 50 条才调一次 `fc.force(false)` 统一落盘。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：写入 100 条 1KB 记录，四种策略耗时差距？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "写 100 条 1KB 数据，`PageCacheSeq`（不刷盘）、`GroupCommit`（50 条一刷）、`SyncEveryWrite`（每条都 force）谁最慢？慢多少倍？",
+          "options": ["差不多，都在 5ms 内", "SyncEveryWrite 最慢，比 PageCacheSeq 慢数十倍以上；GroupCommit 接近 PageCacheSeq", "PageCacheSeq 最慢"],
+          "answer": 1,
+          "say": "100 次物理刷盘 vs 2 次物理刷盘 vs 0 次强制刷盘，耗时立见分晓。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测耗时：PageCache vs 组提交 vs 每条 fsync",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "pagecache",
+          "show": ["RandomSeekWrite", "PageCacheSeq", "SyncEveryWrite", "GroupCommit"],
+          "knob": "100",
+          "hand": "GroupCommit",
+          "focus": "ms",
+          "say": "看真实数据：`SyncEveryWrite` 耗时直接飙升到一百多毫秒，而 `GroupCommit`（50 条一刷）仅需几毫秒！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "单次 fsync 是昂贵的物理落盘等待；组提交通过批量合并把 fsync 成本均摊给多条写入",
+          "say": "这就是为什么数据库把随机表修改先记成顺序 Redo Log，再用 Group Commit 刷盘。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的 write 与 force",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "pagecache.GroupCommit",
+          "within": "main",
+          "from": "FileChannel.write",
+          "to": "FileChannel.force",
+          "say": "看字节码指令流：循环内每次都执行 `FileChannel.write`，但只有在取模条件满足时才跳过条件分支执行 `FileChannel.force`。",
+          "walk": [
+            { "focus": ["FileChannel.write"], "label": "写入内核 PageCache", "say": "只是内存拷贝进内核页缓存，微秒级返回。" },
+            { "focus": ["FileChannel.force"], "label": "触发物理落盘", "say": "参数 `false` 表示只刷文件内容不强制刷元数据（对应 `fdatasync`），比 `true`（`fsync`）少一次元数据盘块更新。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "拉大写入量到 400 条",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "pagecache",
+          "say": "把记录数切到 400 条，看看 `SyncEveryWrite` 和 `GroupCommit` 的差距如何继续拉大。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "不同中间件的刷盘哲学",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有绝对完美的刷盘策略，全看业务能不能容忍单机断电丢几条。",
+          "options": [
+            { "name": "异步刷盘 + 多副本（Kafka 默认）", "solves": "极致吞吐，只写 PageCache 就返回", "cost": "单台机器瞬间断电会丢未刷盘数据，靠多副本 ISR 兜底高可用", "when": "日志采集、高吞吐消息队列", "say": "Kafka 认为多机同时断电概率极低，用副本冗余换取性能。" },
+            { "name": "WAL + 组提交（MySQL / Raft）", "solves": "单机掉电绝对不丢已提交事务（Durability）", "cost": "吞吐受限于磁盘 fsync 延迟，需靠并发事务组提交摊薄", "when": "金融账务、订单状态、核心关系型数据库", "say": "钱相关的事务必须用组提交保证真正落盘。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住 PageCache 与组提交",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "PageCache 顺序写与 Group Commit 组提交",
+          "alias": "fsync / fdatasync",
+          "oneLine": "普通 write 只写内存 PageCache；每条 fsync 极其昂贵，工程上通过顺序写 WAL + 组提交（或异步刷盘+副本）兼顾持久与吞吐。",
+          "asked": "为什么 Kafka 写磁盘这么快？MySQL 的组提交是什么原理？",
+          "say": "答出「PageCache 内存缓冲」「顺序写免寻道」「fsync 阻塞落盘」「组提交摊薄」四点。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "调用 `FileChannel.force(false)` 和 `FileChannel.force(true)` 有什么区别？",
+          "options": [
+            { "text": "false 只刷文件内容数据（fdatasync），true 还会强制刷文件大小/修改时间等元数据（fsync），false 少一次磁盘 IO", "ok": true, "why": "正确！预分配好文件大小（如日志段）时用 `force(false)` 能显著减少元数据刷盘开销。" },
+            { "text": "false 表示不刷盘，是异步的", "ok": false, "why": "两者都是同步强制刷盘，`false` 只是不强制更新非必需的元数据。" },
+            { "text": "完全一样，没有区别", "ok": false, "why": "文件长度变化时元数据不同，`fdatasync` 在预分配文件场景下更快。" }
+          ],
+          "say": "细节加分项：预分配固定大小文件 + `force(false)` 是高性能日志引擎的常见技巧。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：PageCache、顺序写与刷盘权衡",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：为什么磁盘顺序写这么快？数据库和 MQ 是怎么平衡数据安全与刷盘性能的？",
+          "points": [
+            "PageCache 机制：write 默认只写进 OS 内存页缓存就返回，异步由内核刷盘，速度接近写内存",
+            "顺序写优势：追加写（Append-Only）避免磁盘随机寻道，配合 OS 合并写与预读，吞吐极高",
+            "fsync 代价与解法：每条强制 fsync 会等物理落盘导致性能暴跌；MySQL/RocketMQ 同步刷盘靠 Group Commit 组提交批量刷盘，Kafka 则靠多副本 ISR + 异步刷盘兜底"
+          ],
+          "model": "首先，操作系统在应用和磁盘之间有一层内存级 PageCache，普通的 write 调用其实只是把数据拷贝进 PageCache 就立刻返回，加上追加顺序写避免了磁盘随机寻道且能被内核合并刷盘，所以像 Kafka 这种只顺序追加的系统吞吐量非常接近内存操作。但如果业务要求断电不丢数据，就必须调 fsync（Java 里是 FileChannel.force）强制把脏页落到物理磁盘，这会等待磁盘控制器确认，单次耗时高出几个数量级。工程上通常有两种解法：第一是像 MySQL Redo Log 那样采用组提交（Group Commit），把同一时间窗口内并发的多个事务日志合并成一次顺序写和一次 fsync，摊薄落盘代价；第二是像 Kafka 默认那样走异步刷盘，用多机副本冗余来换取极致写入吞吐。",
+          "say": "把「PageCache 缓冲」「顺序写」「fsync 落盘代价」「组提交 vs 多副本」串成一条线。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "IO 持久化权衡三张卡收好。",
+          "items": [
+            { "front": "write() 写完就安全了吗？", "back": "不安全，只进了内存 PageCache，机器断电会丢失。" },
+            { "front": "为什么每条 fsync 很慢？", "back": "同步等待物理盘落盘，IOPS 成为瓶颈。" },
+            { "front": "Group Commit 组提交", "back": "多次顺序写攒成一次 fsync，兼顾持久性与高吞吐。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

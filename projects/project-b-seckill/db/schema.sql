@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS seckill_order (
     campaign_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
     status VARCHAR(24) NOT NULL,
+    trace_id VARCHAR(64) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_campaign_user (campaign_id, user_id),
@@ -31,4 +32,14 @@ CREATE TABLE IF NOT EXISTS tx_outbox (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     sent_at DATETIME NULL,
     INDEX idx_outbox_status_created (status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS user_coupon (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_no VARCHAR(64) NOT NULL UNIQUE,
+    campaign_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    issued_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_coupon_order_no (order_no),
+    INDEX idx_user_coupon_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
