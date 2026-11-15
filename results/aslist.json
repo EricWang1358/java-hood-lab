@@ -1,0 +1,1671 @@
+{
+ "id": "aslist",
+ "variants": {
+  "ArraysAsListAddCrash": {
+   "hash": "b6dc776526aa80e4",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 7
+     }
+    ],
+    "10000": [
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 14
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 15
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 14
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 18
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 15
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 13
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 12
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 14
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 16
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 18
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 15
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 15
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 15
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 16
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 15
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 15
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 15
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 25
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 18
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 17
+     }
+    ],
+    "20000": [
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 22
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 23
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 23
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 23
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 25
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 24
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 24
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 22
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 22
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 23
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 23
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 25
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 24
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 23
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 22
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 23
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 21
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 21
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 21
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 24
+     }
+    ],
+    "50000": [
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 53
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 57
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 55
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 56
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 51
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 59
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 53
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 53
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 52
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 51
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 59
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 54
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 53
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 55
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 52
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 54
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 51
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 56
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 56
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 55
+     }
+    ]
+   },
+   "inside": "Compiled from \"ArraysAsListAddCrash.java\"\npublic class lab.aslist.ArraysAsListAddCrash {\n  public lab.aslist.ArraysAsListAddCrash();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     66\n      23: iconst_2\n      24: anewarray     #19                 // class java/lang/String\n      27: dup\n      28: iconst_0\n      29: ldc           #21                 // String a\n      31: aastore\n      32: dup\n      33: iconst_1\n      34: ldc           #23                 // String b\n      36: aastore\n      37: invokestatic  #25                 // Method java/util/Arrays.asList:([Ljava/lang/Object;)Ljava/util/List;\n      40: astore        6\n      42: aload         6\n      44: ldc           #31                 // String c\n      46: invokeinterface #33,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      51: pop\n      52: iinc          4, 1\n      55: goto          60\n      58: astore        7\n      60: iinc          5, 1\n      63: goto          17\n      66: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      69: lload_2\n      70: lsub\n      71: ldc2_w        #41                 // long 1000000l\n      74: ldiv\n      75: lstore        5\n      77: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: iload         4\n      82: invokedynamic #47,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      87: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      90: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      93: iload_1\n      94: invokedynamic #57,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      99: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     102: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     105: lload         5\n     107: invokedynamic #58,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     112: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     115: return\n    Exception table:\n       from    to  target type\n          42    55    58   Class java/lang/UnsupportedOperationException\n}"
+  },
+  "ArraysAsListBackArray": {
+   "hash": "5ae5fc50e700db4c",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 1
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 1
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 1
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 1
+     },
+     {
+      "ok": 0,
+      "expected": 5000,
+      "ms": 2
+     }
+    ],
+    "10000": [
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 2
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 10000,
+      "ms": 3
+     }
+    ],
+    "20000": [
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 5
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 3
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     },
+     {
+      "ok": 0,
+      "expected": 20000,
+      "ms": 4
+     }
+    ],
+    "50000": [
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "ok": 0,
+      "expected": 50000,
+      "ms": 10
+     }
+    ]
+   },
+   "inside": "Compiled from \"ArraysAsListBackArray.java\"\npublic class lab.aslist.ArraysAsListBackArray {\n  public lab.aslist.ArraysAsListBackArray();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     78\n      23: iconst_2\n      24: anewarray     #19                 // class java/lang/String\n      27: dup\n      28: iconst_0\n      29: ldc           #21                 // String a\n      31: aastore\n      32: dup\n      33: iconst_1\n      34: ldc           #23                 // String b\n      36: aastore\n      37: astore        6\n      39: aload         6\n      41: invokestatic  #25                 // Method java/util/Arrays.asList:([Ljava/lang/Object;)Ljava/util/List;\n      44: astore        7\n      46: aload         7\n      48: iconst_0\n      49: ldc           #31                 // String Z\n      51: invokeinterface #33,  3           // InterfaceMethod java/util/List.set:(ILjava/lang/Object;)Ljava/lang/Object;\n      56: pop\n      57: ldc           #21                 // String a\n      59: aload         6\n      61: iconst_0\n      62: aaload\n      63: invokevirtual #39                 // Method java/lang/String.equals:(Ljava/lang/Object;)Z\n      66: ifeq          72\n      69: iinc          4, 1\n      72: iinc          5, 1\n      75: goto          17\n      78: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      81: lload_2\n      82: lsub\n      83: ldc2_w        #43                 // long 1000000l\n      86: ldiv\n      87: lstore        5\n      89: getstatic     #45                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      92: iload         4\n      94: invokedynamic #49,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      99: invokevirtual #53                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     102: getstatic     #45                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     105: iload_1\n     106: invokedynamic #59,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     111: invokevirtual #53                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     114: getstatic     #45                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     117: lload         5\n     119: invokedynamic #60,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     124: invokevirtual #53                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     127: return\n}"
+  },
+  "CopyToNewArrayList": {
+   "hash": "4c5d1136aa746e88",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 4
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 4
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 4
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 3
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 4
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 6
+     }
+    ],
+    "10000": [
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 8
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 5
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 10
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 5
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 4
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 8
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 6
+     }
+    ],
+    "20000": [
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 12
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 10
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 10
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 10
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 10
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 10
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 11
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 12
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 10
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 10
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 10
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 10
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 9
+     }
+    ],
+    "50000": [
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 14
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 17
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 18
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 15
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 17
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 19
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 20
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 16
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 17
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 16
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 17
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 17
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 17
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 19
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 20
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 15
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 20
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 19
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 16
+     }
+    ]
+   },
+   "inside": "Compiled from \"CopyToNewArrayList.java\"\npublic class lab.aslist.CopyToNewArrayList {\n  public lab.aslist.CopyToNewArrayList();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     106\n      23: iconst_2\n      24: anewarray     #19                 // class java/lang/String\n      27: dup\n      28: iconst_0\n      29: ldc           #21                 // String a\n      31: aastore\n      32: dup\n      33: iconst_1\n      34: ldc           #23                 // String b\n      36: aastore\n      37: astore        6\n      39: new           #25                 // class java/util/ArrayList\n      42: dup\n      43: aload         6\n      45: invokestatic  #27                 // Method java/util/Arrays.asList:([Ljava/lang/Object;)Ljava/util/List;\n      48: invokespecial #33                 // Method java/util/ArrayList.\"<init>\":(Ljava/util/Collection;)V\n      51: astore        7\n      53: aload         7\n      55: ldc           #36                 // String c\n      57: invokeinterface #38,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      62: pop\n      63: aload         7\n      65: iconst_0\n      66: ldc           #44                 // String Z\n      68: invokeinterface #46,  3           // InterfaceMethod java/util/List.set:(ILjava/lang/Object;)Ljava/lang/Object;\n      73: pop\n      74: aload         7\n      76: invokeinterface #50,  1           // InterfaceMethod java/util/List.size:()I\n      81: iconst_3\n      82: if_icmpne     100\n      85: ldc           #21                 // String a\n      87: aload         6\n      89: iconst_0\n      90: aaload\n      91: invokevirtual #54                 // Method java/lang/String.equals:(Ljava/lang/Object;)Z\n      94: ifeq          100\n      97: iinc          4, 1\n     100: iinc          5, 1\n     103: goto          17\n     106: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     109: lload_2\n     110: lsub\n     111: ldc2_w        #57                 // long 1000000l\n     114: ldiv\n     115: lstore        5\n     117: getstatic     #59                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     120: iload         4\n     122: invokedynamic #63,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     127: invokevirtual #67                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     130: getstatic     #59                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     133: iload_1\n     134: invokedynamic #73,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     139: invokevirtual #67                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     142: getstatic     #59                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     145: lload         5\n     147: invokedynamic #74,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     152: invokevirtual #67                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     155: return\n}"
+  },
+  "SubListIndependentCopy": {
+   "hash": "b8cbe67fbaea6aa1",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 4
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 9
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "ok": 5000,
+      "expected": 5000,
+      "ms": 8
+     }
+    ],
+    "10000": [
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 9
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 10
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 10
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 8
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 8
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 8
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 9
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 12
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 11
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 11
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 10
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 8
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 9
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "ok": 10000,
+      "expected": 10000,
+      "ms": 7
+     }
+    ],
+    "20000": [
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 12
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 11
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 13
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 12
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 10
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 12
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 13
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 10
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 13
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 14
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 11
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 14
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 15
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 13
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 12
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 12
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 12
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 12
+     },
+     {
+      "ok": 20000,
+      "expected": 20000,
+      "ms": 14
+     }
+    ],
+    "50000": [
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 18
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 18
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 18
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 20
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 17
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 17
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 20
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 16
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 17
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 19
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 19
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 16
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 20
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 16
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 18
+     },
+     {
+      "ok": 50000,
+      "expected": 50000,
+      "ms": 17
+     }
+    ]
+   },
+   "inside": "Compiled from \"SubListIndependentCopy.java\"\npublic class lab.aslist.SubListIndependentCopy {\n  public lab.aslist.SubListIndependentCopy();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     88\n      23: new           #19                 // class java/util/ArrayList\n      26: dup\n      27: ldc           #21                 // String a\n      29: ldc           #23                 // String b\n      31: ldc           #25                 // String c\n      33: ldc           #27                 // String d\n      35: invokestatic  #29                 // InterfaceMethod java/util/List.of:(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/List;\n      38: invokespecial #35                 // Method java/util/ArrayList.\"<init>\":(Ljava/util/Collection;)V\n      41: astore        6\n      43: new           #19                 // class java/util/ArrayList\n      46: dup\n      47: aload         6\n      49: iconst_0\n      50: iconst_2\n      51: invokeinterface #38,  3           // InterfaceMethod java/util/List.subList:(II)Ljava/util/List;\n      56: invokespecial #35                 // Method java/util/ArrayList.\"<init>\":(Ljava/util/Collection;)V\n      59: astore        7\n      61: aload         6\n      63: invokeinterface #42,  1           // InterfaceMethod java/util/List.clear:()V\n      68: aload         7\n      70: invokeinterface #45,  1           // InterfaceMethod java/util/List.size:()I\n      75: iconst_2\n      76: if_icmpne     82\n      79: iinc          4, 1\n      82: iinc          5, 1\n      85: goto          17\n      88: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      91: lload_2\n      92: lsub\n      93: ldc2_w        #49                 // long 1000000l\n      96: ldiv\n      97: lstore        5\n      99: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     102: iload         4\n     104: invokedynamic #55,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     109: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     112: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     115: iload_1\n     116: invokedynamic #65,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     121: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     124: getstatic     #51                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     127: lload         5\n     129: invokedynamic #66,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     134: invokevirtual #59                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     137: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux",
+  "date": "2026-11-15"
+ }
+}

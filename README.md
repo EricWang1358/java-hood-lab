@@ -135,9 +135,9 @@
 | M1-15 | **SPI 扩展机制与懒加载缓存：JDBC / Dubbo / Spring Boot 是怎么插拔实现的？** | 写一个核心接口，不改核心包一行代码，只往 classpath 放个 jar 就能自动加载实现类——JDK ServiceLoader 怎么做到的？为什么每次重新 load 这么慢？ | `lab.spiloader` | [网页课件](./pages/java-spi-loader.html) · [JSON](./lessons/java-spi-loader.json) · [源码](./src/lab/spiloader/) |
 | M1-16 | **变长参数数组分配、重载静态分派与装箱优先级** | 写了个便捷方法 sum(int... nums)，在热循环里每次传 2 个参数竟然都在偷偷 new int[2]！更迷惑的是 Base ref = new Sub(); 调重载方法 tag(ref) 到底走哪个？ | `lab.varargs` | [网页课件](./pages/java-varargs-overload.html) · [JSON](./lessons/java-varargs-overload.json) · [源码](./src/lab/varargs/) |
 
-### 模块一 · 第四章：集合底层原理与 Stream 陷阱（M1-17～M1-20）
+### 模块一 · 第四章：集合底层原理与 Stream 陷阱（M1-17～M1-24）
 
-实测 ArrayList 扩容 vs LinkedList 随机访问、fail-fast 与 `removeIf`、HashMap 预分配容量与 8/64 红黑树化。
+实测 ArrayList 扩容、fail-fast、HashMap 预分配与红黑树化、LinkedHashMap LRU、小顶堆 Top-K、Stream 装箱与假 List 视图坑。
 
 | # | 课程标题 | 一句话引子 | 代码包 | 入口 |
 |---|---|---|---|---|
@@ -145,6 +145,10 @@
 | M1-18 | **fail-fast 快速失败：为什么 for-each 里删元素会炸 ConcurrentModificationException？** | 单线程好端端地遍历一个 ArrayList，顺手删掉偶数元素就立刻炸出 ConcurrentModificationException；换成下标正序删又不报错了，结果竟悄悄漏删了一半！ | `lab.failfast` | [网页课件](./pages/col-fail-fast.html) · [JSON](./lessons/col-fail-fast.json) · [源码](./src/lab/failfast/) |
 | M1-19 | **HashMap 初始容量与负载因子：new HashMap<>(10000) 为什么还是会扩容？** | 明明知道要往 HashMap 里放 10000 条数据，贴心地写了 new HashMap<>(10000)，可源码算下来竟然还是在放第 7501 条时触发了一次全表扩容！ | `lab.mapresize` | [网页课件](./pages/col-hashmap-resize.html) · [JSON](./lessons/col-hashmap-resize.json) · [源码](./src/lab/mapresize/) |
 | M1-20 | **HashMap 哈希碰撞与红黑树化：为什么 8 和 64 两个阈值缺一不可？** | 故意让 4000 个 Key 的 hashCode 全部撞进同一个桶，为什么 Key 实现 Comparable 时查询快如闪电，没实现 Comparable 时却慢成几十倍？ | `lab.treeify` | [网页课件](./pages/col-hashmap-treeify.html) · [JSON](./lessons/col-hashmap-treeify.json) · [源码](./src/lab/treeify/) |
+| M1-21 | **LinkedHashMap 手写 O(1) LRU 缓存：accessOrder=true 怎么把热点挪到队尾？** | 面试手撕高频第一题「O(1) LRU 缓存」：用 LinkedHashMap 只需重写一个方法 5 行搞定，可为什么忘了传第三个参数 true，热点键竟然被淘汰了？ | `lab.lhmlru` | [网页课件](./pages/col-linkedhashmap-lru.html) · [JSON](./lessons/col-linkedhashmap-lru.json) · [源码](./src/lab/lhmlru/) |
+| M1-22 | **PriorityQueue 小顶堆 Top-K vs 全排序：10 万条数据取前 10 为啥快这么多？** | 排行榜只取前 10 名，却把 10 万条数据全量 Arrays.sort 或全塞进大顶堆！换成容量固定为 10 的小顶堆，时间与内存分别省下多少？ | `lab.heaptopk` | [网页课件](./pages/col-priority-queue.html) · [JSON](./lessons/col-priority-queue.json) · [源码](./src/lab/heaptopk/) |
+| M1-23 | **Stream 装箱开销与 parallelStream 共享池阻塞陷阱** | 把普通的 for 循环全改成 list.stream().reduce() 甚至 parallelStream()，代码看似高级了，为什么性能反而变慢，甚至把整个微服务的并行任务全卡死？ | `lab.streamtrap` | [网页课件](./pages/col-stream-trap.html) · [JSON](./lessons/col-stream-trap.json) · [源码](./src/lab/streamtrap/) |
+| M1-24 | **Arrays.asList、List.of 与 subList：三个假 List 视图的连环坑** | 用 Arrays.asList 转了个列表，一调 add() 就炸 UnsupportedOperationException；调 set() 居然把原数组也改掉了；更隐蔽的是 subList 切片竟能导致几百 MB 大列表永不 GC！ | `lab.aslist` | [网页课件](./pages/col-arrays-aslist.html) · [JSON](./lessons/col-arrays-aslist.json) · [源码](./src/lab/aslist/) |
 
 ### 模块二 · 第一章：类加载、初始化与栈堆分配（M2-01～M2-04）
 
