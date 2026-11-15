@@ -150,6 +150,17 @@
 | M1-23 | **Stream 装箱开销与 parallelStream 共享池阻塞陷阱** | 把普通的 for 循环全改成 list.stream().reduce() 甚至 parallelStream()，代码看似高级了，为什么性能反而变慢，甚至把整个微服务的并行任务全卡死？ | `lab.streamtrap` | [网页课件](./pages/col-stream-trap.html) · [JSON](./lessons/col-stream-trap.json) · [源码](./src/lab/streamtrap/) |
 | M1-24 | **Arrays.asList、List.of 与 subList：三个假 List 视图的连环坑** | 用 Arrays.asList 转了个列表，一调 add() 就炸 UnsupportedOperationException；调 set() 居然把原数组也改掉了；更隐蔽的是 subList 切片竟能导致几百 MB 大列表永不 GC！ | `lab.aslist` | [网页课件](./pages/col-arrays-aslist.html) · [JSON](./lessons/col-arrays-aslist.json) · [源码](./src/lab/aslist/) |
 
+### 模块一 · 第五章：字符编码、序列化、文件流与 NIO ByteBuffer（M1-25～M1-28）
+
+实测 UTF-8/GBK 乱码与不可逆边界、Java 原生序列化 vs 紧凑编解码性能鸿沟、逐字节 read() vs 8KB 缓冲块以及 NIO ByteBuffer 三指针状态机。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M1-25 | **字符编码与乱码救火：UTF-8、GBK 与不可逆损坏边界** | 接口中文变成「璁㈠崟」、日志里全是「???」：同样是编码搞错了，为什么有些乱码还能救回来，有些却神仙难救？ | `lab.charset` | [网页课件](./pages/io-charset-garble.html) · [JSON](./lessons/io-charset-garble.json) · [源码](./src/lab/charset/) |
+| M1-26 | **Java 原生序列化 vs 紧凑编解码：serialVersionUID、transient 与性能鸿沟** | Java 自带 ObjectOutputStream 既要实现 Serializable 接口、又要算 serialVersionUID，跑起来还慢得惊人——为什么现代 RPC 与缓存几乎全抛弃了它？ | `lab.serial` | [网页课件](./pages/io-serialization.html) · [JSON](./lessons/io-serialization.json) · [源码](./src/lab/serial/) |
+| M1-27 | **文件 IO 与装饰器流：逐字节读 vs 8KB 缓冲块的性能天壤之别** | 同样是读取 2MB 数据，为什么调用无参 read() 逐字节读比带 8KB 缓冲区的 read(byte[]) 慢上几十倍？BufferedInputStream 到底省了什么？ | `lab.filesio` | [网页课件](./pages/io-files-stream.html) · [JSON](./lessons/io-files-stream.json) · [源码](./src/lab/filesio/) |
+| M1-28 | **NIO ByteBuffer 三指针与堆外内存：flip、compact 与半包丢失事故** | 往 ByteBuffer 写了数据直接 getInt() 居然读出 0；处理 TCP 半包时图省事调了 clear()，未读完的后半截数据当场蒸发！ | `lab.niobuf` | [网页课件](./pages/io-nio-buffer.html) · [JSON](./lessons/io-nio-buffer.json) · [源码](./src/lab/niobuf/) |
+
 ### 模块二 · 第一章：类加载、初始化与栈堆分配（M2-01～M2-04）
 
 用真实 `ClassLoader` 隔离、`<clinit>` 死锁、栈帧深度爆栈与 Eden TLAB 并发分配实测 JVM 底层运行机制。

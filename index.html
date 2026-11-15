@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>166</strong> 节循序渐进实验课</span>
-        <span><strong>664</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>170</strong> 节循序渐进实验课</span>
+        <span><strong>680</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,10 +374,10 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 166 / 166 课</span>
+        <span id="shownCount" class="count-note">显示 170 / 170 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (166)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (170)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
@@ -387,6 +387,7 @@
         <button type="button" class="pill" data-filter="m1ch2">基础 2 · 对象与泛型 (5)</button>
         <button type="button" class="pill" data-filter="m1ch3">基础 3 · 异常与反射 (6)</button>
         <button type="button" class="pill" data-filter="m1ch4">基础 4 · 集合与 Stream (8)</button>
+        <button type="button" class="pill" data-filter="m1ch5">基础 5 · 编码与 IO/NIO (4)</button>
         <button type="button" class="pill" data-filter="m2ch1">JVM 1 · 类加载与栈堆 (4)</button>
         <button type="button" class="pill" data-filter="m2ch2">JVM 2 · 锁升级与 GC (5)</button>
         <button type="button" class="pill" data-filter="m2ch3">JVM 3 · OOM 与排障 (5)</button>
@@ -1154,6 +1155,63 @@
           </div>
           <h3 class="card__title">Arrays.asList、List.of 与 subList：三个假 List 视图的连环坑</h3>
           <p class="card__lead">用 Arrays.asList 转了个列表，一调 add() 就炸 UnsupportedOperationException；调 set() 居然把原数组也改掉了；更隐蔽的是 subList 切片竟能导致几百 MB 大列表永不 GC！</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m1ch5">
+        <div class="chapter__head">
+          <h2>模块一 · 第五章：字符编码、序列化、文件流与 NIO ByteBuffer（M1-25～M1-28）</h2>
+          <p>实测 UTF-8/GBK 乱码与不可逆边界、Java 原生序列化 vs 紧凑编解码性能鸿沟、逐字节 read() vs 8KB 缓冲块以及 NIO ByteBuffer 三指针状态机。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/io-charset-garble.html" data-ch="m1ch5" data-search="m1-25 io-charset-garble 字符编码与乱码救火：utf-8、gbk 与不可逆损坏边界 接口中文变成「璁㈠崟」、日志里全是「???」：同样是编码搞错了，为什么有些乱码还能救回来，有些却神仙难救？ lab.charset">
+          <div class="card__top">
+            <span class="card__num">#M1-25</span>
+            <span class="card__pkg">lab.charset</span>
+          </div>
+          <h3 class="card__title">字符编码与乱码救火：UTF-8、GBK 与不可逆损坏边界</h3>
+          <p class="card__lead">接口中文变成「璁㈠崟」、日志里全是「???」：同样是编码搞错了，为什么有些乱码还能救回来，有些却神仙难救？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/io-serialization.html" data-ch="m1ch5" data-search="m1-26 io-serialization java 原生序列化 vs 紧凑编解码：serialversionuid、transient 与性能鸿沟 java 自带 objectoutputstream 既要实现 serializable 接口、又要算 serialversionuid，跑起来还慢得惊人——为什么现代 rpc 与缓存几乎全抛弃了它？ lab.serial">
+          <div class="card__top">
+            <span class="card__num">#M1-26</span>
+            <span class="card__pkg">lab.serial</span>
+          </div>
+          <h3 class="card__title">Java 原生序列化 vs 紧凑编解码：serialVersionUID、transient 与性能鸿沟</h3>
+          <p class="card__lead">Java 自带 ObjectOutputStream 既要实现 Serializable 接口、又要算 serialVersionUID，跑起来还慢得惊人——为什么现代 RPC 与缓存几乎全抛弃了它？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/io-files-stream.html" data-ch="m1ch5" data-search="m1-27 io-files-stream 文件 io 与装饰器流：逐字节读 vs 8kb 缓冲块的性能天壤之别 同样是读取 2mb 数据，为什么调用无参 read() 逐字节读比带 8kb 缓冲区的 read(byte[]) 慢上几十倍？bufferedinputstream 到底省了什么？ lab.filesio">
+          <div class="card__top">
+            <span class="card__num">#M1-27</span>
+            <span class="card__pkg">lab.filesio</span>
+          </div>
+          <h3 class="card__title">文件 IO 与装饰器流：逐字节读 vs 8KB 缓冲块的性能天壤之别</h3>
+          <p class="card__lead">同样是读取 2MB 数据，为什么调用无参 read() 逐字节读比带 8KB 缓冲区的 read(byte[]) 慢上几十倍？BufferedInputStream 到底省了什么？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 20 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/io-nio-buffer.html" data-ch="m1ch5" data-search="m1-28 io-nio-buffer nio bytebuffer 三指针与堆外内存：flip、compact 与半包丢失事故 往 bytebuffer 写了数据直接 getint() 居然读出 0；处理 tcp 半包时图省事调了 clear()，未读完的后半截数据当场蒸发！ lab.niobuf">
+          <div class="card__top">
+            <span class="card__num">#M1-28</span>
+            <span class="card__pkg">lab.niobuf</span>
+          </div>
+          <h3 class="card__title">NIO ByteBuffer 三指针与堆外内存：flip、compact 与半包丢失事故</h3>
+          <p class="card__lead">往 ByteBuffer 写了数据直接 getInt() 居然读出 0；处理 TCP 半包时图省事调了 clear()，未读完的后半截数据当场蒸发！</p>
           <div class="card__foot">
             <span>12 页 · 约 25 分钟</span>
             <span class="card__go">进入实验 →</span>

@@ -1,0 +1,156 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "io-serialization",
+  "course": "Java 工程语法与集合",
+  "title": "Java 原生序列化 vs 紧凑编解码：serialVersionUID、transient 与性能鸿沟",
+  "lead": "Java 自带 ObjectOutputStream 既要实现 Serializable 接口、又要算 serialVersionUID，跑起来还慢得惊人——为什么现代 RPC 与缓存几乎全抛弃了它？",
+  "minutes": 25,
+  "needs": ["知道对象需要转成字节流才能网络传输或落盘", "见过 Serializable 接口"],
+  "after": [
+    "理解 Serializable 标记接口、transient 关键字与 serialVersionUID 版本兼容机制",
+    "解释为什么 Java 原生序列化在吞吐与体积上远慢于紧凑二进制/JSON 编解码，且存在反序列化安全漏洞",
+    "掌握跨语言序列化选型思路（JSON / Protobuf / Kryo / Hessian2）"
+  ],
+  "terms": {
+    "Serializable": "Java 空标记接口，未实现时调用 `ObjectOutputStream.writeObject` 直接抛出 `NotSerializableException`。",
+    "serialVersionUID": "类的序列化版本指纹；若不显式声明，编译器会根据类结构自动生成，哪怕新增一个字段就会导致反序列化 `InvalidClassException`。",
+    "transient": "修饰不参与序列化的字段（如密码、Token、线程对象），反序列化后该字段恢复为类型默认值（如 `null` 或 `0`）。"
+  },
+  "experiments": {
+    "serial": {
+      "runner": "java",
+      "home": "lab.serial",
+      "variants": [
+        { "id": "MissingSerializableCrash", "code": "MissingSerializableCrash.java", "label": "未实现 Serializable 必炸", "note": "PlainDTO 未实现 Serializable，每次 writeObject 直接抛 NotSerializableException，成功数 0。" },
+        { "id": "JavaNativeSerializeSlow", "code": "JavaNativeSerializeSlow.java", "label": "JDK 原生 ObjectOutputStream", "note": "需要写类描述符、反射读字段、验证 UID，能跑通但吞吐明显偏低且体积膨胀。" },
+        { "id": "CompactBinaryCodec", "code": "CompactBinaryCodec.java", "label": "紧凑二进制 DataStream 编解码", "note": "直接按固定协议写入 long 与 UTF 字符串，无类元数据开销，速度碾压原生序列化。" },
+        { "id": "LightweightJsonText", "code": "LightweightJsonText.java", "label": "轻量文本 JSON 编解码", "note": "跨语言可读、无 Java 类强绑定，且耗时也远低于沉重的 ObjectInputStream。" }
+      ],
+      "knob": { "label": "编解码次数 N", "values": ["500", "1000", "2000", "4000"], "default": "2000" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "成功往返次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "为什么生产环境弃用 Java 原生序列化",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "早期 Java 教科书教大家用 `Serializable` + `ObjectOutputStream` 传对象，但实际微服务、Redis 缓存、MQ 消息里几乎**全面禁用**它——原因有三点：**慢（反射+类元数据膨胀）、不跨语言（只能 Java 读）、高危漏洞（反序列化 gadget 远程代码执行）**。",
+          "say": "今天就用实验直接对比原生序列化、紧凑二进制和 JSON 文本的速度差距。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：serialVersionUID 与 transient",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先测一下 Java 序列化的两个经典八股细节。",
+          "items": [
+            {
+              "have": "transient 关键字",
+              "q": "被 `transient` 修饰的 `String secretToken` 字段在反序列化后是什么值？",
+              "options": ["null（被跳过不序列化，恢复为引用类型默认值）", "保留原字符串", "抛出 NullPointerException"],
+              "answer": 0,
+              "why": "同样地，静态变量（`static`）属于类而非对象实例，也不会被原生序列化。"
+            },
+            {
+              "have": "serialVersionUID",
+              "q": "如果类没有显式写死 `private static final long serialVersionUID = 1L;`，上线后给类加了一个字段，反序列化旧数据会怎样？",
+              "options": ["抛出 InvalidClassException（自动计算的 UID 变了）", "自动忽略新字段", "新字段赋 null 正常读取"],
+              "answer": 0,
+              "why": "显式固定 `serialVersionUID` 后，增删普通字段才能保持向后兼容。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：MissingSerializableCrash vs JavaNativeSerializeSlow",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "serial",
+          "variants": ["MissingSerializableCrash", "JavaNativeSerializeSlow"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：CompactBinaryCodec 比 JavaNativeSerializeSlow 快多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "serial",
+          "question": "往返编解码 2000 次同一个简单订单 DTO，哪种耗时最低、哪种最慢？",
+          "options": ["CompactBinaryCodec 最快，JavaNativeSerializeSlow 慢好几倍甚至十几倍", "两者差不多", "JavaNativeSerializeSlow 最快"],
+          "answer": 0,
+          "why": "`ObjectOutputStream` 每次都要写入完整类名、字段类型签名并走反射读取，`DataOutputStream` 直接写裸字节。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种编解码耗时与正确性实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "serial",
+          "kind": "latency"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：ObjectOutputStream 的沉重开销",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "serial",
+          "variant": "JavaNativeSerializeSlow",
+          "explain": "每次 `new ObjectOutputStream` 都会先往流里写入 `STREAM_MAGIC (0xaced)` 头，再通过反射 `ObjectStreamClass` 反射抓取类描述符，这也是它既慢又体积庞大的根因。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对比高效写法：CompactBinaryCodec vs LightweightJsonText",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "serial",
+          "variants": ["CompactBinaryCodec", "LightweightJsonText"]
+        },
+        {
+          "t": "text",
+          "md": "- **对内高吞吐 RPC**：选 **Protobuf / Kryo / Hessian2**（字段编号紧凑二进制，体积小、跨语言且性能高）。\n- **对外接口 / Redis 缓存**：选 **JSON（Jackson）**，可读性好、免去类路径强耦合与反序列化漏洞。",
+          "say": "把 Java 原生序列化当成历史包袱，新系统直接选 JSON 或 Protobuf。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口讲清序列化机制与选型",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "用 6 句话讲清：1）Serializable 与 serialVersionUID 的作用；2）transient 与 static 字段行为；3）为什么不用 JDK 原生序列化；4）主流替代方案。",
+          "points": [
+            "实现 Serializable 才能被 ObjectOutputStream 序列化，否则抛 NotSerializableException",
+            "显式声明 serialVersionUID 可避免类新增字段后反序列化抛 InvalidClassException",
+            "transient 修饰的字段和 static 静态变量不参与序列化，反序列化后为默认值",
+            "JDK 原生序列化不支持跨语言、反射和类描述符开销大、且存在安全漏洞，生产应选 JSON 或 Protobuf"
+          ],
+          "seconds": 120
+        }
+      ]
+    }
+  ]
+}
