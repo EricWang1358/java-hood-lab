@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>99</strong> 节循序渐进实验课</span>
-        <span><strong>396</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>105</strong> 节循序渐进实验课</span>
+        <span><strong>420</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,10 +374,10 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 99 / 99 课</span>
+        <span id="shownCount" class="count-note">显示 105 / 105 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (99)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (105)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
@@ -389,6 +389,7 @@
         <button type="button" class="pill" data-filter="m4ch2">MySQL 2 · B+ 树与索引 (7)</button>
         <button type="button" class="pill" data-filter="m4ch3">MySQL 3 · EXPLAIN 与失效 (5)</button>
         <button type="button" class="pill" data-filter="m4ch4">MySQL 4 · MVCC 与隔离 (5)</button>
+        <button type="button" class="pill" data-filter="m4ch5">MySQL 5 · 日志与锁死锁 (6)</button>
         <button type="button" class="pill" data-filter="m5ch1">Spring 1 · 事务与 AOP (5)</button>
         <button type="button" class="pill" data-filter="m5ch2">Spring 2 · IoC 与自动装配 (5)</button>
         <button type="button" class="pill" data-filter="m5ch3">Spring 3 · MVC 与链路隔离 (5)</button>
@@ -1352,6 +1353,50 @@
           <div class="card__top"><span class="card__num">#59</span><span class="card__pkg">lab.longtrx</span></div>
           <h3 class="card__title">一个长事务挂着不提交，Undo 日志怎么把磁盘撑爆？</h3>
           <p class="card__lead">线上突然告警 ibdata1 / undo 表空间暴涨几十 GB、所有查询变慢——罪魁祸首往往只是一个忘了 commit 的长事务！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        </div>
+      </section>
+      <section class="chapter" data-ch="m4ch5">
+        <div class="chapter__head">
+          <h2>模块四 · 第五章：日志两阶段提交、行锁/间隙锁死锁与乐观锁（第 60～65 课）</h2>
+          <p>打通 WAL Redo/Undo 协同、Redo+Binlog 两阶段提交、行锁退化全表锁、Gap/Next-Key Lock 阻塞、Gap+插入意向锁死锁与高并发扣库存方案。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/wal-redo-undo.html" data-ch="m4ch5" data-search="60 wal-redo-undo 写内存不立刻刷盘，断电怎么不丢数据？ wal redo undo 持久性 原子性 lab.walredo">
+          <div class="card__top"><span class="card__num">#60</span><span class="card__pkg">lab.walredo</span></div>
+          <h3 class="card__title">写内存不立刻刷盘，断电怎么不丢数据？WAL Redo 与 Undo 职责拆解</h3>
+          <p class="card__lead">每次改一行就随机刷 16KB 数据页慢如蜗牛；先写顺序 Redo 呢？那为什么还需要 Undo 日志？</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/two-phase-commit.html" data-ch="m4ch5" data-search="61 two-phase-commit redo 和 binlog 拆开写，主从数据怎么就劈叉了？ 两阶段提交 2pc xid prepare commit lab.twopc">
+          <div class="card__top"><span class="card__num">#61</span><span class="card__pkg">lab.twopc</span></div>
+          <h3 class="card__title">Redo 和 Binlog 拆开写，主从数据怎么就劈叉了？两阶段提交真相</h3>
+          <p class="card__lead">InnoDB 有 Redo Log，Server 层有 Binlog。如果先写完一个就断电，主库和从库立刻出现幽灵数据或丢数据！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/row-lock-index.html" data-ch="m4ch5" data-search="62 row-lock-index 明明只改一行，怎么把整张表都锁死了？ 行锁 索引 隐式转换 全表锁 lab.rowlock">
+          <div class="card__top"><span class="card__num">#62</span><span class="card__pkg">lab.rowlock</span></div>
+          <h3 class="card__title">明明只改一行，怎么把整张表都锁死了？行锁升级表锁现场</h3>
+          <p class="card__lead">很多人以为 InnoDB 的行锁就是「按行号加锁」，其实它是「加在索引记录上的」！一旦 WHERE 没走索引，整张表直接锁死。</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/gap-nextkey-lock.html" data-ch="m4ch5" data-search="63 gap-nextkey-lock 表里根本没有 id=7，为什么插入 id=7 却被别人卡死？ 间隙锁 临键锁 gap next-key record lock lab.gaplock">
+          <div class="card__top"><span class="card__num">#63</span><span class="card__pkg">lab.gaplock</span></div>
+          <h3 class="card__title">表里根本没有 id=7，为什么插入 id=7 却被别人卡死？间隙锁与临键锁</h3>
+          <p class="card__lead">别人只是用 FOR UPDATE 查了一个根本不存在的 id=7，为什么你去 INSERT id=7 甚至 id=8 全被阻塞了？</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/deadlock-insert-gap.html" data-ch="m4ch5" data-search="64 deadlock-insert-gap 两事务同时先查不存在再插入，怎么双双死锁报错？ gap 插入意向锁 死锁 deadlock lab.sqldeadlock">
+          <div class="card__top"><span class="card__num">#64</span><span class="card__pkg">lab.sqldeadlock</span></div>
+          <h3 class="card__title">两事务同时「先查不存在再插入」，怎么双双死锁报错？Gap 锁 + 插入意向锁</h3>
+          <p class="card__lead">生产最常见的神秘死锁 Deadlock found：两个并发请求都先 SELECT ... FOR UPDATE 查无此单，再各自 INSERT，直接双双撞死！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/optimistic-vs-pessimistic.html" data-ch="m4ch5" data-search="65 optimistic-vs-pessimistic 高并发扣库存 for update 乐观锁 cas 版本号 悲观锁 lab.optlock">
+          <div class="card__top"><span class="card__num">#65</span><span class="card__pkg">lab.optlock</span></div>
+          <h3 class="card__title">高并发扣库存：FOR UPDATE 排长队 vs CAS 版本号乐观锁怎么选？</h3>
+          <p class="card__lead">秒杀扣库存有四条路：不加锁直接扣、悲观 FOR UPDATE、版本号乐观锁、单条 SQL 条件原子扣减。高并发下谁超卖、谁最稳？</p>
           <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
         </a>
         </div>

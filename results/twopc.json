@@ -1,0 +1,871 @@
+{
+ "id": "twopc",
+ "variants": {
+  "RedoFirstCrash": {
+   "hash": "06412b5fcb483a52",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "300": [
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"RedoFirstCrash.java\"\npublic class lab.twopc.RedoFirstCrash {\n  public lab.twopc.RedoFirstCrash();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     45\n      23: iconst_1\n      24: istore        6\n      26: iconst_0\n      27: istore        7\n      29: iload         6\n      31: iload         7\n      33: if_icmpeq     39\n      36: iinc          4, 1\n      39: iinc          5, 1\n      42: goto          17\n      45: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      48: lload_2\n      49: lsub\n      50: ldc2_w        #19                 // long 1000000l\n      53: ldiv\n      54: lstore        5\n      56: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      59: iload         4\n      61: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      66: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      69: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      72: ldc           #35                 // String expected=0\n      74: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      77: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: lload         5\n      82: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      87: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      90: return\n}"
+  },
+  "BinlogFirstCrash": {
+   "hash": "214974cf791304ba",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 100,
+      "expected": 0,
+      "ms": 1
+     }
+    ],
+    "300": [
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 300,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 500,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 1000,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"BinlogFirstCrash.java\"\npublic class lab.twopc.BinlogFirstCrash {\n  public lab.twopc.BinlogFirstCrash();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     45\n      23: iconst_1\n      24: istore        6\n      26: iconst_0\n      27: istore        7\n      29: iload         7\n      31: iload         6\n      33: if_icmpeq     39\n      36: iinc          4, 1\n      39: iinc          5, 1\n      42: goto          17\n      45: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      48: lload_2\n      49: lsub\n      50: ldc2_w        #19                 // long 1000000l\n      53: ldiv\n      54: lstore        5\n      56: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      59: iload         4\n      61: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      66: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      69: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      72: ldc           #35                 // String expected=0\n      74: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      77: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: lload         5\n      82: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      87: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      90: return\n}"
+  },
+  "TwoPhaseCommit": {
+   "hash": "a3a0b5fa206214fa",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "300": [
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"TwoPhaseCommit.java\"\npublic class lab.twopc.TwoPhaseCommit {\n  public lab.twopc.TwoPhaseCommit();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     77\n      23: iconst_1\n      24: istore        6\n      26: iload         5\n      28: iconst_2\n      29: irem\n      30: ifne          37\n      33: iconst_1\n      34: goto          38\n      37: iconst_0\n      38: istore        7\n      40: iload         6\n      42: ifeq          54\n      45: iload         7\n      47: ifeq          54\n      50: iconst_1\n      51: goto          55\n      54: iconst_0\n      55: istore        8\n      57: iload         7\n      59: istore        9\n      61: iload         8\n      63: iload         9\n      65: if_icmpeq     71\n      68: iinc          4, 1\n      71: iinc          5, 1\n      74: goto          17\n      77: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      80: lload_2\n      81: lsub\n      82: ldc2_w        #19                 // long 1000000l\n      85: ldiv\n      86: lstore        5\n      88: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      91: iload         4\n      93: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      98: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     101: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     104: ldc           #35                 // String expected=0\n     106: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     109: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     112: lload         5\n     114: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     119: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     122: return\n}"
+  },
+  "SyncBinlogGroupCommit": {
+   "hash": "c8bce6c377a10c79",
+   "repeat": 10,
+   "runs": {
+    "100": [
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "300": [
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "inconsistentCount": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"SyncBinlogGroupCommit.java\"\npublic class lab.twopc.SyncBinlogGroupCommit {\n  public lab.twopc.SyncBinlogGroupCommit();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: bipush        16\n      16: istore        5\n      18: iconst_0\n      19: istore        6\n      21: iload         6\n      23: iload_1\n      24: if_icmpge     99\n      27: iload         5\n      29: iload_1\n      30: iload         6\n      32: isub\n      33: invokestatic  #19                 // Method java/lang/Math.min:(II)I\n      36: istore        7\n      38: iconst_0\n      39: istore        8\n      41: iload         8\n      43: iload         7\n      45: if_icmpge     89\n      48: iload         6\n      50: iload         8\n      52: iadd\n      53: iconst_2\n      54: irem\n      55: ifne          62\n      58: iconst_1\n      59: goto          63\n      62: iconst_0\n      63: istore        9\n      65: iload         9\n      67: istore        10\n      69: iload         9\n      71: istore        11\n      73: iload         10\n      75: iload         11\n      77: if_icmpeq     83\n      80: iinc          4, 1\n      83: iinc          8, 1\n      86: goto          41\n      89: iload         6\n      91: iload         5\n      93: iadd\n      94: istore        6\n      96: goto          21\n      99: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     102: lload_2\n     103: lsub\n     104: ldc2_w        #25                 // long 1000000l\n     107: ldiv\n     108: lstore        6\n     110: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     113: iload         4\n     115: invokedynamic #31,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     120: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     123: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     126: ldc           #41                 // String expected=0\n     128: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     131: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     134: lload         6\n     136: invokedynamic #43,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     141: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     144: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

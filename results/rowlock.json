@@ -1,0 +1,871 @@
+{
+ "id": "rowlock",
+ "variants": {
+  "NoIndexFullScan": {
+   "hash": "2ab5adaa07d48619",
+   "repeat": 10,
+   "runs": {
+    "200": [
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"NoIndexFullScan.java\"\npublic class lab.rowlock.NoIndexFullScan {\n  public lab.rowlock.NoIndexFullScan();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iload_1\n      15: iconst_2\n      16: idiv\n      17: istore        5\n      19: iconst_0\n      20: istore        6\n      22: iload         6\n      24: iload_1\n      25: if_icmpge     52\n      28: iconst_1\n      29: istore        7\n      31: iload         7\n      33: ifeq          46\n      36: iload         6\n      38: iload         5\n      40: if_icmpeq     46\n      43: iinc          4, 1\n      46: iinc          6, 1\n      49: goto          22\n      52: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      55: lload_2\n      56: lsub\n      57: ldc2_w        #19                 // long 1000000l\n      60: ldiv\n      61: lstore        6\n      63: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      66: iload         4\n      68: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      73: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      76: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      79: ldc           #35                 // String expected=0\n      81: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      84: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      87: lload         6\n      89: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      94: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      97: return\n}"
+  },
+  "ImplicitTypeCast": {
+   "hash": "fe219995f98a37ce",
+   "repeat": 10,
+   "runs": {
+    "200": [
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 199,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 499,
+      "expected": 0,
+      "ms": 4
+     }
+    ],
+    "1000": [
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 2
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 999,
+      "expected": 0,
+      "ms": 1
+     }
+    ],
+    "2000": [
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 3
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 1
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 4
+     },
+     {
+      "extraLockedRows": 1999,
+      "expected": 0,
+      "ms": 5
+     }
+    ]
+   },
+   "inside": "Compiled from \"ImplicitTypeCast.java\"\npublic class lab.rowlock.ImplicitTypeCast {\n  public lab.rowlock.ImplicitTypeCast();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iload_1\n      15: iconst_2\n      16: idiv\n      17: istore        5\n      19: iconst_0\n      20: istore        6\n      22: iload         6\n      24: iload_1\n      25: if_icmpge     65\n      28: iload         6\n      30: invokestatic  #19                 // Method java/lang/String.valueOf:(I)Ljava/lang/String;\n      33: astore        7\n      35: iconst_1\n      36: istore        8\n      38: iload         8\n      40: ifeq          59\n      43: aload         7\n      45: iload         5\n      47: invokestatic  #19                 // Method java/lang/String.valueOf:(I)Ljava/lang/String;\n      50: invokevirtual #25                 // Method java/lang/String.equals:(Ljava/lang/Object;)Z\n      53: ifne          59\n      56: iinc          4, 1\n      59: iinc          6, 1\n      62: goto          22\n      65: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      68: lload_2\n      69: lsub\n      70: ldc2_w        #29                 // long 1000000l\n      73: ldiv\n      74: lstore        6\n      76: getstatic     #31                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      79: iload         4\n      81: invokedynamic #35,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      86: invokevirtual #38                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      89: getstatic     #31                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      92: ldc           #44                 // String expected=0\n      94: invokevirtual #38                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      97: getstatic     #31                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     100: lload         6\n     102: invokedynamic #46,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     107: invokevirtual #38                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     110: return\n}"
+  },
+  "NonUniqueIndex": {
+   "hash": "5d0ec6d928758472",
+   "repeat": 10,
+   "runs": {
+    "200": [
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 1,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"NonUniqueIndex.java\"\npublic class lab.rowlock.NonUniqueIndex {\n  public lab.rowlock.NonUniqueIndex();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iload_1\n      12: iconst_1\n      13: if_icmple     20\n      16: iconst_1\n      17: goto          21\n      20: iconst_0\n      21: istore        4\n      23: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      26: lload_2\n      27: lsub\n      28: ldc2_w        #19                 // long 1000000l\n      31: ldiv\n      32: lstore        5\n      34: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      37: iload         4\n      39: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      44: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      47: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      50: ldc           #35                 // String expected=0\n      52: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      55: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      58: lload         5\n      60: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      65: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      68: return\n}"
+  },
+  "UniqueIndexPoint": {
+   "hash": "b792b19fab377f49",
+   "repeat": 10,
+   "runs": {
+    "200": [
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "extraLockedRows": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"UniqueIndexPoint.java\"\npublic class lab.rowlock.UniqueIndexPoint {\n  public lab.rowlock.UniqueIndexPoint();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iload_1\n      12: iconst_2\n      13: idiv\n      14: istore        4\n      16: iload         4\n      18: istore        5\n      20: iload         5\n      22: iload         4\n      24: if_icmpne     31\n      27: iconst_0\n      28: goto          32\n      31: iconst_1\n      32: istore        6\n      34: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      37: lload_2\n      38: lsub\n      39: ldc2_w        #19                 // long 1000000l\n      42: ldiv\n      43: lstore        7\n      45: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      48: iload         6\n      50: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      55: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      58: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      61: ldc           #35                 // String expected=0\n      63: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      66: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      69: lload         7\n      71: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      76: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      79: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

@@ -1,0 +1,319 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "row-lock-index",
+  "course": "MySQL 索引、事务与锁",
+  "title": "明明只改一行，怎么把整张表都锁死了？行锁升级表锁现场",
+  "lead": "很多人以为 InnoDB 的行锁就是「按行号加锁」，其实它是「加在索引记录上的」！一旦 WHERE 没走索引，整张表直接锁死。",
+  "minutes": 35,
+  "needs": [
+    "知道行锁和索引概念"
+  ],
+  "after": [
+    "建立「InnoDB 行锁加在索引上」的核心心智",
+    "识别无索引和隐式类型转换导致行锁退化为全表锁的事故",
+    "区分主键等值、普通索引和全表扫描的锁范围"
+  ],
+  "terms": {
+    "行锁加在索引上": "InnoDB 通过对扫描到的索引项加锁来实现行锁；没有索引就只能锁住全表扫描经过的所有聚簇索引记录。"
+  },
+  "experiments": {
+    "rowlock": {
+      "runner": "java",
+      "home": "lab.rowlock",
+      "variants": [
+        {
+          "id": "NoIndexFullScan",
+          "label": "WHERE 列无索引（全表扫描）",
+          "note": "扫描全表每一行都加锁，等价于锁整张表！"
+        },
+        {
+          "id": "ImplicitTypeCast",
+          "label": "索引列隐式类型转换",
+          "note": "VARCHAR 列传数字，索引失效退化为全表锁！"
+        },
+        {
+          "id": "NonUniqueIndex",
+          "label": "二级普通索引等值",
+          "note": "锁二级索引项 + 邻近间隙 + 回表锁主键。"
+        },
+        {
+          "id": "UniqueIndexPoint",
+          "label": "主键 / 唯一索引精准等值",
+          "note": "退化为精准 Record Lock，0 误锁！"
+        }
+      ],
+      "knob": {
+        "label": "表总行数",
+        "values": [
+          "200",
+          "500",
+          "1000",
+          "2000"
+        ],
+        "default": "1000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "extraLockedRows",
+        "expectKey": "expected",
+        "label": "额外误锁行数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "明明只改一行，怎么把整张表都锁死了？行锁升级表锁现场",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "线上经常遇到一个诡异故障：开发明明写了 `UPDATE orders SET status=1 WHERE order_no=12345`，结果整个订单表的所有无关订单全卡死超时了——罪魁祸首就是「行锁加在索引上」。",
+          "say": "跑一下无索引和隐式转换，看看多锁了多少无辜行。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "1000 行的表只改 1 行，能锁住多少行？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "如果 `WHERE` 条件没走索引（或发生了隐式类型转换），InnoDB 会把多少无辜行一起锁住？",
+          "say": "看 `NoIndexFullScan` 和 `ImplicitTypeCast`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 NoIndexFullScan 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "rowlock.NoIndexFullScan",
+          "say": "`NoIndexFullScan` 只能沿着聚簇索引从头扫到尾，扫过一行锁一行；`UniqueIndexPoint` 直接精确定位单行。",
+          "walk": [
+            {
+              "focus": [
+                "extraLockedRows++"
+              ],
+              "say": "只要索引没生效，循环就会扫遍全表，导致 `extraLockedRows` 飙升到 `rows - 1`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "1000 行的表里，`UPDATE` 的 `WHERE` 条件发生了隐式类型转换导致索引失效，会额外误锁多少行？",
+          "options": [
+            "0 行",
+            "1 行",
+            "999 行"
+          ],
+          "answer": 2,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "rowlock",
+          "show": [
+            "NoIndexFullScan"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `NoIndexFullScan` 和 `ImplicitTypeCast` 全都误锁了 999 行！整张表基本瘫痪。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "rowlock.NoIndexFullScan",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "InnoDB 的行锁不是锁在「表」上，而是锁在**索引项**上。当没有可用索引时，优化器被迫走全表扫描（`ALL`），InnoDB 必须对扫描过的每一条聚簇索引记录加锁（RR 下甚至带间隙锁），导致并发写全线堵死。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpeq"
+              ],
+              "say": "走唯一索引等值命中时，直接一步定位目标主键，精确加 1 把 Record Lock。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "rowlock",
+          "show": [
+            "NoIndexFullScan",
+            "ImplicitTypeCast",
+            "NonUniqueIndex",
+            "UniqueIndexPoint"
+          ],
+          "select": "UniqueIndexPoint",
+          "say": "所有加锁更新（`UPDATE` / `DELETE` / `FOR UPDATE`）的 `WHERE` 条件必须建好索引，且严禁隐式转换、函数包裹！"
+        },
+        {
+          "t": "chart",
+          "of": "rowlock",
+          "say": "无索引和隐式转换直线飙到 1999；唯一索引精准命中稳稳为 0。",
+          "walk": [
+            {
+              "focus": [
+                "NoIndexFullScan",
+                "UniqueIndexPoint"
+              ],
+              "say": "记住：不是行锁「升级」成了表锁，而是「没索引导致全表扫描加锁」。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "写业务更新 SQL 前先 `EXPLAIN` 看一眼 `type`，如果是 `ALL` 千万别上线。",
+          "options": [
+            {
+              "name": "无索引 / 隐式转换更新",
+              "solves": "不用建索引",
+              "cost": "全表扫描加锁，误锁 999+ 行",
+              "when": "生产严禁",
+              "say": "一跑就雪崩。"
+            },
+            {
+              "name": "普通二级索引更新",
+              "solves": "大幅缩小锁范围",
+              "cost": "仍带相邻间隙锁",
+              "when": "常规业务过滤条件",
+              "say": "注意并发插入间隙。"
+            },
+            {
+              "name": "主键 / 唯一索引等值更新",
+              "solves": "精准单行 Record Lock",
+              "cost": "0 误锁：{ms:rowlock.UniqueIndexPoint} ms",
+              "when": "高并发核心更新首选",
+              "say": "锁粒度最小。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么 `UPDATE user SET age=20 WHERE phone=13800138000`（`phone` 是 `VARCHAR` 且有索引）会把全表锁住？",
+          "options": [
+            {
+              "text": "数字与 VARCHAR 比较触发隐式类型转换导致索引失效，退化为全表扫描加锁",
+              "ok": true,
+              "why": "InnoDB 行锁加在索引上，索引失效就只能扫描聚簇索引全表加锁。"
+            },
+            {
+              "text": "InnoDB 行锁超过 10 个自动升级成表锁",
+              "ok": false,
+              "why": "InnoDB 没有 SQL Server 那样的锁升级机制，它是全表扫描加锁。"
+            },
+            {
+              "text": "UPDATE 语句默认就加表锁",
+              "ok": false,
+              "why": "InnoDB 默认是行锁，只有走全表扫描时才看起来像表锁。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "InnoDB 行锁加在索引上",
+          "alias": "Index-based Row Locking",
+          "oneLine": "InnoDB 行锁==加在索引记录上==；无索引或索引失效退化为全表扫描，会==锁住全表所有行==。",
+          "asked": [
+            "InnoDB 的行锁是怎么实现的？什么情况下会锁整张表？",
+            "InnoDB 有锁升级吗？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚 InnoDB 行锁到底加在哪里，以及为什么没走索引的 UPDATE 会把整张表锁死？",
+          "points": [
+            "InnoDB 行锁加在索引项上，不是直接锁表行",
+            "WHERE 没建索引或索引失效（隐式转换/函数）会走全表扫描",
+            "扫描过的每一行聚簇索引都会加锁，表现上等价于锁整张表（不是锁升级）"
+          ],
+          "model": "InnoDB 的行锁其实是加在索引记录上的。如果 UPDATE 或 SELECT FOR UPDATE 的 WHERE 条件没有索引，或者因为隐式类型转换、对索引列用函数导致索引失效，优化器就会走全表扫描。InnoDB 必须给扫描过的每一条聚簇索引记录都加上锁，在并发下就相当于把整张表都锁死了。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "InnoDB 行锁加在什么上面？",
+              "a": "加在索引记录上。"
+            },
+            {
+              "q": "InnoDB 有锁升级机制吗？",
+              "a": "没有，全表锁住是因为没走索引导致全表扫描加锁。"
+            },
+            {
+              "q": "哪种索引等值命中锁粒度最小？",
+              "a": "主键或唯一索引等值命中（退化为单行 Record Lock）。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

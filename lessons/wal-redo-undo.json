@@ -1,0 +1,321 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "wal-redo-undo",
+  "course": "MySQL 索引、事务与锁",
+  "title": "写内存不立刻刷盘，断电怎么不丢数据？WAL Redo 与 Undo 职责拆解",
+  "lead": "每次改一行就随机刷 16KB 数据页慢如蜗牛；先写顺序 Redo 呢？那为什么还需要 Undo 日志？",
+  "minutes": 35,
+  "needs": [
+    "知道磁盘顺序写比随机写快"
+  ],
+  "after": [
+    "讲清 WAL 顺序写 Redo Log 为什么比随机刷脏页快几个数量级",
+    "分清 Redo（物理重做保持久性）和 Undo（逻辑回滚保原子性 + MVCC）",
+    "避开「有 Redo 就不用 Undo」的误区"
+  ],
+  "terms": {
+    "WAL（Write-Ahead Logging）": "预写日志：改数据时先顺序写日志落盘，再慢慢异步刷脏页。",
+    "Redo Log": "InnoDB 物理日志，记录「在哪个数据页偏移量改了什么」，用来在断电重启后**前滚恢复**已提交数据。",
+    "Undo Log": "InnoDB 逻辑日志，记录修改前的旧值，用来做**事务回滚**和 **MVCC 多版本读**。"
+  },
+  "experiments": {
+    "walredo": {
+      "runner": "java",
+      "home": "lab.walredo",
+      "variants": [
+        {
+          "id": "DirectRandomFlush",
+          "label": "每次改完直接刷 16KB 页",
+          "note": "随机写 IO 放大严重，耗时极高。"
+        },
+        {
+          "id": "WalRedoSequential",
+          "label": "WAL 顺序追加写 Redo",
+          "note": "只顺序写 32B 日志，吞吐暴涨。"
+        },
+        {
+          "id": "RedoWithoutUndo",
+          "label": "只有 Redo 没有 Undo",
+          "note": "一旦事务中途回滚，旧值找不回，数据污染！"
+        },
+        {
+          "id": "RedoPlusUndo",
+          "label": "Redo + Undo 双日志协同",
+          "note": "持久性 + 原子性 + MVCC 全部满足。"
+        }
+      ],
+      "knob": {
+        "label": "事务写入次数",
+        "values": [
+          "200",
+          "500",
+          "1000",
+          "2000"
+        ],
+        "default": "1000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "lostOrDirty",
+        "expectKey": "expected",
+        "label": "丢失或回滚污染数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "写内存不立刻刷盘，断电怎么不丢数据？WAL Redo 与 Undo 职责拆解",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "MySQL 改一条数据只改 100 字节，但磁盘最小刷盘单位是 16KB 数据页。如果每次提交都随机刷整页，磁盘直接卡死；但只改内存又怕断电丢数据——WAL 就是为了解决这个矛盾。",
+          "say": "先看只有 Redo 没有 Undo 会出什么事，再看直接刷页有多慢。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "事务做到一半报错回滚，没有 Undo 怎么办？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "1000 次写入里每 5 次就有 1 次回滚。`RedoWithoutUndo` 已经把新值写进缓冲池和 Redo 了，回滚时还能还原吗？",
+          "say": "看 `RedoWithoutUndo` 和 `DirectRandomFlush`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 DirectRandomFlush 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "walredo.DirectRandomFlush",
+          "say": "`DirectRandomFlush` 每次都要扫 16KB 页；`RedoWithoutUndo` 没保存 `undoOldImage`，回滚时根本不知道原来是 100。",
+          "walk": [
+            {
+              "focus": [
+                "if (rollback)"
+              ],
+              "say": "没有 Undo 记录旧值，一旦业务抛异常回滚，内存中改坏的数据就再也回不去了。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "1000 次写入中每 5 次回滚 1 次，没有 Undo 日志的 `RedoWithoutUndo` 会留下多少条脏数据？",
+          "options": [
+            "0 条",
+            "200 条",
+            "1000 条"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "walredo",
+          "show": [
+            "DirectRandomFlush"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `RedoWithoutUndo` 留下 `lostOrDirty = 200`！而 `DirectRandomFlush` 虽然没错，耗时却比 `RedoPlusUndo` 慢得多。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "walredo.DirectRandomFlush",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "Redo Log 是循环写的物理日志（固定大小如 `ib_logfile0/1`），保证 **Durability（持久性）**；Undo Log 是逻辑日志，记录反向操作（INSERT 对应 DELETE，UPDATE 记录旧值），保证 **Atomicity（原子性）** 并支撑 MVCC。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpeq"
+              ],
+              "say": "`RedoPlusUndo` 同时写了顺序 Redo 和旧值 Undo，回滚时直接还原 `undoOldImage`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "walredo",
+          "show": [
+            "DirectRandomFlush",
+            "WalRedoSequential",
+            "RedoWithoutUndo",
+            "RedoPlusUndo"
+          ],
+          "select": "RedoPlusUndo",
+          "say": "生产中靠 `Redo + Undo` 协同：平时顺序写日志极快，崩溃靠 Redo 前滚，回滚靠 Undo 复原。"
+        },
+        {
+          "t": "chart",
+          "of": "walredo",
+          "say": "`RedoWithoutUndo` 报错 200 条；`DirectRandomFlush` 耗时高出一截；`RedoPlusUndo` 零出错且耗时极低。",
+          "walk": [
+            {
+              "focus": [
+                "DirectRandomFlush",
+                "RedoPlusUndo"
+              ],
+              "say": "记住口诀：Redo 保持久（防断电），Undo 保原子（能回滚 + MVCC）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "面试常问「为什么需要 Redo 和 Undo 两种日志，只留一个行不行？」——答案就在上面。",
+          "options": [
+            {
+              "name": "直接随机刷 16KB 数据页",
+              "solves": "不用维护日志",
+              "cost": "IO 放大且慢：{ms:walredo.DirectRandomFlush} ms",
+              "when": "几乎不用于高并发 OLTP",
+              "say": "随机 IO 瓶颈。"
+            },
+            {
+              "name": "只写 Redo 不写 Undo",
+              "solves": "能防断电",
+              "cost": "无法回滚也无 MVCC",
+              "when": "不存在的架构",
+              "say": "原子性直接崩盘。"
+            },
+            {
+              "name": "Redo + Undo 双日志",
+              "solves": "顺序写提速 + 断电恢复 + 回滚 + MVCC",
+              "cost": "0 污染：{ms:walredo.RedoPlusUndo} ms",
+              "when": "InnoDB 标准引擎机制",
+              "say": "面试标准答案。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "关于 InnoDB 的 Redo Log 和 Undo Log，下面哪句话是**完全正确**的？",
+          "options": [
+            {
+              "text": "Redo Log 保证持久性（Crash Recovery），Undo Log 保证原子性（回滚）和 MVCC",
+              "ok": true,
+              "why": "Redo 物理前滚防丢，Undo 逻辑回滚防脏。"
+            },
+            {
+              "text": "Redo Log 用来做事务回滚，Undo Log 用来防止断电丢数据",
+              "ok": false,
+              "why": "说反了！"
+            },
+            {
+              "text": "Redo Log 属于 MySQL Server 层，所有存储引擎共有",
+              "ok": false,
+              "why": "Redo/Undo 都是 InnoDB 引擎特有的，Binlog 才在 Server 层。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "WAL 与 Redo / Undo 分工",
+          "alias": "Write-Ahead Logging",
+          "oneLine": "==Redo Log== 顺序写保证断电不丢（持久性），==Undo Log== 记录旧值保证回滚与 MVCC（原子性）。",
+          "asked": [
+            "为什么需要 Redo Log 和 Undo Log？各自负责 ACID 哪一环？",
+            "WAL 为什么能提升写性能？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚为什么要有 Redo Log 和 Undo Log，以及 WAL 为什么能把随机写变成顺序写？",
+          "points": [
+            "直接刷 16KB 脏页是随机 IO，太慢；WAL 先顺序追加写 Redo，后台异步刷脏页",
+            "Redo Log（InnoDB 物理日志）：保持久性（D），断电前滚恢复",
+            "Undo Log（InnoDB 逻辑日志）：保原子性（A）回滚，兼顾 MVCC 多版本读"
+          ],
+          "model": "InnoDB 修改数据时不会每次都把 16KB 脏页随机刷盘，而是采用 WAL 先顺序追加写 Redo Log，将随机 IO 转为顺序 IO。其中 Redo Log 是物理日志，负责断电重启后前滚恢复，保证持久性；Undo Log 是逻辑日志，保存修改前旧值，负责事务回滚保证原子性，同时支撑 MVCC 的历史版本读取。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "Redo Log 保证 ACID 的哪一项？",
+              "a": "D（Durability，持久性）。"
+            },
+            {
+              "q": "Undo Log 保证 ACID 的哪一项？",
+              "a": "A（Atomicity，原子性，回滚）以及 MVCC。"
+            },
+            {
+              "q": "WAL 提升写性能的核心原因？",
+              "a": "把随机写 16KB 数据页变成顺序追加写小日志。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}
