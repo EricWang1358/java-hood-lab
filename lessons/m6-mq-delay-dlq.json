@@ -1,0 +1,571 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-mq-delay-dlq",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "30 分钟未支付自动关单：定时扫表、时间轮还是延迟队列+死信？",
+  "lead": "定时扫数据库全表会随订单膨胀把 DB 扫崩；为每个订单开一个睡眠线程会瞬间耗尽线程池。延迟消息底层靠时间轮/分层队列把扫描次数降到 O(1)，配合死信队列还能兜底异常消息。",
+  "minutes": 30,
+  "needs": [
+    "了解订单超时关单业务场景",
+    "知道定时任务与队列的基本概念"
+  ],
+  "after": [
+    "对比定时扫 DB、每任务睡眠线程、时间轮、延迟队列+死信四种方案的扫描开销",
+    "理解时间轮 O(1) 插入与按 Tick 触发的核心原理",
+    "知道死信队列（DLQ）在延迟关单与异常隔离中的两大用途"
+  ],
+  "terms": {
+    "时间轮 (TimingWheel)": "把时间切成环形槽位（Slot），任务按到期 Tick 放入对应槽，指针每秒走一格只处理当前槽里的到期任务。",
+    "死信队列 (DLQ)": "存放超时过期（TTL）或消费多次失败被拒绝（NACK/Reject）消息的特殊队列，用于延迟投递或异常兜底。"
+  },
+  "experiments": {
+    "m6_mqdelay": {
+      "runner": "java",
+      "home": "lab.m6.mqdelay",
+      "knob": {
+        "name": "threads",
+        "label": "调度/扫描并发度",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "scanOps",
+        "expectKey": "expected",
+        "label": "无效扫描/轮询次数",
+        "expect": "仅O(N)精准触发"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "PollingScanDb",
+          "label": "定时轮询扫全表",
+          "code": "PollingScanDb.java",
+          "note": "每过一个 Tick 就全表扫描一次未到期订单，200 单 30 轮产生上万次无效扫描。"
+        },
+        {
+          "id": "SleepWaitThread",
+          "label": "忙等/休眠线程轮询",
+          "code": "SleepWaitThread.java",
+          "note": "每个线程轮询检查到期时间，依然存在大量空转检查且白白占住工作线程。"
+        },
+        {
+          "id": "TimingWheelDelay",
+          "label": "时间轮O(1)调度",
+          "code": "TimingWheelDelay.java",
+          "note": "下单时 O(1) 放进到期槽位，指针走到该槽才精确取出，扫描次数降到严格 2*N。"
+        },
+        {
+          "id": "DelayWithDlq",
+          "label": "延迟队列+死信兜底",
+          "code": "DelayWithDlq.java",
+          "note": "时间轮精准投递，遇异常消息自动转入死信队列隔离，不阻塞正常关单。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "30 分钟未支付自动关单：定时扫表、时间轮还是延迟队列+死信？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "几乎每份后端简历都有「下单 30 分钟未支付自动关单」。千万别答「写个 `@Scheduled` 每秒扫一次 MySQL 订单表」——**订单量上百万时，一次全表扫描就能把数据库 CPU 打满**。",
+          "say": "看看定时扫表和 MQ 延迟队列/时间轮在操作次数上到底差了多少倍。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "定时扫表的瓶颈",
+              "q": "用定时任务每隔 5 秒 `SELECT * FROM orders WHERE status=0 AND create_time < now-30m` 有什么问题？",
+              "options": [
+                "高频扫大表耗费大量 DB IO/CPU，且存在最大 5 秒的时间误差",
+                "SQL 语法不支持时间比较",
+                "只能关掉第一笔订单"
+              ],
+              "answer": 0,
+              "why": "大表高频轮询会严重拖慢正常下单的数据库性能。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：200 笔待支付订单，30 个时间刻度（Tick）后陆续到期",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "观察四种方案完成所有到期关单总共执行了多少次扫描检查（`scanOps`）。理想值只需「入队 200 次 + 到期触发 200 次 = 400 次」。",
+            "actors": [
+              "定时扫表",
+              "时间轮 / 延迟队列"
+            ],
+            "shared": "到期任务槽"
+          },
+          "say": "观察四种方案完成所有到期关单总共执行了多少次扫描检查（`scanOps`）。理想值只需「入队 200 次 + 到期触发 200 次 = 400 次」。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `PollingScanDb`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_mqdelay.PollingScanDb",
+          "say": "这就是最常见的基线写法 `PollingScanDb`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`PollingScanDb` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`PollingScanDb` 在 30 个 Tick 里不断全表扫描 200 笔订单，4 个线程下 `scanOps` 会是多少？",
+          "options": [
+            "400 次",
+            "24,000 次（绝大部分都是无效空扫）",
+            "200 次"
+          ],
+          "answer": 1,
+          "say": "每次轮询都要把还没到期的订单也挨个看一遍，纯纯浪费算力。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`PollingScanDb` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqdelay",
+          "show": [
+            "PollingScanDb"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "for (int tick = 0; tick < TICKS; tick++) {",
+            "scanOps.incrementAndGet(); // full table scan every tick!"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `PollingScanDb` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_mqdelay.PollingScanDb",
+          "lines": [
+            "for (int tick = 0; tick < TICKS; tick++) {",
+            "scanOps.incrementAndGet(); // full table scan every tick!"
+          ],
+          "say": "双层循环每个 Tick 扫全表，数据量一放大立刻雪崩。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "Order -> wheel[dueTick].add -> Tick 指针精确触发",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "定时扫表",
+            "时间轮 / 延迟队列"
+          ],
+          "shared": {
+            "name": "到期任务槽",
+            "start": "32 个槽位"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "Tick 0..9：所有订单都没到期，但定时任务照样全表扫 10 遍",
+              "say": "白白扫了上万次。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "text": "下单时直接算好 dueSlot 放进 wheel[dueSlot]",
+              "say": "插入复杂度 O(1)。"
+            },
+            {
+              "lane": 1,
+              "op": "calc",
+              "text": "指针走到 dueSlot 时直接遍历该槽并清空",
+              "say": "没到期的订单看都不用看，扫描次数降到理论下限 400！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `SleepWaitThread`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "`TimingWheelDelay` 和 `DelayWithDlq` 相比，多出来的 DLQ（死信队列）解决什么问题？",
+          "options": [
+            "关单时遇到异常消息（如库存服务故障）能转入死信队列隔离告警，不卡死正常订单",
+            "死信队列能加快时间轮转动",
+            "死信队列可以代替数据库"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`PollingScanDb` vs `SleepWaitThread`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqdelay",
+          "show": [
+            "PollingScanDb",
+            "SleepWaitThread"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `SleepWaitThread` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_mqdelay.PollingScanDb",
+          "within": "main(java.lang.String[])",
+          "from": "0: invokestatic",
+          "to": "return",
+          "say": "看 `PollingScanDb.main`：外层 Tick 循环套内层全量订单循环，时间复杂度是 O(TICKS × ORDERS)。",
+          "walk": [
+            {
+              "focus": [
+                "scanOps"
+              ],
+              "label": "O(T*N) 轮询爆炸",
+              "say": "线上订单千万级时，这种写法就是数据库杀手。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`TimingWheelDelay` 与 `DelayWithDlq`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_mqdelay",
+          "show": [
+            "PollingScanDb",
+            "SleepWaitThread",
+            "TimingWheelDelay",
+            "DelayWithDlq"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_mqdelay",
+          "variants": [
+            "PollingScanDb",
+            "SleepWaitThread",
+            "TimingWheelDelay",
+            "DelayWithDlq"
+          ],
+          "notes": [
+            {
+              "focus": "PollingScanDb",
+              "key": "无效全表扫描高达 24,000 次",
+              "say": "严禁在核心大表上跑高频全表扫。"
+            },
+            {
+              "focus": "DelayWithDlq",
+              "key": "精确 400 次触发 + 死信隔离异常",
+              "say": "RocketMQ 延迟消息 / RabbitMQ 延迟插件 / Redis ZSet 都是生产常见实现。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `DelayWithDlq` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_mqdelay.DelayWithDlq",
+          "within": "main(java.lang.String[])",
+          "from": "0: invokestatic",
+          "to": "return",
+          "say": "看 `DelayWithDlq.main`：时间轮 O(1) 精准唤醒到期订单，失败的订单放进 `dlq` 列表，正常订单丝毫不被拖累。",
+          "walk": [
+            {
+              "focus": [
+                "dlq"
+              ],
+              "label": "时间轮 + 死信兜底",
+              "key": "精准低耗触发 + 毒丸消息隔离",
+              "say": "Netty HashedWheelTimer、Kafka Purgatory 和 RocketMQ 延迟队列都是时间轮思想。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "MQ 延迟队列 (RocketMQ/RabbitMQ)",
+              "solves": "海量订单高精度自动关单",
+              "cost": "约 {ms:m6_mqdelay.DelayWithDlq} ms，O(1) 触发且天然持久化不丢",
+              "when": "电商未支付关单、超时自动收货、延迟重试",
+              "say": "RocketMQ 5.x 支持任意秒级延迟，4.x 支持 18 个固定延迟等级；RabbitMQ 可用 x-delayed-message 插件或 TTL+DLX。"
+            },
+            {
+              "name": "Redis ZSet 轮询 / 时间轮",
+              "solves": "轻量级、无 MQ 基础设施时的延迟调度",
+              "cost": "score 存到期时间戳，单节点内存受限，需注意持久化与高可用",
+              "when": "中小体量系统或 Netty 单机毫秒级超时检测",
+              "say": "面试时把 MQ 延迟队列、Redis ZSet 和时间轮三者的适用边界讲清最加分。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "RabbitMQ「TTL + 死信队列」做延迟消息有什么著名坑？",
+          "branches": [
+            {
+              "when": "队列维度统一固定 TTL（如都是 30 分钟）",
+              "pick": "直接用 Queue TTL + DLX 死信交换机，先入队的一定先到期",
+              "eg": "零额外插件，稳妥高效"
+            },
+            {
+              "when": "同一队列里每条消息设置不同 TTL（前 30 分、后 5 秒）",
+              "pick": "改用 RabbitMQ 延迟插件或 RocketMQ 任意时间延迟消息",
+              "eg": "因为 RabbitMQ 只检查队头是否过期，队头 30 分没过期会堵死后面的 5 秒消息！"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "定时扫 DB 全表",
+            "MQ 延迟队列 + DLQ",
+            "TTL+DLX（混合不同 TTL）"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "电商平台每天千万订单，要求 15 分钟未支付精准关单，且异常订单不能阻塞正常关单。",
+              "answer": 1,
+              "why": "MQ 延迟消息底层时间轮调度，配合死信队列隔离异常订单。"
+            },
+            {
+              "text": "把 30 分钟到期和 10 秒到期的消息混着塞进同一个 RabbitMQ 普通队列等它过期进死信。",
+              "answer": 2,
+              "why": "会触发 RabbitMQ 队头过期阻塞，10 秒消息要等 30 分钟才能出去。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：延迟消息与死信队列",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "延迟消息与死信队列",
+          "alias": "Delay Queue · Timing Wheel · DLQ",
+          "oneLine": "==时间轮/延迟队列== 把全表扫描降为 O(1) 精准触发；==死信队列 (DLQ)== 负责隔离超时或多次重试失败的毒丸消息。",
+          "asked": [
+            "30 分钟未支付自动关单有哪些实现方案？",
+            "RabbitMQ 用 TTL+死信队列做延迟消息有什么坑？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么时间轮（Timing Wheel）比定时扫数据库更适合做海量延迟任务？",
+          "options": [
+            {
+              "text": "时间轮按到期时间直接放进对应槽位，指针走到哪一格只处理那一格的任务，避免了全量无效扫描",
+              "ok": true,
+              "why": "把复杂度从 O(T×N) 降到了接近 O(N)。"
+            },
+            {
+              "text": "时间轮不需要消耗任何内存",
+              "ok": false,
+              "why": "时间轮需要内存保存槽位链表，但它省掉了海量无效轮询和 DB IO。"
+            }
+          ],
+          "say": "理解 O(1) 插入和按槽触发的本质。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果把延迟 30 分钟的消息和延迟 5 秒的消息先后发进同一个 RabbitMQ 普通队列（依靠消息 TTL + 死信队列），会发生什么？",
+          "options": [
+            {
+              "text": "5 秒的消息被 30 分钟的队头堵住，也要等 30 分钟才会进入死信队列",
+              "ok": true,
+              "why": "RabbitMQ 只会判断队头消息是否过期，不会扫描队列中间。"
+            },
+            {
+              "text": "5 秒的消息会自动插队先过期",
+              "ok": false,
+              "why": "不会插队，必须用延迟插件或按固定时长拆分多个队列。"
+            }
+          ],
+          "say": "RabbitMQ 面试必考踩坑点！"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "除了做延迟消息，死信队列（DLQ）在生产环境中最主要的用途是什么？",
+          "options": [
+            {
+              "text": "承接消费多次重试仍失败（或被消费者拒绝且不重回队列）的异常消息，防止阻塞主队列并便于人工排查补偿",
+              "ok": true,
+              "why": "隔离毒丸消息，保护主链路吞吐。"
+            },
+            {
+              "text": "用来替代持久化磁盘",
+              "ok": false,
+              "why": "DLQ 本身也是普通队列，需要监控告警和补偿消费。"
+            }
+          ],
+          "say": "一定要补一句：死信队列必须配置监控告警！"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "订单 30 分钟未支付自动关单有哪些技术方案？为什么不建议定时扫表？",
+          "points": [
+            "定时扫 DB 在大表下会产生海量无效 IO 且有时间误差，甚至拖垮线上库",
+            "推荐用 MQ 延迟消息（如 RocketMQ 延迟队列 / RabbitMQ 延迟插件），底层利用时间轮实现 O(1) 精准触发",
+            "若用 RabbitMQ TTL+死信队列需注意只适合固定时长，混合不同时长会产生队头阻塞；异常消息转死信队列配合告警"
+          ],
+          "model": "订单 30 分钟未支付自动关单，最不推荐的是定时任务全表扫描数据库，因为订单表上百万后高频扫表会消耗大量 DB CPU 和 IO，还存在轮询间隔误差。工程上主流方案是使用 MQ 延迟队列，比如 RocketMQ 的延迟消息或 RabbitMQ 的延迟插件，它们底层通常基于时间轮实现，只在到期时刻精准触发，复杂度接近 O(1)。需要注意如果用 RabbitMQ 原生消息 TTL 加死信队列来实现，因为队列只检查队头是否过期，同一个队列里不能混放不同延迟时间的消息，否则会队头阻塞。最后，关单时也要注意并发防重，避免用户刚支付成功同时触发关单。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "延迟关单首选方案？",
+              "a": "MQ 延迟队列（RocketMQ 延迟消息 / RabbitMQ 延迟插件），底层时间轮精准触发。"
+            },
+            {
+              "q": "RabbitMQ TTL+DLQ 的队头阻塞坑？",
+              "a": "队列只检查队头过期，混放不同 TTL 会导致短 TTL 被长 TTL 堵死。"
+            },
+            {
+              "q": "死信队列（DLQ）的作用？",
+              "a": "隔离超过最大重试次数的失败消息（毒丸消息），配合告警人工/脚本补偿。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}
