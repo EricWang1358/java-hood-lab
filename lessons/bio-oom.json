@@ -1,0 +1,258 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "bio-oom",
+  "course": "网络与操作系统",
+  "title": "一连接一线程：慢客户端怎么拖垮服务端？",
+  "lead": "只要混进几个慢客户端，单线程 BIO 卡死、线程池被饿死、一连接一线程内存暴涨，NIO 怎么破？",
+  "minutes": 35,
+  "needs": ["知道 Socket.accept() 与 read()", "知道线程池 FixedThreadPool", "知道线程栈默认 1MB"],
+  "after": [
+    "讲清 BIO 阻塞读取为什么会导致单线程卡死与固定线程池饿死",
+    "算出一连接一线程在万级连接下的内存与上下文切换代价",
+    "理解 NIO 非阻塞事件驱动如何让 1 条线程兜住全部慢连接"
+  ],
+  "terms": {
+    "BIO": "Blocking I/O：同步阻塞 I/O，调用 accept() 或 read() 时如果没数据，当前线程就一直挂起死等。",
+    "线程池饿死": "有限的工作线程全被慢连接占着阻塞等待，后续快请求只能干等超时。",
+    "NIO": "Non-blocking I/O：同步非阻塞 I/O，没有数据时 read() 立刻返回 0，线程绝不干等。"
+  },
+  "experiments": {
+    "biooom": {
+      "runner": "java",
+      "home": "lab.biooom",
+      "variants": [
+        { "id": "SingleBio", "code": "SingleBio.java", "label": "单线程 BIO 串行", "note": "主线程依次 accept+read，遇到 120ms 慢客户端，后面的快客户端全被堵死超时。" },
+        { "id": "ThreadPerConn", "code": "ThreadPerConn.java", "label": "一连接一线程", "note": "每来一个连接 new 一条 Thread；快请求能过，但并发一上万线程栈直接 OOM。" },
+        { "id": "FixedPoolStarve", "code": "FixedPoolStarve.java", "label": "固定线程池 BIO", "note": "4 线程固定池接管连接，前 4 个慢客户端一占满，其余快客户端全部饿死超时。" },
+        { "id": "NioNonBlocking", "code": "NioNonBlocking.java", "label": "NIO Selector 非阻塞", "note": "仅用 1 条服务端线程轮询就绪事件，慢客户端不占线程，所有快客户端秒过。" }
+      ],
+      "knob": { "label": "并发客户端数", "values": ["16", "32", "64", "128"], "default": "32" },
+      "repeat": 20,
+      "metric": { "key": "fastOk", "expectKey": "expected", "label": "快客户端成功数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "一连接一线程：慢客户端怎么拖垮服务端？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**哪怕 CPU 利用率只有 1%，为什么 4 个发呆的慢客户端就能把一套 BIO 服务端彻底拖垮？**",
+          "say": "线上很多服务不是被高 QPS 打死的，而是被慢客户端（如弱网手机、Slowloris 攻击）把连接线程全占满饿死的。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：BIO 线程在等什么？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先确认三个关于阻塞 I/O 的常识。",
+          "items": [
+            {
+              "have": "read() 阻塞",
+              "q": "BIO 里客户端连上服务端后迟迟不发数据，服务端线程调 `in.read()` 会怎样？",
+              "options": ["立刻返回 0", "当前线程挂起阻塞，直到收到字节或超时", "自动切去服务别的连接"],
+              "answer": 1,
+              "why": "BIO 的 B 就是 Blocking：只要对方不发数据，这条线程就动弹不得。"
+            },
+            {
+              "have": "线程栈",
+              "q": "JVM 默认每条平台线程的栈内存（`-Xss`）大约多大？",
+              "options": ["1 KB", "1 MB", "100 MB"],
+              "answer": 1,
+              "why": "如果一连接一线程扛 1 万个长连接，光线程栈就要吃掉约 10 GB 内存，直接 OOM！"
+            },
+            {
+              "have": "线程池",
+              "q": "为了防 OOM 改用固定 200 线程的 BIO 线程池，遇到 200 个慢连接同时挂起会怎样？",
+              "options": ["后面所有正常快请求全在队列里饿死", "线程池会自动变非阻塞", "不受影响"],
+              "answer": 0,
+              "why": "200 条线程全卡在 `read()` 上，整个服务对外表现为完全假死。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「餐厅服务员死等点菜」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["4 个慢客人", "28 个快客人"], "shared": { "name": "4 名服务员(BIO 池)", "value": "全被占死" } },
+          "story": "4 名服务员（BIO 固定线程池）每人站在一桌慢客人旁边**死等对方看菜单**（`in.read()` 阻塞 120ms），外面排队的 28 个快客人只想点一瓶水，等了 80ms 没人理全气走了；换成 NIO 则是 1 名服务员巡场，谁举手（`OP_READ` 就绪）才去服务谁！",
+          "say": "BIO 的致命伤是「1 个连接绑死 1 条线程」；NIO 则是「只为真正有数据的事件分配算力」。",
+          "map": [
+            { "scene": "4 名服务员死等慢客", "on": "shared", "tag": "BIO 线程池饿死", "code": "`Executors.newFixedThreadPool(4)`", "say": "慢连接不释放线程，快连接全被堵在门外。" },
+            { "scene": "1 人巡场看谁举手", "on": "actors", "tag": "NIO Selector", "code": "`selector.select()`", "say": "没举手的慢连接安静待在内核列表里，零线程占用。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "现场复现：固定线程池被慢连接饿死",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "biooom.FixedPoolStarve",
+          "say": "看 `FixedPoolStarve.java`：4 个线程的池子遇上混入的慢客户端（睡 120ms），快客户端在 80ms 超时内能完成几个？"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：32 个客户端里 28 个快客户端，NIO vs BIO 固定池各过多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "32 个客户端（含慢客户端）同时连向 `FixedPoolStarve`（4 线程 BIO）和 `NioNonBlocking`（1 线程 NIO），28 个快客户端各自能成功多少？",
+          "options": ["两边都 28 个全过", "FixedPoolStarve 只过个位数（饿死），NioNonBlocking 28 个全过", "NIO 更差"],
+          "answer": 1,
+          "say": "只要慢连接占住 BIO 池子里的线程，快连接就只能干等超时；而 1 条 NIO 线程轻松把 28 个快连接全部秒回。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测撞车：BIO 饿死 vs NIO 28/28 全过",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "biooom",
+          "show": ["SingleBio", "FixedPoolStarve", "NioNonBlocking"],
+          "knob": "32",
+          "hand": "FixedPoolStarve",
+          "focus": "fastOk",
+          "say": "看真实数据：`SingleBio` 和 `FixedPoolStarve` 快客户端几乎全军覆没，而仅用 1 条线程的 `NioNonBlocking` 稳稳 28/28 全过！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "BIO 按连接占线程易被慢连接拖垮；NIO 按就绪事件驱动，慢连接零线程占用",
+          "say": "这就是 C10K 问题（单机一万并发连接）只能靠 NIO 多路复用解决的根本原因。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的阻塞 read vs 非阻塞轮询",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "biooom.NioNonBlocking",
+          "within": "lambda$main$0",
+          "from": "Selector.select",
+          "to": "SocketChannel.read",
+          "say": "在 `NioNonBlocking` 里，只有 `Selector.select()` 挑出真正有数据可读的 `SelectionKey` 时，才去调用 `SocketChannel.read()`，永远不会在慢连接上阻塞。",
+          "walk": [
+            { "focus": ["Selector.select"], "label": "内核筛选就绪事件", "say": "慢连接没发数据，根本不会出现在 `selectedKeys()` 里。" },
+            { "focus": ["SocketChannel.read"], "label": "非阻塞读取", "say": "有数据才读，读完立刻去处理下一个。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条线同台对比",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "biooom",
+          "show": ["SingleBio", "ThreadPerConn", "FixedPoolStarve", "NioNonBlocking"],
+          "knob": "32",
+          "hand": "NioNonBlocking",
+          "focus": "fastOk",
+          "say": "`ThreadPerConn` 虽然也能过，但 128 客户端就要建 128 条线程，上万连接直接 OOM；只有 `NioNonBlocking` 兼具高并发与低内存。"
+        },
+        {
+          "t": "try",
+          "key": "biooom",
+          "say": "把并发数调到 128 试试，感受 NIO 单线程的从容。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "I/O 模型怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "结合连接数与连接活跃度做选择。",
+          "options": [
+            { "name": "BIO 线程池", "solves": "代码最简单直观", "cost": "易被慢连接/长连接占满饿死", "when": "连接数极少（几十以内）且全在内网低延迟短交互", "say": "高并发网关和长连接推送绝对不能用。" },
+            { "name": "NIO Selector（Netty）", "solves": "少量线程扛住数万并发与慢连接", "cost": "编程模型较复杂（需处理半包与事件状态机）", "when": "IM、推送、RPC 框架、API 网关", "say": "生产中直接用 Netty 封装好的 Reactor。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住这个演进逻辑",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "BIO 线程模型瓶颈与 C10K 问题",
+          "alias": "Blocking I/O Starvation",
+          "oneLine": "BIO 一连接一线程在万级连接下会因线程栈 OOM 与上下文切换崩溃，固定池又会被慢连接饿死；NIO 用 Selector 将线程与连接解耦。",
+          "asked": "为什么传统 BIO 扛不住高并发？NIO 怎么解决 C10K 问题？",
+          "say": "从「线程栈 1MB OOM」「线程池被慢连接占满饿死」「NIO 事件驱动解耦连接与线程」三层作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "某接口网关使用固定 100 线程的 BIO 模型，当 100 个弱网手机用户同时连上来但迟迟不发完请求体时，其余正常用户会怎样？",
+          "options": [
+            { "text": "全部阻塞在队列里等待甚至超时失败，因为 100 条线程全被慢连接占死了", "ok": true, "why": "正确！这就是 BIO 固定线程池面对慢连接的典型雪崩现场。" },
+            { "text": "JVM 会自动把它们转成 NIO", "ok": false, "why": "BIO 代码不会自动变成 NIO。" },
+            { "text": "CPU 会飙到 100%", "ok": false, "why": "线程都在阻塞挂起等待，CPU 反而很低，但服务已经假死。" }
+          ],
+          "say": "记住「CPU 很低但服务假死」往往就是阻塞 I/O 占满了线程池。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：BIO 崩盘与 NIO 破局",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：BIO 和 NIO 的本质区别是什么？为什么高并发网络框架都用 NIO？",
+          "points": [
+            "BIO 本质：同步阻塞，accept 和 read 没数据时挂起线程，一连接一线程在万级连接下栈内存直接 OOM",
+            "BIO 固定池陷阱：虽然限制了线程数，但一旦遇到慢连接或大量长连接挂起，线程池全被占满导致快请求饿死",
+            "NIO 破局：连接设成非阻塞并注册到 Selector，少量线程只处理真正就绪的读写事件，慢连接零线程占用"
+          ],
+          "model": "BIO 是同步阻塞 I/O，一个连接绑定一条线程，如果并发一万个连接，光默认 1MB 的线程栈就会吃掉上十 GB 内存导致 OOM；就算改成固定大小的 BIO 线程池，一旦混入少量慢客户端把线程全占在 read() 上阻塞等待，其余正常请求也会全部饿死超时。而 NIO 把 SocketChannel 设为非阻塞并注册到 Selector 多路复用器，少量线程只处理内核通知真正就绪的事件，慢连接在等待数据时不占用任何工作线程，从而用几条线程就能轻松扛住上万并发。",
+          "say": "把「OOM」「饿死」「事件驱动解耦」三个词串起来讲。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "收好这三张卡，BIO 与 NIO 对比题稳拿。",
+          "items": [
+            { "front": "一连接一线程死在哪？", "back": "万级连接 × 1MB 线程栈 → OOM + 剧烈上下文切换。" },
+            { "front": "固定线程池 BIO 死在哪？", "back": "慢连接占满线程阻塞 read()，快请求全部饿死。" },
+            { "front": "NIO 怎么解耦？", "back": "Selector 只唤醒就绪事件，线程只服务有数据的连接。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

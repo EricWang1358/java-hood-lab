@@ -121,6 +121,18 @@
 | M3-08 | **发个 POST 怎么先发一次 OPTIONS？** | 前端带个自定义头发跨域 POST，后端日志怎么每次收到双倍请求？CORS 预检与缓存实测。 | `lab.corspreflight` | [网页课件](./pages/http-cors.html) · [JSON](./lessons/http-cors.json) · [源码](./src/lab/corspreflight/) |
 | M3-09 | **Session 查表 vs 无状态 JWT，怎么选？** | 全局锁 Session 表、`ConcurrentHashMap`、无状态 HMAC-SHA256 验签与短效缓存黑名单，性能与扩展性差多少？ | `lab.authjwt` | [网页课件](./pages/auth-jwt.html) · [JSON](./lessons/auth-jwt.json) · [源码](./src/lab/authjwt/) |
 
+### 模块三 · 第三章：BIO、NIO 多路复用与 OS I/O（M3-10～M3-14）
+
+实测慢连接饿死 BIO 线程池、单/多 Reactor 多路复用、`transferTo` 零拷贝、PageCache 顺序写与 Group Commit 组提交、池化 DirectBuffer 堆外内存。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M3-10 | **一连接一线程：慢客户端怎么拖垮服务端？** | 只要混进几个慢客户端，单线程 BIO 卡死、线程池被饿死、一连接一线程内存暴涨，NIO 怎么破？ | `lab.biooom` | [网页课件](./pages/bio-oom.html) · [JSON](./lessons/bio-oom.json) · [源码](./src/lab/biooom/) |
+| M3-11 | **NIO Selector 多路复用：1 条线程如何扛住百并发？** | 同样面对高并发请求，BIO 线程池、单 Reactor 与主从多 Reactor 各自的性能瓶颈在哪里？ | `lab.selector` | [网页课件](./pages/nio-selector.html) · [JSON](./lessons/nio-selector.json) · [源码](./src/lab/selector/) |
+| M3-12 | **零拷贝：为什么 transferTo 比传统读写快一个数量级？** | 发一个静态文件走传统 read()+write() 要经历 4 次上下文切换和 4 次内存拷贝，sendfile/transferTo 怎么砍掉一半？ | `lab.zerocopy` | [网页课件](./pages/io-zerocopy.html) · [JSON](./lessons/io-zerocopy.json) · [源码](./src/lab/zerocopy/) |
+| M3-13 | **PageCache 顺序写与刷盘：fsync 为什么这么慢？** | Kafka 号称磁盘顺序写比内存随机写还快，MySQL 用组提交扛住高并发写入——秘密全在 PageCache 和 fsync 的博弈里。 | `lab.pagecache` | [网页课件](./pages/page-cache.html) · [JSON](./lessons/page-cache.json) · [源码](./src/lab/pagecache/) |
+| M3-14 | **堆外内存 DirectBuffer：省了一次拷贝，为什么还可能 OOM？** | Netty 为什么默认用池化 DirectBuffer 而不是 HeapByteBuffer？每次 allocateDirect 又会踩什么大坑？ | `lab.directbuf` | [网页课件](./pages/direct-buffer.html) · [JSON](./lessons/direct-buffer.json) · [源码](./src/lab/directbuf/) |
+
 ### 模块四 · 第一章：SQL 必知必会、联表与深分页改写（第 33～37 课）
 
 | # | 课程标题 | 一句话引子 | 代码包 | 入口 |
