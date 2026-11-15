@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>132</strong> 节循序渐进实验课</span>
-        <span><strong>528</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>137</strong> 节循序渐进实验课</span>
+        <span><strong>548</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,16 +374,17 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 132 / 132 课</span>
+        <span id="shownCount" class="count-note">显示 137 / 137 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (132)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (137)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
         <button type="button" class="pill" data-filter="ch4">第四章 · 线程封闭与线程池 (6)</button>
         <button type="button" class="pill" data-filter="ch5">第五章 · 工程模式与新特性 (11)</button>
         <button type="button" class="pill" data-filter="m2ch1">JVM 1 · 类加载与栈堆 (4)</button>
+        <button type="button" class="pill" data-filter="m2ch2">JVM 2 · 锁升级与 GC (5)</button>
         <button type="button" class="pill" data-filter="m3ch1">网络 1 · TCP 与 Socket (5)</button>
         <button type="button" class="pill" data-filter="m3ch2">网络 2 · HTTP 与认证 (4)</button>
         <button type="button" class="pill" data-filter="m3ch3">网络 3 · BIO/NIO 与 OS I/O (5)</button>
@@ -883,6 +884,75 @@
           <p class="card__lead">堆内存明明所有线程共享，为什么多线程同时 new 对象不抢同一把锁？</p>
           <div class="card__foot">
             <span>13 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m2ch2">
+        <div class="chapter__head">
+          <h2>模块二 · 第二章：对象头、逃逸分析、引用与 GC 机制（M2-05～M2-09）</h2>
+          <p>实测 synchronized 锁升级膨胀、JIT 标量替换、强软弱虚引用回收时机、GC Roots 循环孤岛与大对象直入老年代停顿。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/jvm-markword.html" data-ch="m2ch2" data-search="m2-05 jvm-markword 对象头 markword 与锁升级 对象头里 64 bit 存了什么？无竞争轻量级锁与多线程膨胀重量级锁耗时差多少？ lab.markword">
+          <div class="card__top">
+            <span class="card__num">#M2-05</span>
+            <span class="card__pkg">lab.markword</span>
+          </div>
+          <h3 class="card__title">对象头 MarkWord 与锁升级</h3>
+          <p class="card__lead">对象头里 64 bit 存了什么？无竞争轻量级锁与多线程膨胀重量级锁耗时差多少？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/jvm-escape.html" data-ch="m2ch2" data-search="m2-06 jvm-escape 逃逸分析与标量替换 循环里 new 百万个临时对象为什么和直接写 int 一样快？ lab.escape">
+          <div class="card__top">
+            <span class="card__num">#M2-06</span>
+            <span class="card__pkg">lab.escape</span>
+          </div>
+          <h3 class="card__title">逃逸分析与标量替换</h3>
+          <p class="card__lead">循环里 new 百万个临时对象为什么和直接写 int 一样快？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/jvm-references.html" data-ch="m2ch2" data-search="m2-07 jvm-references 强软弱虚引用与 threadlocal 泄漏 调一次 system.gc() 后强软弱虚引用各自收多少？threadlocal 为什么还会内存泄漏？ lab.references">
+          <div class="card__top">
+            <span class="card__num">#M2-07</span>
+            <span class="card__pkg">lab.references</span>
+          </div>
+          <h3 class="card__title">强软弱虚引用与 ThreadLocal 泄漏</h3>
+          <p class="card__lead">调一次 System.gc() 后强软弱虚引用各自收多少？ThreadLocal 为什么还会内存泄漏？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/jvm-gcroots.html" data-ch="m2ch2" data-search="m2-08 jvm-gcroots gc roots 可达性分析 循环引用为什么不会内存泄漏？哪些对象能当 gc roots？ lab.gcroots">
+          <div class="card__top">
+            <span class="card__num">#M2-08</span>
+            <span class="card__pkg">lab.gcroots</span>
+          </div>
+          <h3 class="card__title">GC Roots 可达性分析</h3>
+          <p class="card__lead">A↔B 循环引用为什么不会内存泄漏？哪些对象能当 GC Roots？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/jvm-gc-pause.html" data-ch="m2ch2" data-search="m2-09 jvm-gc-pause 分代回收与 gc 停顿 朝生夕灭的小对象秒收，1mb 大数组直奔老年代怎么把 gc 耗时拖垮？ lab.gcpause">
+          <div class="card__top">
+            <span class="card__num">#M2-09</span>
+            <span class="card__pkg">lab.gcpause</span>
+          </div>
+          <h3 class="card__title">分代回收与 GC 停顿</h3>
+          <p class="card__lead">朝生夕灭的小对象秒收，1MB 大数组直奔老年代怎么把 GC 耗时拖垮？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>

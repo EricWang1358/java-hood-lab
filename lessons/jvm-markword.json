@@ -1,0 +1,249 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "jvm-markword",
+  "course": "JVM 内存与 GC",
+  "title": "对象头 MarkWord 与锁升级：synchronized 为什么以前慢现在快？",
+  "lead": "对象头里 64 bit 的 MarkWord 存了什么？无竞争时的轻量级锁与多线程撞车膨胀成重量级锁，耗时差多少倍？",
+  "minutes": 35,
+  "needs": ["知道对象内存布局（对象头/实例数据/对齐填充）", "知道 synchronized", "知道 monitorenter/monitorexit"],
+  "after": [
+    "画出 64 位 MarkWord 在无锁、偏向锁、轻量级锁、重量级锁下的状态变迁",
+    "解释轻量级锁（CAS 栈帧 Lock Record）与重量级锁（ObjectMonitor 互斥量）的成本差异",
+    "知道 JIT 锁消除（Lock Elimination）与锁粗化（Lock Coarsening）的触发条件"
+  ],
+  "terms": {
+    "MarkWord": "对象头的前 8 字节（64 位 JVM），复用同一段比特位记录锁标志位、分代年龄、哈希码与持有锁的线程/Monitor 指针。",
+    "轻量级锁": "无多线程竞争时，线程只在自己栈帧建 Lock Record 并用 CAS 替换 MarkWord，免去向操作系统申请互斥量。",
+    "重量级锁 (ObjectMonitor)": "发生多线程竞争（自旋失败）时锁膨胀，MarkWord 指向 C++ ObjectMonitor，未抢到的线程进入内核阻塞挂起与唤醒。"
+  },
+  "experiments": {
+    "markword": {
+      "runner": "java",
+      "home": "lab.markword",
+      "variants": [
+        { "id": "UncontendedSync", "code": "UncontendedSync.java", "label": "无竞争 synchronized", "note": "单线程反复进出 synchronized，走轻量级锁 CAS（甚至被 JIT 粗化），几毫秒搞定。" },
+        { "id": "ContendedSync", "code": "ContendedSync.java", "label": "4 线程激烈竞争锁膨胀", "note": "4 条线程同时死磕同一把锁，立刻膨胀为重量级 ObjectMonitor，内核挂起唤醒耗时暴涨！" },
+        { "id": "LockCoarsening", "code": "LockCoarsening.java", "label": "锁粗化（循环外加锁）", "note": "把百万次循环包进一次 synchronized，连轻量级锁 CAS 都省到只剩 1 次。" },
+        { "id": "CasAtomicCounter", "code": "CasAtomicCounter.java", "label": "4 线程 AtomicLong CAS", "note": "无锁自旋 CAS 竞争，避开内核态阻塞切换，比重量级锁更快但仍有缓存行争用。" }
+      ],
+      "knob": { "label": "加锁累加次数", "values": ["50000", "100000", "200000", "400000"], "default": "200000" },
+      "repeat": 20,
+      "metric": { "key": "count", "expectKey": "expected", "label": "正确累加次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "对象头 MarkWord 与锁升级",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**同样是 `synchronized (lock)`，为什么单线程下快到几乎零开销，一旦 4 条线程同时抢就慢出几十倍？**",
+          "say": "JDK 6 引入锁升级后，synchronized 不再一上来就找操作系统要互斥量，而是按竞争程度逐级膨胀。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：Java 对象头里藏了什么？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先对齐对象内存布局与锁升级常识。",
+          "items": [
+            {
+              "have": "对象头结构",
+              "q": "一个普通 Java 对象在堆内存中的对象头（Header）由哪两部分组成？",
+              "options": ["MarkWord（运行时元数据）+ Klass Pointer（类型指针）", "只有哈希码", "只有字段值"],
+              "answer": 0,
+              "why": "数组对象还会多一个 4 字节的数组长度（Array Length）。"
+            },
+            {
+              "have": "hashCode 与偏向锁",
+              "q": "如果对一个对象调用过 `System.identityHashCode(obj)`，它还能进入偏向锁状态吗？",
+              "options": ["不能，MarkWord 里记录了 31 位哈希码，已没有空间再存偏向线程 ID", "可以", "会直接 GC"],
+              "answer": 0,
+              "why": "MarkWord 是位复用的！算过 identityHashCode 后再加锁会直接跳过偏向锁进轻量级锁（JDK 15+ 默认已废弃偏向锁）。"
+            },
+            {
+              "have": "锁降级",
+              "q": "重量级锁在竞争消失后，业务线程运行时会自动降级回轻量级锁吗？",
+              "options": ["通常会保持重量级锁（仅在特定 STW 安全点极少数情况才可能重置）", "每次解锁立刻降级", "永久变成无锁"],
+              "answer": 0,
+              "why": "锁升级主要是单向膨胀：无锁 → (偏向) → 轻量级锁 → 重量级锁。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「会议室门牌」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["4 名抢锁员工"], "shared": { "name": "对象头 MarkWord 门牌", "value": "自旋填名 vs 找物业排队" } },
+          "story": "无竞争时（`UncontendedSync`），员工自己在笔记本（栈帧 Lock Record）划一块，用 CAS 把门牌（MarkWord）指向自己笔记，进门零阻塞；一旦 4 个人同时扑向同一扇门（`ContendedSync`），CAS 撞车自旋失败，门牌立刻升级成物业大堂排队叫号机（重量级 `ObjectMonitor`），抢不到的人全被操作系统挂起等待！",
+          "say": "用户态 CAS 换门牌只要几十纳秒；内核态挂起与唤醒线程一次就是几微秒到几十微秒。",
+          "map": [
+            { "scene": "门牌指向自己栈帧", "on": "shared", "tag": "轻量级锁", "code": "`UncontendedSync`", "say": "无竞争时无需找 OS 申请互斥量。" },
+            { "scene": "物业大堂排队叫号", "on": "actors", "tag": "重量级锁膨胀", "code": "`ContendedSync`", "say": "多线程竞争导致内核态上下文切换飙升。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：一模一样的 synchronized，差在竞争",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "markword.UncontendedSync",
+          "say": "对比 `UncontendedSync.java`（单线程 20 万次）和 `ContendedSync.java`（4 线程共 20 万次），加锁总次数完全一致。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：同样加锁 20 万次，无竞争 vs 4 线程竞争耗时差多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "20 万次 `synchronized` 累加，`UncontendedSync`、`ContendedSync`、`LockCoarsening` 谁最慢？",
+          "options": ["差不多", "ContendedSync 最慢（锁膨胀成重量级锁），UncontendedSync 和 LockCoarsening 极快", "UncontendedSync 最慢"],
+          "answer": 1,
+          "say": "重量级锁带来内核态阻塞/唤醒和频繁互斥量争用，耗时远高于无竞争轻量级锁。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测耗时：锁膨胀的真实代价",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "markword",
+          "show": ["UncontendedSync", "ContendedSync", "LockCoarsening", "CasAtomicCounter"],
+          "knob": "200000",
+          "hand": "ContendedSync",
+          "focus": "ms",
+          "say": "看耗时对比：`UncontendedSync` 和 `LockCoarsening` 仅需几毫秒；而 `ContendedSync` 膨胀成重量级锁后耗时暴涨！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "synchronized 本身不慢，慢的是「多线程激烈竞争同一把锁」触发重量级锁膨胀与线程阻塞切换",
+          "say": "这也是为什么高并发下要通过「分段锁/减小锁粒度/无锁 CAS」把竞争打散。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的 monitorenter 与 monitorexit",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "markword.UncontendedSync",
+          "within": "main",
+          "from": "monitorenter",
+          "to": "monitorexit",
+          "say": "字节码层统一编译成 `monitorenter` 和成对的 `monitorexit`（含异常路径兜底解锁），真正决定走轻量级锁还是重量级锁的是 HotSpot 运行时对 MarkWord 的状态判断。",
+          "walk": [
+            { "focus": ["monitorenter"], "label": "进入同步块", "say": "先检查 MarkWord 锁标志位，无竞争走栈帧 Lock Record CAS。" },
+            { "focus": ["monitorexit"], "label": "退出同步块", "say": "用 CAS 把栈帧里备份的 MarkWord 还原回对象头；若已膨胀则唤醒 Monitor 等待队列。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "调到 40 万次再对比",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "markword",
+          "say": "把次数调到 40 万，对比 `ContendedSync` 与 `CasAtomicCounter` 的差距。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "锁优化怎么落地？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "与其纠结 synchronized 底层，不如在代码里消除或缩小锁竞争。",
+          "options": [
+            { "name": "锁粗化 / 减小锁粒度", "solves": "循环外加锁减少重复进出；分段锁（如 LongAdder）打散热点竞争", "cost": "粗化过头会拉长单次持锁时间", "when": "高频循环累加、热点库存扣减", "say": "能不进重量级锁就绝不让多线程死磕同一把锁。" },
+            { "name": "JIT 锁消除（Escape Analysis）", "solves": "局部不逃逸对象（如局部 StringBuffer）自动消除加锁指令", "cost": "依赖对象不逃逸出方法/线程", "when": "局部变量使用线程安全容器", "say": "不过写新代码直接用 StringBuilder / HashMap 更干净。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住对象头与锁升级链路",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "MarkWord 与 synchronized 锁升级",
+          "alias": "Lightweight -> Heavyweight Monitor",
+          "oneLine": "对象头 MarkWord 复用比特位记录锁状态；无竞争走栈帧 Lock Record 轻量级锁 CAS，竞争激烈时膨胀为内核态 ObjectMonitor 重量级锁。",
+          "asked": "synchronized 锁升级过程是怎样的？对象头里存了什么？",
+          "say": "按「对象头 MarkWord → 无锁/偏向 → 轻量级锁(Lock Record CAS) → 重量级锁(ObjectMonitor)」讲清。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "JDK 15 之后为什么默认废弃了偏向锁（`-XX:-UseBiasedLocking`）？",
+          "options": [
+            { "text": "现代高并发应用多线程竞争普遍存在，偏向锁撤销需要等全局安全点（STW），维护成本常大于收益", "ok": true, "why": "正确！此外轻量级锁和现代 CPU CAS 指令已经足够快，撤销偏向锁的 STW 开销反而成了负担。" },
+            { "text": "因为偏向锁线程不安全", "ok": false, "why": "偏向锁是安全的，只是撤销代价高。" },
+            { "text": "因为 MarkWord 被删掉了", "ok": false, "why": "MarkWord 依然存在，用于轻量级锁、重量级锁、GC 年龄和哈希码。" }
+          ],
+          "say": "面试提到「JDK 15 默认禁用偏向锁、JDK 18 彻底移除相关选项」非常加分！"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：MarkWord 与 synchronized 锁升级",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：请讲一下 Java 对象头 MarkWord 和 synchronized 锁升级的完整过程？",
+          "points": [
+            "对象头组成：MarkWord（64位，存锁状态、GC分代年龄、identityHashCode、线程/Monitor指针）+ Klass Pointer（类型指针）",
+            "轻量级锁：多线程交替执行无激烈竞争时，线程在栈帧建 Lock Record，用 CAS 把 MarkWord 指向自己栈帧，免去系统调用",
+            "重量级锁膨胀：一旦多线程同时竞争导致 CAS 自旋失败，锁膨胀为 C++ ObjectMonitor，未抢到锁的线程进入阻塞队列由 OS 挂起调度；另外 JDK 15+ 默认废弃偏向锁以减少安全点撤销开销"
+          ],
+          "model": "在 HotSpot 中，对象头包含 MarkWord 和类型指针，其中 MarkWord 用位复用的方式保存哈希码、GC 分代年龄以及当前的锁状态标志。JDK 6 对 synchronized 做了锁升级优化：早期如果只有一个线程反复进出同步块，会用偏向锁（注：JDK 15 后因撤销需要等全局安全点且现代并发多，已默认禁用偏向锁）；当多个线程交替访问但没有激烈冲突时，使用轻量级锁——线程在自己栈帧创建 Lock Record，通过 CAS 把 MarkWord 替换成指向 Lock Record 的指针；而一旦发生多线程同时激烈争抢、CAS 自旋失败，就会膨胀为重量级锁，MarkWord 指向堆外 C++ 的 ObjectMonitor，没抢到锁的线程会被操作系统挂起进入阻塞队列，产生内核态上下文切换开销。",
+          "say": "把「MarkWord 位复用」「轻量级锁栈帧 CAS」「重量级锁 ObjectMonitor 挂起」「JDK 15 禁用偏向锁」串起来。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "锁升级三张卡收好。",
+          "items": [
+            { "front": "MarkWord 存什么？", "back": "锁标志位、GC 分代年龄、identityHashCode、线程/Monitor 指针（位复用）。" },
+            { "front": "轻量级锁原理", "back": "在当前线程栈帧建 Lock Record，用 CAS 替换对象头 MarkWord。" },
+            { "front": "何时膨胀成重量级锁？", "back": "多线程同时竞争导致轻量级锁 CAS 失败，升级为 ObjectMonitor 阻塞队列。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
