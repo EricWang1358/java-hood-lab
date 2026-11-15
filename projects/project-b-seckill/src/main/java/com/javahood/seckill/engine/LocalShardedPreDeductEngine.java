@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 /**
@@ -50,7 +51,7 @@ public class LocalShardedPreDeductEngine implements PreDeductEngine {
             return PreDeductResult.alreadyClaimed();
         }
 
-        int start = (int) (Math.abs(userId.hashCode()) % shardCount);
+        int start = Math.floorMod(userId.hashCode(), shardCount);
         for (int offset = 0; offset < shardCount; offset++) {
             int idx = (start + offset) % shardCount;
             if (tryDecrementBucket(shards, idx)) {
@@ -72,6 +73,15 @@ public class LocalShardedPreDeductEngine implements PreDeductEngine {
         Set<Long> users = claimedUsers.get(campaignId);
         if (users != null) {
             users.remove(userId);
+        }
+    }
+
+    @Override
+    public void restoreStockAfterClose(Long campaignId) {
+        AtomicIntegerArray shards = campaignShards.get(campaignId);
+        if (shards != null) {
+            int bucket = ThreadLocalRandom.current().nextInt(shards.length());
+            shards.incrementAndGet(bucket);
         }
     }
 

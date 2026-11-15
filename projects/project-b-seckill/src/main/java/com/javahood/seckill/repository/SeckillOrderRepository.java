@@ -20,8 +20,9 @@ public interface SeckillOrderRepository extends JpaRepository<SeckillOrder, Long
 
     /**
      * CAS state transition (Lab #24: lab.orderstate) - prevents concurrent pay vs timeout-close races.
+     * clearAutomatically=true flushes/clears 1st-level JPA PersistenceContext so subsequent reads see the new status.
      */
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE SeckillOrder o SET o.status = :target, o.updatedAt = :now WHERE o.orderNo = :orderNo AND o.status = :expected")
     int casTransitionStatus(@Param("orderNo") String orderNo,
                             @Param("expected") OrderStatus expected,

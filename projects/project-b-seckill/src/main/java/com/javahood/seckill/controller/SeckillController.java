@@ -2,7 +2,10 @@ package com.javahood.seckill.controller;
 
 import com.javahood.seckill.domain.CouponCampaign;
 import com.javahood.seckill.domain.SeckillOrder;
+import com.javahood.seckill.domain.UserCoupon;
 import com.javahood.seckill.repository.SeckillOrderRepository;
+import com.javahood.seckill.repository.UserCouponRepository;
+import com.javahood.seckill.service.CampaignQueryService;
 import com.javahood.seckill.service.OrderStateService;
 import com.javahood.seckill.service.SeckillService;
 import jakarta.validation.Valid;
@@ -13,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -26,20 +30,33 @@ public class SeckillController {
     }
 
     private final SeckillService seckillService;
+    private final CampaignQueryService campaignQueryService;
     private final OrderStateService orderStateService;
     private final SeckillOrderRepository orderRepository;
+    private final UserCouponRepository userCouponRepository;
 
     public SeckillController(SeckillService seckillService,
+                             CampaignQueryService campaignQueryService,
                              OrderStateService orderStateService,
-                             SeckillOrderRepository orderRepository) {
+                             SeckillOrderRepository orderRepository,
+                             UserCouponRepository userCouponRepository) {
         this.seckillService = seckillService;
+        this.campaignQueryService = campaignQueryService;
         this.orderStateService = orderStateService;
         this.orderRepository = orderRepository;
+        this.userCouponRepository = userCouponRepository;
     }
 
     @PostMapping("/campaigns")
     public CouponCampaign createCampaign(@Valid @RequestBody CreateCampaignRequest req) {
         return seckillService.createCampaign(req.title(), req.stock());
+    }
+
+    @GetMapping("/campaigns/{campaignId}")
+    public ResponseEntity<CampaignQueryService.CampaignDetailVO> getCampaign(@PathVariable Long campaignId) {
+        return campaignQueryService.getCampaignDetail(campaignId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/campaigns/{campaignId}/claim")
@@ -70,5 +87,10 @@ public class SeckillController {
         return orderRepository.findByOrderNo(orderNo)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/coupons")
+    public List<UserCoupon> listUserCoupons(@RequestParam Long userId) {
+        return userCouponRepository.findByUserIdOrderByIdDesc(userId);
     }
 }
