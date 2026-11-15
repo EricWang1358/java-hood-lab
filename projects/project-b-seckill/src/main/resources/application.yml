@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: project-b-seckill
+  datasource:
+    url: jdbc:h2:mem:seckill_db;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+app:
+  redis:
+    enabled: false
+  seckill:
+    shards: 16
+    pool-core-size: 4
+    pool-max-size: 8
+    pool-queue-capacity: 200
+    outbox-relay-fixed-delay-ms: 200
+
+server:
+  port: 8081
