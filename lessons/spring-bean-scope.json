@@ -1,0 +1,214 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "spring-bean-scope",
+  "course": "Spring 全家桶与持久层",
+  "title": "单例 Bean 里注入 Prototype 或成员变量，并发怎么串单了？",
+  "lead": "Spring Bean 默认是单例。在 Service 里写个成员变量暂存 userId，或者直接注入 Prototype Bean，多线程一来全串单！",
+  "minutes": 30,
+  "needs": ["知道 Spring Bean 默认是 singleton", "知道多线程共享同一个对象字段的并发风险", "了解函数式接口 Supplier"],
+  "after": ["解释为什么单例 Bean 写可变成员变量会线程不安全", "说出单例注入 Prototype 失效的原因", "掌握 ObjectProvider 和无状态设计两种解法"],
+  "terms": {
+    "singleton": "Spring 默认作用域：整个 IoC 容器只有一个实例，所有请求线程共用它。",
+    "prototype": "原型作用域：每次向容器申请都会 new 一个新实例，但若被单例直接字段注入，启动时只注入一次。",
+    "ObjectProvider": "Spring 4.3+ 延迟查找接口：在单例里注入 ObjectProvider<T>，每次 getObject() 才拿新 Prototype。",
+    "无状态 Bean": "不保存任何请求级可变字段，所有数据通过方法参数和局部变量传递，天然线程安全。"
+  },
+  "experiments": {
+    "beanscope": {
+      "runner": "java",
+      "home": "lab.beanscope",
+      "variants": [
+        { "id": "StatefulSingleton", "label": "单例写可变字段", "note": "把 userId 暂存在单例成员变量，多线程互相覆盖。" },
+        { "id": "InjectProtoDirect", "label": "单例直注 Prototype", "note": "启动时只注入了一次 Prototype 实例，并发下照样串单。" },
+        { "id": "ObjectProviderGet", "label": "ObjectProvider 现取", "note": "每次请求通过 ObjectProvider.get() 拿新实例，0 串单。" },
+        { "id": "StatelessRecord", "label": "无状态局部变量", "note": "不存成员变量，全走方法参数与局部变量，最快且 0 串单。" }
+      ],
+      "knob": { "label": "并发线程", "values": ["1", "2", "4", "8"], "default": "2" },
+      "repeat": 20,
+      "metric": { "key": "corrupted", "expectKey": "expected", "label": "串单次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "单例 Bean 里注入 Prototype 或成员变量，并发怎么串单了？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "很多人知道「不要在单例 Service 里写成员变量」，于是改把状态放进一个 `@Scope(\"prototype\")` 的上下文 Bean 再 `@Autowired` 注入——**结果并发照样串单！**",
+          "say": "因为容器启动组装单例时，只问容器要了一次 Prototype 实例。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "多线程同时处理订单，userId 串成别人的了",
+      "bridge": "预期串单次数 `corrupted = 0`。",
+      "blocks": [
+        { "t": "text", "md": "每个线程循环 5000 次传入自己的 `uid`，看返回值是否等于 `uid`。", "say": "看 `InjectProtoDirect` 代码。" }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看清为什么 Prototype 没生效",
+      "bridge": "注意 `OrderBean` 构造时只接收了一个 `ProtoCtx` 实例。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "beanscope.InjectProtoDirect",
+          "say": "启动时注入一次，后续 8 个线程都在改同一个 `ctx.userId`。",
+          "walk": [
+            { "focus": ["private final ProtoCtx ctx;"], "say": "单例只初始化一次，字段里的 `ctx` 也就被固定成了唯一一份，Prototype 名存实亡！", "key": "单例直接注入 Prototype，Prototype 会退化成单例" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：2 线程下会串单吗？",
+      "bridge": "跑之前下注。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "scope_guess",
+          "q": "2 个线程运行 `InjectProtoDirect`，串单次数 `corrupted` 是？",
+          "options": ["0（Prototype 每次自动隔离）", "大于 0（退化成共享，大量串单）"],
+          "answer": 1,
+          "say": "选出你的判断。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "四种写法实测对比",
+      "bridge": "单线程全对，2/4/8 线程下 `StatefulSingleton` 和 `InjectProtoDirect` 疯狂串单。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "beanscope",
+          "show": ["StatefulSingleton", "InjectProtoDirect", "ObjectProviderGet", "StatelessRecord"],
+          "select": "InjectProtoDirect",
+          "say": "`ObjectProviderGet` 和 `StatelessRecord` 全程 0 串单。"
+        },
+        {
+          "t": "reveal",
+          "of": "scope_guess",
+          "say": "只有每次请求现取新实例或彻底无状态，才能在并发下保住隔离。",
+          "key": "单例中用 Prototype 必须配 ObjectProvider/@Lookup"
+        },
+        { "t": "try", "say": "把线程数拨到 4 和 8，对比四种写法的串单数和耗时。" }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "性能对比",
+      "bridge": "无状态设计甚至比每次 `new` 对象更快。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "beanscope",
+          "say": "`StatelessRecord` 零对象分配、零串单，是最优解。",
+          "walk": [
+            { "focus": "StatelessRecord", "say": "把请求级数据留在方法栈帧的局部变量里，既安全又无 GC 压力。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "选型规则",
+      "layout": "split",
+      "bridge": "什么场景用什么方式？",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "单例 Bean 里需要请求级状态怎么办？",
+          "branches": [
+            { "when": "普通业务数据传递", "pick": "方法参数 / 局部变量（无状态）", "eg": "process(OrderCmd cmd)" },
+            { "when": "确实需要带状态的 Prototype Bean", "pick": "ObjectProvider<T>.getObject()", "eg": "provider.getObject()" },
+            { "when": "跨多层透传用户上下文", "pick": "ThreadLocal（记得 finally remove）", "eg": "UserContext.get()" }
+          ],
+          "say": "能传参就别用字段，必须用 Prototype 就上 `ObjectProvider`。"
+        },
+        {
+          "t": "cases",
+          "tools": ["无状态参数传递", "ObjectProvider.getObject()", "ThreadLocal + finally remove"],
+          "say": "三个场景选最合适的。",
+          "items": [
+            { "text": "计算订单优惠金额时暂存中间折扣值。", "answer": 0, "why": "直接用方法内局部变量或不可变中间对象返回。" },
+            { "text": "每次导出报表都需要一个全新的有状态 `ExcelBuilder`（Spring `@Scope(\"prototype\")`）。", "answer": 1, "why": "注入 `ObjectProvider<ExcelBuilder>` 每次现取。" },
+            { "text": "拦截器解析出当前登录 `userId`，下游 5 层 Service 都要读。", "answer": 2, "why": "用 `ThreadLocal` 透传并在拦截器 `afterCompletion` 里 `remove()`。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频提问。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Spring Bean 线程安全与作用域",
+          "alias": "Singleton · Prototype · ObjectProvider",
+          "oneLine": "Spring 单例 Bean 本身不保证线程安全；若直接注入 `prototype` Bean，启动时只注入一次，必须用==ObjectProvider==或==无状态设计==。",
+          "asked": ["Spring 的单例 Bean 是线程安全的吗？", "单例 Bean 里注入一个 Prototype Bean 会发生什么？"],
+          "say": "两道经典面试题一次讲透。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "快速检验。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "单例 `OrderService` 里写了 `@Autowired ProtoHelper helper;`（`ProtoHelper` 为 `prototype`），并发调用 100 次，容器创建了几个 `ProtoHelper`？",
+          "options": [
+            { "text": "100 个", "ok": false, "why": "单例只装配一次。" },
+            { "text": "1 个", "ok": true, "why": "正确！`OrderService` 创建时注入一次后就不再向容器申请了。" }
+          ],
+          "say": "选出正确答案。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "Spring 单例 Bean 是线程安全的吗？单例里注入 Prototype Bean 为什么会失效？怎么解决？",
+          "points": [
+            "Spring 不保证单例 Bean 线程安全，只是大多数 Service 无状态所以安全",
+            "如果单例里有可变成员变量，多线程并发修改会串单",
+            "单例直接注入 Prototype 时，只在容器启动装配单例时注入一次，后续共用同一实例",
+            "解决：优先改无状态传参；确实要 Prototype 时用 ObjectProvider/@Lookup 每次现取"
+          ],
+          "model": "Spring 单例 Bean 默认不是线程安全的，所有线程共用容器里唯一的一个实例。平时觉得安全是因为 Service 通常是无状态的，不保存可变成员变量；一旦写了可变字段就会并发串单。如果把状态放进 `prototype` Bean 再直接 `@Autowired` 进单例，因为在单例初始化时只注入一次，`prototype` 也会退化成单例。正确做法是尽量保持无状态、数据走方法参数和局部变量；如果确实需要每次拿新的 `prototype` 实例，就注入 `ObjectProvider<T>`，每次调用 `getObject()` 现取。",
+          "say": "点击开始自述。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "Spring 单例 Bean 线程安全吗？", "a": "不保证。无状态才安全；有可变成员变量必然并发串单。" },
+            { "q": "单例直接注入 `prototype` Bean 会怎样？", "a": "启动时只注入一次，后续退化成同一个实例。" },
+            { "q": "单例里如何正确获取 `prototype` Bean？", "a": "注入 `ObjectProvider<T>`，每次调用 `getObject()` 获取新实例。" }
+          ],
+          "say": "三张卡收好。"
+        }
+      ]
+    }
+  ]
+}

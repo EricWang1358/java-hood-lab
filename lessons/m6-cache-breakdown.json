@@ -1,0 +1,570 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-cache-breakdown",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "热点 Key 过期瞬间：互斥锁 vs 逻辑过期",
+  "lead": "某个爆款热点 Key 到点过期的一瞬间，成百上千并发请求同时 miss 挤向数据库，到底该排队等锁还是直接返回旧值？",
+  "minutes": 40,
+  "needs": [
+    "理解分布式锁/互斥锁基本用法",
+    "了解第 25 课单飞（SingleFlight）的基本思想"
+  ],
+  "after": [
+    "说清缓存击穿发生时的瞬时并发放大效应",
+    "对比「互斥锁阻塞重建」与「逻辑过期异步重建」在吞吐、尾延迟与一致性上的取舍",
+    "能手写逻辑过期数据结构并解释双重检查的意义"
+  ],
+  "terms": {
+    "缓存击穿": "单个极热点 Key 在过期的瞬间，大量并发请求同时 miss 并直接打向数据库重建。",
+    "互斥锁重建": "只放一条线程抢锁查库重建缓存，其余线程阻塞等待或自旋重试。",
+    "逻辑过期": "不设 Redis 物理 TTL，把过期时间戳写进 Value 字段；过期后触发异步单线程重建，当前线程直接返回旧值。",
+    "双重检查": "抢到互斥锁后再次读缓存确认是否已被前人重建，避免排队线程重复查库。"
+  },
+  "experiments": {
+    "m6_breakdown": {
+      "runner": "java",
+      "home": "lab.m6.breakdown",
+      "knob": {
+        "name": "threads",
+        "label": "并发抢热点线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "dbRebuilds",
+        "expectKey": "expected",
+        "label": "重建查库次数",
+        "expect": "应重建"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "Plain",
+          "label": "裸奔并发",
+          "code": "Plain.java",
+          "note": "无锁无保护，热点 Key 一过期所有线程一齐查库。"
+        },
+        {
+          "id": "MutexWait",
+          "label": "互斥锁等待",
+          "code": "MutexWait.java",
+          "note": "ReentrantLock 阻塞排队+双检，零多余查库但全员等重建完成。"
+        },
+        {
+          "id": "MutexTrySpin",
+          "label": "自旋试锁",
+          "code": "MutexTrySpin.java",
+          "note": "tryLock 失败自旋重试，CPU 空转拖高总耗时。"
+        },
+        {
+          "id": "LogicalExpire",
+          "label": "逻辑过期",
+          "code": "LogicalExpire.java",
+          "note": "过期不删 Key，tryLock 丢给后台线程异步更新，前台秒返旧值。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "热点 Key 过期瞬间：互斥锁 vs 逻辑过期",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "大促秒杀商品 `hot-sku` 缓存刚过期的 10 毫秒内，1000 个请求同时看到 `null` 并齐刷刷冲向数据库——**这就是缓存击穿**。",
+          "say": "单机可以用 computeIfAbsent，但跨多台机器的 Redis 集群没有本地桶锁可用，最经典的两种武器就是互斥锁和逻辑过期。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "双检锁直觉",
+              "q": "线程 A 刚抢到互斥锁去查库，线程 B 在锁外等了 50ms 终于拿到锁，此时 B 应该先做什么？",
+              "options": [
+                "再查一次缓存（Double Check）",
+                "立刻再去查一次数据库",
+                "直接抛异常返回"
+              ],
+              "answer": 0,
+              "why": "A 已经把新值写进缓存了，B 拿到锁后必须再查一次缓存，否则就是白白排队又查一次库。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：1 个爆款 Key 过期",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "15 波热点过期，每波 4~8 线程同时疯狂读取同一个 `hot-sku`。",
+            "actors": [
+              "线程 A",
+              "线程 B"
+            ],
+            "shared": "hot-sku 缓存"
+          },
+          "say": "15 波热点过期，每波 4~8 线程同时疯狂读取同一个 `hot-sku`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `Plain`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_breakdown.Plain",
+          "say": "这就是最常见的基线写法 `Plain`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`Plain` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "不加任何保护的 `Plain` 在 15 波过期中，会被重建查库多少次？",
+          "options": [
+            "刚好 15 次",
+            "远超 15 次，并发线程同时撞进 rebuildFromDb",
+            "0 次"
+          ],
+          "answer": 1,
+          "say": "没有任何互斥，同一波里谁看到 null 谁就去查库。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`Plain` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_breakdown",
+          "show": [
+            "Plain"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "if (val == null) {",
+            "val = rebuildFromDb(key);"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `Plain` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_breakdown.Plain",
+          "lines": [
+            "if (val == null) {",
+            "val = rebuildFromDb(key);"
+          ],
+          "say": "这句判空与重建之间没有锁，并发请求同时通过 `val == null` 检查。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "if (get(k) == null) rebuildFromDb(k)",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "线程 A",
+            "线程 B"
+          ],
+          "shared": {
+            "name": "hot-sku 缓存",
+            "start": "刚物理过期(null)"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "A 读到 null",
+              "say": "hot-sku 刚过期，A 读到 null。"
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "B 也读到 null",
+              "say": "A 还没重建完，B 也读到 null，双双冲向数据库！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `MutexWait`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "换成 `MutexWait`（互斥锁+双检）后，查库次数降为 15 次，但请求延迟会怎样？",
+          "options": [
+            "所有并发线程都要等重建完成才能返回",
+            "所有线程瞬间返回旧值",
+            "完全不阻塞"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`Plain` vs `MutexWait`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_breakdown",
+          "show": [
+            "Plain",
+            "MutexWait"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `MutexWait` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_breakdown.MutexWait",
+          "within": "getHot(java.lang.String)",
+          "from": "0: getstatic",
+          "to": "areturn",
+          "say": "看 `MutexWait.getHot`：拿到锁之后有第二次 `cache.get`，确保排队线程不会重复重建，但 `lock.lock()` 会让其他线程挂起等待。",
+          "walk": [
+            {
+              "focus": [
+                "ReentrantLock.lock",
+                "cache.get"
+              ],
+              "label": "阻塞等待与双检",
+              "say": "阻塞期间线程不可用，若下游 DB 抖动 2 秒，所有请求线程都会卡死 2 秒。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`MutexTrySpin` 与 `LogicalExpire`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_breakdown",
+          "show": [
+            "Plain",
+            "MutexWait",
+            "MutexTrySpin",
+            "LogicalExpire"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_breakdown",
+          "variants": [
+            "Plain",
+            "MutexWait",
+            "MutexTrySpin",
+            "LogicalExpire"
+          ],
+          "notes": [
+            {
+              "focus": "MutexTrySpin",
+              "key": "自旋重试虽然重建准，但空转把 CPU 和耗时拉到最高",
+              "say": "MutexTrySpin 耗时明显最高，自旋空转在多核争抢下非常吃亏。"
+            },
+            {
+              "focus": "LogicalExpire",
+              "key": "逻辑过期耗时最低且重建次数不超过上限，稳居最下方",
+              "say": "LogicalExpire 前台永远不阻塞等 DB，吞吐和延迟表现一骑绝尘。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `LogicalExpire` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_breakdown.LogicalExpire",
+          "within": "getHot(java.lang.String)",
+          "from": "0: getstatic",
+          "to": "areturn",
+          "say": "看 `LogicalExpire.getHot`：读到过期对象后只用 `tryLock()`，抢到锁就把重建丢给后台 `ExecutorService`，自己立刻把 `e.val` 旧值返回。",
+          "walk": [
+            {
+              "focus": [
+                "tryLock",
+                "submit"
+              ],
+              "label": "非阻塞异步重建",
+              "key": "前台线程永不等待 DB 重建，尾延迟极低",
+              "say": "没抢到锁的线程连后台提交都跳过，直接返回旧值，实现绝对无阻塞。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "互斥锁 + 双检",
+              "solves": "强一致性：绝对不返回过期旧值，只重建一次",
+              "cost": "约 {ms:m6_breakdown.MutexWait} ms，重建期间并发线程全部阻塞",
+              "when": "金融余额、库存配置等绝不允许读到旧值的场景",
+              "say": "一致性优先就选互斥锁，但务必加锁超时防止死锁。"
+            },
+            {
+              "name": "逻辑过期 + 异步重建",
+              "solves": "极致高可用与低延迟，前台线程永不卡死",
+              "cost": "约 {ms:m6_breakdown.LogicalExpire} ms，重建窗口内会返回短暂旧值",
+              "when": "商品详情、活动页、榜单等容忍秒级最终一致的超高并发热点",
+              "say": "大促热点标准方案：数据提前预热不设物理 TTL，后台单飞刷新。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "业务能不能容忍「几十毫秒内读到旧数据」？",
+          "branches": [
+            {
+              "when": "绝不能读旧值（强一致优先）",
+              "pick": "互斥锁 + 双检",
+              "eg": "账户费率/优惠券门槛"
+            },
+            {
+              "when": "绝不能卡顿（高可用/低延迟优先）",
+              "pick": "逻辑过期 + 异步重建",
+              "eg": "秒杀商品详情/首页推荐"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "互斥锁 + 双检",
+            "逻辑过期 + 异步重建"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "明星官宣微博带火某款手机详情页，QPS 瞬间 10 万，允许价格文案延迟 1 秒更新，但绝不能接口超时。",
+              "answer": 1,
+              "why": "高可用和低延迟压倒一切，用逻辑过期让所有请求秒返。"
+            },
+            {
+              "text": "后台风控规则缓存过期，重建只需 5ms，但绝不允许用旧规则放行请求。",
+              "answer": 0,
+              "why": "强一致性要求必须用互斥锁+双检。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：缓存击穿（互斥锁 vs 逻辑过期）",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "缓存击穿（互斥锁 vs 逻辑过期）",
+          "alias": "Cache Breakdown · Mutex vs Logical Expiration",
+          "oneLine": "热点 Key 过期瞬间，用==分布式互斥锁==保强一致，或用==逻辑过期==换零阻塞高可用。",
+          "asked": [
+            "互斥锁防击穿为什么要做 Double Check？",
+            "逻辑过期如何解决物理不过期导致的内存占满问题？",
+            "如果热点 Key 还没预热就进来了怎么办？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "逻辑过期方案中，没抢到 `tryLock` 的线程应该怎么做？",
+          "options": [
+            {
+              "text": "直接返回缓存里的旧值",
+              "ok": true,
+              "why": "既然有人已经在后台重建了，自己直接拿旧值秒返即可。"
+            },
+            {
+              "text": "自旋等待直到后台线程更新完",
+              "ok": false,
+              "why": "自旋等就失去了逻辑过期低延迟的意义。"
+            }
+          ],
+          "say": "这就是逻辑过期零阻塞的精髓。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "使用分布式互斥锁防击穿时，为什么要加锁超时或看门狗？",
+          "options": [
+            {
+              "text": "防止持有锁重建的机器宕机导致其余线程永久死等",
+              "ok": true,
+              "why": "分布式锁必须有 TTL 兜底释放。"
+            },
+            {
+              "text": "为了提高哈希冲突概率",
+              "ok": false,
+              "why": "无关。"
+            }
+          ],
+          "say": "工程上任何外部锁都必须防死锁。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "互斥锁方案里拿到锁后如果不做二次判空（Double Check），会怎样？",
+          "options": [
+            {
+              "text": "排队的线程拿到锁后还会再查一遍数据库",
+              "ok": true,
+              "why": "前面线程已经写回缓存了，不双检就会白白重复查库。"
+            },
+            {
+              "text": "会直接导致缓存雪崩",
+              "ok": false,
+              "why": "只是单 Key 重查，不至于雪崩。"
+            }
+          ],
+          "say": "双检是互斥锁防击穿的必写动作。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "热点 Key 缓存击穿时，互斥锁和逻辑过期各自怎么实现？面试时怎么对比选型？",
+          "points": [
+            "击穿指单个热点 Key 过期瞬间海量并发同时打向 DB",
+            "互斥锁只放一人查库重建，拿锁后必须 Double Check，优点强一致、缺点并发线程阻塞",
+            "逻辑过期不设物理 TTL，把过期时间放进 Value；过期后 tryLock 异步重建，前台直接返旧值",
+            "强一致选互斥锁，超高并发保可用性选逻辑过期（配合热点预热）"
+          ],
+          "model": "缓存击穿是指某个极热点 Key 过期瞬间，大量并发同时 miss 并直接冲击数据库。工程上主要有两种解法：第一种是互斥锁（如 Redis SETNX），只允许一个线程查库重建，其余线程阻塞或重试；拿到锁后必须做 Double Check 防止排队线程重复查库。这种方式强一致但重建期间吞吐下降、尾延迟飙升。第二种是逻辑过期，缓存不设物理 TTL，而是在 Value 中记录逻辑过期时间戳；线程发现过期后通过 tryLock 开启后台异步线程去重建，当前线程和其余线程直接返回旧值。它牺牲了短时间强一致性，但换来了前台零阻塞与极高可用性。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "互斥锁防击穿的关键细节？",
+              "a": "1. 拿锁后必须 Double Check；2. 锁必须设 TTL 防宕机死锁。"
+            },
+            {
+              "q": "逻辑过期为什么能做到零阻塞？",
+              "a": "物理永不过期，过期时 tryLock 异步单飞刷新，前台直接返旧值。"
+            },
+            {
+              "q": "两者怎么选？",
+              "a": "强一致选互斥锁；保高可用/防超时选逻辑过期（需提前预热）。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>64</strong> 节循序渐进实验课</span>
-        <span><strong>256</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>80</strong> 节循序渐进实验课</span>
+        <span><strong>320</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -373,8 +373,11 @@
 
     <div class="controls">
       <div class="search-row">
-        <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、TCP、SQL、Spring、LRU）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 64 / 64 课</span>
+        <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、SQL、Spring）…" autocomplete="off">
+        <span id="shownCount" class="count-note">显示 80 / 80 课</span>
+      </div>
+      <div class="pills" id="pills">
+        <button type="button" class="pill is-on" data-filter="all">全部 (80)</button>
       </div>
       <div class="pills" id="pills">
         <button type="button" class="pill is-on" data-filter="all">全部 (64)</button>
@@ -388,6 +391,9 @@
         <button type="button" class="pill" data-filter="m4ch2">MySQL 2 · B+ 树与索引 (7)</button>
         <button type="button" class="pill" data-filter="m4ch3">MySQL 3 · EXPLAIN 与失效 (5)</button>
         <button type="button" class="pill" data-filter="m5ch1">Spring 1 · 事务与 AOP (5)</button>
+        <button type="button" class="pill" data-filter="m5ch2">Spring 2 · IoC 与自动装配 (5)</button>
+        <button type="button" class="pill" data-filter="m6">模块 6 · Redis / MQ / 微服务 (6)</button>
+
         <button type="button" class="pill" data-filter="m8">模块 8 · 算法与 SQL (10)</button>
       </div>
     </div>
@@ -1029,6 +1035,75 @@
         </div>
       </section>
 
+      <section class="chapter" data-ch="m5ch2">
+        <div class="chapter__head">
+          <h2>模块五 · 第二章：IoC 容器、Bean 生命周期与自动装配（第 43～47 课）</h2>
+          <p>用纯 JDK 拆解三级缓存如何兼容 AOP 代理、单例注入 Prototype 退化、@PostConstruct 代理时机、多线程事务隔离与自动装配退让机制。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/spring-ioc-cycle.html" data-ch="m5ch2" data-search="43 spring-ioc-cycle 三级缓存解循环依赖 objectfactory aop 代理 构造器循环依赖 lab.ioccycle">
+          <div class="card__top">
+            <span class="card__num">#43</span>
+            <span class="card__pkg">lab.ioccycle</span>
+          </div>
+          <h3 class="card__title">三级缓存解循环依赖：为什么非要第三级 ObjectFactory？</h3>
+          <p class="card__lead">A 依赖 B、B 又依赖 A。如果只有两级缓存直接暴露半成品对象，遇上 AOP 代理，B 拿到的竟是未代理的裸对象！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-bean-scope.html" data-ch="m5ch2" data-search="44 spring-bean-scope 单例 bean prototype objectprovider 线程安全 串单 lab.beanscope">
+          <div class="card__top">
+            <span class="card__num">#44</span>
+            <span class="card__pkg">lab.beanscope</span>
+          </div>
+          <h3 class="card__title">单例 Bean 里注入 Prototype 或成员变量，并发怎么串单了？</h3>
+          <p class="card__lead">Spring Bean 默认是单例。在 Service 里写个成员变量暂存 userId，或者直接注入 Prototype Bean，多线程一来全串单！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-bean-lifecycle.html" data-ch="m5ch2" data-search="45 spring-bean-lifecycle bean 生命周期 postconstruct beanpostprocessor aop 代理时机 lab.lifecycle">
+          <div class="card__top">
+            <span class="card__num">#45</span>
+            <span class="card__pkg">lab.lifecycle</span>
+          </div>
+          <h3 class="card__title">Bean 生命周期顺序：为什么 @PostConstruct 里事务代理还没生效？</h3>
+          <p class="card__lead">在 @PostConstruct 里调自己的 @Transactional 方法预热数据，或者在初始化前访问注入字段——不是 NPE 就是代理没包上！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-tx-multithread.html" data-ch="m5ch2" data-search="46 spring-tx-multithread 事务方法里开多线程 async threadlocal 回滚 lab.txthread">
+          <div class="card__top">
+            <span class="card__num">#46</span>
+            <span class="card__pkg">lab.txthread</span>
+          </div>
+          <h3 class="card__title">事务方法里开多线程 / @Async，子线程异常主线程怎么不回滚？</h3>
+          <p class="card__lead">@Transactional 方法里新开线程或调 @Async 写明细表，子线程报错了，主线程却照常 commit——订单有头无尾！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-boot-autowire.html" data-ch="m5ch2" data-search="47 spring-boot-autowire spring boot 自动装配 conditionalonmissingbean primary qualifier lab.autowire">
+          <div class="card__top">
+            <span class="card__num">#47</span>
+            <span class="card__pkg">lab.autowire</span>
+          </div>
+          <h3 class="card__title">Spring Boot 自动装配：@ConditionalOnMissingBean 为什么有时会失效？</h3>
+          <p class="card__lead">自己配了一个 Serializer Bean 想覆盖默认实现，结果要么启动直接报 NoUniqueBeanDefinitionException，要么默认实现抢先占坑！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
       <section class="chapter" data-ch="m4ch2">
         <div class="chapter__head">
           <h2>模块四 · 第二章：InnoDB 页结构、B+ 树聚簇索引、回表与最左前缀（第 43～49 课）</h2>
@@ -1117,6 +1192,48 @@
         </a>
         </div>
       </section>
+
+      <section class="chapter" data-ch="m6">
+        <div class="chapter__head">
+          <h2>模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-06）</h2>
+          <p>纯 JDK 零依赖仿真实验室：直击缓存穿透、击穿、雪崩、双写一致性、热点 Key 倾斜与 BigKey/Pipeline 代价。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/m6-cache-penetration.html" data-ch="m6" data-search="m6-01 m6-cache-penetration 不存在的 id 疯狂查库：缓存穿透怎么挡？ 恶意或异常请求专查根本不存在的 id，缓存与数据库双双未命中，每次都直穿到底层 db。 lab.m6.penetration">
+          <div class="card__top"><span class="card__num">#M6-01</span><span class="card__pkg">lab.m6.penetration</span></div>
+          <h3 class="card__title">不存在的 ID 疯狂查库：缓存穿透怎么挡？</h3>
+          <p class="card__lead">恶意或异常请求专查根本不存在的 ID，缓存与数据库双双未命中，每次都直穿到底层 DB。</p>
+          <div class="card__foot"><span>22 页 · 约 40 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-cache-breakdown.html" data-ch="m6" data-search="m6-02 m6-cache-breakdown 热点 key 过期瞬间：互斥锁 vs 逻辑过期 某个爆款热点 key 到点过期的一瞬间，成百上千并发请求同时 miss 挤向数据库，到底该排队等锁还是直接返回旧值？ lab.m6.breakdown">
+          <div class="card__top"><span class="card__num">#M6-02</span><span class="card__pkg">lab.m6.breakdown</span></div>
+          <h3 class="card__title">热点 Key 过期瞬间：互斥锁 vs 逻辑过期</h3>
+          <p class="card__lead">某个爆款热点 Key 到点过期的一瞬间，成百上千并发请求同时 miss 挤向数据库，到底该排队等锁还是直接返回旧值？</p>
+          <div class="card__foot"><span>22 页 · 约 40 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-cache-avalanche.html" data-ch="m6" data-search="m6-03 m6-cache-avalanche 整点批量过期：为什么缓存雪崩打垮库？ 初始化缓存时给大量 key 统一设死 ttl，到点集体失效，数据库峰值 qps 瞬间打穿安全线。 lab.m6.avalanche">
+          <div class="card__top"><span class="card__num">#M6-03</span><span class="card__pkg">lab.m6.avalanche</span></div>
+          <h3 class="card__title">整点批量过期：为什么缓存雪崩打垮库？</h3>
+          <p class="card__lead">初始化缓存时给大量 Key 统一设死 TTL，到点集体失效，数据库峰值 QPS 瞬间打穿安全线。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-cache-consistency.html" data-ch="m6" data-search="m6-04 m6-cache-consistency 先删缓存还是先改库？并发读写脏数据现场 更新数据时先删缓存还是先改库？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。 lab.m6.consistency">
+          <div class="card__top"><span class="card__num">#M6-04</span><span class="card__pkg">lab.m6.consistency</span></div>
+          <h3 class="card__title">先删缓存还是先改库？并发读写脏数据现场</h3>
+          <p class="card__lead">更新数据时先删缓存还是先改库？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。</p>
+          <div class="card__foot"><span>22 页 · 约 45 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-hotkey-split.html" data-ch="m6" data-search="m6-05 m6-hotkey-split 顶流热点 key 打爆单分片：本地二级缓存与 key 拆分 就算 redis 搭了 16 个分片集群，某一个顶流热搜 key 还是只会落到其中 1 个分片上，把单分片打满。 lab.m6.hotkey">
+          <div class="card__top"><span class="card__num">#M6-05</span><span class="card__pkg">lab.m6.hotkey</span></div>
+          <h3 class="card__title">顶流热点 Key 打爆单分片：本地二级缓存与 Key 拆分</h3>
+          <p class="card__lead">就算 Redis 搭了 16 个分片集群，某一个顶流热搜 Key 还是只会落到其中 1 个分片上，把单分片打满。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-bigkey-pipeline.html" data-ch="m6" data-search="m6-06 m6-bigkey-pipeline bigkey 阻塞单线程 + pipeline 批量往返代价 一次查 40 条数据，循环单发和 pipeline 差多少？大 key 又是怎么把单线程卡死的？ lab.m6.bigkey">
+          <div class="card__top"><span class="card__num">#M6-06</span><span class="card__pkg">lab.m6.bigkey</span></div>
+          <h3 class="card__title">BigKey 阻塞单线程 + Pipeline 批量往返代价</h3>
+          <p class="card__lead">一次查 40 条数据，循环单发和 Pipeline 差多少？大 Key 又是怎么把单线程卡死的？</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
 
       <section class="chapter" data-ch="m8">
         <div class="chapter__head">

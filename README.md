@@ -21,15 +21,15 @@
 
 ```text
 .
-├── index.html   # 69 节实验课总导航入口页（支持搜索、分章筛选与亮暗主题）
-├── pages/       # 69 份单文件交互式课件网页（双击即开，零外链依赖）
-├── lessons/     # 69 份课程结构与讲解数据（JSON）
-├── src/         # 276 份可独立编译运行的 Java 对照源码（每课 4 种变体）+ SQL 20 题脚本
+├── index.html   # 80 节实验课总导航入口页（支持搜索、分章筛选与亮暗主题）
+├── pages/       # 80 份单文件交互式课件网页（双击即开，零外链依赖）
+├── lessons/     # 80 份课程结构与讲解数据（JSON）
+├── src/         # 320 份可独立编译运行的 Java 对照源码（每课 4 种变体）+ SQL 20 题脚本
 ├── results/     # 实验台在本机实测沉淀的运行数据与 javap 输出记录（JSON）
 └── docs/        # 模块 8 101 道高频笔试算法与 SQL 手撕刷题清单
 ```
 
-## 完整课表（共 69 课）
+## 完整课表（共 80 课）
 
 ### 第一章：竞态与并发容器（第 1～7 课）
 
@@ -153,6 +153,30 @@
 | 40 | **外层 catch 住内层异常，整个事务怎么还是全炸了？** | 主流程加了事务，调用「加积分」子方法时用 try-catch 兜住了异常——结果提交时竟抛出 UnexpectedRollbackException，连主订单一起回滚！ | `lab.txprop` | [网页课件](./pages/spring-tx-prop.html) · [JSON](./lessons/spring-tx-prop.json) · [源码](./src/lab/txprop/) |
 | 41 | **JDK 动态代理 vs CGLIB：强转就炸、final 就失效** | 有接口用 JDK 代理，强转实现类直接 ClassCastException；换成 CGLIB 子类代理，加个 final 切面就静默失效！ | `lab.proxykind` | [网页课件](./pages/spring-proxy-kind.html) · [JSON](./lessons/spring-proxy-kind.json) · [源码](./src/lab/proxykind/) |
 | 42 | **多个 @Aspect 切面叠在一起：锁、日志、事务谁先谁后？** | 下单方法同时挂了分布式锁切面和 @Transactional。如果锁在事务里面——锁都放开了事务还没提交，下一个线程直接读到旧余额！ | `lab.aoporder` | [网页课件](./pages/spring-aop-order.html) · [JSON](./lessons/spring-aop-order.json) · [源码](./src/lab/aoporder/) |
+
+### 模块五 · 第二章：IoC 容器、Bean 生命周期与自动装配（第 43～47 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 43 | **三级缓存解循环依赖：为什么非要第三级 ObjectFactory？** | A 依赖 B、B 又依赖 A。如果只有两级缓存直接暴露半成品对象，遇上 AOP 代理，B 拿到的竟是未代理的裸对象！ | `lab.ioccycle` | [网页课件](./pages/spring-ioc-cycle.html) · [JSON](./lessons/spring-ioc-cycle.json) · [源码](./src/lab/ioccycle/) |
+| 44 | **单例 Bean 里注入 Prototype 或成员变量，并发怎么串单了？** | Spring Bean 默认是单例。在 Service 里写个成员变量暂存 userId，或者直接注入 Prototype Bean，多线程一来全串单！ | `lab.beanscope` | [网页课件](./pages/spring-bean-scope.html) · [JSON](./lessons/spring-bean-scope.json) · [源码](./src/lab/beanscope/) |
+| 45 | **Bean 生命周期顺序：为什么 @PostConstruct 里事务代理还没生效？** | 在 @PostConstruct 里调自己的 @Transactional 方法预热数据，或者在初始化前访问注入字段——不是 NPE 就是代理没包上！ | `lab.lifecycle` | [网页课件](./pages/spring-bean-lifecycle.html) · [JSON](./lessons/spring-bean-lifecycle.json) · [源码](./src/lab/lifecycle/) |
+| 46 | **事务方法里开多线程 / @Async，子线程异常主线程怎么不回滚？** | @Transactional 方法里新开线程或调 @Async 写明细表，子线程报错了，主线程却照常 commit——订单有头无尾！ | `lab.txthread` | [网页课件](./pages/spring-tx-multithread.html) · [JSON](./lessons/spring-tx-multithread.json) · [源码](./src/lab/txthread/) |
+| 47 | **Spring Boot 自动装配：@ConditionalOnMissingBean 为什么有时会失效？** | 自己配了一个 Serializer Bean 想覆盖默认实现，结果要么启动直接报 NoUniqueBeanDefinitionException，要么默认实现抢先占坑！ | `lab.autowire` | [网页课件](./pages/spring-boot-autowire.html) · [JSON](./lessons/spring-boot-autowire.json) · [源码](./src/lab/autowire/) |
+
+
+### 模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-06）
+
+纯 JDK 零依赖仿真实验室：直击缓存穿透、击穿、雪崩、双写一致性、热点 Key 倾斜与 BigKey/Pipeline 代价。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M6-01 | **不存在的 ID 疯狂查库：缓存穿透怎么挡？** | 恶意或异常请求专查根本不存在的 ID，缓存与数据库双双未命中，每次都直穿到底层 DB。 | `lab.m6.penetration` | [网页课件](./pages/m6-cache-penetration.html) · [JSON](./lessons/m6-cache-penetration.json) · [源码](./src/lab/m6/penetration/) |
+| M6-02 | **热点 Key 过期瞬间：互斥锁 vs 逻辑过期** | 某个爆款热点 Key 到点过期的一瞬间，成百上千并发请求同时 miss 挤向数据库，到底该排队等锁还是直接返回旧值？ | `lab.m6.breakdown` | [网页课件](./pages/m6-cache-breakdown.html) · [JSON](./lessons/m6-cache-breakdown.json) · [源码](./src/lab/m6/breakdown/) |
+| M6-03 | **整点批量过期：为什么缓存雪崩打垮库？** | 初始化缓存时给大量 Key 统一设死 TTL，到点集体失效，数据库峰值 QPS 瞬间打穿安全线。 | `lab.m6.avalanche` | [网页课件](./pages/m6-cache-avalanche.html) · [JSON](./lessons/m6-cache-avalanche.json) · [源码](./src/lab/m6/avalanche/) |
+| M6-04 | **先删缓存还是先改库？并发读写脏数据现场** | 更新数据时先删缓存还是先改库？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。 | `lab.m6.consistency` | [网页课件](./pages/m6-cache-consistency.html) · [JSON](./lessons/m6-cache-consistency.json) · [源码](./src/lab/m6/consistency/) |
+| M6-05 | **顶流热点 Key 打爆单分片：本地二级缓存与 Key 拆分** | 就算 Redis 搭了 16 个分片集群，某一个顶流热搜 Key 还是只会落到其中 1 个分片上，把单分片打满。 | `lab.m6.hotkey` | [网页课件](./pages/m6-hotkey-split.html) · [JSON](./lessons/m6-hotkey-split.json) · [源码](./src/lab/m6/hotkey/) |
+| M6-06 | **BigKey 阻塞单线程 + Pipeline 批量往返代价** | 一次查 40 条数据，循环单发和 Pipeline 差多少？大 Key 又是怎么把单线程卡死的？ | `lab.m6.bigkey` | [网页课件](./pages/m6-bigkey-pipeline.html) · [JSON](./lessons/m6-bigkey-pipeline.json) · [源码](./src/lab/m6/bigkey/) |
 
 ### 模块八：笔试算法 + SQL 手撕（M8-01～M8-10 · 10 组专题 · 101 题）
 
