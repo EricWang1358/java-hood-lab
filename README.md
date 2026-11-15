@@ -180,7 +180,7 @@
 
 ### 模块八：笔试算法 + SQL 手撕（M8-01～M8-10 · 10 组专题 · 101 题）
 
-覆盖笔试与一二面高频手撕题：先用实测数据与 `javap` 字节码打破直觉误区，再对照 [101 题高频刷题清单](./docs/module8-100-problems.md) 与 [SQL 20 题可执行脚本](./src/lab/sqlrank/queries.sql) 每日手敲。
+覆盖笔试与一二面高频手撕题：先用实测数据与 `javap` 字节码打破直觉误区，再对照 [101 题高频刷题清单](./docs/module8-100-problems.md)、[18 题可运行手撕自测套件](./src/lab/m8practice/M8PracticeTest.java) 与 [SQL 20 题可执行脚本](./src/lab/sqlrank/queries.sql) 每日手敲（运行自测：`javac -encoding UTF-8 -d out src/lab/m8practice/M8PracticeTest.java && java -ea -cp out lab.m8practice.M8PracticeTest`）。
 
 | # | 课程标题 | 一句话引子 | 代码包 | 入口 |
 |---|---|---|---|---|
