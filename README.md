@@ -122,6 +122,19 @@
 | M1-09 | **Comparator 减法溢出坑与 TreeSet 神秘吞元素** | 图省事写了个 (a, b) -> a - b 排序，遇到负数直接排反；更诡异的是往 TreeSet 里加 1000 个不同 ID 的同分元素，size() 竟然只有 1！ | `lab.compsort` | [网页课件](./pages/java-comparable-sort.html) · [JSON](./lessons/java-comparable-sort.json) · [源码](./src/lab/compsort/) |
 | M1-10 | **Enum 枚举本质、EnumMap 加速与状态机模式** | 为什么《Effective Java》盛赞 Enum 是最佳单例？把订单状态存在 EnumMap 里，比 HashMap<OrderState, String> 和魔法数字快在哪里？ | `lab.enumstate` | [网页课件](./pages/java-enum-state.html) · [JSON](./lessons/java-enum-state.json) · [源码](./src/lab/enumstate/) |
 
+### 模块一 · 第三章：异常机制、反射注解、SPI 与重载分派（M1-11～M1-16）
+
+实测异常爬栈开销、`try-with-resources` 抑制异常、反射/`MethodHandle` 性能梯度、注解缓存、SPI 与变长参数分派。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M1-11 | **异常栈捕获代价：为什么不能用 try-catch 代替 if-else 控制业务流？** | 用异常代替返回 false 或错误码，表面代码少写了几个 if，可一旦并发上来，为什么 CPU 全烧在 Throwable.fillInStackTrace() 上？ | `lab.exccost` | [网页课件](./pages/java-exception-cost.html) · [JSON](./lessons/java-exception-cost.json) · [源码](./src/lab/exccost/) |
+| M1-12 | **try-with-resources 防泄漏与抑制异常：finally 怎么把主异常吞掉了？** | 用老式 try-finally 手动关流，结果 work() 抛了核心业务异常，finally 里的 close() 又抛了一个异常——外层 catch 竟然只看到 close() 的报错！ | `lab.tryres` | [网页课件](./pages/java-try-resources.html) · [JSON](./lessons/java-try-resources.json) · [源码](./src/lab/tryres/) |
+| M1-13 | **反射性能真相：每次 getMethod、缓存 setAccessible 与 MethodHandle 差多少？** | 大家都说「Java 反射慢」，可 Spring/MyBatis/Jackson 到处都在用反射。到底慢在查元数据、权限检查，还是 invoke 本身？ | `lab.reflect` | [网页课件](./pages/java-reflection-cost.html) · [JSON](./lessons/java-reflection-cost.json) · [源码](./src/lab/reflect/) |
+| M1-14 | **注解 Retention 生命周期与运行时解析缓存** | 自定义了一个权限注解加在接口上，为什么运行时 getAnnotation() 竟然返回 null？如果每次请求都反射读注解，又会多出多少开销？ | `lab.annocache` | [网页课件](./pages/java-annotation-proc.html) · [JSON](./lessons/java-annotation-proc.json) · [源码](./src/lab/annocache/) |
+| M1-15 | **SPI 扩展机制与懒加载缓存：JDBC / Dubbo / Spring Boot 是怎么插拔实现的？** | 写一个核心接口，不改核心包一行代码，只往 classpath 放个 jar 就能自动加载实现类——JDK ServiceLoader 怎么做到的？为什么每次重新 load 这么慢？ | `lab.spiloader` | [网页课件](./pages/java-spi-loader.html) · [JSON](./lessons/java-spi-loader.json) · [源码](./src/lab/spiloader/) |
+| M1-16 | **变长参数数组分配、重载静态分派与装箱优先级** | 写了个便捷方法 sum(int... nums)，在热循环里每次传 2 个参数竟然都在偷偷 new int[2]！更迷惑的是 Base ref = new Sub(); 调重载方法 tag(ref) 到底走哪个？ | `lab.varargs` | [网页课件](./pages/java-varargs-overload.html) · [JSON](./lessons/java-varargs-overload.json) · [源码](./src/lab/varargs/) |
+
 ### 模块二 · 第一章：类加载、初始化与栈堆分配（M2-01～M2-04）
 
 用真实 `ClassLoader` 隔离、`<clinit>` 死锁、栈帧深度爆栈与 Eden TLAB 并发分配实测 JVM 底层运行机制。

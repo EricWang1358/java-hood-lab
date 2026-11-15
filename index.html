@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>152</strong> 节循序渐进实验课</span>
-        <span><strong>608</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>158</strong> 节循序渐进实验课</span>
+        <span><strong>632</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,10 +374,10 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 152 / 152 课</span>
+        <span id="shownCount" class="count-note">显示 158 / 158 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (152)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (158)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
@@ -385,6 +385,7 @@
         <button type="button" class="pill" data-filter="ch5">第五章 · 工程模式与新特性 (11)</button>
         <button type="button" class="pill" data-filter="m1ch1">基础 1 · 值传递与精度 (5)</button>
         <button type="button" class="pill" data-filter="m1ch2">基础 2 · 对象与泛型 (5)</button>
+        <button type="button" class="pill" data-filter="m1ch3">基础 3 · 异常与反射 (6)</button>
         <button type="button" class="pill" data-filter="m2ch1">JVM 1 · 类加载与栈堆 (4)</button>
         <button type="button" class="pill" data-filter="m2ch2">JVM 2 · 锁升级与 GC (5)</button>
         <button type="button" class="pill" data-filter="m2ch3">JVM 3 · OOM 与排障 (5)</button>
@@ -966,6 +967,87 @@
           </div>
           <h3 class="card__title">Enum 枚举本质、EnumMap 加速与状态机模式</h3>
           <p class="card__lead">为什么《Effective Java》盛赞 Enum 是最佳单例？把订单状态存在 EnumMap 里，比 HashMap&lt;OrderState, String&gt; 和魔法数字快在哪里？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m1ch3">
+        <div class="chapter__head">
+          <h2>模块一 · 第三章：异常机制、反射注解、SPI 与重载分派（M1-11～M1-16）</h2>
+          <p>实测异常爬栈开销、try-with-resources 抑制异常、反射/MethodHandle 性能梯度、注解缓存、SPI 与变长参数分派。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/java-exception-cost.html" data-ch="m1ch3" data-search="m1-11 java-exception-cost 异常栈捕获代价：为什么不能用 try-catch 代替 if-else 控制业务流？ 用异常代替返回 false 或错误码，表面代码少写了几个 if，可一旦并发上来，为什么 cpu 全烧在 throwable.fillinstacktrace() 上？ lab.exccost">
+          <div class="card__top">
+            <span class="card__num">#M1-11</span>
+            <span class="card__pkg">lab.exccost</span>
+          </div>
+          <h3 class="card__title">异常栈捕获代价：为什么不能用 try-catch 代替 if-else 控制业务流？</h3>
+          <p class="card__lead">用异常代替返回 false 或错误码，表面代码少写了几个 if，可一旦并发上来，为什么 CPU 全烧在 Throwable.fillInStackTrace() 上？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-try-resources.html" data-ch="m1ch3" data-search="m1-12 java-try-resources try-with-resources 防泄漏与抑制异常：finally 怎么把主异常吞掉了？ 用老式 try-finally 手动关流，结果 work() 抛了核心业务异常，finally 里的 close() 又抛了一个异常——外层 catch 竟然只看到 close() 的报错！ lab.tryres">
+          <div class="card__top">
+            <span class="card__num">#M1-12</span>
+            <span class="card__pkg">lab.tryres</span>
+          </div>
+          <h3 class="card__title">try-with-resources 防泄漏与抑制异常：finally 怎么把主异常吞掉了？</h3>
+          <p class="card__lead">用老式 try-finally 手动关流，结果 work() 抛了核心业务异常，finally 里的 close() 又抛了一个异常——外层 catch 竟然只看到 close() 的报错！</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-reflection-cost.html" data-ch="m1ch3" data-search="m1-13 java-reflection-cost 反射性能真相：每次 getmethod、缓存 setaccessible 与 methodhandle 差多少？ 大家都说「java 反射慢」，可 spring/mybatis/jackson 到处都在用反射。到底慢在查元数据、权限检查，还是 invoke 本身？ lab.reflect">
+          <div class="card__top">
+            <span class="card__num">#M1-13</span>
+            <span class="card__pkg">lab.reflect</span>
+          </div>
+          <h3 class="card__title">反射性能真相：每次 getMethod、缓存 setAccessible 与 MethodHandle 差多少？</h3>
+          <p class="card__lead">大家都说「Java 反射慢」，可 Spring/MyBatis/Jackson 到处都在用反射。到底慢在查元数据、权限检查，还是 invoke 本身？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-annotation-proc.html" data-ch="m1ch3" data-search="m1-14 java-annotation-proc 注解 retention 生命周期与运行时解析缓存 自定义了一个权限注解加在接口上，为什么运行时 getannotation() 竟然返回 null？如果每次请求都反射读注解，又会多出多少开销？ lab.annocache">
+          <div class="card__top">
+            <span class="card__num">#M1-14</span>
+            <span class="card__pkg">lab.annocache</span>
+          </div>
+          <h3 class="card__title">注解 Retention 生命周期与运行时解析缓存</h3>
+          <p class="card__lead">自定义了一个权限注解加在接口上，为什么运行时 getAnnotation() 竟然返回 null？如果每次请求都反射读注解，又会多出多少开销？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-spi-loader.html" data-ch="m1ch3" data-search="m1-15 java-spi-loader spi 扩展机制与懒加载缓存：jdbc / dubbo / spring boot 是怎么插拔实现的？ 写一个核心接口，不改核心包一行代码，只往 classpath 放个 jar 就能自动加载实现类——jdk serviceloader 怎么做到的？为什么每次重新 load 这么慢？ lab.spiloader">
+          <div class="card__top">
+            <span class="card__num">#M1-15</span>
+            <span class="card__pkg">lab.spiloader</span>
+          </div>
+          <h3 class="card__title">SPI 扩展机制与懒加载缓存：JDBC / Dubbo / Spring Boot 是怎么插拔实现的？</h3>
+          <p class="card__lead">写一个核心接口，不改核心包一行代码，只往 classpath 放个 jar 就能自动加载实现类——JDK ServiceLoader 怎么做到的？为什么每次重新 load 这么慢？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-varargs-overload.html" data-ch="m1ch3" data-search="m1-16 java-varargs-overload 变长参数数组分配、重载静态分派与装箱优先级 写了个便捷方法 sum(int... nums)，在热循环里每次传 2 个参数竟然都在偷偷 new int[2]！更迷惑的是 base ref = new sub(); 调重载方法 tag(ref) 到底走哪个？ lab.varargs">
+          <div class="card__top">
+            <span class="card__num">#M1-16</span>
+            <span class="card__pkg">lab.varargs</span>
+          </div>
+          <h3 class="card__title">变长参数数组分配、重载静态分派与装箱优先级</h3>
+          <p class="card__lead">写了个便捷方法 sum(int... nums)，在热循环里每次传 2 个参数竟然都在偷偷 new int[2]！更迷惑的是 Base ref = new Sub(); 调重载方法 tag(ref) 到底走哪个？</p>
           <div class="card__foot">
             <span>12 页 · 约 25 分钟</span>
             <span class="card__go">进入实验 →</span>

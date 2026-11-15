@@ -1,0 +1,1671 @@
+{
+ "id": "reflect",
+ "variants": {
+  "ReflectLookupEveryTime": {
+   "hash": "934b5450dec44da9",
+   "repeat": 20,
+   "runs": {
+    "50000": [
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 48
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 42
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 43
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 42
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 41
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 43
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 40
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 43
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 38
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 42
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 43
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 43
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 41
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 41
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 42
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 40
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 42
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 44
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 42
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 35
+     }
+    ],
+    "200000": [
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 78
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 84
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 78
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 81
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 79
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 83
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 83
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 80
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 80
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 79
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 82
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 76
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 82
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 81
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 84
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 78
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 78
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 83
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 79
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 79
+     }
+    ],
+    "500000": [
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 112
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 116
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 111
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 115
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 91
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 116
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 111
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 111
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 106
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 91
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 114
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 110
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 114
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 113
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 112
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 113
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 110
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 111
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 112
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 116
+     }
+    ],
+    "1000000": [
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 142
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 151
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 113
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 149
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 151
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 143
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 146
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 149
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 152
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 151
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 150
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 146
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 150
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 141
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 145
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 150
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 147
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 146
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 148
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 149
+     }
+    ]
+   },
+   "inside": "Compiled from \"ReflectLookupEveryTime.java\"\npublic class lab.reflect.ReflectLookupEveryTime {\n  public lab.reflect.ReflectLookupEveryTime();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class lab/reflect/ReflectLookupEveryTime$Target\n      10: dup\n      11: invokespecial #15                 // Method lab/reflect/ReflectLookupEveryTime$Target.\"<init>\":()V\n      14: astore_2\n      15: invokestatic  #16                 // Method java/lang/System.nanoTime:()J\n      18: lstore_3\n      19: iconst_0\n      20: istore        5\n      22: iconst_0\n      23: istore        6\n      25: iload         6\n      27: iload_1\n      28: if_icmpge     84\n      31: ldc           #13                 // class lab/reflect/ReflectLookupEveryTime$Target\n      33: ldc           #22                 // String add\n      35: iconst_1\n      36: anewarray     #24                 // class java/lang/Class\n      39: dup\n      40: iconst_0\n      41: getstatic     #26                 // Field java/lang/Integer.TYPE:Ljava/lang/Class;\n      44: aastore\n      45: invokevirtual #30                 // Method java/lang/Class.getMethod:(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;\n      48: astore        7\n      50: iload         5\n      52: aload         7\n      54: aload_2\n      55: iconst_1\n      56: anewarray     #2                  // class java/lang/Object\n      59: dup\n      60: iconst_0\n      61: iconst_1\n      62: invokestatic  #34                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      65: aastore\n      66: invokevirtual #38                 // Method java/lang/reflect/Method.invoke:(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;\n      69: checkcast     #8                  // class java/lang/Integer\n      72: invokevirtual #44                 // Method java/lang/Integer.intValue:()I\n      75: iadd\n      76: istore        5\n      78: iinc          6, 1\n      81: goto          25\n      84: invokestatic  #16                 // Method java/lang/System.nanoTime:()J\n      87: lload_3\n      88: lsub\n      89: ldc2_w        #48                 // long 1000000l\n      92: ldiv\n      93: lstore        6\n      95: getstatic     #50                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      98: iload         5\n     100: invokedynamic #54,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     105: invokevirtual #58                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     108: getstatic     #50                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     111: iload_1\n     112: invokedynamic #64,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     117: invokevirtual #58                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     120: getstatic     #50                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     123: lload         6\n     125: invokedynamic #65,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     130: invokevirtual #58                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     133: return\n}"
+  },
+  "ReflectCachedAccessible": {
+   "hash": "0debb5dbcb8b7d1b",
+   "repeat": 20,
+   "runs": {
+    "50000": [
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 7
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 11
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 10
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 9
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 8
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 8
+     }
+    ],
+    "200000": [
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 15
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 18
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 13
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 15
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 12
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 16
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 14
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 18
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 15
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 16
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 15
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 18
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 14
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 14
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 14
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 15
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 15
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 18
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 17
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 15
+     }
+    ],
+    "500000": [
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 19
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 19
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 22
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 19
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 20
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 24
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 22
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 20
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 21
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 23
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 21
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 19
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 18
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 20
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 18
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 19
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 18
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 20
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 20
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 19
+     }
+    ],
+    "1000000": [
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 20
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 18
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 18
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 18
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 20
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 19
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 24
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 19
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 19
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 24
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 23
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 20
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 21
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 21
+     }
+    ]
+   },
+   "inside": "Compiled from \"ReflectCachedAccessible.java\"\npublic class lab.reflect.ReflectCachedAccessible {\n  public lab.reflect.ReflectCachedAccessible();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class lab/reflect/ReflectCachedAccessible$Target\n      10: dup\n      11: invokespecial #15                 // Method lab/reflect/ReflectCachedAccessible$Target.\"<init>\":()V\n      14: astore_2\n      15: ldc           #13                 // class lab/reflect/ReflectCachedAccessible$Target\n      17: ldc           #16                 // String add\n      19: iconst_1\n      20: anewarray     #18                 // class java/lang/Class\n      23: dup\n      24: iconst_0\n      25: getstatic     #20                 // Field java/lang/Integer.TYPE:Ljava/lang/Class;\n      28: aastore\n      29: invokevirtual #24                 // Method java/lang/Class.getMethod:(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;\n      32: astore_3\n      33: aload_3\n      34: iconst_1\n      35: invokevirtual #28                 // Method java/lang/reflect/Method.setAccessible:(Z)V\n      38: invokestatic  #34                 // Method java/lang/System.nanoTime:()J\n      41: lstore        4\n      43: iconst_0\n      44: istore        6\n      46: iconst_0\n      47: istore        7\n      49: iload         7\n      51: iload_1\n      52: if_icmpge     88\n      55: iload         6\n      57: aload_3\n      58: aload_2\n      59: iconst_1\n      60: anewarray     #2                  // class java/lang/Object\n      63: dup\n      64: iconst_0\n      65: iconst_1\n      66: invokestatic  #40                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      69: aastore\n      70: invokevirtual #44                 // Method java/lang/reflect/Method.invoke:(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;\n      73: checkcast     #8                  // class java/lang/Integer\n      76: invokevirtual #48                 // Method java/lang/Integer.intValue:()I\n      79: iadd\n      80: istore        6\n      82: iinc          7, 1\n      85: goto          49\n      88: invokestatic  #34                 // Method java/lang/System.nanoTime:()J\n      91: lload         4\n      93: lsub\n      94: ldc2_w        #52                 // long 1000000l\n      97: ldiv\n      98: lstore        7\n     100: getstatic     #54                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     103: iload         6\n     105: invokedynamic #58,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     110: invokevirtual #62                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     113: getstatic     #54                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     116: iload_1\n     117: invokedynamic #68,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     122: invokevirtual #62                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     125: getstatic     #54                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     128: lload         7\n     130: invokedynamic #69,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     135: invokevirtual #62                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     138: return\n}"
+  },
+  "MethodHandleInvoke": {
+   "hash": "2bb4cb766eea942a",
+   "repeat": 20,
+   "runs": {
+    "50000": [
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 3
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 4
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 4
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 5
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 5
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 5
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 5
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 3
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 5
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 5
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 4
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 6
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 4
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 3
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 5
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 5
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 3
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 6
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 4
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 5
+     }
+    ],
+    "200000": [
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 8
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 9
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 9
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 7
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 8
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 8
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 7
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 6
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 8
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 9
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 9
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 7
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 8
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 7
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 6
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 10
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 6
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 6
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 9
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 8
+     }
+    ],
+    "500000": [
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 10
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 10
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 8
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 9
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 10
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 9
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 10
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 8
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 7
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 10
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 10
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 8
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 9
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 11
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 9
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 8
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 9
+     }
+    ],
+    "1000000": [
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 10
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 10
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 13
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 12
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 10
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 13
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 12
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 10
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 11
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 12
+     }
+    ]
+   },
+   "inside": "Compiled from \"MethodHandleInvoke.java\"\npublic class lab.reflect.MethodHandleInvoke {\n  public lab.reflect.MethodHandleInvoke();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Throwable;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class lab/reflect/MethodHandleInvoke$Target\n      10: dup\n      11: invokespecial #15                 // Method lab/reflect/MethodHandleInvoke$Target.\"<init>\":()V\n      14: astore_2\n      15: invokestatic  #16                 // Method java/lang/invoke/MethodHandles.lookup:()Ljava/lang/invoke/MethodHandles$Lookup;\n      18: ldc           #13                 // class lab/reflect/MethodHandleInvoke$Target\n      20: ldc           #22                 // String add\n      22: getstatic     #24                 // Field java/lang/Integer.TYPE:Ljava/lang/Class;\n      25: getstatic     #24                 // Field java/lang/Integer.TYPE:Ljava/lang/Class;\n      28: invokestatic  #28                 // Method java/lang/invoke/MethodType.methodType:(Ljava/lang/Class;Ljava/lang/Class;)Ljava/lang/invoke/MethodType;\n      31: invokevirtual #34                 // Method java/lang/invoke/MethodHandles$Lookup.findVirtual:(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;\n      34: astore_3\n      35: invokestatic  #40                 // Method java/lang/System.nanoTime:()J\n      38: lstore        4\n      40: iconst_0\n      41: istore        6\n      43: iconst_0\n      44: istore        7\n      46: iload         7\n      48: iload_1\n      49: if_icmpge     69\n      52: iload         6\n      54: aload_3\n      55: aload_2\n      56: iconst_1\n      57: invokevirtual #46                 // Method java/lang/invoke/MethodHandle.invokeExact:(Llab/reflect/MethodHandleInvoke$Target;I)I\n      60: iadd\n      61: istore        6\n      63: iinc          7, 1\n      66: goto          46\n      69: invokestatic  #40                 // Method java/lang/System.nanoTime:()J\n      72: lload         4\n      74: lsub\n      75: ldc2_w        #52                 // long 1000000l\n      78: ldiv\n      79: lstore        7\n      81: getstatic     #54                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      84: iload         6\n      86: invokedynamic #58,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      91: invokevirtual #62                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      94: getstatic     #54                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      97: iload_1\n      98: invokedynamic #68,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     103: invokevirtual #62                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     106: getstatic     #54                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     109: lload         7\n     111: invokedynamic #69,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     116: invokevirtual #62                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     119: return\n}"
+  },
+  "DirectCallBaseline": {
+   "hash": "7b2eb55f3cfeae6d",
+   "repeat": 20,
+   "runs": {
+    "50000": [
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 2
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 1
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 1
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 1
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 1
+     },
+     {
+      "sum": 100000,
+      "expected": 50000,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 1
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 1
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 3
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 1
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 1
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 1
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 1
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 3
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 3
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 1
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 2
+     },
+     {
+      "sum": 400000,
+      "expected": 200000,
+      "ms": 3
+     }
+    ],
+    "500000": [
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 2
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 2
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 2
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 2
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 5
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 2
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 3
+     },
+     {
+      "sum": 1000000,
+      "expected": 500000,
+      "ms": 2
+     }
+    ],
+    "1000000": [
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 5
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 3
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 3
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 3
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 3
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 3
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 3
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 3
+     },
+     {
+      "sum": 2000000,
+      "expected": 1000000,
+      "ms": 4
+     }
+    ]
+   },
+   "inside": "Compiled from \"DirectCallBaseline.java\"\npublic class lab.reflect.DirectCallBaseline {\n  public lab.reflect.DirectCallBaseline();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class lab/reflect/DirectCallBaseline$Target\n      10: dup\n      11: invokespecial #15                 // Method lab/reflect/DirectCallBaseline$Target.\"<init>\":()V\n      14: astore_2\n      15: invokestatic  #16                 // Method java/lang/System.nanoTime:()J\n      18: lstore_3\n      19: iconst_0\n      20: istore        5\n      22: iconst_0\n      23: istore        6\n      25: iload         6\n      27: iload_1\n      28: if_icmpge     47\n      31: iload         5\n      33: aload_2\n      34: iconst_1\n      35: invokevirtual #22                 // Method lab/reflect/DirectCallBaseline$Target.add:(I)I\n      38: iadd\n      39: istore        5\n      41: iinc          6, 1\n      44: goto          25\n      47: invokestatic  #16                 // Method java/lang/System.nanoTime:()J\n      50: lload_3\n      51: lsub\n      52: ldc2_w        #26                 // long 1000000l\n      55: ldiv\n      56: lstore        6\n      58: getstatic     #28                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      61: iload         5\n      63: invokedynamic #32,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      68: invokevirtual #36                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      71: getstatic     #28                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      74: iload_1\n      75: invokedynamic #42,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      80: invokevirtual #36                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      83: getstatic     #28                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      86: lload         6\n      88: invokedynamic #43,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n      93: invokevirtual #36                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      96: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux",
+  "date": "2026-11-15"
+ }
+}

@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-reflection-cost",
+  "course": "Java 工程语法与集合",
+  "title": "反射性能真相：每次 getMethod、缓存 setAccessible 与 MethodHandle 差多少？",
+  "lead": "大家都说「Java 反射慢」，可 Spring/MyBatis/Jackson 到处都在用反射。到底慢在查元数据、权限检查，还是 invoke 本身？",
+  "minutes": 25,
+  "needs": ["知道 Class 对象与 Method.invoke()", "知道 setAccessible(true) 的作用"],
+  "after": [
+    "拆解反射开销的三部分：元数据查找、安全访问检查、参数装箱/数组打包",
+    "用实测数据对比「每次 getMethod」「缓存 Method + setAccessible」「MethodHandle」「直接调用」的耗时梯度",
+    "知道为什么框架启动时扫描缓存 Method 后，运行期反射开销几乎可以忽略"
+  ],
+  "terms": {
+    "Method.setAccessible(true)": "关闭 Java 语言访问权限检查，并配合缓存 `Method` 对象，省掉每次调用时的修饰符校验开销。",
+    "Inflation 机制": "HotSpot 默认前 15 次反射调用走本地 JNI 实现，超过阈值后动态生成字节码 `GeneratedMethodAccessor` 加速。",
+    "MethodHandle": "JDK 7 `java.lang.invoke` 提供的轻量级方法句柄，签名精确时 `invokeExact` 可被 JIT 深度内联，性能接近直接调用。"
+  },
+  "experiments": {
+    "reflect": {
+      "runner": "java",
+      "home": "lab.reflect",
+      "variants": [
+        { "id": "ReflectLookupEveryTime", "code": "ReflectLookupEveryTime.java", "label": "每次 getMethod + invoke（最慢）", "note": "每次循环都要遍历类方法表查找并拷贝 Method 对象，耗时暴涨。" },
+        { "id": "ReflectCachedAccessible", "code": "ReflectCachedAccessible.java", "label": "缓存 Method + setAccessible(true)", "note": "省掉查找和权限校验，仅剩基本类型装箱与 Object[] 打包开销。" },
+        { "id": "MethodHandleInvoke", "code": "MethodHandleInvoke.java", "label": "MethodHandle.invokeExact", "note": "强类型句柄调用，无需 Object[] 打包，JIT 可深度内联优化。" },
+        { "id": "DirectCallBaseline", "code": "DirectCallBaseline.java", "label": "直接调用（基线）", "note": "普通 invokevirtual 调用，JIT 直接内联，速度天花板。" }
+      ],
+      "knob": { "label": "方法调用次数 N", "values": ["50000", "200000", "500000", "1000000"], "default": "500000" },
+      "repeat": 20,
+      "metric": { "key": "sum", "expectKey": "expected", "label": "累加结果" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "反射性能真相",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "面试常问「为什么都说反射慢，但 Spring 框架依然大量用反射？」今天把反射拆成三步逐个测速，看清：**慢的根本不是反射调用，而是每次都去 `getMethod()` 查找和没开 `setAccessible(true)`！**",
+          "say": "弄清框架「启动慢一点、运行快如飞」的底层原因。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：反射基础机制",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先检验对反射 API 的了解。",
+          "items": [
+            {
+              "have": "getMethod vs getDeclaredMethod",
+              "q": "`getMethod` 和 `getDeclaredMethod` 的核心区别是？",
+              "options": ["getMethod 只找 public 方法（含父类）；getDeclaredMethod 找当前类声明的所有权限方法（不含父类）", "两者完全一样", "getDeclaredMethod 更快"],
+              "answer": 0,
+              "why": "框架注入私有字段/方法时必须用 `getDeclared*` + `setAccessible(true)`。"
+            },
+            {
+              "have": "基本类型参数",
+              "q": "调用 `Method.invoke(target, 1)` 传递 `int` 参数时，额外发生了什么开销？",
+              "options": ["int 自动装箱成 Integer 并打包进 new Object[]{...} 数组", "什么都没发生", "直接传寄存器"],
+              "answer": 0,
+              "why": "`invoke(Object obj, Object... args)` 是可变长 `Object[]`，基本类型必然经历装箱与数组分配。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：ReflectLookupEveryTime vs ReflectCachedAccessible",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "reflect",
+          "variants": ["ReflectLookupEveryTime", "ReflectCachedAccessible"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：100 万次调用，每次 getMethod 比缓存 Method 慢多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "reflect",
+          "question": "执行 100 万次时，`ReflectLookupEveryTime` 比 `ReflectCachedAccessible` 大约慢多少？",
+          "options": ["慢数倍到数十倍（每次都要查方法表并复制 Method 对象）", "一样快", "反而更快"],
+          "answer": 0,
+          "why": "`Class.getMethod()` 内部每次都要做方法名匹配和 `Method.copy()` 防篡改拷贝，在百万次循环里开销巨大。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种调用方式耗时实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "reflect",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：invokevirtual vs Method.invoke",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "reflect",
+          "variant": "ReflectCachedAccessible",
+          "explain": "字节码里直接调用是 `invokevirtual Target.add`，而反射调用需要 `iconst_1 -> invokestatic Integer.valueOf -> anewarray Object -> invokevirtual Method.invoke`。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：MethodHandle 与直接调用",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "reflect",
+          "variants": ["MethodHandleInvoke", "DirectCallBaseline"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：5 万 → 100 万次耗时对比",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "reflect",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "反射优化三板斧",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**① 启动期一次性扫描并把 `Method`/`Field` 缓存进 `ConcurrentHashMap`，严禁热路径反复 `getMethod`；② 对缓存后的对象调 `setAccessible(true)` 跳过权限检查；③ 极高频调用场景（如序列化框架）用 `MethodHandle` / `LambdaMetafactory` / 编译期字节码生成（MapStruct）。**",
+          "say": "一句话总结：反射慢在「每次重新找」和「没关权限检查」，缓存后日常业务完全够用。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "确认一个安全边界。",
+          "items": [
+            {
+              "have": "JDK 17 模块化",
+              "q": "在 JDK 17 中对 JDK 内部包（如 `java.lang.String` 的私有字段 `value`）调用 `setAccessible(true)` 会怎样？",
+              "options": ["默认抛出 InaccessibleObjectException（强封装限制，除非加 --add-opens）", "直接成功", "静默忽略"],
+              "answer": 0,
+              "why": "JDK 16+ 默认开启强封装（Strong Encapsulation），这也是升级 JDK 17 时老版本序列化库常报错的原因。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 反射调用到底慢在哪几个环节；2) Spring 等框架如何把反射开销降到最低；3) MethodHandle 和传统 Reflection 的区别。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "缓存元数据", "v": "热路径严禁反复 `getMethod()`，必须在启动期缓存 `Method`/`Field`。" },
+            { "k": "跳过校验", "v": "调用 `setAccessible(true)` 关闭重复访问权限检查，触发 HotSpot 字节码访问器加速。" },
+            { "k": "零装箱替代", "v": "极致性能场景用 `MethodHandle`、`LambdaMetafactory` 或编译期代码生成（MapStruct）。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
