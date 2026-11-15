@@ -1,0 +1,298 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "spring-tx-swallow",
+  "course": "Spring 全家桶与持久层",
+  "title": "异常被吞或抛检查异常，事务怎么照样提交了？",
+  "lead": "明明加了 @Transactional，也确实出错了——但要么被 try-catch 吞掉，要么抛了 IOException，结果扣款照样 commit！",
+  "minutes": 35,
+  "needs": ["知道 try-catch 会拦截异常", "知道 RuntimeException 与受检异常（IOException）的区别", "知道 @Transactional 默认回滚规则"],
+  "after": ["讲清代理捕获不到被吞异常的机制", "说出为什么默认只回滚 RuntimeException 和 Error", "掌握 rollbackFor = Exception.class 与 setRollbackOnly() 的适用场景"],
+  "terms": {
+    "RuntimeException": "运行时异常（非受检异常）：如 NullPointerException、IllegalStateException，Spring 默认遇到它才回滚。",
+    "Checked Exception": "受检异常：如 IOException、SQLException，编译器强制处理；Spring @Transactional 默认遇到它不回滚！",
+    "rollbackFor": "@Transactional 的属性：指定哪些异常触发回滚，工程上通常显式写 rollbackFor = Exception.class。",
+    "setRollbackOnly()": "TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()：不抛异常也能把当前事务标红回滚。",
+    "athrow": "JVM 字节码指令：把异常对象抛出给外层调用栈；如果被 catch 吞掉，外层代理根本看不到。"
+  },
+  "experiments": {
+    "txswallow": {
+      "runner": "java",
+      "home": "lab.txswallow",
+      "variants": [
+        { "id": "SwallowCatch", "label": "try-catch 吞掉异常", "note": "业务代码 catch 住异常只打日志不抛出，代理以为一切正常直接提交。" },
+        { "id": "CheckedExc", "label": "抛出 IOException", "note": "抛出受检异常 IOException，默认只认 RuntimeException，照样提交。" },
+        { "id": "RollbackForAll", "label": "rollbackFor=Exception", "note": "显式指定对 Exception.class 回滚，受检异常也能准确回滚。" },
+        { "id": "ManualRollback", "label": "手动 setRollbackOnly", "note": "需要吞掉异常返回兜底值时，显式把当前事务标红回滚。" }
+      ],
+      "knob": { "label": "请求数(千)", "values": ["1", "2", "4", "8"], "default": "2" },
+      "repeat": 20,
+      "metric": { "key": "dirty", "expectKey": "expected", "label": "错误提交的脏扣款" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "异常被吞或抛检查异常，事务怎么照样提交了？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "写 `@Transactional` 时最隐蔽的两颗雷：**第一颗是顺手 `try-catch` 吞了异常；第二颗是抛了 `IOException` 这类受检异常，没写 `rollbackFor`。**",
+          "say": "线上很多「扣了钱却没发券」的事故，不是 Spring 坏了，而是你亲手把异常藏起来了，或者抛了个 Spring 默认不管的异常。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热个身：先确认异常分类",
+      "bridge": "半分钟确认 Java 的两类异常和代理的捕获边界。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "选出你对异常和事务边界的判断。",
+          "items": [
+            {
+              "have": "try-catch",
+              "q": "方法内部用 `try { ... } catch (Exception e) { log.error(...); }` 吃掉异常后，外层调用者能捕获到异常吗？",
+              "options": ["能，异常还会继续往外冒", "不能，异常在内部已经被消化了"],
+              "answer": 1,
+              "why": "不 `throw` 出去，外层的事务代理方法 `try { body.run(); } catch (...)` 根本进不了 `catch` 分支。"
+            },
+            {
+              "have": "受检异常",
+              "q": "`IOException` 继承自 `Exception` 还是 `RuntimeException`？",
+              "options": ["Exception（受检异常）", "RuntimeException（非受检异常）"],
+              "answer": 0,
+              "why": "`IOException` 是受检异常，不是 `RuntimeException` 的子类。而 Spring 默认只回滚 `RuntimeException` 和 `Error`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "写流水超时了，余额怎么还是被扣了？",
+      "bridge": "2000 笔转账在扣减余额后全部发生「写流水超时」，看看吞掉异常的写法会留下多少脏扣款。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "2000 次转账全部失败。预期脏扣款 `dirty = 0`。",
+          "say": "我们直接看代码并实测 20 次。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看清事务代理和业务 catch 的位置",
+      "bridge": "注意 `TxManager.runInTx` 包在外面，而 `transferAndSwallow` 自己在里面写了 `try-catch`。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "txswallow.SwallowCatch",
+          "say": "重点看两处：外层的 `catch (RuntimeException e)`，和内层的 `catch (RuntimeException ignored)`。",
+          "walk": [
+            { "focus": ["// 没收到异常，代理默认 commit"], "say": "代理只有捕获到异常才会把 `balance` 回滚到 `snap`；正常返回就直接提交。", "key": "代理靠捕获异常触发回滚，收不到异常就提交" },
+            { "focus": ["} catch (RuntimeException ignored) {"], "say": "业务代码自己把异常接住、打完日志就结束了，外层代理完全不知情。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：脏扣款有多少？",
+      "bridge": "在看结果前先下注。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "swallow_guess",
+          "q": "运行 `SwallowCatch`（2000 次），错误提交的脏扣款 `dirty` 是？",
+          "options": ["0", "2000"],
+          "answer": 1,
+          "say": "异常一次都没传到外层代理，结果会是几？"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测 20 次：2000 笔全提交",
+      "bridge": "放出来看真实运行数据。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "txswallow",
+          "show": ["SwallowCatch"],
+          "knob": false,
+          "hand": true,
+          "focus": ["} catch (RuntimeException ignored) {"],
+          "say": "20 次运行全部是 2000 笔脏扣款，而且没有任何异常告警冒出来。"
+        },
+        {
+          "t": "reveal",
+          "of": "swallow_guess",
+          "say": "异常被吞掉后，外层事务代理以为业务完美成功，直接 `commit`。",
+          "key": "try-catch 吞异常不抛出，事务照常 commit"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "点出吞掉异常的那一行",
+      "bridge": "在代码里点出让事务代理「失明」的那一行。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "txswallow.SwallowCatch",
+          "q": "哪一行接住了异常却没有继续抛出？",
+          "answer": ["} catch (RuntimeException ignored) {"],
+          "hint": "找 `transferAndSwallow` 里的 `catch` 语句。",
+          "found": "就是这里。接住异常却不 rethrow，等于告诉事务管理器「一切正常」。",
+          "say": "点击对应行。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：默认规则为什么放过 IOException？",
+      "bridge": "即使你不写 `try-catch`，把异常原样抛出去，如果抛的是 `IOException`（受检异常），Spring 默认照样提交！看 `CheckedExc` 的代理逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "txswallow.CheckedExc",
+          "say": "看 `DefaultTxManager` 的 `catch` 条件：Spring 默认 `rollbackOn` 只匹配 `RuntimeException | Error`。",
+          "walk": [
+            { "focus": ["} catch (RuntimeException | Error e) {"], "say": "因为历史设计（源自 EJB 约定），Spring 认为受检异常是「业务可恢复异常」，默认不触发回滚！所以 `IOException` 直接穿透出去了，但事务却悄悄提交了。", "key": "默认只回滚 RuntimeException 和 Error，受检异常不回滚" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种写法同台对比",
+      "bridge": "把 `SwallowCatch`、`CheckedExc`、`RollbackForAll`（指定 `rollbackFor = Exception.class`）和 `ManualRollback`（手动 `setRollbackOnly()`）放一起跑 20 次。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "txswallow",
+          "show": ["SwallowCatch", "CheckedExc", "RollbackForAll", "ManualRollback"],
+          "select": "CheckedExc",
+          "say": "看 `CheckedExc`：照样 2000 笔脏扣款！切到 `RollbackForAll` 和 `ManualRollback`，脏扣款立刻归 0。"
+        },
+        {
+          "t": "try",
+          "say": "把请求数调到 4 和 8，看看两种正确修法的耗时，几乎没有额外开销。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "耗时对比图",
+      "bridge": "正确性与性能折线。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "txswallow",
+          "say": "实心点表示 0 脏提交，空心点表示发生错误提交。",
+          "walk": [
+            { "focus": "RollbackForAll", "say": "配置 `rollbackFor = Exception.class` 且不要吞异常，最干净，实心点全对。" },
+            { "focus": "ManualRollback", "say": "如果业务上必须 `catch` 异常并返回兜底结果（例如 `Result.fail()`），就用 `setRollbackOnly()` 手动标红回滚。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "场景选型",
+      "layout": "split",
+      "bridge": "什么时候抛出去、什么时候加 `rollbackFor`、什么时候 `setRollbackOnly()`？",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "事务方法里遇到异常怎么处理？",
+          "branches": [
+            { "when": "常规业务开发（防所有受检异常漏回滚）", "pick": "加 rollbackFor = Exception.class", "eg": "@Transactional(rollbackFor = Exception.class)" },
+            { "when": "内部需要 catch 记日志或补充状态", "pick": "catch 后重新 throw", "eg": "log.error(...); throw e;" },
+            { "when": "必须吞异常并返回特定兜底返回值", "pick": "手动 setRollbackOnly()", "eg": "TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()" }
+          ],
+          "say": "记住一条铁律：生产写 `@Transactional` 永远顺手带上 `rollbackFor = Exception.class`。"
+        },
+        {
+          "t": "cases",
+          "tools": ["rollbackFor = Exception.class", "catch 后 rethrow", "setRollbackOnly()"],
+          "say": "三个真实场景，选最合适的写法。",
+          "items": [
+            { "text": "导出并归档订单时调用了文件 IO，可能抛出 `IOException`，希望一旦失败就回滚数据库状态。", "answer": 0, "why": "`IOException` 是受检异常，必须配置 `rollbackFor = Exception.class`。" },
+            { "text": "扣库存时 catch 住异常是为了打印一条带 `orderId` 的告警日志，不需要返回兜底对象。", "answer": 1, "why": "打完日志必须原样 `throw e`（或包装为自定义 `RuntimeException` 抛出），让全局异常处理器和事务代理接管。" },
+            { "text": "底层方法必须返回 `boolean false` 给上层兼容老接口，不能向外抛异常，但 DB 修改必须撤销。", "answer": 2, "why": "调用 `TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()` 手动标记回滚。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "把规则对上面试高频问法。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "异常回滚边界",
+          "alias": "rollbackFor · Checked Exception · setRollbackOnly",
+          "oneLine": "Spring `@Transactional` 默认只对==RuntimeException 和 Error==回滚；吞异常或抛受检异常都会导致静默提交。",
+          "asked": ["@Transactional 默认对哪些异常回滚？为什么？", "方法里 try-catch 了异常，事务还会回滚吗？", "如果必须 catch 返回兜底值，怎么让事务回滚？"],
+          "say": "三问全在这里。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "两道判断题检验。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "方法上只写了 `@Transactional`（没写 `rollbackFor`），方法内直接 `throw new SQLException()`，数据库会回滚吗？",
+          "options": [
+            { "text": "会，只要是 Exception 都会回滚", "ok": false, "why": "错！`SQLException` 是受检异常，默认不回滚。" },
+            { "text": "不会，因为 SQLException 是受检异常", "ok": true, "why": "正确！必须显式声明 `rollbackFor = Exception.class`。" }
+          ],
+          "say": "注意 `SQLException` 也是 Checked Exception。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿回答。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么 try-catch 吞异常或抛 IOException 时 @Transactional 不会回滚？怎么解决？",
+          "points": [
+            "事务代理在外层 catch 异常来触发 rollback，内部吞掉异常代理感知不到",
+            "Spring 默认只回滚 RuntimeException 和 Error，不回滚 Checked Exception",
+            "规范：显式指定 rollbackFor = Exception.class，且不吞异常（或 catch 后 rethrow）",
+            "必须吞异常返回兜底值时，用 TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()"
+          ],
+          "model": "Spring 事务代理是通过在外层捕获方法抛出的异常来决定是否回滚的。如果业务代码用 `try-catch` 把异常吞掉不往外抛，代理会认为执行成功而直接提交。另外，Spring `@Transactional` 默认只对 `RuntimeException` 和 `Error` 回滚，像 `IOException`、`SQLException` 这类受检异常默认直接提交。所以工程上第一要显式加上 `rollbackFor = Exception.class`，第二不要在事务方法里吞异常；如果确实需要吞掉异常返回兜底值，就调用 `TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()` 手动标记回滚。",
+          "say": "点击开始，自己讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心要点回顾。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "`@Transactional` 默认回滚哪些异常？", "a": "只回滚 `RuntimeException` 和 `Error`，不回滚受检异常（如 `IOException`、`SQLException`）。" },
+            { "q": "为什么开发规范要求写 `rollbackFor = Exception.class`？", "a": "防止抛出受检异常时事务静默提交，造成部分写入的脏数据。" },
+            { "q": "既要 `catch` 返回兜底值又要回滚事务怎么办？", "a": "调用 `TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()`。" }
+          ],
+          "say": "三张卡收好，我们继续下一课。"
+        }
+      ]
+    }
+  ]
+}

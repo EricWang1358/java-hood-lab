@@ -374,16 +374,17 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 37 / 37 课</span>
+        <span id="shownCount" class="count-note">显示 42 / 42 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (37)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (42)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
         <button type="button" class="pill" data-filter="ch4">第四章 · 线程封闭与线程池 (6)</button>
         <button type="button" class="pill" data-filter="ch5">第五章 · 工程模式与新特性 (11)</button>
         <button type="button" class="pill" data-filter="m4ch1">MySQL 1 · SQL 与深分页 (5)</button>
+        <button type="button" class="pill" data-filter="m5ch1">Spring 1 · 事务与 AOP (5)</button>
       </div>
     </div>
 
@@ -880,6 +881,75 @@
           <p class="card__lead">用 WHERE id NOT IN (SELECT ...) 查黑名单外用户，子查询里只混进了一个 NULL，整条 SQL 竟然返回 0 行！</p>
           <div class="card__foot">
             <span>12 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m5ch1">
+        <div class="chapter__head">
+          <h2>模块五 · 第一章：Spring 事务失效、动态代理与 AOP 切面（第 38～42 课）</h2>
+          <p>用纯 JDK 动态代理与字节码证据，亲手复现同类自调用、异常吞没、传播行为连坐回滚、JDK/CGLIB 代理坑与多切面洋葱错序。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/spring-tx-self.html" data-ch="m5ch1" data-search="38 spring-tx-self 同类自调用 @transactional 为什么没回滚？ this 绕过代理 cglib lab.txself">
+          <div class="card__top">
+            <span class="card__num">#38</span>
+            <span class="card__pkg">lab.txself</span>
+          </div>
+          <h3 class="card__title">同类自调用，@Transactional 为什么没回滚？</h3>
+          <p class="card__lead">外层方法没加事务，内部直接 this.payAndRecord() 调了加 @Transactional 的方法。抛异常后，库存却没回滚！</p>
+          <div class="card__foot">
+            <span>18 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-tx-swallow.html" data-ch="m5ch1" data-search="39 spring-tx-swallow 异常被吞或抛检查异常，事务怎么照样提交了？ try-catch rollbackfor ioexception setrollbackonly lab.txswallow">
+          <div class="card__top">
+            <span class="card__num">#39</span>
+            <span class="card__pkg">lab.txswallow</span>
+          </div>
+          <h3 class="card__title">异常被吞或抛检查异常，事务怎么照样提交了？</h3>
+          <p class="card__lead">明明加了 @Transactional，也确实出错了——但要么被 try-catch 吞掉，要么抛了 IOException，结果扣款照样 commit！</p>
+          <div class="card__foot">
+            <span>15 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-tx-prop.html" data-ch="m5ch1" data-search="40 spring-tx-prop 外层 catch 住内层异常，整个事务怎么还是全炸了？ required requires_new nested unexpectedrollbackexception lab.txprop">
+          <div class="card__top">
+            <span class="card__num">#40</span>
+            <span class="card__pkg">lab.txprop</span>
+          </div>
+          <h3 class="card__title">外层 catch 住内层异常，整个事务怎么还是全炸了？</h3>
+          <p class="card__lead">主流程加了事务，调用「加积分」子方法时用 try-catch 兜住了异常——结果提交时竟抛出 UnexpectedRollbackException，连主订单一起回滚！</p>
+          <div class="card__foot">
+            <span>13 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-proxy-kind.html" data-ch="m5ch1" data-search="41 spring-proxy-kind jdk 动态代理 vs cglib 强转实现类 classcastexception final lab.proxykind">
+          <div class="card__top">
+            <span class="card__num">#41</span>
+            <span class="card__pkg">lab.proxykind</span>
+          </div>
+          <h3 class="card__title">JDK 动态代理 vs CGLIB：强转就炸、final 就失效</h3>
+          <p class="card__lead">有接口用 JDK 代理，强转实现类直接 ClassCastException；换成 CGLIB 子类代理，加个 final 切面就静默失效！</p>
+          <div class="card__foot">
+            <span>12 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/spring-aop-order.html" data-ch="m5ch1" data-search="42 spring-aop-order 多个 @aspect 切面叠在一起：锁、日志、事务谁先谁后？ order 洋葱模型 transactiontemplate lab.aoporder">
+          <div class="card__top">
+            <span class="card__num">#42</span>
+            <span class="card__pkg">lab.aoporder</span>
+          </div>
+          <h3 class="card__title">多个 @Aspect 切面叠在一起：锁、日志、事务谁先谁后？</h3>
+          <p class="card__lead">下单方法同时挂了分布式锁切面和 @Transactional。如果锁在事务里面——锁都放开了事务还没提交，下一个线程直接读到旧余额！</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
