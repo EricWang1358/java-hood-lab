@@ -5,8 +5,11 @@
   "course": "Java 工程语法与集合",
   "title": "Enum 枚举本质、EnumMap 加速与状态机模式",
   "lead": "为什么《Effective Java》盛赞 Enum 是最佳单例？把订单状态存在 EnumMap 里，比 HashMap<OrderState, String> 和魔法数字快在哪里？",
-  "minutes": 25,
-  "needs": ["知道 enum 本质是继承 java.lang.Enum 的 final 类", "知道常量数组 values() 与 ordinal()"],
+  "minutes": 30,
+  "needs": [
+    "知道 enum 本质是继承 java.lang.Enum 的 final 类",
+    "知道常量数组 values() 与 ordinal()"
+  ],
   "after": [
     "说清 Enum 编译后的类结构、天然防反射/防反序列化单例原理",
     "对比 Magic Int、HashMap<Enum> 与 EnumMap（底层定长数组直寻址）的性能差异",
@@ -22,21 +25,59 @@
       "runner": "java",
       "home": "lab.enumstate",
       "variants": [
-        { "id": "MagicIntHashMap", "code": "MagicIntHashMap.java", "label": "魔法数字 int + HashMap", "note": "每次查询都要 Integer 自动装箱再算哈希，可读性差且有溢出/非法值风险。" },
-        { "id": "EnumInHashMap", "code": "EnumInHashMap.java", "label": "Enum 放入普通 HashMap", "note": "类型安全了，但仍要走 hash() 计算、掩码寻址与 equals 校验。" },
-        { "id": "EnumMapArrayFast", "code": "EnumMapArrayFast.java", "label": "EnumMap（数组下标 O(1) 直达）", "note": "底层直接用 vals[key.ordinal()] 数组直取，无哈希无装箱，速度最快。" },
-        { "id": "EnumStateMachine", "code": "EnumStateMachine.java", "label": "枚举抽象方法状态机", "note": "把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。" }
+        {
+          "id": "MagicIntHashMap",
+          "code": "MagicIntHashMap.java",
+          "label": "魔法数字 int + HashMap",
+          "note": "每次查询都要 Integer 自动装箱再算哈希，可读性差且有溢出/非法值风险。"
+        },
+        {
+          "id": "EnumInHashMap",
+          "code": "EnumInHashMap.java",
+          "label": "Enum 放入普通 HashMap",
+          "note": "类型安全了，但仍要走 hash() 计算、掩码寻址与 equals 校验。"
+        },
+        {
+          "id": "EnumMapArrayFast",
+          "code": "EnumMapArrayFast.java",
+          "label": "EnumMap（数组下标 O(1) 直达）",
+          "note": "底层直接用 vals[key.ordinal()] 数组直取，无哈希无装箱，速度最快。"
+        },
+        {
+          "id": "EnumStateMachine",
+          "code": "EnumStateMachine.java",
+          "label": "枚举抽象方法状态机",
+          "note": "把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。"
+        }
       ],
-      "knob": { "label": "状态查询/流转次数 N", "values": ["100000", "500000", "1000000", "2000000"], "default": "1000000" },
+      "knob": {
+        "label": "状态查询/流转次数 N",
+        "values": [
+          "100000",
+          "500000",
+          "1000000",
+          "2000000"
+        ],
+        "default": "1000000"
+      },
       "repeat": 20,
-      "metric": { "key": "ok", "expectKey": "expected", "label": "成功匹配次数" },
-      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+      "metric": {
+        "key": "ok",
+        "expectKey": "expected",
+        "label": "成功匹配次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
     }
   },
   "slides": [
     {
       "beat": "open",
-      "title": "Enum 枚举本质与 EnumMap",
+      "title": "Enum 枚举本质、EnumMap 加速与状态机模式",
+      "bridge": "为什么《Effective Java》盛赞 Enum 是最佳单例？把订单状态存在 EnumMap 里，比 HashMap<OrderState, String> 和魔法数字快在哪里？",
       "blocks": [
         {
           "t": "text",
@@ -47,123 +88,43 @@
     },
     {
       "beat": "open",
-      "title": "热身：关于 Enum 的三个考点",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
       "blocks": [
         {
           "t": "recall",
-          "say": "先检验对 Java 枚举底层的了解。",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
           "items": [
             {
               "have": "继承关系",
               "q": "定义 `enum Color { RED, GREEN }` 后，Color 还能再 `extends` 其他类吗？",
-              "options": ["不能，编译器已默认让它继承 java.lang.Enum（但可以实现接口）", "可以单继承", "编译成接口"],
+              "options": [
+                "不能，编译器已默认让它继承 java.lang.Enum（但可以实现接口）",
+                "可以单继承",
+                "编译成接口"
+              ],
               "answer": 0,
               "why": "Java 单继承限制下，`enum` 隐式继承 `Enum<E>` 且类本身是 `final`。"
             },
             {
               "have": "反射破解",
               "q": "为什么说枚举单例不怕反射和反序列化破坏？",
-              "options": ["Constructor.newInstance 源码显式禁止实例化 ENUM，序列化只写枚举名再按 name 找回原实例", "枚举没有构造器", "枚举在元空间"],
+              "options": [
+                "Constructor.newInstance 源码显式禁止实例化 ENUM，序列化只写枚举名再按 name 找回原实例",
+                "枚举没有构造器",
+                "枚举在元空间"
+              ],
               "answer": 0,
               "why": "JDK 在 `Constructor.newInstance()` 和 `ObjectInputStream` 里都为 `Enum` 写了硬性保护分支。"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "beat": "hook",
-      "title": "看代码：MagicIntHashMap vs EnumMapArrayFast",
-      "blocks": [
-        {
-          "t": "code",
-          "exp": "enumstate",
-          "variants": ["MagicIntHashMap", "EnumMapArrayFast"]
-        }
-      ]
-    },
-    {
-      "beat": "predict",
-      "title": "先猜：200 万次状态映射查询，哪个最快？",
-      "blocks": [
-        {
-          "t": "predict",
-          "exp": "enumstate",
-          "question": "对比 `MagicIntHashMap`、`EnumInHashMap` 与 `EnumMapArrayFast` 查 200 万次，速度表现如何？",
-          "options": ["EnumMapArrayFast 最快（直接数组下标取值，无哈希无装箱）", "MagicIntHashMap 最快", "三者完全一样"],
-          "answer": 0,
-          "why": "`EnumMap` 内部就是 `vals[key.ordinal()]` 一次数组访问；而 `HashMap<Integer>` 还要先 `Integer.valueOf` 再算 hash。"
-        }
-      ]
-    },
-    {
-      "beat": "run",
-      "title": "跑一跑：4 种写法正确性与耗时实测",
-      "blocks": [
-        {
-          "t": "result",
-          "exp": "enumstate",
-          "kind": "correctness"
-        }
-      ]
-    },
-    {
-      "beat": "why",
-      "title": "掀开字节码：Enum$OrderState 的静态初始化块",
-      "blocks": [
-        {
-          "t": "inside",
-          "exp": "enumstate",
-          "variant": "EnumStateMachine",
-          "explain": "编译器为每个枚举常量生成一个 `public static final` 实例字段并在 `<clinit>` 里初始化，保证全局唯一；`EnumStateMachine` 中每个常量各自生成匿名子类实现 `next()`。"
-        }
-      ]
-    },
-    {
-      "beat": "fix",
-      "title": "改一处：EnumMap 与枚举状态机",
-      "blocks": [
-        {
-          "t": "code",
-          "exp": "enumstate",
-          "variants": ["EnumMapArrayFast", "EnumStateMachine"]
-        }
-      ]
-    },
-    {
-      "beat": "choose",
-      "title": "怎么选：10 万 → 200 万次扩展曲线",
-      "blocks": [
-        {
-          "t": "result",
-          "exp": "enumstate",
-          "kind": "scaling"
-        }
-      ]
-    },
-    {
-      "beat": "name",
-      "title": "Enum 工程最佳实践",
-      "blocks": [
-        {
-          "t": "text",
-          "md": "**① 淘汰魔法数字 `0/1/2`，改用语义化 `enum`；② Key 是枚举时用 `EnumMap` 替 `HashMap`、集合用 `EnumSet`（底层位图 long 位运算极快）；③ 枚举比较直接用 `==`（编译期安全且空指针安全）。**",
-          "say": "注意：数据库落库建议存枚举的显式 `code` 字段，不要直接存 `ordinal()`，防止以后调整枚举顺序全表错位！"
-        }
-      ]
-    },
-    {
-      "beat": "check",
-      "title": "小测：30 秒巩固",
-      "blocks": [
-        {
-          "t": "recall",
-          "say": "确认一个持久化大坑。",
-          "items": [
+            },
             {
               "have": "ordinal 陷阱",
               "q": "为什么不建议把 `enum.ordinal()` 直接存入 MySQL 数据库？",
-              "options": ["一旦在枚举中间插入新状态，后面所有常量的 ordinal 序号全会错位", "ordinal() 返回负数", "ordinal() 每次启动随机变"],
+              "options": [
+                "一旦在枚举中间插入新状态，后面所有常量的 ordinal 序号全会错位",
+                "ordinal() 返回负数",
+                "ordinal() 每次启动随机变"
+              ],
               "answer": 0,
               "why": "必须显式定义一个 `private final int code;` 字段存库，与枚举定义顺序解耦。"
             }
@@ -172,27 +133,482 @@
       ]
     },
     {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (EnumInHashMap)",
+              "安全写法 (EnumStateMachine)"
+            ],
+            "shared": {
+              "name": "成功匹配次数",
+              "value": "目标 1000000"
+            }
+          },
+          "story": "为什么《Effective Java》盛赞 Enum 是最佳单例？把订单状态存在 EnumMap 里，比 HashMap<OrderState, String> 和魔法数字快在哪里？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "Enum 本质",
+              "on": "shared",
+              "tag": "Enum 本质",
+              "code": "`EnumInHashMap` vs `EnumStateMachine`",
+              "say": "编译后是一个 `final class X extends Enum<X>`，每个枚举常量都是 `public static final` 单例实例，JVM 禁止反射调用枚举构造器。"
+            },
+            {
+              "scene": "EnumMap",
+              "on": "shared",
+              "tag": "EnumMap",
+              "code": "`EnumInHashMap` vs `EnumStateMachine`",
+              "say": "专门针对 Enum Key 设计的 Map，底层直接是一个 `Object[]` 数组，用 `key.ordinal()` 直接下标寻址，**零哈希计算、零装箱、零碰撞**。"
+            },
+            {
+              "scene": "枚举状态机",
+              "on": "shared",
+              "tag": "枚举状态机",
+              "code": "`EnumInHashMap` vs `EnumStateMachine`",
+              "say": "在枚举里定义 `abstract OrderState next()`，每个状态常量自己实现流转目标，彻底消灭漫长的 `switch/if-else`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`EnumInHashMap`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "enumstate.EnumInHashMap",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "enum OrderState { NEW, PAID, SHIPPED, DONE }"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "labels.put(OrderState.SHIPPED, \"已发货\");"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (labels.get(vals[i & 3]) != null) ok++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：EnumInHashMap 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "对比 `MagicIntHashMap`、`EnumInHashMap` 与 `EnumMapArrayFast` 查 200 万次，速度表现如何？",
+          "options": [
+            "EnumMapArrayFast 最快（直接数组下标取值，无哈希无装箱）",
+            "MagicIntHashMap 最快",
+            "三者完全一样"
+          ],
+          "answer": 0,
+          "say": "`EnumMap` 内部就是 `vals[key.ordinal()]` 一次数组访问；而 `HashMap<Integer>` 还要先 `Integer.valueOf` 再算 hash。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：EnumInHashMap 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "enumstate",
+          "show": [
+            "EnumInHashMap"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "`EnumMap` 内部就是 `vals[key.ordinal()]` 一次数组访问；而 `HashMap<Integer>` 还要先 `Integer.valueOf` 再算 hash。",
+          "say": "`EnumMap` 内部就是 `vals[key.ordinal()]` 一次数组访问；而 `HashMap<Integer>` 还要先 `Integer.valueOf` 再算 hash。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「状态查询/流转次数 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "enumstate",
+          "show": [
+            "EnumInHashMap",
+            "EnumStateMachine"
+          ],
+          "say": "左右拖动「状态查询/流转次数 N」滑块，对比 `EnumInHashMap` 与 `EnumStateMachine` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`EnumInHashMap`：类型安全了，但仍要走 hash() 计算、掩码寻址与 equals 校验。；`EnumStateMachine`：把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `EnumInHashMap.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "enumstate.EnumInHashMap",
+          "q": "在左边的 `EnumInHashMap.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "labels.put(OrderState.NEW, \"新建\");"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`labels.put(OrderState.NEW, \"新建\");`）导致：类型安全了，但仍要走 hash() 计算、掩码寻址与 equals 校验。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "enumstate.EnumInHashMap",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "7: new           #13                 // class java/util/HashMap"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "14: astore_2"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `EnumStateMachine` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "enumstate.EnumStateMachine",
+          "say": "把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。",
+          "walk": [
+            {
+              "focus": [
+                "enum OrderState {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (next != null) ok++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "enumstate",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "魔法数字 int + HashMap（`MagicIntHashMap`）",
+              "solves": "每次查询都要 Integer 自动装箱再算哈希，可读性差且有溢出/非法值风险。",
+              "cost": "实测约 {ms:enumstate.MagicIntHashMap} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "每次查询都要 Integer 自动装箱再算哈希，可读性差且有溢出/非法值风险。"
+            },
+            {
+              "name": "Enum 放入普通 HashMap（`EnumInHashMap`）",
+              "solves": "类型安全了，但仍要走 hash() 计算、掩码寻址与 equals 校验。",
+              "cost": "实测约 {ms:enumstate.EnumInHashMap} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "类型安全了，但仍要走 hash() 计算、掩码寻址与 equals 校验。"
+            },
+            {
+              "name": "EnumMap（数组下标 O(1) 直达）（`EnumMapArrayFast`）",
+              "solves": "底层直接用 vals[key.ordinal()] 数组直取，无哈希无装箱，速度最快。",
+              "cost": "实测约 {ms:enumstate.EnumMapArrayFast} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "底层直接用 vals[key.ordinal()] 数组直取，无哈希无装箱，速度最快。"
+            },
+            {
+              "name": "枚举抽象方法状态机（`EnumStateMachine`）",
+              "solves": "把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。",
+              "cost": "实测约 {ms:enumstate.EnumStateMachine} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Enum 本质",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "编译后是一个 `final class X extends Enum<X>`，每个枚举常量都是 `public static final` 单例实例，JVM 禁止反射调用枚举构造器。",
+          "asked": [
+            "Enum 枚举本质、EnumMap 加速与状态机模式——底层原理是什么？",
+            "为什么 `EnumInHashMap` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `EnumStateMachine` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "对比 `MagicIntHashMap`、`EnumInHashMap` 与 `EnumMapArrayFast` 查 200 万次，速度表现如何？",
+          "options": [
+            {
+              "text": "EnumMapArrayFast 最快（直接数组下标取值，无哈希无装箱）",
+              "ok": true,
+              "why": "`EnumMap` 内部就是 `vals[key.ordinal()]` 一次数组访问；而 `HashMap<Integer>` 还要先 `Integer.valueOf` 再算 hash。"
+            },
+            {
+              "text": "MagicIntHashMap 最快",
+              "ok": false,
+              "why": "再想一想：`EnumMap` 内部就是 `vals[key.ordinal()]` 一次数组访问；而 `HashMap<Integer>` 还要先 `Integer.valueOf` 再算 hash。"
+            },
+            {
+              "text": "三者完全一样",
+              "ok": false,
+              "why": "再想一想：`EnumMap` 内部就是 `vals[key.ordinal()]` 一次数组访问；而 `HashMap<Integer>` 还要先 `Integer.valueOf` 再算 hash。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：继承关系",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "定义 `enum Color { RED, GREEN }` 后，Color 还能再 `extends` 其他类吗？",
+          "options": [
+            {
+              "text": "不能，编译器已默认让它继承 java.lang.Enum（但可以实现接口）",
+              "ok": true,
+              "why": "Java 单继承限制下，`enum` 隐式继承 `Enum<E>` 且类本身是 `final`。"
+            },
+            {
+              "text": "可以单继承",
+              "ok": false,
+              "why": "再想一想：Java 单继承限制下，`enum` 隐式继承 `Enum<E>` 且类本身是 `final`。"
+            },
+            {
+              "text": "编译成接口",
+              "ok": false,
+              "why": "再想一想：Java 单继承限制下，`enum` 隐式继承 `Enum<E>` 且类本身是 `final`。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：反射破解",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么说枚举单例不怕反射和反序列化破坏？",
+          "options": [
+            {
+              "text": "Constructor.newInstance 源码显式禁止实例化 ENUM，序列化只写枚举名再按 name 找回原实例",
+              "ok": true,
+              "why": "JDK 在 `Constructor.newInstance()` 和 `ObjectInputStream` 里都为 `Enum` 写了硬性保护分支。"
+            },
+            {
+              "text": "枚举没有构造器",
+              "ok": false,
+              "why": "再想一想：JDK 在 `Constructor.newInstance()` 和 `ObjectInputStream` 里都为 `Enum` 写了硬性保护分支。"
+            },
+            {
+              "text": "枚举在元空间",
+              "ok": false,
+              "why": "再想一想：JDK 在 `Constructor.newInstance()` 和 `ObjectInputStream` 里都为 `Enum` 写了硬性保护分支。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `EnumStateMachine`（枚举抽象方法状态机）替代 `EnumInHashMap`（Enum 放入普通 HashMap）？",
+          "options": [
+            {
+              "text": "因为 把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。",
+              "ok": true,
+              "why": "`EnumInHashMap`：类型安全了，但仍要走 hash() 计算、掩码寻址与 equals 校验。；而 `EnumStateMachine`：把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。"
+            },
+            {
+              "text": "因为 `EnumInHashMap` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`EnumInHashMap`：类型安全了，但仍要走 hash() 计算、掩码寻址与 equals 校验。；而 `EnumStateMachine`：把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`EnumInHashMap`：类型安全了，但仍要走 hash() 计算、掩码寻址与 equals 校验。；而 `EnumStateMachine`：把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
       "beat": "say",
-      "title": "开口讲：2 分钟脱稿自述",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
       "blocks": [
         {
           "t": "say",
           "prompt": "请脱稿向面试官解释：1) Enum 编译后的底层结构及为什么是最佳单例；2) EnumMap 和 EnumSet 为什么比 HashMap/HashSet 快；3) 枚举落库为什么不能用 ordinal()。",
+          "points": [
+            "说清 Enum 编译后的类结构、天然防反射/防反序列化单例原理",
+            "对比 Magic Int、HashMap<Enum> 与 EnumMap（底层定长数组直寻址）的性能差异",
+            "掌握用枚举抽象方法实现无 if-else 状态机流转的工程写法"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：为什么《Effective Java》盛赞 Enum 是最佳单例？把订单状态存在 EnumMap 里，比 HashMap<OrderState, String> 和魔法数字快在哪里？；**② 再讲底层原理**：Enum 本质（编译后是一个 `final class X extends Enum<X>`，每个枚举常量都是 `public static final` 单例实例，JVM 禁止反射调用枚举构造器。）；EnumMap（专门针对 Enum Key 设计的 Map，底层直接是一个 `Object[]` 数组，用 `key.ordinal()` 直接下标寻址，**零哈希计算、零装箱、零碰撞**。）；**③ 最后给工程方案**：生产里优先采用「枚举抽象方法状态机」（`EnumStateMachine`），把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。。",
           "seconds": 120
         }
       ]
     },
     {
       "beat": "take",
-      "title": "带走 3 张核心卡片",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
       "blocks": [
         {
-          "t": "take",
-          "cards": [
-            { "k": "终极单例", "v": "JVM 从反射与反序列化底层保护 `Enum`，天然线程安全且唯一。" },
-            { "k": "EnumMap/Set", "v": "`EnumMap` 底层是 `ordinal()` 数组，`EnumSet` 底层是位图，零哈希零装箱。" },
-            { "k": "禁止存 ordinal", "v": "数据库映射枚举必须使用显式固定 `code`，严禁依赖 `ordinal()` 顺序。" }
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「Enum 本质」？它在这节课里起了什么关键作用？",
+              "a": "编译后是一个 `final class X extends Enum<X>`，每个枚举常量都是 `public static final` 单例实例，JVM 禁止反射调用枚举构造器。"
+            },
+            {
+              "q": "面试官问：什么是「EnumMap」？它在这节课里起了什么关键作用？",
+              "a": "专门针对 Enum Key 设计的 Map，底层直接是一个 `Object[]` 数组，用 `key.ordinal()` 直接下标寻址，**零哈希计算、零装箱、零碰撞**。"
+            },
+            {
+              "q": "面试官问：什么是「枚举状态机」？它在这节课里起了什么关键作用？",
+              "a": "在枚举里定义 `abstract OrderState next()`，每个状态常量自己实现流转目标，彻底消灭漫长的 `switch/if-else`。"
+            },
+            {
+              "q": "实战避坑：`EnumInHashMap` 为什么会出问题，应该怎么改？",
+              "a": "类型安全了，但仍要走 hash() 计算、掩码寻址与 equals 校验。 正确做法是改用 `EnumStateMachine`（枚举抽象方法状态机）：把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "说清 Enum 编译后的类结构、天然防反射/防反序列化单例原理",
+            "对比 Magic Int、HashMap<Enum> 与 EnumMap（底层定长数组直寻址）的性能差异",
+            "掌握用枚举抽象方法实现无 if-else 状态机流转的工程写法"
           ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `EnumInHashMap`（Enum 放入普通 HashMap），优先选用 `EnumStateMachine`（枚举抽象方法状态机）：把状态流转逻辑内聚在枚举常量自身，零 Map 查找、零 if-else。"
         }
       ]
     }

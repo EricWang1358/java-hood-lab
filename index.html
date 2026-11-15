@@ -853,7 +853,7 @@
           <h3 class="card__title">值传递与引用副本：方法里 swap 或重赋值为什么外面没变？</h3>
           <p class="card__lead">大家都说「Java 对象是引用传递」，可为什么在方法里写 box = new Box(99) 之后，调用方的 box.val 还是 0？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -865,7 +865,7 @@
           <h3 class="card__title">包装类缓存池与拆箱陷阱：为什么 Integer == Integer 127 对 128 错？</h3>
           <p class="card__lead">测试环境用户 ID 从 1 到 100 跑得好好的，一上线 ID 涨到 128 以上，用 == 判断两个 Integer 相等突然全变 false！</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -877,7 +877,7 @@
           <h3 class="card__title">BigDecimal 算钱三连坑：double 构造、equals 标度与舍入模式</h3>
           <p class="card__lead">不用 double 算钱改用 BigDecimal 了，可为什么 new BigDecimal(0.1) 还是算不准，equals 比较 0.3 和 0.30 竟然返回 false？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -889,7 +889,7 @@
           <h3 class="card__title">String 不可变性与循环拼接：为什么循环里用 + 会把 CPU 拖死？</h3>
           <p class="card__lead">面经说 JDK 9+ 字符串 + 会优化成 invokedynamic，那在 for 循环里写 s += "a" 拼 2 万次，还会慢成 O(N²) 吗？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -901,7 +901,7 @@
           <h3 class="card__title">浅拷贝污染事故：改了副本，原对象的数组/列表怎么也跟着变了？</h3>
           <p class="card__lead">好不容易实现了 Cloneable 并调用 super.clone() 复制出一个用户副本，可一改副本的 scores[0]，原用户的分数竟然也被改掉了！</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -922,7 +922,7 @@
           <h3 class="card__title">equals 与 hashCode 契约：为什么只重写 equals 会让 HashMap 丢键？</h3>
           <p class="card__lead">明明两个 Key 的 id 完全一样、equals() 也返回 true，为什么 put 进 HashMap 后再 get(new Key(id)) 竟然返回 null？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -934,7 +934,7 @@
           <h3 class="card__title">不可变类设计：final 字段加上 private，为什么 List 还是被外面改坏了？</h3>
           <p class="card__lead">类加了 final、字段也加了 private final List&lt;String&gt; roles，可为什么外面调用方往原 list 里 add 一条，配置竟然被悄悄篡改？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -946,7 +946,7 @@
           <h3 class="card__title">泛型擦除、堆污染与 PECS 原则：运行期 List&lt;Integer&gt; 里怎么塞进了 String？</h3>
           <p class="card__lead">明明声明的是 List&lt;Integer&gt;，为什么通过原始类型引用塞进一个 "bad-string" 竟然编译运行都不报错，直到取出那一刻才炸出 ClassCastException？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -958,7 +958,7 @@
           <h3 class="card__title">Comparator 减法溢出坑与 TreeSet 神秘吞元素</h3>
           <p class="card__lead">图省事写了个 (a, b) -&gt; a - b 排序，遇到负数直接排反；更诡异的是往 TreeSet 里加 1000 个不同 ID 的同分元素，size() 竟然只有 1！</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -970,7 +970,7 @@
           <h3 class="card__title">Enum 枚举本质、EnumMap 加速与状态机模式</h3>
           <p class="card__lead">为什么《Effective Java》盛赞 Enum 是最佳单例？把订单状态存在 EnumMap 里，比 HashMap&lt;OrderState, String&gt; 和魔法数字快在哪里？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -991,7 +991,7 @@
           <h3 class="card__title">异常栈捕获代价：为什么不能用 try-catch 代替 if-else 控制业务流？</h3>
           <p class="card__lead">用异常代替返回 false 或错误码，表面代码少写了几个 if，可一旦并发上来，为什么 CPU 全烧在 Throwable.fillInStackTrace() 上？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1003,7 +1003,7 @@
           <h3 class="card__title">try-with-resources 防泄漏与抑制异常：finally 怎么把主异常吞掉了？</h3>
           <p class="card__lead">用老式 try-finally 手动关流，结果 work() 抛了核心业务异常，finally 里的 close() 又抛了一个异常——外层 catch 竟然只看到 close() 的报错！</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1015,7 +1015,7 @@
           <h3 class="card__title">反射性能真相：每次 getMethod、缓存 setAccessible 与 MethodHandle 差多少？</h3>
           <p class="card__lead">大家都说「Java 反射慢」，可 Spring/MyBatis/Jackson 到处都在用反射。到底慢在查元数据、权限检查，还是 invoke 本身？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1027,7 +1027,7 @@
           <h3 class="card__title">注解 Retention 生命周期与运行时解析缓存</h3>
           <p class="card__lead">自定义了一个权限注解加在接口上，为什么运行时 getAnnotation() 竟然返回 null？如果每次请求都反射读注解，又会多出多少开销？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1039,7 +1039,7 @@
           <h3 class="card__title">SPI 扩展机制与懒加载缓存：JDBC / Dubbo / Spring Boot 是怎么插拔实现的？</h3>
           <p class="card__lead">写一个核心接口，不改核心包一行代码，只往 classpath 放个 jar 就能自动加载实现类——JDK ServiceLoader 怎么做到的？为什么每次重新 load 这么慢？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1051,7 +1051,7 @@
           <h3 class="card__title">变长参数数组分配、重载静态分派与装箱优先级</h3>
           <p class="card__lead">写了个便捷方法 sum(int... nums)，在热循环里每次传 2 个参数竟然都在偷偷 new int[2]！更迷惑的是 Base ref = new Sub(); 调重载方法 tag(ref) 到底走哪个？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1072,7 +1072,7 @@
           <h3 class="card__title">ArrayList 1.5 倍扩容 vs LinkedList：随机访问慢在哪？</h3>
           <p class="card__lead">面试都说「LinkedList 适合增删、ArrayList 适合查询」，可为什么用 for(i) 调 LinkedList.get(i) 遍历 4 万条数据直接卡成几百毫秒？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1084,7 +1084,7 @@
           <h3 class="card__title">fail-fast 快速失败：为什么 for-each 里删元素会炸 ConcurrentModificationException？</h3>
           <p class="card__lead">单线程好端端地遍历一个 ArrayList，顺手删掉偶数元素就立刻炸出 ConcurrentModificationException；换成下标正序删又不报错了，结果竟悄悄漏删了一半！</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1096,7 +1096,7 @@
           <h3 class="card__title">HashMap 初始容量与负载因子：new HashMap&lt;&gt;(10000) 为什么还是会扩容？</h3>
           <p class="card__lead">明明知道要往 HashMap 里放 10000 条数据，贴心地写了 new HashMap&lt;&gt;(10000)，可源码算下来竟然还是在放第 7501 条时触发了一次全表扩容！</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1108,7 +1108,7 @@
           <h3 class="card__title">HashMap 哈希碰撞与红黑树化：为什么 8 和 64 两个阈值缺一不可？</h3>
           <p class="card__lead">故意让 4000 个 Key 的 hashCode 全部撞进同一个桶，为什么 Key 实现 Comparable 时查询快如闪电，没实现 Comparable 时却慢成几十倍？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1120,7 +1120,7 @@
           <h3 class="card__title">LinkedHashMap 手写 O(1) LRU 缓存：accessOrder=true 怎么把热点挪到队尾？</h3>
           <p class="card__lead">面试手撕高频第一题「O(1) LRU 缓存」：用 LinkedHashMap 只需重写一个方法 5 行搞定，可为什么忘了传第三个参数 true，热点键竟然被淘汰了？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1132,7 +1132,7 @@
           <h3 class="card__title">PriorityQueue 小顶堆 Top-K vs 全排序：10 万条数据取前 10 为啥快这么多？</h3>
           <p class="card__lead">排行榜只取前 10 名，却把 10 万条数据全量 Arrays.sort 或全塞进大顶堆！换成容量固定为 10 的小顶堆，时间与内存分别省下多少？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1144,7 +1144,7 @@
           <h3 class="card__title">Stream 装箱开销与 parallelStream 共享池阻塞陷阱</h3>
           <p class="card__lead">把普通的 for 循环全改成 list.stream().reduce() 甚至 parallelStream()，代码看似高级了，为什么性能反而变慢，甚至把整个微服务的并行任务全卡死？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1156,7 +1156,7 @@
           <h3 class="card__title">Arrays.asList、List.of 与 subList：三个假 List 视图的连环坑</h3>
           <p class="card__lead">用 Arrays.asList 转了个列表，一调 add() 就炸 UnsupportedOperationException；调 set() 居然把原数组也改掉了；更隐蔽的是 subList 切片竟能导致几百 MB 大列表永不 GC！</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1177,7 +1177,7 @@
           <h3 class="card__title">字符编码与乱码救火：UTF-8、GBK 与不可逆损坏边界</h3>
           <p class="card__lead">接口中文变成「璁㈠崟」、日志里全是「???」：同样是编码搞错了，为什么有些乱码还能救回来，有些却神仙难救？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1189,7 +1189,7 @@
           <h3 class="card__title">Java 原生序列化 vs 紧凑编解码：serialVersionUID、transient 与性能鸿沟</h3>
           <p class="card__lead">Java 自带 ObjectOutputStream 既要实现 Serializable 接口、又要算 serialVersionUID，跑起来还慢得惊人——为什么现代 RPC 与缓存几乎全抛弃了它？</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1201,7 +1201,7 @@
           <h3 class="card__title">文件 IO 与装饰器流：逐字节读 vs 8KB 缓冲块的性能天壤之别</h3>
           <p class="card__lead">同样是读取 2MB 数据，为什么调用无参 read() 逐字节读比带 8KB 缓冲区的 read(byte[]) 慢上几十倍？BufferedInputStream 到底省了什么？</p>
           <div class="card__foot">
-            <span>12 页 · 约 20 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
@@ -1213,7 +1213,7 @@
           <h3 class="card__title">NIO ByteBuffer 三指针与堆外内存：flip、compact 与半包丢失事故</h3>
           <p class="card__lead">往 ByteBuffer 写了数据直接 getInt() 居然读出 0；处理 TCP 半包时图省事调了 clear()，未读完的后半截数据当场蒸发！</p>
           <div class="card__foot">
-            <span>12 页 · 约 25 分钟</span>
+            <span>19 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>

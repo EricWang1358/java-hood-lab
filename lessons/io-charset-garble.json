@@ -5,8 +5,11 @@
   "course": "Java 工程语法与集合",
   "title": "字符编码与乱码救火：UTF-8、GBK 与不可逆损坏边界",
   "lead": "接口中文变成「璁㈠崟」、日志里全是「???」：同样是编码搞错了，为什么有些乱码还能救回来，有些却神仙难救？",
-  "minutes": 25,
-  "needs": ["知道字符串在计算机底层以字节数组存储", "见过 UTF-8 和 GBK 编码名称"],
+  "minutes": 30,
+  "needs": [
+    "知道字符串在计算机底层以字节数组存储",
+    "见过 UTF-8 和 GBK 编码名称"
+  ],
   "after": [
     "区分编码（getBytes）与解码（new String）两个方向，解释为什么必须显式指定 StandardCharsets.UTF_8",
     "理解 UTF-8 中文占 3 字节、GBK 占 2 字节导致的「奇数字节错位」与替换字符 U+FFFD 不可逆丢失",
@@ -22,21 +25,59 @@
       "runner": "java",
       "home": "lab.charset",
       "variants": [
-        { "id": "MismatchGbkDecode", "code": "MismatchGbkDecode.java", "label": "UTF-8 字节误用 GBK 解码", "note": "3 字节汉字按 2 字节切分，产生经典「璁㈠崟」乱码，原样匹配数 0。" },
-        { "id": "ReplacementCharIrreversible", "code": "ReplacementCharIrreversible.java", "label": "误解后再按 UTF-8 二次重编码", "note": "ISO 乱码字符被重新编码成多字节 UTF-8，原始字节结构彻底破坏，救回数 0。" },
-        { "id": "ExplicitUtf8Consistent", "code": "ExplicitUtf8Consistent.java", "label": "显式统一 StandardCharsets.UTF_8", "note": "编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。" },
-        { "id": "IsoRoundTripRecoverable", "code": "IsoRoundTripRecoverable.java", "label": "ISO-8859-1 单字节透传后逆向救回", "note": "仅当中间层按 ISO-8859-1 原样透传时，按原编码取回字节再用 UTF-8 解码可 100% 救回。" }
+        {
+          "id": "MismatchGbkDecode",
+          "code": "MismatchGbkDecode.java",
+          "label": "UTF-8 字节误用 GBK 解码",
+          "note": "3 字节汉字按 2 字节切分，产生经典「璁㈠崟」乱码，原样匹配数 0。"
+        },
+        {
+          "id": "ReplacementCharIrreversible",
+          "code": "ReplacementCharIrreversible.java",
+          "label": "误解后再按 UTF-8 二次重编码",
+          "note": "ISO 乱码字符被重新编码成多字节 UTF-8，原始字节结构彻底破坏，救回数 0。"
+        },
+        {
+          "id": "ExplicitUtf8Consistent",
+          "code": "ExplicitUtf8Consistent.java",
+          "label": "显式统一 StandardCharsets.UTF_8",
+          "note": "编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。"
+        },
+        {
+          "id": "IsoRoundTripRecoverable",
+          "code": "IsoRoundTripRecoverable.java",
+          "label": "ISO-8859-1 单字节透传后逆向救回",
+          "note": "仅当中间层按 ISO-8859-1 原样透传时，按原编码取回字节再用 UTF-8 解码可 100% 救回。"
+        }
       ],
-      "knob": { "label": "编解码次数 N", "values": ["5000", "10000", "20000", "50000"], "default": "20000" },
+      "knob": {
+        "label": "编解码次数 N",
+        "values": [
+          "5000",
+          "10000",
+          "20000",
+          "50000"
+        ],
+        "default": "20000"
+      },
       "repeat": 20,
-      "metric": { "key": "intact", "expectKey": "expected", "label": "完整还原次数" },
-      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+      "metric": {
+        "key": "intact",
+        "expectKey": "expected",
+        "label": "完整还原次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
     }
   },
   "slides": [
     {
       "beat": "open",
-      "title": "字符编码与乱码救火边界",
+      "title": "字符编码与乱码救火：UTF-8、GBK 与不可逆损坏边界",
+      "bridge": "接口中文变成「璁㈠崟」、日志里全是「???」：同样是编码搞错了，为什么有些乱码还能救回来，有些却神仙难救？",
       "blocks": [
         {
           "t": "text",
@@ -47,23 +88,32 @@
     },
     {
       "beat": "open",
-      "title": "热身：编码与字节长度",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
       "blocks": [
         {
           "t": "recall",
-          "say": "先回忆一下常见编码的字节规则。",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
           "items": [
             {
               "have": "默认编码隐患",
               "q": "在 JDK 11 下调用 `\"中文\".getBytes()` 不传参数，结果长度一定一样吗？",
-              "options": ["不一定！依赖 file.encoding（Windows GBK 4 字节，Linux UTF-8 6 字节）", "一定都是 6 字节", "一定都是 4 字节"],
+              "options": [
+                "不一定！依赖 file.encoding（Windows GBK 4 字节，Linux UTF-8 6 字节）",
+                "一定都是 6 字节",
+                "一定都是 4 字节"
+              ],
               "answer": 0,
               "why": "JDK 18 起才把默认字符集统一为 UTF-8（JEP 400）；工程里永远显式传 `StandardCharsets.UTF_8`。"
             },
             {
               "have": "乱码可逆性",
               "q": "如果字节流已经因为解码失败变成了替换字符 ``（U+FFFD），还能通过再次转码救回原中文吗？",
-              "options": ["不能，原始字节信息已被 U+FFFD 覆盖丢失", "可以，再转一次 GBK 就好", "可以，用 Base64 解开"],
+              "options": [
+                "不能，原始字节信息已被 U+FFFD 覆盖丢失",
+                "可以，再转一次 GBK 就好",
+                "可以，用 Base64 解开"
+              ],
               "answer": 0,
               "why": "多对一映射丢失了原始字节，不可逆。"
             }
@@ -72,72 +122,422 @@
       ]
     },
     {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (ReplacementCharIrreversible)",
+              "安全写法 (ExplicitUtf8Consistent)"
+            ],
+            "shared": {
+              "name": "完整还原次数",
+              "value": "目标 20000"
+            }
+          },
+          "story": "接口中文变成「璁㈠崟」、日志里全是「???」：同样是编码搞错了，为什么有些乱码还能救回来，有些却神仙难救？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "字符集与编码",
+              "on": "shared",
+              "tag": "字符集与编码",
+              "code": "`ReplacementCharIrreversible` vs `ExplicitUtf8Consistent`",
+              "say": "UTF-8 是变长编码（ASCII 1 字节，常见汉字 3 字节）；GBK 常见汉字占 2 字节；ISO-8859-1 是单字节编码（0x00~0xFF 一一映射）。"
+            },
+            {
+              "scene": "U+FFFD 替换符",
+              "on": "shared",
+              "tag": "U+FFFD 替换符",
+              "code": "`ReplacementCharIrreversible` vs `ExplicitUtf8Consistent`",
+              "say": "解码器遇到非法字节序列时，会丢弃原字节并写入统一的替换字符 （U+FFFD），原始字节信息自此永久丢失！"
+            },
+            {
+              "scene": "无损单字节透传",
+              "on": "shared",
+              "tag": "无损单字节透传",
+              "code": "`ReplacementCharIrreversible` vs `ExplicitUtf8Consistent`",
+              "say": "ISO-8859-1 对 0~255 每个字节都有独立码点，所以 `new String(utf8, ISO_8859_1)` 虽显示乱码但字节没丢；一旦再被错误地 `.getBytes(UTF_8)` 扩写，就再也回不去了。"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "beat": "hook",
-      "title": "看代码：MismatchGbkDecode vs ReplacementCharIrreversible",
+      "title": "盯紧踩坑代码：`ReplacementCharIrreversible`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
       "blocks": [
         {
           "t": "code",
-          "exp": "charset",
-          "variants": ["MismatchGbkDecode", "ReplacementCharIrreversible"]
+          "of": "charset.ReplacementCharIrreversible",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "byte[] utf8 = src.getBytes(StandardCharsets.UTF_8);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (src.equals(recovered)) intact++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
         }
       ]
     },
     {
       "beat": "predict",
-      "title": "先猜：ISO 乱码被再按 UTF-8 编码一次，还能救回吗？",
+      "title": "先押一注：ReplacementCharIrreversible 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
       "blocks": [
         {
           "t": "predict",
-          "exp": "charset",
-          "question": "`ReplacementCharIrreversible` 把 UTF-8 字节用 ISO-8859-1 解成 String 后，又调 `iso.getBytes(UTF_8)`，最终完整还原次数是？",
-          "options": ["0 次（二次 UTF-8 重编码破坏了原字节序列）", "20000 次", "10000 次"],
+          "id": "p1",
+          "q": "`ReplacementCharIrreversible` 把 UTF-8 字节用 ISO-8859-1 解成 String 后，又调 `iso.getBytes(UTF_8)`，最终完整还原次数是？",
+          "options": [
+            "0 次（二次 UTF-8 重编码破坏了原字节序列）",
+            "20000 次",
+            "10000 次"
+          ],
           "answer": 0,
-          "why": "高于 0x7F 的单字节在 ISO-8859-1 里是独立字符，再次 `getBytes(UTF_8)` 会被扩写成 2 字节 UTF-8，直接和原字节彻底脱节。"
+          "say": "高于 0x7F 的单字节在 ISO-8859-1 里是独立字符，再次 `getBytes(UTF_8)` 会被扩写成 2 字节 UTF-8，直接和原字节彻底脱节。"
         }
       ]
     },
     {
       "beat": "run",
-      "title": "跑一跑：4 种编解码路径还原率实测",
+      "title": "一轮一轮放出来看：ReplacementCharIrreversible 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
       "blocks": [
         {
-          "t": "result",
-          "exp": "charset",
-          "kind": "correctness"
+          "t": "experiment",
+          "lab": "charset",
+          "show": [
+            "ReplacementCharIrreversible"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "高于 0x7F 的单字节在 ISO-8859-1 里是独立字符，再次 `getBytes(UTF_8)` 会被扩写成 2 字节 UTF-8，直接和原字节彻底脱节。",
+          "say": "高于 0x7F 的单字节在 ISO-8859-1 里是独立字符，再次 `getBytes(UTF_8)` 会被扩写成 2 字节 UTF-8，直接和原字节彻底脱节。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「编解码次数 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "charset",
+          "show": [
+            "ReplacementCharIrreversible",
+            "ExplicitUtf8Consistent"
+          ],
+          "say": "左右拖动「编解码次数 N」滑块，对比 `ReplacementCharIrreversible` 与 `ExplicitUtf8Consistent` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`ReplacementCharIrreversible`：ISO 乱码字符被重新编码成多字节 UTF-8，原始字节结构彻底破坏，救回数 0。；`ExplicitUtf8Consistent`：编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `ReplacementCharIrreversible.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "charset.ReplacementCharIrreversible",
+          "q": "在左边的 `ReplacementCharIrreversible.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "String iso = new String(utf8, StandardCharsets.ISO_8859_1);"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`String iso = new String(utf8, StandardCharsets.ISO_8859_1);`）导致：ISO 乱码字符被重新编码成多字节 UTF-8，原始字节结构彻底破坏，救回数 0。",
+          "say": "直接点击左侧代码行，点错会有提示。"
         }
       ]
     },
     {
       "beat": "why",
-      "title": "掀开字节码：显式传入 StandardCharsets.UTF_8",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
       "blocks": [
         {
           "t": "inside",
-          "exp": "charset",
-          "variant": "ExplicitUtf8Consistent",
-          "explain": "字节码里调用的是 `String.getBytes(Charset)` 与 `new String(byte[], Charset)` 重载，直接传入 `StandardCharsets.UTF_8` 静态常量，彻底绕过 `Charset.defaultCharset()` 的环境漂移。"
+          "of": "charset.ReplacementCharIrreversible",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "35: new           #28                 // class java/lang/String"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "30: invokevirtual #27                 // Method java/lang/String.getBytes:(Ljava/nio/charset/Charset;)[B"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
         }
       ]
     },
     {
       "beat": "fix",
-      "title": "对比安全写法：ExplicitUtf8Consistent vs IsoRoundTripRecoverable",
+      "title": "改一处：看 `ExplicitUtf8Consistent` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
       "blocks": [
         {
           "t": "code",
-          "exp": "charset",
-          "variants": ["ExplicitUtf8Consistent", "IsoRoundTripRecoverable"]
+          "of": "charset.ExplicitUtf8Consistent",
+          "say": "编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "for (int i = 0; i < n; i++) {"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (src.equals(decoded)) intact++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "charset",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
         },
         {
-          "t": "text",
-          "md": "- **预防第一**：HTTP 请求体、文件流 `InputStreamReader`、`String.getBytes()` 全部显式锁定 `StandardCharsets.UTF_8`。\n- **线上救火**：只有当旧网关把 UTF-8 按 `ISO-8859-1` 无损读成字符串且**尚未二次重编码**时，才能用 `new String(s.getBytes(ISO_8859_1), UTF_8)` 救回。",
-          "say": "乱码排查先抓十六进制原始字节，看一眼字节长度就能秒判是 UTF-8 还是 GBK。"
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "UTF-8 字节误用 GBK 解码（`MismatchGbkDecode`）",
+              "solves": "3 字节汉字按 2 字节切分，产生经典「璁㈠崟」乱码，原样匹配数 0。",
+              "cost": "实测约 {ms:charset.MismatchGbkDecode} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "3 字节汉字按 2 字节切分，产生经典「璁㈠崟」乱码，原样匹配数 0。"
+            },
+            {
+              "name": "误解后再按 UTF-8 二次重编码（`ReplacementCharIrreversible`）",
+              "solves": "ISO 乱码字符被重新编码成多字节 UTF-8，原始字节结构彻底破坏，救回数 0。",
+              "cost": "实测约 {ms:charset.ReplacementCharIrreversible} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "ISO 乱码字符被重新编码成多字节 UTF-8，原始字节结构彻底破坏，救回数 0。"
+            },
+            {
+              "name": "显式统一 StandardCharsets.UTF_8（`ExplicitUtf8Consistent`）",
+              "solves": "编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。",
+              "cost": "实测约 {ms:charset.ExplicitUtf8Consistent} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。"
+            },
+            {
+              "name": "ISO-8859-1 单字节透传后逆向救回（`IsoRoundTripRecoverable`）",
+              "solves": "仅当中间层按 ISO-8859-1 原样透传时，按原编码取回字节再用 UTF-8 解码可 100% 救回。",
+              "cost": "实测约 {ms:charset.IsoRoundTripRecoverable} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "仅当中间层按 ISO-8859-1 原样透传时，按原编码取回字节再用 UTF-8 解码可 100% 救回。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "字符集与编码",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "UTF-8 是变长编码（ASCII 1 字节，常见汉字 3 字节）；GBK 常见汉字占 2 字节；ISO-8859-1 是单字节编码（0x00~0xFF 一一映射）。",
+          "asked": [
+            "字符编码与乱码救火：UTF-8、GBK 与不可逆损坏边界——底层原理是什么？",
+            "为什么 `ReplacementCharIrreversible` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `ExplicitUtf8Consistent` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`ReplacementCharIrreversible` 把 UTF-8 字节用 ISO-8859-1 解成 String 后，又调 `iso.getBytes(UTF_8)`，最终完整还原次数是？",
+          "options": [
+            {
+              "text": "0 次（二次 UTF-8 重编码破坏了原字节序列）",
+              "ok": true,
+              "why": "高于 0x7F 的单字节在 ISO-8859-1 里是独立字符，再次 `getBytes(UTF_8)` 会被扩写成 2 字节 UTF-8，直接和原字节彻底脱节。"
+            },
+            {
+              "text": "20000 次",
+              "ok": false,
+              "why": "再想一想：高于 0x7F 的单字节在 ISO-8859-1 里是独立字符，再次 `getBytes(UTF_8)` 会被扩写成 2 字节 UTF-8，直接和原字节彻底脱节。"
+            },
+            {
+              "text": "10000 次",
+              "ok": false,
+              "why": "再想一想：高于 0x7F 的单字节在 ISO-8859-1 里是独立字符，再次 `getBytes(UTF_8)` 会被扩写成 2 字节 UTF-8，直接和原字节彻底脱节。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：默认编码隐患",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在 JDK 11 下调用 `\"中文\".getBytes()` 不传参数，结果长度一定一样吗？",
+          "options": [
+            {
+              "text": "不一定！依赖 file.encoding（Windows GBK 4 字节，Linux UTF-8 6 字节）",
+              "ok": true,
+              "why": "JDK 18 起才把默认字符集统一为 UTF-8（JEP 400）；工程里永远显式传 `StandardCharsets.UTF_8`。"
+            },
+            {
+              "text": "一定都是 6 字节",
+              "ok": false,
+              "why": "再想一想：JDK 18 起才把默认字符集统一为 UTF-8（JEP 400）；工程里永远显式传 `StandardCharsets.UTF_8`。"
+            },
+            {
+              "text": "一定都是 4 字节",
+              "ok": false,
+              "why": "再想一想：JDK 18 起才把默认字符集统一为 UTF-8（JEP 400）；工程里永远显式传 `StandardCharsets.UTF_8`。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：乱码可逆性",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果字节流已经因为解码失败变成了替换字符 ``（U+FFFD），还能通过再次转码救回原中文吗？",
+          "options": [
+            {
+              "text": "不能，原始字节信息已被 U+FFFD 覆盖丢失",
+              "ok": true,
+              "why": "多对一映射丢失了原始字节，不可逆。"
+            },
+            {
+              "text": "可以，再转一次 GBK 就好",
+              "ok": false,
+              "why": "再想一想：多对一映射丢失了原始字节，不可逆。"
+            },
+            {
+              "text": "可以，用 Base64 解开",
+              "ok": false,
+              "why": "再想一想：多对一映射丢失了原始字节，不可逆。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `ExplicitUtf8Consistent`（显式统一 StandardCharsets.UTF_8）替代 `ReplacementCharIrreversible`（误解后再按 UTF-8 二次重编码）？",
+          "options": [
+            {
+              "text": "因为 编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。",
+              "ok": true,
+              "why": "`ReplacementCharIrreversible`：ISO 乱码字符被重新编码成多字节 UTF-8，原始字节结构彻底破坏，救回数 0。；而 `ExplicitUtf8Consistent`：编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。"
+            },
+            {
+              "text": "因为 `ReplacementCharIrreversible` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`ReplacementCharIrreversible`：ISO 乱码字符被重新编码成多字节 UTF-8，原始字节结构彻底破坏，救回数 0。；而 `ExplicitUtf8Consistent`：编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`ReplacementCharIrreversible`：ISO 乱码字符被重新编码成多字节 UTF-8，原始字节结构彻底破坏，救回数 0。；而 `ExplicitUtf8Consistent`：编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
         }
       ]
     },
     {
       "beat": "say",
-      "title": "2 分钟开口讲清字符编码与乱码",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
       "blocks": [
         {
           "t": "say",
@@ -148,7 +548,57 @@
             "一旦产生 U+FFFD 替换符或被二次错误重编码，原始字节丢失就不可逆",
             "仅当中间层用单字节 ISO-8859-1 无损透传时，才能按原编码取回字节再解码救回"
           ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：接口中文变成「璁㈠崟」、日志里全是「???」：同样是编码搞错了，为什么有些乱码还能救回来，有些却神仙难救？；**② 再讲底层原理**：字符集与编码（UTF-8 是变长编码（ASCII 1 字节，常见汉字 3 字节）；GBK 常见汉字占 2 字节；ISO-8859-1 是单字节编码（0x00~0xFF 一一映射）。）；U+FFFD 替换符（解码器遇到非法字节序列时，会丢弃原字节并写入统一的替换字符 （U+FFFD），原始字节信息自此永久丢失！）；**③ 最后给工程方案**：生产里优先采用「显式统一 StandardCharsets.UTF_8」（`ExplicitUtf8Consistent`），编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。。",
           "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「字符集与编码」？它在这节课里起了什么关键作用？",
+              "a": "UTF-8 是变长编码（ASCII 1 字节，常见汉字 3 字节）；GBK 常见汉字占 2 字节；ISO-8859-1 是单字节编码（0x00~0xFF 一一映射）。"
+            },
+            {
+              "q": "面试官问：什么是「U+FFFD 替换符」？它在这节课里起了什么关键作用？",
+              "a": "解码器遇到非法字节序列时，会丢弃原字节并写入统一的替换字符 （U+FFFD），原始字节信息自此永久丢失！"
+            },
+            {
+              "q": "面试官问：什么是「无损单字节透传」？它在这节课里起了什么关键作用？",
+              "a": "ISO-8859-1 对 0~255 每个字节都有独立码点，所以 `new String(utf8, ISO_8859_1)` 虽显示乱码但字节没丢；一旦再被错误地 `.getBytes(UTF_8)` 扩写，就再也回不去了。"
+            },
+            {
+              "q": "实战避坑：`ReplacementCharIrreversible` 为什么会出问题，应该怎么改？",
+              "a": "ISO 乱码字符被重新编码成多字节 UTF-8，原始字节结构彻底破坏，救回数 0。 正确做法是改用 `ExplicitUtf8Consistent`（显式统一 StandardCharsets.UTF_8）：编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "区分编码（getBytes）与解码（new String）两个方向，解释为什么必须显式指定 StandardCharsets.UTF_8",
+            "理解 UTF-8 中文占 3 字节、GBK 占 2 字节导致的「奇数字节错位」与替换字符 U+FFFD 不可逆丢失",
+            "分清 ISO-8859-1 单字节无损透传可逆 vs 二次 UTF-8 重编码永久损坏的边界"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `ReplacementCharIrreversible`（误解后再按 UTF-8 二次重编码），优先选用 `ExplicitUtf8Consistent`（显式统一 StandardCharsets.UTF_8）：编解码两端显式锁定 UTF-8，不依赖操作系统默认 Charset，100% 完整还原。"
         }
       ]
     }

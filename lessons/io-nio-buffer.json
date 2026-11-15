@@ -5,8 +5,11 @@
   "course": "Java 工程语法与集合",
   "title": "NIO ByteBuffer 三指针与堆外内存：flip、compact 与半包丢失事故",
   "lead": "往 ByteBuffer 写了数据直接 getInt() 居然读出 0；处理 TCP 半包时图省事调了 clear()，未读完的后半截数据当场蒸发！",
-  "minutes": 25,
-  "needs": ["知道数组有下标和容量概念", "了解 Netty/NIO 通信用 ByteBuffer 存字节"],
+  "minutes": 30,
+  "needs": [
+    "知道数组有下标和容量概念",
+    "了解 Netty/NIO 通信用 ByteBuffer 存字节"
+  ],
   "after": [
     "画出 ByteBuffer 的 capacity、limit、position 三个核心指针在 put、flip、get、compact 时的移动轨迹",
     "解释忘记调用 flip() 导致读出脏数据/0 的原因",
@@ -23,21 +26,59 @@
       "runner": "java",
       "home": "lab.niobuf",
       "variants": [
-        { "id": "ForgetFlipReadsGarbage", "code": "ForgetFlipReadsGarbage.java", "label": "写入后忘记调 flip() 直接读", "note": "position 停在写入末尾 4，读到的全是后面未写入的 0，正确数 0。" },
-        { "id": "ClearLosesUnreadTail", "code": "ClearLosesUnreadTail.java", "label": "未读完半包误调 clear() 重写", "note": "clear() 把 position 直接归零，还没读的 222 被后续写入的 333 覆盖，丢失数 100%。" },
-        { "id": "FlipAndCompactSafe", "code": "FlipAndCompactSafe.java", "label": "flip() 读 + compact() 保留半包", "note": "compact() 把未读的 222 挪到头部再追加 333，再 flip() 全部无损读出，100% 正确。" },
-        { "id": "DirectByteBufferReuse", "code": "DirectByteBufferReuse.java", "label": "复用 DirectByteBuffer 堆外缓冲区", "note": "一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。" }
+        {
+          "id": "ForgetFlipReadsGarbage",
+          "code": "ForgetFlipReadsGarbage.java",
+          "label": "写入后忘记调 flip() 直接读",
+          "note": "position 停在写入末尾 4，读到的全是后面未写入的 0，正确数 0。"
+        },
+        {
+          "id": "ClearLosesUnreadTail",
+          "code": "ClearLosesUnreadTail.java",
+          "label": "未读完半包误调 clear() 重写",
+          "note": "clear() 把 position 直接归零，还没读的 222 被后续写入的 333 覆盖，丢失数 100%。"
+        },
+        {
+          "id": "FlipAndCompactSafe",
+          "code": "FlipAndCompactSafe.java",
+          "label": "flip() 读 + compact() 保留半包",
+          "note": "compact() 把未读的 222 挪到头部再追加 333，再 flip() 全部无损读出，100% 正确。"
+        },
+        {
+          "id": "DirectByteBufferReuse",
+          "code": "DirectByteBufferReuse.java",
+          "label": "复用 DirectByteBuffer 堆外缓冲区",
+          "note": "一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。"
+        }
       ],
-      "knob": { "label": "读写轮次 N", "values": ["50000", "200000", "500000", "1000000"], "default": "500000" },
+      "knob": {
+        "label": "读写轮次 N",
+        "values": [
+          "50000",
+          "200000",
+          "500000",
+          "1000000"
+        ],
+        "default": "500000"
+      },
       "repeat": 20,
-      "metric": { "key": "ok", "expectKey": "expected", "label": "完整无损轮次" },
-      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+      "metric": {
+        "key": "ok",
+        "expectKey": "expected",
+        "label": "完整无损轮次"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
     }
   },
   "slides": [
     {
       "beat": "open",
-      "title": "NIO ByteBuffer 状态机与半包陷阱",
+      "title": "NIO ByteBuffer 三指针与堆外内存：flip、compact 与半包丢失事故",
+      "bridge": "往 ByteBuffer 写了数据直接 getInt() 居然读出 0；处理 TCP 半包时图省事调了 clear()，未读完的后半截数据当场蒸发！",
       "blocks": [
         {
           "t": "text",
@@ -48,23 +89,32 @@
     },
     {
       "beat": "open",
-      "title": "热身：flip() 与 clear() 指针变化",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
       "blocks": [
         {
           "t": "recall",
-          "say": "先口算一下两个最常考的指针状态。",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
           "items": [
             {
               "have": "flip() 的本质",
               "q": "容量 16 的 ByteBuffer 写入 8 字节后（`position=8, limit=16`），调用 `flip()` 后指针变成什么？",
-              "options": ["position=0, limit=8（把刚写的 8 字节框成可读区间）", "position=8, limit=16", "position=0, limit=16"],
+              "options": [
+                "position=0, limit=8（把刚写的 8 字节框成可读区间）",
+                "position=8, limit=16",
+                "position=0, limit=16"
+              ],
               "answer": 0,
               "why": "`flip()` 两步动作：`limit = position; position = 0;` 写切读必备。"
             },
             {
               "have": "堆外内存",
               "q": "为什么网络框架偏好复用 `DirectByteBuffer` 而不是每次现创建？",
-              "options": ["IO 少一次堆内到堆外的内存拷贝，且长期复用不给堆内 GC 添乱，但创建销毁昂贵", "堆外内存永远不会 OOM", "堆外内存比堆内算得更快"],
+              "options": [
+                "IO 少一次堆内到堆外的内存拷贝，且长期复用不给堆内 GC 添乱，但创建销毁昂贵",
+                "堆外内存永远不会 OOM",
+                "堆外内存比堆内算得更快"
+              ],
               "answer": 0,
               "why": "`allocateDirect` 需要系统调用且受 `MaxDirectMemorySize` 限制，必须池化复用。"
             }
@@ -73,72 +123,422 @@
       ]
     },
     {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (ClearLosesUnreadTail)",
+              "安全写法 (DirectByteBufferReuse)"
+            ],
+            "shared": {
+              "name": "完整无损轮次",
+              "value": "目标 500000"
+            }
+          },
+          "story": "往 ByteBuffer 写了数据直接 getInt() 居然读出 0；处理 TCP 半包时图省事调了 clear()，未读完的后半截数据当场蒸发！",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "三指针 (pos/lim/cap)",
+              "on": "shared",
+              "tag": "三指针 (pos/lim",
+              "code": "`ClearLosesUnreadTail` vs `DirectByteBufferReuse`",
+              "say": "`capacity` 是总容量永不变；写模式下 `position` 是下一个写入位置、`limit == capacity`；调用 `flip()` 切换为读模式时，`limit = position; position = 0`。"
+            },
+            {
+              "scene": "compact()",
+              "on": "shared",
+              "tag": "compact()",
+              "code": "`ClearLosesUnreadTail` vs `DirectByteBufferReuse`",
+              "say": "把 `[position, limit)` 之间还没读完的剩余字节拷贝到数组索引 `0` 处，并把 `position` 设在剩余字节末尾、`limit = capacity`，专门用于网络半包续写！"
+            },
+            {
+              "scene": "DirectByteBuffer",
+              "on": "shared",
+              "tag": "DirectByteBu",
+              "code": "`ClearLosesUnreadTail` vs `DirectByteBufferReuse`",
+              "say": "通过 `allocateDirect()` 在操作系统堆外内存分配，避免一次 JVM 堆内到堆外的拷贝（适合长期复用的 IO 缓冲区），但受 `-XX:MaxDirectMemorySize` 限制，泄漏会引发堆外 OOM。"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "beat": "hook",
-      "title": "看代码：ForgetFlipReadsGarbage vs ClearLosesUnreadTail",
+      "title": "盯紧踩坑代码：`ClearLosesUnreadTail`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
       "blocks": [
         {
           "t": "code",
-          "exp": "niobuf",
-          "variants": ["ForgetFlipReadsGarbage", "ClearLosesUnreadTail"]
+          "of": "niobuf.ClearLosesUnreadTail",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "buf.putInt(222);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (first == 111 && buf.getInt() == 222) ok++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
         }
       ]
     },
     {
       "beat": "predict",
-      "title": "先猜：忘记 flip() 或误用 clear()，能正确读出数据的次数是？",
+      "title": "先押一注：ClearLosesUnreadTail 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
       "blocks": [
         {
           "t": "predict",
-          "exp": "niobuf",
-          "question": "`ForgetFlipReadsGarbage` 和 `ClearLosesUnreadTail` 跑 500,000 轮，完整无损轮次分别是多少？",
-          "options": ["两者都是 0（分别读到未写入的 0 和被覆盖的 333）", "500000 和 0", "0 和 500000"],
+          "id": "p1",
+          "q": "`ForgetFlipReadsGarbage` 和 `ClearLosesUnreadTail` 跑 500,000 轮，完整无损轮次分别是多少？",
+          "options": [
+            "两者都是 0（分别读到未写入的 0 和被覆盖的 333）",
+            "500000 和 0",
+            "0 和 500000"
+          ],
           "answer": 0,
-          "why": "没 `flip()` 时 `position` 停在写入末尾；误调 `clear()` 时未读完的 `222` 指针被归零覆盖。"
+          "say": "没 `flip()` 时 `position` 停在写入末尾；误调 `clear()` 时未读完的 `222` 指针被归零覆盖。"
         }
       ]
     },
     {
       "beat": "run",
-      "title": "跑一跑：4 种 ByteBuffer 用法正确性与耗时实测",
+      "title": "一轮一轮放出来看：ClearLosesUnreadTail 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
       "blocks": [
         {
-          "t": "result",
-          "exp": "niobuf",
-          "kind": "correctness"
+          "t": "experiment",
+          "lab": "niobuf",
+          "show": [
+            "ClearLosesUnreadTail"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "没 `flip()` 时 `position` 停在写入末尾；误调 `clear()` 时未读完的 `222` 指针被归零覆盖。",
+          "say": "没 `flip()` 时 `position` 停在写入末尾；误调 `clear()` 时未读完的 `222` 指针被归零覆盖。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「读写轮次 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "niobuf",
+          "show": [
+            "ClearLosesUnreadTail",
+            "DirectByteBufferReuse"
+          ],
+          "say": "左右拖动「读写轮次 N」滑块，对比 `ClearLosesUnreadTail` 与 `DirectByteBufferReuse` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`ClearLosesUnreadTail`：clear() 把 position 直接归零，还没读的 222 被后续写入的 333 覆盖，丢失数 100%。；`DirectByteBufferReuse`：一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `ClearLosesUnreadTail.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "niobuf.ClearLosesUnreadTail",
+          "q": "在左边的 `ClearLosesUnreadTail.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "buf.clear();"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`buf.clear();`）导致：clear() 把 position 直接归零，还没读的 222 被后续写入的 333 覆盖，丢失数 100%。",
+          "say": "直接点击左侧代码行，点错会有提示。"
         }
       ]
     },
     {
       "beat": "why",
-      "title": "掀开字节码：compact() 如何保住半包",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
       "blocks": [
         {
           "t": "inside",
-          "exp": "niobuf",
-          "variant": "FlipAndCompactSafe",
-          "explain": "先 `flip()` 读走 `111`，此时缓冲区还剩未读的 `222`；调用 `compact()` 会把 `222` 搬到下标 0 并把 `position` 置为 4，随后 `putInt(333)` 紧接其后写入，再 `flip()` 即可按顺序读出 `222` 和 `333`。"
+          "of": "niobuf.ClearLosesUnreadTail",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "30: invokevirtual #25                 // Method java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer;"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "12: astore_2"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
         }
       ]
     },
     {
       "beat": "fix",
-      "title": "对比正确写法：FlipAndCompactSafe vs DirectByteBufferReuse",
+      "title": "改一处：看 `DirectByteBufferReuse` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
       "blocks": [
         {
           "t": "code",
-          "exp": "niobuf",
-          "variants": ["FlipAndCompactSafe", "DirectByteBufferReuse"]
+          "of": "niobuf.DirectByteBufferReuse",
+          "say": "一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "buf.clear();"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (buf.getInt() == 111 && buf.getInt() == 222) ok++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "niobuf",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
         },
         {
-          "t": "text",
-          "md": "- **写切读**：必调 `flip()`。\n- **半包继续收**：有未读数据时必调 `compact()` 而不是 `clear()`。\n- **Netty 为什么发明 ByteBuf**：把单指针拆成 `readerIndex` 和 `writerIndex`，读写不用频繁 `flip()`，还自带引用计数与内存池！",
-          "say": "理解了 ByteBuffer 的痛点，后面学 Netty ByteBuf 就会觉得特别顺滑。"
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "写入后忘记调 flip() 直接读（`ForgetFlipReadsGarbage`）",
+              "solves": "position 停在写入末尾 4，读到的全是后面未写入的 0，正确数 0。",
+              "cost": "实测约 {ms:niobuf.ForgetFlipReadsGarbage} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "position 停在写入末尾 4，读到的全是后面未写入的 0，正确数 0。"
+            },
+            {
+              "name": "未读完半包误调 clear() 重写（`ClearLosesUnreadTail`）",
+              "solves": "clear() 把 position 直接归零，还没读的 222 被后续写入的 333 覆盖，丢失数 100%。",
+              "cost": "实测约 {ms:niobuf.ClearLosesUnreadTail} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "clear() 把 position 直接归零，还没读的 222 被后续写入的 333 覆盖，丢失数 100%。"
+            },
+            {
+              "name": "flip() 读 + compact() 保留半包（`FlipAndCompactSafe`）",
+              "solves": "compact() 把未读的 222 挪到头部再追加 333，再 flip() 全部无损读出，100% 正确。",
+              "cost": "实测约 {ms:niobuf.FlipAndCompactSafe} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "compact() 把未读的 222 挪到头部再追加 333，再 flip() 全部无损读出，100% 正确。"
+            },
+            {
+              "name": "复用 DirectByteBuffer 堆外缓冲区（`DirectByteBufferReuse`）",
+              "solves": "一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。",
+              "cost": "实测约 {ms:niobuf.DirectByteBufferReuse} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "三指针 (pos/lim/cap)",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "`capacity` 是总容量永不变；写模式下 `position` 是下一个写入位置、`limit == capacity`；调用 `flip()` 切换为读模式时，`limit = position; position = 0`。",
+          "asked": [
+            "NIO ByteBuffer 三指针与堆外内存：flip、compact 与半包丢失事故——底层原理是什么？",
+            "为什么 `ClearLosesUnreadTail` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `DirectByteBufferReuse` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`ForgetFlipReadsGarbage` 和 `ClearLosesUnreadTail` 跑 500,000 轮，完整无损轮次分别是多少？",
+          "options": [
+            {
+              "text": "两者都是 0（分别读到未写入的 0 和被覆盖的 333）",
+              "ok": true,
+              "why": "没 `flip()` 时 `position` 停在写入末尾；误调 `clear()` 时未读完的 `222` 指针被归零覆盖。"
+            },
+            {
+              "text": "500000 和 0",
+              "ok": false,
+              "why": "再想一想：没 `flip()` 时 `position` 停在写入末尾；误调 `clear()` 时未读完的 `222` 指针被归零覆盖。"
+            },
+            {
+              "text": "0 和 500000",
+              "ok": false,
+              "why": "再想一想：没 `flip()` 时 `position` 停在写入末尾；误调 `clear()` 时未读完的 `222` 指针被归零覆盖。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：flip() 的本质",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "容量 16 的 ByteBuffer 写入 8 字节后（`position=8, limit=16`），调用 `flip()` 后指针变成什么？",
+          "options": [
+            {
+              "text": "position=0, limit=8（把刚写的 8 字节框成可读区间）",
+              "ok": true,
+              "why": "`flip()` 两步动作：`limit = position; position = 0;` 写切读必备。"
+            },
+            {
+              "text": "position=8, limit=16",
+              "ok": false,
+              "why": "再想一想：`flip()` 两步动作：`limit = position; position = 0;` 写切读必备。"
+            },
+            {
+              "text": "position=0, limit=16",
+              "ok": false,
+              "why": "再想一想：`flip()` 两步动作：`limit = position; position = 0;` 写切读必备。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：堆外内存",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么网络框架偏好复用 `DirectByteBuffer` 而不是每次现创建？",
+          "options": [
+            {
+              "text": "IO 少一次堆内到堆外的内存拷贝，且长期复用不给堆内 GC 添乱，但创建销毁昂贵",
+              "ok": true,
+              "why": "`allocateDirect` 需要系统调用且受 `MaxDirectMemorySize` 限制，必须池化复用。"
+            },
+            {
+              "text": "堆外内存永远不会 OOM",
+              "ok": false,
+              "why": "再想一想：`allocateDirect` 需要系统调用且受 `MaxDirectMemorySize` 限制，必须池化复用。"
+            },
+            {
+              "text": "堆外内存比堆内算得更快",
+              "ok": false,
+              "why": "再想一想：`allocateDirect` 需要系统调用且受 `MaxDirectMemorySize` 限制，必须池化复用。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `DirectByteBufferReuse`（复用 DirectByteBuffer 堆外缓冲区）替代 `ClearLosesUnreadTail`（未读完半包误调 clear() 重写）？",
+          "options": [
+            {
+              "text": "因为 一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。",
+              "ok": true,
+              "why": "`ClearLosesUnreadTail`：clear() 把 position 直接归零，还没读的 222 被后续写入的 333 覆盖，丢失数 100%。；而 `DirectByteBufferReuse`：一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。"
+            },
+            {
+              "text": "因为 `ClearLosesUnreadTail` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`ClearLosesUnreadTail`：clear() 把 position 直接归零，还没读的 222 被后续写入的 333 覆盖，丢失数 100%。；而 `DirectByteBufferReuse`：一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`ClearLosesUnreadTail`：clear() 把 position 直接归零，还没读的 222 被后续写入的 333 覆盖，丢失数 100%。；而 `DirectByteBufferReuse`：一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
         }
       ]
     },
     {
       "beat": "say",
-      "title": "2 分钟开口讲清 ByteBuffer 与堆外内存",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
       "blocks": [
         {
           "t": "say",
@@ -149,7 +549,57 @@
             "DirectByteBuffer 分配在堆外，减少一次堆内到堆外的拷贝且不占堆 GC，但分配慢需池化复用",
             "Netty ByteBuf 用读写双指针替代单指针，无需频繁 flip()"
           ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：往 ByteBuffer 写了数据直接 getInt() 居然读出 0；处理 TCP 半包时图省事调了 clear()，未读完的后半截数据当场蒸发！；**② 再讲底层原理**：三指针 (pos/lim/cap)（`capacity` 是总容量永不变；写模式下 `position` 是下一个写入位置、`limit == capacity`；调用 `flip()` 切换为读模式时，`limit = position; position = 0`。）；compact()（把 `[position, limit)` 之间还没读完的剩余字节拷贝到数组索引 `0` 处，并把 `position` 设在剩余字节末尾、`limit = capacity`，专门用于网络半包续写！）；**③ 最后给工程方案**：生产里优先采用「复用 DirectByteBuffer 堆外缓冲区」（`DirectByteBufferReuse`），一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。。",
           "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「三指针 (pos/lim/cap)」？它在这节课里起了什么关键作用？",
+              "a": "`capacity` 是总容量永不变；写模式下 `position` 是下一个写入位置、`limit == capacity`；调用 `flip()` 切换为读模式时，`limit = position; position = 0`。"
+            },
+            {
+              "q": "面试官问：什么是「compact()」？它在这节课里起了什么关键作用？",
+              "a": "把 `[position, limit)` 之间还没读完的剩余字节拷贝到数组索引 `0` 处，并把 `position` 设在剩余字节末尾、`limit = capacity`，专门用于网络半包续写！"
+            },
+            {
+              "q": "面试官问：什么是「DirectByteBuffer」？它在这节课里起了什么关键作用？",
+              "a": "通过 `allocateDirect()` 在操作系统堆外内存分配，避免一次 JVM 堆内到堆外的拷贝（适合长期复用的 IO 缓冲区），但受 `-XX:MaxDirectMemorySize` 限制，泄漏会引发堆外 OOM。"
+            },
+            {
+              "q": "实战避坑：`ClearLosesUnreadTail` 为什么会出问题，应该怎么改？",
+              "a": "clear() 把 position 直接归零，还没读的 222 被后续写入的 333 覆盖，丢失数 100%。 正确做法是改用 `DirectByteBufferReuse`（复用 DirectByteBuffer 堆外缓冲区）：一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "画出 ByteBuffer 的 capacity、limit、position 三个核心指针在 put、flip、get、compact 时的移动轨迹",
+            "解释忘记调用 flip() 导致读出脏数据/0 的原因",
+            "区分 clear()（清空重来）与 compact()（保留未读尾部前移）在网络粘包半包解析中的关键差异"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `ClearLosesUnreadTail`（未读完半包误调 clear() 重写），优先选用 `DirectByteBufferReuse`（复用 DirectByteBuffer 堆外缓冲区）：一次 allocateDirect() 反复 clear/put/flip/get 复用，零 GC 压力且 100% 正确。"
         }
       ]
     }

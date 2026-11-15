@@ -5,8 +5,11 @@
   "course": "Java 工程语法与集合",
   "title": "Comparator 减法溢出坑与 TreeSet 神秘吞元素",
   "lead": "图省事写了个 (a, b) -> a - b 排序，遇到负数直接排反；更诡异的是往 TreeSet 里加 1000 个不同 ID 的同分元素，size() 竟然只有 1！",
-  "minutes": 25,
-  "needs": ["知道 Comparable 与 Comparator 的返回值语义", "知道 int 有符号取值范围 [-2³¹, 2³¹-1]"],
+  "minutes": 30,
+  "needs": [
+    "知道 Comparable 与 Comparator 的返回值语义",
+    "知道 int 有符号取值范围 [-2³¹, 2³¹-1]"
+  ],
   "after": [
     "说清 `(a, b) -> a - b` 在大整数/正负跨界时的 int 溢出翻车原理",
     "理解 TreeSet / TreeMap 靠 `compare() == 0` 而不是 `equals()` 去重的底层机制",
@@ -22,21 +25,59 @@
       "runner": "java",
       "home": "lab.compsort",
       "variants": [
-        { "id": "SubtractOverflowCmp", "code": "SubtractOverflowCmp.java", "label": "减法比较 (a, b) -> a - b（溢出）", "note": "极小负数减极大正数发生 int 溢出回绕成正数，排序判断正确数 0。" },
-        { "id": "TreeSetDedupByCmp", "code": "TreeSetDedupByCmp.java", "label": "TreeSet 只按分数比较（吞掉同分）", "note": "N 个不同 id 的同分元素，compare 返回 0 全被去重，TreeSet 最终只剩 1 个！" },
-        { "id": "IntegerCompareSafe", "code": "IntegerCompareSafe.java", "label": "Integer.compare(a, b)（安全）", "note": "用大小比较符而非减法，绝不溢出，100% 正确。" },
-        { "id": "TreeSetTieBreakerSafe", "code": "TreeSetTieBreakerSafe.java", "label": "comparingInt + thenComparingInt", "note": "分数相同时再比 id 打破平局，N 个元素 100% 保留且有序。" }
+        {
+          "id": "SubtractOverflowCmp",
+          "code": "SubtractOverflowCmp.java",
+          "label": "减法比较 (a, b) -> a - b（溢出）",
+          "note": "极小负数减极大正数发生 int 溢出回绕成正数，排序判断正确数 0。"
+        },
+        {
+          "id": "TreeSetDedupByCmp",
+          "code": "TreeSetDedupByCmp.java",
+          "label": "TreeSet 只按分数比较（吞掉同分）",
+          "note": "N 个不同 id 的同分元素，compare 返回 0 全被去重，TreeSet 最终只剩 1 个！"
+        },
+        {
+          "id": "IntegerCompareSafe",
+          "code": "IntegerCompareSafe.java",
+          "label": "Integer.compare(a, b)（安全）",
+          "note": "用大小比较符而非减法，绝不溢出，100% 正确。"
+        },
+        {
+          "id": "TreeSetTieBreakerSafe",
+          "code": "TreeSetTieBreakerSafe.java",
+          "label": "comparingInt + thenComparingInt",
+          "note": "分数相同时再比 id 打破平局，N 个元素 100% 保留且有序。"
+        }
       ],
-      "knob": { "label": "元素/比较次数 N", "values": ["500", "1000", "2000", "4000"], "default": "1000" },
+      "knob": {
+        "label": "元素/比较次数 N",
+        "values": [
+          "500",
+          "1000",
+          "2000",
+          "4000"
+        ],
+        "default": "1000"
+      },
       "repeat": 20,
-      "metric": { "key": "orderedOk", "expectKey": "expected", "label": "正确比较/保留数" },
-      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+      "metric": {
+        "key": "orderedOk",
+        "expectKey": "expected",
+        "label": "正确比较/保留数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
     }
   },
   "slides": [
     {
       "beat": "open",
-      "title": "Comparator 减法溢出与 TreeSet 吞元素",
+      "title": "Comparator 减法溢出坑与 TreeSet 神秘吞元素",
+      "bridge": "图省事写了个 (a, b) -> a - b 排序，遇到负数直接排反；更诡异的是往 TreeSet 里加 1000 个不同 ID 的同分元素，size() 竟然只有 1！",
       "blocks": [
         {
           "t": "text",
@@ -47,123 +88,43 @@
     },
     {
       "beat": "open",
-      "title": "热身：排序接口的两点常识",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
       "blocks": [
         {
           "t": "recall",
-          "say": "先测一下对排序和有序集合的认知。",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
           "items": [
             {
               "have": "Comparable vs Comparator",
               "q": "以下关于 `Comparable` 和 `Comparator` 的说法正确的是？",
-              "options": ["Comparable 是类自身实现的自然排序；Comparator 是外部策略比较器，更灵活", "Comparator 只能比整数", "两者完全一样"],
+              "options": [
+                "Comparable 是类自身实现的自然排序；Comparator 是外部策略比较器，更灵活",
+                "Comparator 只能比整数",
+                "两者完全一样"
+              ],
               "answer": 0,
               "why": "一个类只能有一种 `Comparable` 自然序，但可以写多个 `Comparator` 应对不同业务排序。"
             },
             {
               "have": "TreeSet 去重依据",
               "q": "`TreeSet` 判断两个元素是否重复，依据的是？",
-              "options": ["compareTo / compare 是否返回 0", "equals 和 hashCode", "对象 == 地址"],
+              "options": [
+                "compareTo / compare 是否返回 0",
+                "equals 和 hashCode",
+                "对象 == 地址"
+              ],
               "answer": 0,
               "why": "`TreeSet` 基于红黑树而非哈希表，完全不看 `hashCode()` 和 `equals()`。"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "beat": "hook",
-      "title": "看代码：SubtractOverflowCmp vs TreeSetDedupByCmp",
-      "blocks": [
-        {
-          "t": "code",
-          "exp": "compsort",
-          "variants": ["SubtractOverflowCmp", "TreeSetDedupByCmp"]
-        }
-      ]
-    },
-    {
-      "beat": "predict",
-      "title": "先猜：往只按 score 排序的 TreeSet 加 1000 个同分不同 id 的对象，size 是几？",
-      "blocks": [
-        {
-          "t": "predict",
-          "exp": "compsort",
-          "question": "`TreeSetDedupByCmp` 循环加入 1000 个 `(score=100, id=0..999)` 对象，最后 `set.size()` 是多少？",
-          "options": ["1（其余 999 个全被当成重复元素吞掉了）", "1000", "0"],
-          "answer": 0,
-          "why": "所有对象 `score` 都是 100，比较器每次都返回 `0`，`TreeSet` 认为它们全相等！"
-        }
-      ]
-    },
-    {
-      "beat": "run",
-      "title": "跑一跑：溢出与吞元素实测",
-      "blocks": [
-        {
-          "t": "result",
-          "exp": "compsort",
-          "kind": "correctness"
-        }
-      ]
-    },
-    {
-      "beat": "why",
-      "title": "掀开字节码：isub 指令的静默溢出回绕",
-      "blocks": [
-        {
-          "t": "inside",
-          "exp": "compsort",
-          "variant": "SubtractOverflowCmp",
-          "explain": "Lambda 里的 `a - b` 编译成单条 `isub` 指令，Java 整数减法溢出不抛异常，直接高位截断回绕成正数，导致 `min < max` 判错。"
-        }
-      ]
-    },
-    {
-      "beat": "fix",
-      "title": "改一处：Integer.compare 与 thenComparingInt",
-      "blocks": [
-        {
-          "t": "code",
-          "exp": "compsort",
-          "variants": ["IntegerCompareSafe", "TreeSetTieBreakerSafe"]
-        }
-      ]
-    },
-    {
-      "beat": "choose",
-      "title": "怎么选：四种写法的耗时对比",
-      "blocks": [
-        {
-          "t": "result",
-          "exp": "compsort",
-          "kind": "scaling"
-        }
-      ]
-    },
-    {
-      "beat": "name",
-      "title": "排序编写两条规范",
-      "blocks": [
-        {
-          "t": "text",
-          "md": "**① 永远禁止写 `(a, b) -> a - b`（哪怕刷算法题也一样），一律用 `Integer.compare(a, b)` 或 `Comparator.comparingInt(...)`；② 放进 `TreeSet`/`TreeMap` 的比较器必须和业务唯一性一致，平局时接 `.thenComparingInt(id)`。**",
-          "say": "这还能顺便避免 TimSort 报 `Comparison method violates its general contract` 异常。"
-        }
-      ]
-    },
-    {
-      "beat": "check",
-      "title": "小测：30 秒巩固",
-      "blocks": [
-        {
-          "t": "recall",
-          "say": "再查一个高频异常。",
-          "items": [
+            },
             {
               "have": "TimSort 异常",
               "q": "线上 `Collections.sort()` 偶尔抛出 `IllegalArgumentException: Comparison method violates its general contract`，常见原因是？",
-              "options": ["比较器不满足传递性/反对称性（如减法溢出，或返回了非 -1/0/1 的混乱结果）", "数组太大", "空指针"],
+              "options": [
+                "比较器不满足传递性/反对称性（如减法溢出，或返回了非 -1/0/1 的混乱结果）",
+                "数组太大",
+                "空指针"
+              ],
               "answer": 0,
               "why": "JDK 7+ 的 TimSort 严格校验比较器自反、对称与传递性，减法溢出一旦破坏传递性就会直接炸掉整个排序。"
             }
@@ -172,27 +133,482 @@
       ]
     },
     {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (TreeSetDedupByCmp)",
+              "安全写法 (IntegerCompareSafe)"
+            ],
+            "shared": {
+              "name": "正确比较/保留数",
+              "value": "目标 1000"
+            }
+          },
+          "story": "图省事写了个 (a, b) -> a - b 排序，遇到负数直接排反；更诡异的是往 TreeSet 里加 1000 个不同 ID 的同分元素，size() 竟然只有 1！",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "减法溢出",
+              "on": "shared",
+              "tag": "减法溢出",
+              "code": "`TreeSetDedupByCmp` vs `IntegerCompareSafe`",
+              "say": "`(Integer.MIN_VALUE + 10) - (Integer.MAX_VALUE - 10)` 超出 int 负下界发生二进制回绕，结果变成正数，把最小数判成「大于」最大数！"
+            },
+            {
+              "scene": "compare() == 0 去重",
+              "on": "shared",
+              "tag": "compare() ==",
+              "code": "`TreeSetDedupByCmp` vs `IntegerCompareSafe`",
+              "say": "`TreeSet` 底层是 `TreeMap` 红黑树，插入时只看比较器是否返回 `0`；返回 `0` 就认定是重复元素直接丢弃（或覆盖 value）。"
+            },
+            {
+              "scene": "Tie-Breaker 次级比较",
+              "on": "shared",
+              "tag": "Tie-Breaker ",
+              "code": "`TreeSetDedupByCmp` vs `IntegerCompareSafe`",
+              "say": "按分数排序时如果分数相同但业务实体不同，必须链式接上 `.thenComparingInt(id)` 打破平局，否则同分元素全被 TreeSet 吞掉。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`TreeSetDedupByCmp`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "compsort.TreeSetDedupByCmp",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "static class Item {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "int n = Integer.parseInt(args[0]);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "orderedOk = set.size();"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：TreeSetDedupByCmp 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`TreeSetDedupByCmp` 循环加入 1000 个 `(score=100, id=0..999)` 对象，最后 `set.size()` 是多少？",
+          "options": [
+            "1（其余 999 个全被当成重复元素吞掉了）",
+            "1000",
+            "0"
+          ],
+          "answer": 0,
+          "say": "所有对象 `score` 都是 100，比较器每次都返回 `0`，`TreeSet` 认为它们全相等！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：TreeSetDedupByCmp 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "compsort",
+          "show": [
+            "TreeSetDedupByCmp"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "所有对象 `score` 都是 100，比较器每次都返回 `0`，`TreeSet` 认为它们全相等！",
+          "say": "所有对象 `score` 都是 100，比较器每次都返回 `0`，`TreeSet` 认为它们全相等！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「元素/比较次数 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "compsort",
+          "show": [
+            "TreeSetDedupByCmp",
+            "IntegerCompareSafe"
+          ],
+          "say": "左右拖动「元素/比较次数 N」滑块，对比 `TreeSetDedupByCmp` 与 `IntegerCompareSafe` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`TreeSetDedupByCmp`：N 个不同 id 的同分元素，compare 返回 0 全被去重，TreeSet 最终只剩 1 个！；`IntegerCompareSafe`：用大小比较符而非减法，绝不溢出，100% 正确。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `TreeSetDedupByCmp.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "compsort.TreeSetDedupByCmp",
+          "q": "在左边的 `TreeSetDedupByCmp.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "set.add(new Item(100, i));"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`set.add(new Item(100, i));`）导致：N 个不同 id 的同分元素，compare 返回 0 全被去重，TreeSet 最终只剩 1 个！",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "compsort.TreeSetDedupByCmp",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "14: new           #19                 // class java/util/TreeSet"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "92: invokevirtual #53                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `IntegerCompareSafe` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "compsort.IntegerCompareSafe",
+          "say": "用大小比较符而非减法，绝不溢出，100% 正确。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "int min = Integer.MIN_VALUE + 10;"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (safeCmp.compare(min, max) < 0) orderedOk++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "compsort",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "减法比较 (a, b) -> a - b（溢出）（`SubtractOverflowCmp`）",
+              "solves": "极小负数减极大正数发生 int 溢出回绕成正数，排序判断正确数 0。",
+              "cost": "实测约 {ms:compsort.SubtractOverflowCmp} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "极小负数减极大正数发生 int 溢出回绕成正数，排序判断正确数 0。"
+            },
+            {
+              "name": "TreeSet 只按分数比较（吞掉同分）（`TreeSetDedupByCmp`）",
+              "solves": "N 个不同 id 的同分元素，compare 返回 0 全被去重，TreeSet 最终只剩 1 个！",
+              "cost": "实测约 {ms:compsort.TreeSetDedupByCmp} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "N 个不同 id 的同分元素，compare 返回 0 全被去重，TreeSet 最终只剩 1 个！"
+            },
+            {
+              "name": "Integer.compare(a, b)（安全）（`IntegerCompareSafe`）",
+              "solves": "用大小比较符而非减法，绝不溢出，100% 正确。",
+              "cost": "实测约 {ms:compsort.IntegerCompareSafe} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "用大小比较符而非减法，绝不溢出，100% 正确。"
+            },
+            {
+              "name": "comparingInt + thenComparingInt（`TreeSetTieBreakerSafe`）",
+              "solves": "分数相同时再比 id 打破平局，N 个元素 100% 保留且有序。",
+              "cost": "实测约 {ms:compsort.TreeSetTieBreakerSafe} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "分数相同时再比 id 打破平局，N 个元素 100% 保留且有序。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "减法溢出",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "`(Integer.MIN_VALUE + 10) - (Integer.MAX_VALUE - 10)` 超出 int 负下界发生二进制回绕，结果变成正数，把最小数判成「大于」最大数！",
+          "asked": [
+            "Comparator 减法溢出坑与 TreeSet 神秘吞元素——底层原理是什么？",
+            "为什么 `TreeSetDedupByCmp` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `IntegerCompareSafe` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`TreeSetDedupByCmp` 循环加入 1000 个 `(score=100, id=0..999)` 对象，最后 `set.size()` 是多少？",
+          "options": [
+            {
+              "text": "1（其余 999 个全被当成重复元素吞掉了）",
+              "ok": true,
+              "why": "所有对象 `score` 都是 100，比较器每次都返回 `0`，`TreeSet` 认为它们全相等！"
+            },
+            {
+              "text": "1000",
+              "ok": false,
+              "why": "再想一想：所有对象 `score` 都是 100，比较器每次都返回 `0`，`TreeSet` 认为它们全相等！"
+            },
+            {
+              "text": "0",
+              "ok": false,
+              "why": "再想一想：所有对象 `score` 都是 100，比较器每次都返回 `0`，`TreeSet` 认为它们全相等！"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：Comparable vs Comparator",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "以下关于 `Comparable` 和 `Comparator` 的说法正确的是？",
+          "options": [
+            {
+              "text": "Comparable 是类自身实现的自然排序；Comparator 是外部策略比较器，更灵活",
+              "ok": true,
+              "why": "一个类只能有一种 `Comparable` 自然序，但可以写多个 `Comparator` 应对不同业务排序。"
+            },
+            {
+              "text": "Comparator 只能比整数",
+              "ok": false,
+              "why": "再想一想：一个类只能有一种 `Comparable` 自然序，但可以写多个 `Comparator` 应对不同业务排序。"
+            },
+            {
+              "text": "两者完全一样",
+              "ok": false,
+              "why": "再想一想：一个类只能有一种 `Comparable` 自然序，但可以写多个 `Comparator` 应对不同业务排序。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：TreeSet 去重依据",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`TreeSet` 判断两个元素是否重复，依据的是？",
+          "options": [
+            {
+              "text": "compareTo / compare 是否返回 0",
+              "ok": true,
+              "why": "`TreeSet` 基于红黑树而非哈希表，完全不看 `hashCode()` 和 `equals()`。"
+            },
+            {
+              "text": "equals 和 hashCode",
+              "ok": false,
+              "why": "再想一想：`TreeSet` 基于红黑树而非哈希表，完全不看 `hashCode()` 和 `equals()`。"
+            },
+            {
+              "text": "对象 == 地址",
+              "ok": false,
+              "why": "再想一想：`TreeSet` 基于红黑树而非哈希表，完全不看 `hashCode()` 和 `equals()`。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `IntegerCompareSafe`（Integer.compare(a, b)（安全））替代 `TreeSetDedupByCmp`（TreeSet 只按分数比较（吞掉同分））？",
+          "options": [
+            {
+              "text": "因为 用大小比较符而非减法，绝不溢出，100% 正确。",
+              "ok": true,
+              "why": "`TreeSetDedupByCmp`：N 个不同 id 的同分元素，compare 返回 0 全被去重，TreeSet 最终只剩 1 个！；而 `IntegerCompareSafe`：用大小比较符而非减法，绝不溢出，100% 正确。"
+            },
+            {
+              "text": "因为 `TreeSetDedupByCmp` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`TreeSetDedupByCmp`：N 个不同 id 的同分元素，compare 返回 0 全被去重，TreeSet 最终只剩 1 个！；而 `IntegerCompareSafe`：用大小比较符而非减法，绝不溢出，100% 正确。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`TreeSetDedupByCmp`：N 个不同 id 的同分元素，compare 返回 0 全被去重，TreeSet 最终只剩 1 个！；而 `IntegerCompareSafe`：用大小比较符而非减法，绝不溢出，100% 正确。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
       "beat": "say",
-      "title": "开口讲：2 分钟脱稿自述",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
       "blocks": [
         {
           "t": "say",
           "prompt": "请脱稿向面试官解释：1) 为什么不能用 a - b 写 Comparator；2) TreeSet 去重靠什么，为什么按非唯一字段排序会丢数据；3) Comparable 和 Comparator 的区别。",
+          "points": [
+            "说清 `(a, b) -> a - b` 在大整数/正负跨界时的 int 溢出翻车原理",
+            "理解 TreeSet / TreeMap 靠 `compare() == 0` 而不是 `equals()` 去重的底层机制",
+            "熟练使用 `Integer.compare` 与 `Comparator.comparingInt().thenComparingInt()`"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：图省事写了个 (a, b) -> a - b 排序，遇到负数直接排反；更诡异的是往 TreeSet 里加 1000 个不同 ID 的同分元素，size() 竟然只有 1！；**② 再讲底层原理**：减法溢出（`(Integer.MIN_VALUE + 10) - (Integer.MAX_VALUE - 10)` 超出 int 负下界发生二进制回绕，结果变成正数，把最小数判成「大于」最大数！）；compare() == 0 去重（`TreeSet` 底层是 `TreeMap` 红黑树，插入时只看比较器是否返回 `0`；返回 `0` 就认定是重复元素直接丢弃（或覆盖 value）。）；**③ 最后给工程方案**：生产里优先采用「Integer.compare(a, b)（安全）」（`IntegerCompareSafe`），用大小比较符而非减法，绝不溢出，100% 正确。。",
           "seconds": 120
         }
       ]
     },
     {
       "beat": "take",
-      "title": "带走 3 张核心卡片",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
       "blocks": [
         {
-          "t": "take",
-          "cards": [
-            { "k": "禁写 a - b", "v": "整数减法会静默溢出回绕，一律用 `Integer.compare` / `Comparator.comparingInt`。" },
-            { "k": "TreeSet 去重", "v": "红黑树只认 `compare() == 0`，平局必须加 `.thenComparing(uniqueId)`。" },
-            { "k": "契约一致", "v": "尽量保持 `compareTo == 0` 与 `equals == true` 一致，防止有序集合丢数据。" }
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「减法溢出」？它在这节课里起了什么关键作用？",
+              "a": "`(Integer.MIN_VALUE + 10) - (Integer.MAX_VALUE - 10)` 超出 int 负下界发生二进制回绕，结果变成正数，把最小数判成「大于」最大数！"
+            },
+            {
+              "q": "面试官问：什么是「compare() == 0 去重」？它在这节课里起了什么关键作用？",
+              "a": "`TreeSet` 底层是 `TreeMap` 红黑树，插入时只看比较器是否返回 `0`；返回 `0` 就认定是重复元素直接丢弃（或覆盖 value）。"
+            },
+            {
+              "q": "面试官问：什么是「Tie-Breaker 次级比较」？它在这节课里起了什么关键作用？",
+              "a": "按分数排序时如果分数相同但业务实体不同，必须链式接上 `.thenComparingInt(id)` 打破平局，否则同分元素全被 TreeSet 吞掉。"
+            },
+            {
+              "q": "实战避坑：`TreeSetDedupByCmp` 为什么会出问题，应该怎么改？",
+              "a": "N 个不同 id 的同分元素，compare 返回 0 全被去重，TreeSet 最终只剩 1 个！ 正确做法是改用 `IntegerCompareSafe`（Integer.compare(a, b)（安全））：用大小比较符而非减法，绝不溢出，100% 正确。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "说清 `(a, b) -> a - b` 在大整数/正负跨界时的 int 溢出翻车原理",
+            "理解 TreeSet / TreeMap 靠 `compare() == 0` 而不是 `equals()` 去重的底层机制",
+            "熟练使用 `Integer.compare` 与 `Comparator.comparingInt().thenComparingInt()`"
           ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `TreeSetDedupByCmp`（TreeSet 只按分数比较（吞掉同分）），优先选用 `IntegerCompareSafe`（Integer.compare(a, b)（安全））：用大小比较符而非减法，绝不溢出，100% 正确。"
         }
       ]
     }

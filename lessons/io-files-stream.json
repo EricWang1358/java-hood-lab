@@ -5,8 +5,11 @@
   "course": "Java 工程语法与集合",
   "title": "文件 IO 与装饰器流：逐字节读 vs 8KB 缓冲块的性能天壤之别",
   "lead": "同样是读取 2MB 数据，为什么调用无参 read() 逐字节读比带 8KB 缓冲区的 read(byte[]) 慢上几十倍？BufferedInputStream 到底省了什么？",
-  "minutes": 20,
-  "needs": ["用过 InputStream 或 BufferedReader 读文件", "知道内存数组读写比系统调用快"],
+  "minutes": 30,
+  "needs": [
+    "用过 InputStream 或 BufferedReader 读文件",
+    "知道内存数组读写比系统调用快"
+  ],
   "after": [
     "理解字节流（InputStream/OutputStream）与字符流（Reader/Writer）的分工",
     "解释 BufferedInputStream 装饰器模式如何把「N 次系统调用/虚方法」合并为「N/8192 次块拷贝」",
@@ -22,21 +25,59 @@
       "runner": "java",
       "home": "lab.filesio",
       "variants": [
-        { "id": "UnbufferedByteByByte", "code": "UnbufferedByteByByte.java", "label": "无缓冲逐字节 in.read()", "note": "循环 N 次方法调用读取单字节，N 越大耗时线性暴涨。" },
-        { "id": "BufferedChunkStream", "code": "BufferedChunkStream.java", "label": "BufferedInputStream + 8KB 块", "note": "内部维护 8192 字节缓冲数组，配合 buf 批量读取，耗时骤降。" },
-        { "id": "DirectTransferChunk", "code": "DirectTransferChunk.java", "label": "底层流直接 read(8KB buf)", "note": "直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。" },
-        { "id": "BufferedLinesLazy", "code": "BufferedLinesLazy.java", "label": "BufferedReader 按行流式读", "note": "按字符解码并逐行切分，适合文本日志扫描且内存占用恒定。" }
+        {
+          "id": "UnbufferedByteByByte",
+          "code": "UnbufferedByteByByte.java",
+          "label": "无缓冲逐字节 in.read()",
+          "note": "循环 N 次方法调用读取单字节，N 越大耗时线性暴涨。"
+        },
+        {
+          "id": "BufferedChunkStream",
+          "code": "BufferedChunkStream.java",
+          "label": "BufferedInputStream + 8KB 块",
+          "note": "内部维护 8192 字节缓冲数组，配合 buf 批量读取，耗时骤降。"
+        },
+        {
+          "id": "DirectTransferChunk",
+          "code": "DirectTransferChunk.java",
+          "label": "底层流直接 read(8KB buf)",
+          "note": "直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。"
+        },
+        {
+          "id": "BufferedLinesLazy",
+          "code": "BufferedLinesLazy.java",
+          "label": "BufferedReader 按行流式读",
+          "note": "按字符解码并逐行切分，适合文本日志扫描且内存占用恒定。"
+        }
       ],
-      "knob": { "label": "数据大小 N（字节）", "values": ["100000", "500000", "1000000", "2000000"], "default": "1000000" },
+      "knob": {
+        "label": "数据大小 N（字节）",
+        "values": [
+          "100000",
+          "500000",
+          "1000000",
+          "2000000"
+        ],
+        "default": "1000000"
+      },
       "repeat": 20,
-      "metric": { "key": "bytes", "expectKey": "expected", "label": "读取字节数" },
-      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+      "metric": {
+        "key": "bytes",
+        "expectKey": "expected",
+        "label": "读取字节数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
     }
   },
   "slides": [
     {
       "beat": "open",
-      "title": "为什么逐字节 read() 是 IO 性能杀手",
+      "title": "文件 IO 与装饰器流：逐字节读 vs 8KB 缓冲块的性能天壤之别",
+      "bridge": "同样是读取 2MB 数据，为什么调用无参 read() 逐字节读比带 8KB 缓冲区的 read(byte[]) 慢上几十倍？BufferedInputStream 到底省了什么？",
       "blocks": [
         {
           "t": "text",
@@ -47,23 +88,32 @@
     },
     {
       "beat": "open",
-      "title": "热身：字节流 vs 字符流",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
       "blocks": [
         {
           "t": "recall",
-          "say": "先分清流体系的几个基础概念。",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
           "items": [
             {
               "have": "字节流与字符流桥梁",
               "q": "把字节流 `InputStream` 转成按指定 UTF-8 编码读取的字符流，应该用哪个桥接类？",
-              "options": ["InputStreamReader(in, StandardCharsets.UTF_8)", "BufferedInputStream(in)", "ObjectInputStream(in)"],
+              "options": [
+                "InputStreamReader(in, StandardCharsets.UTF_8)",
+                "BufferedInputStream(in)",
+                "ObjectInputStream(in)"
+              ],
               "answer": 0,
               "why": "`InputStreamReader` 和 `OutputStreamWriter` 是字节流与字符流之间的编码转换桥梁。"
             },
             {
               "have": "大文件读取防 OOM",
               "q": "要统计一个 8GB 日志文件里包含 ERROR 的行数，应该用哪种 API？",
-              "options": ["BufferedReader.readLine() 或 Files.lines() 流式逐行读（用完关闭）", "Files.readAllBytes()", "Files.readAllLines()"],
+              "options": [
+                "BufferedReader.readLine() 或 Files.lines() 流式逐行读（用完关闭）",
+                "Files.readAllBytes()",
+                "Files.readAllLines()"
+              ],
               "answer": 0,
               "why": "`readAllBytes`/`readAllLines` 会把整文件一次性加载进 JVM 堆内存，8GB 文件直接 OOM。"
             }
@@ -72,72 +122,422 @@
       ]
     },
     {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (UnbufferedByteByByte)",
+              "安全写法 (DirectTransferChunk)"
+            ],
+            "shared": {
+              "name": "读取字节数",
+              "value": "目标 1000000"
+            }
+          },
+          "story": "同样是读取 2MB 数据，为什么调用无参 read() 逐字节读比带 8KB 缓冲区的 read(byte[]) 慢上几十倍？BufferedInputStream 到底省了什么？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "装饰器模式",
+              "on": "shared",
+              "tag": "装饰器模式",
+              "code": "`UnbufferedByteByByte` vs `DirectTransferChunk`",
+              "say": "`new BufferedInputStream(new FileInputStream(...))` 通过组合包裹底层流，在不修改原类代码的前提下透明增强缓冲能力。"
+            },
+            {
+              "scene": "系统调用开销",
+              "on": "shared",
+              "tag": "系统调用开销",
+              "code": "`UnbufferedByteByByte` vs `DirectTransferChunk`",
+              "say": "对真实文件 IO 而言，每次无缓冲 `read()` 都要触发一次用户态到内核态的上下文切换；加了 8KB 缓冲区后，系统调用次数直接降为 1/8192。"
+            },
+            {
+              "scene": "流式懒加载",
+              "on": "shared",
+              "tag": "流式懒加载",
+              "code": "`UnbufferedByteByByte` vs `DirectTransferChunk`",
+              "say": "`BufferedReader.readLine()` 或 `Files.lines()` 每次只在内存保留当前一行，读取 10GB 日志也不会撑爆堆内存。"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "beat": "hook",
-      "title": "看代码：UnbufferedByteByByte vs BufferedChunkStream",
+      "title": "盯紧踩坑代码：`UnbufferedByteByByte`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
       "blocks": [
         {
           "t": "code",
-          "exp": "filesio",
-          "variants": ["UnbufferedByteByByte", "BufferedChunkStream"]
+          "of": "filesio.UnbufferedByteByByte",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) throws Exception {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "for (int i = 0; i < n; i++) data[i] = (byte) ('a' + (i % 26));"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "while (in.read() != -1) count++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
         }
       ]
     },
     {
       "beat": "predict",
-      "title": "先猜：读 100 万字节，逐字节读 vs 8KB 块读耗时差多少？",
+      "title": "先押一注：UnbufferedByteByByte 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
       "blocks": [
         {
           "t": "predict",
-          "exp": "filesio",
-          "question": "读取 1,000,000 字节，`UnbufferedByteByByte` 与 `BufferedChunkStream` 耗时对比会怎样？",
-          "options": ["UnbufferedByteByByte 明显慢得多（百万次循环调用 vs 约 122 次块拷贝）", "两者完全一样快", "逐字节读更快"],
+          "id": "p1",
+          "q": "读取 1,000,000 字节，`UnbufferedByteByByte` 与 `BufferedChunkStream` 耗时对比会怎样？",
+          "options": [
+            "UnbufferedByteByByte 明显慢得多（百万次循环调用 vs 约 122 次块拷贝）",
+            "两者完全一样快",
+            "逐字节读更快"
+          ],
           "answer": 0,
-          "why": "在真实磁盘文件上这个差距还会再放大百倍以上，因为每次系统调用都有内核态切换成本。"
+          "say": "在真实磁盘文件上这个差距还会再放大百倍以上，因为每次系统调用都有内核态切换成本。"
         }
       ]
     },
     {
       "beat": "run",
-      "title": "跑一跑：4 种流读取策略耗时实测",
+      "title": "一轮一轮放出来看：UnbufferedByteByByte 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
       "blocks": [
         {
-          "t": "result",
-          "exp": "filesio",
-          "kind": "latency"
+          "t": "experiment",
+          "lab": "filesio",
+          "show": [
+            "UnbufferedByteByByte"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "在真实磁盘文件上这个差距还会再放大百倍以上，因为每次系统调用都有内核态切换成本。",
+          "say": "在真实磁盘文件上这个差距还会再放大百倍以上，因为每次系统调用都有内核态切换成本。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「数据大小 N（字节）」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "filesio",
+          "show": [
+            "UnbufferedByteByByte",
+            "DirectTransferChunk"
+          ],
+          "say": "左右拖动「数据大小 N（字节）」滑块，对比 `UnbufferedByteByByte` 与 `DirectTransferChunk` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`UnbufferedByteByByte`：循环 N 次方法调用读取单字节，N 越大耗时线性暴涨。；`DirectTransferChunk`：直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `UnbufferedByteByByte.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "filesio.UnbufferedByteByByte",
+          "q": "在左边的 `UnbufferedByteByByte.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "while (in.read() != -1) count++;"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`while (in.read() != -1) count++;`）导致：循环 N 次方法调用读取单字节，N 越大耗时线性暴涨。",
+          "say": "直接点击左侧代码行，点错会有提示。"
         }
       ]
     },
     {
       "beat": "why",
-      "title": "掀开字节码：BufferedInputStream 装饰器结构",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
       "blocks": [
         {
           "t": "inside",
-          "exp": "filesio",
-          "variant": "BufferedChunkStream",
-          "explain": "`BufferedInputStream` 构造时传入 `8192` 分配了内部缓冲数组，外层循环调用 `read(byte[])` 只需约 `N / 8192` 次循环即可读完全部数据。"
+          "of": "filesio.UnbufferedByteByByte",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "39: new           #19                 // class java/io/ByteArrayInputStream"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "54: invokevirtual #24                 // Method java/io/ByteArrayInputStream.read:()I"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
         }
       ]
     },
     {
       "beat": "fix",
-      "title": "对比高阶写法：DirectTransferChunk vs BufferedLinesLazy",
+      "title": "改一处：看 `DirectTransferChunk` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
       "blocks": [
         {
           "t": "code",
-          "exp": "filesio",
-          "variants": ["DirectTransferChunk", "BufferedLinesLazy"]
+          "of": "filesio.DirectTransferChunk",
+          "say": "直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。",
+          "walk": [
+            {
+              "focus": [
+                "public static void main(String[] args) throws Exception {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "ByteArrayInputStream in = new ByteArrayInputStream(data);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "while ((r = in.read(buf)) != -1) count += r;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "filesio",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
         },
         {
-          "t": "text",
-          "md": "- **二进制拷贝**：用 `in.transferTo(out)`（JDK 9+）或 8KB `byte[]` 缓冲循环。\n- **文本逐行处理**：`try (BufferedReader br = Files.newBufferedReader(path, UTF_8))` 既锁死编码又防 OOM。",
-          "say": "千万记住：`Files.lines(path)` 返回的 Stream 底层持有文件句柄，必须套在 `try-with-resources` 里关闭！"
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "无缓冲逐字节 in.read()（`UnbufferedByteByByte`）",
+              "solves": "循环 N 次方法调用读取单字节，N 越大耗时线性暴涨。",
+              "cost": "实测约 {ms:filesio.UnbufferedByteByByte} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "循环 N 次方法调用读取单字节，N 越大耗时线性暴涨。"
+            },
+            {
+              "name": "BufferedInputStream + 8KB 块（`BufferedChunkStream`）",
+              "solves": "内部维护 8192 字节缓冲数组，配合 buf 批量读取，耗时骤降。",
+              "cost": "实测约 {ms:filesio.BufferedChunkStream} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "内部维护 8192 字节缓冲数组，配合 buf 批量读取，耗时骤降。"
+            },
+            {
+              "name": "底层流直接 read(8KB buf)（`DirectTransferChunk`）",
+              "solves": "直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。",
+              "cost": "实测约 {ms:filesio.DirectTransferChunk} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。"
+            },
+            {
+              "name": "BufferedReader 按行流式读（`BufferedLinesLazy`）",
+              "solves": "按字符解码并逐行切分，适合文本日志扫描且内存占用恒定。",
+              "cost": "实测约 {ms:filesio.BufferedLinesLazy} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "按字符解码并逐行切分，适合文本日志扫描且内存占用恒定。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "装饰器模式",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "`new BufferedInputStream(new FileInputStream(...))` 通过组合包裹底层流，在不修改原类代码的前提下透明增强缓冲能力。",
+          "asked": [
+            "文件 IO 与装饰器流：逐字节读 vs 8KB 缓冲块的性能天壤之别——底层原理是什么？",
+            "为什么 `UnbufferedByteByByte` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `DirectTransferChunk` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "读取 1,000,000 字节，`UnbufferedByteByByte` 与 `BufferedChunkStream` 耗时对比会怎样？",
+          "options": [
+            {
+              "text": "UnbufferedByteByByte 明显慢得多（百万次循环调用 vs 约 122 次块拷贝）",
+              "ok": true,
+              "why": "在真实磁盘文件上这个差距还会再放大百倍以上，因为每次系统调用都有内核态切换成本。"
+            },
+            {
+              "text": "两者完全一样快",
+              "ok": false,
+              "why": "再想一想：在真实磁盘文件上这个差距还会再放大百倍以上，因为每次系统调用都有内核态切换成本。"
+            },
+            {
+              "text": "逐字节读更快",
+              "ok": false,
+              "why": "再想一想：在真实磁盘文件上这个差距还会再放大百倍以上，因为每次系统调用都有内核态切换成本。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：字节流与字符流桥梁",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "把字节流 `InputStream` 转成按指定 UTF-8 编码读取的字符流，应该用哪个桥接类？",
+          "options": [
+            {
+              "text": "InputStreamReader(in, StandardCharsets.UTF_8)",
+              "ok": true,
+              "why": "`InputStreamReader` 和 `OutputStreamWriter` 是字节流与字符流之间的编码转换桥梁。"
+            },
+            {
+              "text": "BufferedInputStream(in)",
+              "ok": false,
+              "why": "再想一想：`InputStreamReader` 和 `OutputStreamWriter` 是字节流与字符流之间的编码转换桥梁。"
+            },
+            {
+              "text": "ObjectInputStream(in)",
+              "ok": false,
+              "why": "再想一想：`InputStreamReader` 和 `OutputStreamWriter` 是字节流与字符流之间的编码转换桥梁。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：大文件读取防 OOM",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "要统计一个 8GB 日志文件里包含 ERROR 的行数，应该用哪种 API？",
+          "options": [
+            {
+              "text": "BufferedReader.readLine() 或 Files.lines() 流式逐行读（用完关闭）",
+              "ok": true,
+              "why": "`readAllBytes`/`readAllLines` 会把整文件一次性加载进 JVM 堆内存，8GB 文件直接 OOM。"
+            },
+            {
+              "text": "Files.readAllBytes()",
+              "ok": false,
+              "why": "再想一想：`readAllBytes`/`readAllLines` 会把整文件一次性加载进 JVM 堆内存，8GB 文件直接 OOM。"
+            },
+            {
+              "text": "Files.readAllLines()",
+              "ok": false,
+              "why": "再想一想：`readAllBytes`/`readAllLines` 会把整文件一次性加载进 JVM 堆内存，8GB 文件直接 OOM。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `DirectTransferChunk`（底层流直接 read(8KB buf)）替代 `UnbufferedByteByByte`（无缓冲逐字节 in.read()）？",
+          "options": [
+            {
+              "text": "因为 直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。",
+              "ok": true,
+              "why": "`UnbufferedByteByByte`：循环 N 次方法调用读取单字节，N 越大耗时线性暴涨。；而 `DirectTransferChunk`：直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。"
+            },
+            {
+              "text": "因为 `UnbufferedByteByByte` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`UnbufferedByteByByte`：循环 N 次方法调用读取单字节，N 越大耗时线性暴涨。；而 `DirectTransferChunk`：直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`UnbufferedByteByByte`：循环 N 次方法调用读取单字节，N 越大耗时线性暴涨。；而 `DirectTransferChunk`：直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
         }
       ]
     },
     {
       "beat": "say",
-      "title": "2 分钟开口讲清 Java IO 流设计",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
       "blocks": [
         {
           "t": "say",
@@ -147,7 +547,57 @@
             "BufferedInputStream 是装饰器模式，内置 8KB 缓冲区把百万次小读合并成百次块读，大幅减少系统调用",
             "处理大文件禁止 readAllBytes/readAllLines，应使用 BufferedReader.readLine() 或 try-with-resources 包裹 Files.lines()"
           ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：同样是读取 2MB 数据，为什么调用无参 read() 逐字节读比带 8KB 缓冲区的 read(byte[]) 慢上几十倍？BufferedInputStream 到底省了什么？；**② 再讲底层原理**：装饰器模式（`new BufferedInputStream(new FileInputStream(...))` 通过组合包裹底层流，在不修改原类代码的前提下透明增强缓冲能力。）；系统调用开销（对真实文件 IO 而言，每次无缓冲 `read()` 都要触发一次用户态到内核态的上下文切换；加了 8KB 缓冲区后，系统调用次数直接降为 1/8192。）；**③ 最后给工程方案**：生产里优先采用「底层流直接 read(8KB buf)」（`DirectTransferChunk`），直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。。",
           "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「装饰器模式」？它在这节课里起了什么关键作用？",
+              "a": "`new BufferedInputStream(new FileInputStream(...))` 通过组合包裹底层流，在不修改原类代码的前提下透明增强缓冲能力。"
+            },
+            {
+              "q": "面试官问：什么是「系统调用开销」？它在这节课里起了什么关键作用？",
+              "a": "对真实文件 IO 而言，每次无缓冲 `read()` 都要触发一次用户态到内核态的上下文切换；加了 8KB 缓冲区后，系统调用次数直接降为 1/8192。"
+            },
+            {
+              "q": "面试官问：什么是「流式懒加载」？它在这节课里起了什么关键作用？",
+              "a": "`BufferedReader.readLine()` 或 `Files.lines()` 每次只在内存保留当前一行，读取 10GB 日志也不会撑爆堆内存。"
+            },
+            {
+              "q": "实战避坑：`UnbufferedByteByByte` 为什么会出问题，应该怎么改？",
+              "a": "循环 N 次方法调用读取单字节，N 越大耗时线性暴涨。 正确做法是改用 `DirectTransferChunk`（底层流直接 read(8KB buf)）：直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "理解字节流（InputStream/OutputStream）与字符流（Reader/Writer）的分工",
+            "解释 BufferedInputStream 装饰器模式如何把「N 次系统调用/虚方法」合并为「N/8192 次块拷贝」",
+            "掌握大文件逐行流式处理（BufferedReader / Files.lines）避免一次性 readAllBytes OOM"
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `UnbufferedByteByByte`（无缓冲逐字节 in.read()），优先选用 `DirectTransferChunk`（底层流直接 read(8KB buf)）：直接传给底层流 8KB 数组一次拷贝一整块，连装饰器中间拷贝都省掉。"
         }
       ]
     }

@@ -5,8 +5,11 @@
   "course": "Java 工程语法与集合",
   "title": "equals 与 hashCode 契约：为什么只重写 equals 会让 HashMap 丢键？",
   "lead": "明明两个 Key 的 id 完全一样、equals() 也返回 true，为什么 put 进 HashMap 后再 get(new Key(id)) 竟然返回 null？",
-  "minutes": 25,
-  "needs": ["知道 HashMap 先算 hashCode 定位桶，再调 equals 比对", "知道 Object.hashCode 默认基于对象内存地址"],
+  "minutes": 30,
+  "needs": [
+    "知道 HashMap 先算 hashCode 定位桶，再调 equals 比对",
+    "知道 Object.hashCode 默认基于对象内存地址"
+  ],
   "after": [
     "说清 equals 与 hashCode 的两条铁律契约",
     "用实测数据对比「漏写 hashCode 丢键」「常量 hashCode 退化成链表」「可变字段当 Key 失踪」三种事故",
@@ -22,21 +25,59 @@
       "runner": "java",
       "home": "lab.eqhash",
       "variants": [
-        { "id": "EqualsOnlyLostKey", "code": "EqualsOnlyLostKey.java", "label": "只重写 equals（不写 hashCode）", "note": "两个 new Key(i) 内存地址不同导致 hashCode 不同，落进不同桶，命中数 0。" },
-        { "id": "ConstHashCodeBucket", "code": "ConstHashCodeBucket.java", "label": "hashCode 恒返回 1（全挤一桶）", "note": "虽然能找回全部键，但所有元素挤进同一个桶，O(1) 退化成 O(N) 慢到爆。" },
-        { "id": "ProperEqualsHash", "code": "ProperEqualsHash.java", "label": "正确配对重写（推荐）", "note": "基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。" },
-        { "id": "MutableKeyTrap", "code": "MutableKeyTrap.java", "label": "放入后修改 Key 字段（失踪）", "note": "put 之后修改 key.id 导致新 hashCode 落到空桶，原键值对永远找不回。" }
+        {
+          "id": "EqualsOnlyLostKey",
+          "code": "EqualsOnlyLostKey.java",
+          "label": "只重写 equals（不写 hashCode）",
+          "note": "两个 new Key(i) 内存地址不同导致 hashCode 不同，落进不同桶，命中数 0。"
+        },
+        {
+          "id": "ConstHashCodeBucket",
+          "code": "ConstHashCodeBucket.java",
+          "label": "hashCode 恒返回 1（全挤一桶）",
+          "note": "虽然能找回全部键，但所有元素挤进同一个桶，O(1) 退化成 O(N) 慢到爆。"
+        },
+        {
+          "id": "ProperEqualsHash",
+          "code": "ProperEqualsHash.java",
+          "label": "正确配对重写（推荐）",
+          "note": "基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。"
+        },
+        {
+          "id": "MutableKeyTrap",
+          "code": "MutableKeyTrap.java",
+          "label": "放入后修改 Key 字段（失踪）",
+          "note": "put 之后修改 key.id 导致新 hashCode 落到空桶，原键值对永远找不回。"
+        }
       ],
-      "knob": { "label": "HashMap 键数量 N", "values": ["500", "1000", "2000", "4000"], "default": "2000" },
+      "knob": {
+        "label": "HashMap 键数量 N",
+        "values": [
+          "500",
+          "1000",
+          "2000",
+          "4000"
+        ],
+        "default": "2000"
+      },
       "repeat": 20,
-      "metric": { "key": "hits", "expectKey": "expected", "label": "成功查回键数" },
-      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+      "metric": {
+        "key": "hits",
+        "expectKey": "expected",
+        "label": "成功查回键数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
     }
   },
   "slides": [
     {
       "beat": "open",
-      "title": "equals 与 hashCode 契约",
+      "title": "equals 与 hashCode 契约：为什么只重写 equals 会让 HashMap 丢键？",
+      "bridge": "明明两个 Key 的 id 完全一样、equals() 也返回 true，为什么 put 进 HashMap 后再 get(new Key(id)) 竟然返回 null？",
       "blocks": [
         {
           "t": "text",
@@ -47,123 +88,43 @@
     },
     {
       "beat": "open",
-      "title": "热身：HashMap 查找两步走",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
       "blocks": [
         {
           "t": "recall",
-          "say": "先回忆 HashMap.get(key) 的定位顺序。",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
           "items": [
             {
               "have": "定位顺序",
               "q": "`HashMap.get(k)` 查找时先调用什么方法？",
-              "options": ["先调 k.hashCode() 算桶下标，桶里有节点再调 equals()", "先全表逐个调 equals()", "随机选一个"],
+              "options": [
+                "先调 k.hashCode() 算桶下标，桶里有节点再调 equals()",
+                "先全表逐个调 equals()",
+                "随机选一个"
+              ],
               "answer": 0,
               "why": "如果 `hashCode()` 不一致，连同一个桶都进不去，根本没机会调用 `equals()`。"
             },
             {
               "have": "逆命题",
               "q": "两个对象 `hashCode()` 相等，它们的 `equals()` 一定为 true 吗？",
-              "options": ["不一定（这就是哈希碰撞）", "一定为 true", "编译报错"],
+              "options": [
+                "不一定（这就是哈希碰撞）",
+                "一定为 true",
+                "编译报错"
+              ],
               "answer": 0,
               "why": "int 只有 2³² 个值，不同对象完全可能算出同一个 hashCode。"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "beat": "hook",
-      "title": "看代码：EqualsOnlyLostKey vs ConstHashCodeBucket",
-      "blocks": [
-        {
-          "t": "code",
-          "exp": "eqhash",
-          "variants": ["EqualsOnlyLostKey", "ConstHashCodeBucket"]
-        }
-      ]
-    },
-    {
-      "beat": "predict",
-      "title": "先猜：存入 2000 个 Key 后再逐个 get，能查回几个？",
-      "blocks": [
-        {
-          "t": "predict",
-          "exp": "eqhash",
-          "question": "`EqualsOnlyLostKey` 只重写了 `equals` 没写 `hashCode`，再 `new Key(i)` 去 `map.get()` 能查回几个？",
-          "options": ["0 个（每次 new Key 都是新 hashCode）", "2000 个", "1000 个"],
-          "answer": 0,
-          "why": "`Object.hashCode()` 默认按对象身份生成不同散列值，新旧 `Key(i)` 落进不同桶，直接返回 null。"
-        }
-      ]
-    },
-    {
-      "beat": "run",
-      "title": "跑一跑：命中数与耗时双维度实测",
-      "blocks": [
-        {
-          "t": "result",
-          "exp": "eqhash",
-          "kind": "correctness"
-        }
-      ]
-    },
-    {
-      "beat": "why",
-      "title": "掀开字节码：Object.hashCode() 与 HashMap.hash()",
-      "blocks": [
-        {
-          "t": "inside",
-          "exp": "eqhash",
-          "variant": "EqualsOnlyLostKey",
-          "explain": "`Key` 类没有覆盖 `hashCode()`，运行时直接分派到 `java.lang.Object.hashCode()`（native 方法），两个独立 `new Key(i)` 返回截然不同的整数。"
-        }
-      ]
-    },
-    {
-      "beat": "fix",
-      "title": "改一处：配对重写 + 保持 Key 字段不可变",
-      "blocks": [
-        {
-          "t": "code",
-          "exp": "eqhash",
-          "variants": ["ProperEqualsHash", "MutableKeyTrap"]
-        }
-      ]
-    },
-    {
-      "beat": "choose",
-      "title": "怎么选：return 1 退化链表 vs 正常散列耗时",
-      "blocks": [
-        {
-          "t": "result",
-          "exp": "eqhash",
-          "kind": "scaling"
-        }
-      ]
-    },
-    {
-      "beat": "name",
-      "title": "HashMap Key 设计铁律",
-      "blocks": [
-        {
-          "t": "text",
-          "md": "做 `HashMap` Key 或 `HashSet` 元素的类：**① `equals` 与 `hashCode` 必须同时重写且使用同一组字段；② 参与计算 `hashCode` 的字段必须声明为 `final` 不可变；③ 优先用 `String`、`Integer` 或 Java `record`。**",
-          "say": "千万别把可变的业务 DTO 直接塞进 HashSet！"
-        }
-      ]
-    },
-    {
-      "beat": "check",
-      "title": "小测：30 秒巩固",
-      "blocks": [
-        {
-          "t": "recall",
-          "say": "检验边界场景。",
-          "items": [
+            },
             {
               "have": "内存泄漏",
               "q": "如果往 `HashSet` 放入一个可变对象后修改了它的 `hashCode` 字段，不仅查不到它，还会造成什么后果？",
-              "options": ["remove() 也删不掉它，造成隐蔽内存泄漏", "自动被 GC 回收", "Set 自动重排"],
+              "options": [
+                "remove() 也删不掉它，造成隐蔽内存泄漏",
+                "自动被 GC 回收",
+                "Set 自动重排"
+              ],
               "answer": 0,
               "why": "`remove(obj)` 也会按新 hashCode 去空桶找，导致旧节点永远留在 Set 里删不掉。"
             }
@@ -172,27 +133,482 @@
       ]
     },
     {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (EqualsOnlyLostKey)",
+              "安全写法 (ProperEqualsHash)"
+            ],
+            "shared": {
+              "name": "成功查回键数",
+              "value": "目标 2000"
+            }
+          },
+          "story": "明明两个 Key 的 id 完全一样、equals() 也返回 true，为什么 put 进 HashMap 后再 get(new Key(id)) 竟然返回 null？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "equals-hashCode 契约",
+              "on": "shared",
+              "tag": "equals-hashC",
+              "code": "`EqualsOnlyLostKey` vs `ProperEqualsHash`",
+              "say": "如果 `a.equals(b) == true`，则 `a.hashCode() == b.hashCode()` 必须为 true；反之 hashCode 相同，equals 不一定为 true（允许哈希碰撞）。"
+            },
+            {
+              "scene": "常量 hashCode 退化",
+              "on": "shared",
+              "tag": "常量 hashCode ",
+              "code": "`EqualsOnlyLostKey` vs `ProperEqualsHash`",
+              "say": "如果偷懒写 `return 1;`，虽然不丢键，但所有 Key 全部挤进同一个桶退化成 O(N) 链表（或红黑树），HashMap 性能雪崩。"
+            },
+            {
+              "scene": "可变 Key 失踪",
+              "on": "shared",
+              "tag": "可变 Key 失踪",
+              "code": "`EqualsOnlyLostKey` vs `ProperEqualsHash`",
+              "say": "Key 放进 HashMap 后如果修改了参与算 hashCode 的字段，再查时算出的新桶号和存入时的旧桶号对不上，键值对永久失踪。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`EqualsOnlyLostKey`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "eqhash.EqualsOnlyLostKey",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "static class Key {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "public static void main(String[] args) {"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (map.get(new Key(i)) != null) hits++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：EqualsOnlyLostKey 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`EqualsOnlyLostKey` 只重写了 `equals` 没写 `hashCode`，再 `new Key(i)` 去 `map.get()` 能查回几个？",
+          "options": [
+            "0 个（每次 new Key 都是新 hashCode）",
+            "2000 个",
+            "1000 个"
+          ],
+          "answer": 0,
+          "say": "`Object.hashCode()` 默认按对象身份生成不同散列值，新旧 `Key(i)` 落进不同桶，直接返回 null。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：EqualsOnlyLostKey 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "eqhash",
+          "show": [
+            "EqualsOnlyLostKey"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "`Object.hashCode()` 默认按对象身份生成不同散列值，新旧 `Key(i)` 落进不同桶，直接返回 null。",
+          "say": "`Object.hashCode()` 默认按对象身份生成不同散列值，新旧 `Key(i)` 落进不同桶，直接返回 null。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「HashMap 键数量 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "eqhash",
+          "show": [
+            "EqualsOnlyLostKey",
+            "ProperEqualsHash"
+          ],
+          "say": "左右拖动「HashMap 键数量 N」滑块，对比 `EqualsOnlyLostKey` 与 `ProperEqualsHash` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`EqualsOnlyLostKey`：两个 new Key(i) 内存地址不同导致 hashCode 不同，落进不同桶，命中数 0。；`ProperEqualsHash`：基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `EqualsOnlyLostKey.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "eqhash.EqualsOnlyLostKey",
+          "q": "在左边的 `EqualsOnlyLostKey.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "return o instanceof Key && ((Key) o).id == this.id;"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`return o instanceof Key && ((Key) o).id == this.id;`）导致：两个 new Key(i) 内存地址不同导致 hashCode 不同，落进不同桶，命中数 0。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "eqhash.EqualsOnlyLostKey",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "7: new           #13                 // class java/util/HashMap"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "17: astore_2"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `ProperEqualsHash` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "eqhash.ProperEqualsHash",
+          "say": "基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。",
+          "walk": [
+            {
+              "focus": [
+                "static class Key {"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "return Objects.hashCode(id);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (map.get(new Key(i)) != null) hits++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "eqhash",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "只重写 equals（不写 hashCode）（`EqualsOnlyLostKey`）",
+              "solves": "两个 new Key(i) 内存地址不同导致 hashCode 不同，落进不同桶，命中数 0。",
+              "cost": "实测约 {ms:eqhash.EqualsOnlyLostKey} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "两个 new Key(i) 内存地址不同导致 hashCode 不同，落进不同桶，命中数 0。"
+            },
+            {
+              "name": "hashCode 恒返回 1（全挤一桶）（`ConstHashCodeBucket`）",
+              "solves": "虽然能找回全部键，但所有元素挤进同一个桶，O(1) 退化成 O(N) 慢到爆。",
+              "cost": "实测约 {ms:eqhash.ConstHashCodeBucket} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "虽然能找回全部键，但所有元素挤进同一个桶，O(1) 退化成 O(N) 慢到爆。"
+            },
+            {
+              "name": "正确配对重写（推荐）（`ProperEqualsHash`）",
+              "solves": "基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。",
+              "cost": "实测约 {ms:eqhash.ProperEqualsHash} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。"
+            },
+            {
+              "name": "放入后修改 Key 字段（失踪）（`MutableKeyTrap`）",
+              "solves": "put 之后修改 key.id 导致新 hashCode 落到空桶，原键值对永远找不回。",
+              "cost": "实测约 {ms:eqhash.MutableKeyTrap} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "put 之后修改 key.id 导致新 hashCode 落到空桶，原键值对永远找不回。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "equals-hashCode 契约",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "如果 `a.equals(b) == true`，则 `a.hashCode() == b.hashCode()` 必须为 true；反之 hashCode 相同，equals 不一定为 true（允许哈希碰撞）。",
+          "asked": [
+            "equals 与 hashCode 契约：为什么只重写 equals 会让 HashMap 丢键？——底层原理是什么？",
+            "为什么 `EqualsOnlyLostKey` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `ProperEqualsHash` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`EqualsOnlyLostKey` 只重写了 `equals` 没写 `hashCode`，再 `new Key(i)` 去 `map.get()` 能查回几个？",
+          "options": [
+            {
+              "text": "0 个（每次 new Key 都是新 hashCode）",
+              "ok": true,
+              "why": "`Object.hashCode()` 默认按对象身份生成不同散列值，新旧 `Key(i)` 落进不同桶，直接返回 null。"
+            },
+            {
+              "text": "2000 个",
+              "ok": false,
+              "why": "再想一想：`Object.hashCode()` 默认按对象身份生成不同散列值，新旧 `Key(i)` 落进不同桶，直接返回 null。"
+            },
+            {
+              "text": "1000 个",
+              "ok": false,
+              "why": "再想一想：`Object.hashCode()` 默认按对象身份生成不同散列值，新旧 `Key(i)` 落进不同桶，直接返回 null。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：定位顺序",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`HashMap.get(k)` 查找时先调用什么方法？",
+          "options": [
+            {
+              "text": "先调 k.hashCode() 算桶下标，桶里有节点再调 equals()",
+              "ok": true,
+              "why": "如果 `hashCode()` 不一致，连同一个桶都进不去，根本没机会调用 `equals()`。"
+            },
+            {
+              "text": "先全表逐个调 equals()",
+              "ok": false,
+              "why": "再想一想：如果 `hashCode()` 不一致，连同一个桶都进不去，根本没机会调用 `equals()`。"
+            },
+            {
+              "text": "随机选一个",
+              "ok": false,
+              "why": "再想一想：如果 `hashCode()` 不一致，连同一个桶都进不去，根本没机会调用 `equals()`。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：逆命题",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "两个对象 `hashCode()` 相等，它们的 `equals()` 一定为 true 吗？",
+          "options": [
+            {
+              "text": "不一定（这就是哈希碰撞）",
+              "ok": true,
+              "why": "int 只有 2³² 个值，不同对象完全可能算出同一个 hashCode。"
+            },
+            {
+              "text": "一定为 true",
+              "ok": false,
+              "why": "再想一想：int 只有 2³² 个值，不同对象完全可能算出同一个 hashCode。"
+            },
+            {
+              "text": "编译报错",
+              "ok": false,
+              "why": "再想一想：int 只有 2³² 个值，不同对象完全可能算出同一个 hashCode。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `ProperEqualsHash`（正确配对重写（推荐））替代 `EqualsOnlyLostKey`（只重写 equals（不写 hashCode））？",
+          "options": [
+            {
+              "text": "因为 基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。",
+              "ok": true,
+              "why": "`EqualsOnlyLostKey`：两个 new Key(i) 内存地址不同导致 hashCode 不同，落进不同桶，命中数 0。；而 `ProperEqualsHash`：基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。"
+            },
+            {
+              "text": "因为 `EqualsOnlyLostKey` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`EqualsOnlyLostKey`：两个 new Key(i) 内存地址不同导致 hashCode 不同，落进不同桶，命中数 0。；而 `ProperEqualsHash`：基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`EqualsOnlyLostKey`：两个 new Key(i) 内存地址不同导致 hashCode 不同，落进不同桶，命中数 0。；而 `ProperEqualsHash`：基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
       "beat": "say",
-      "title": "开口讲：2 分钟脱稿自述",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
       "blocks": [
         {
           "t": "say",
           "prompt": "请脱稿向面试官解释：1) equals 和 hashCode 的契约关系；2) 只写 equals 不写 hashCode、或者 hashCode 写死成 1 分别会出什么问题；3) 为什么 HashMap 的 Key 强烈建议不可变。",
+          "points": [
+            "说清 equals 与 hashCode 的两条铁律契约",
+            "用实测数据对比「漏写 hashCode 丢键」「常量 hashCode 退化成链表」「可变字段当 Key 失踪」三种事故",
+            "养成用 IDE/Objects.hash 生成不可变字段 equals/hashCode 的习惯"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：明明两个 Key 的 id 完全一样、equals() 也返回 true，为什么 put 进 HashMap 后再 get(new Key(id)) 竟然返回 null？；**② 再讲底层原理**：equals-hashCode 契约（如果 `a.equals(b) == true`，则 `a.hashCode() == b.hashCode()` 必须为 true；反之 hashCode 相同，equals 不一定为 true（允许哈希碰撞）。）；常量 hashCode 退化（如果偷懒写 `return 1;`，虽然不丢键，但所有 Key 全部挤进同一个桶退化成 O(N) 链表（或红黑树），HashMap 性能雪崩。）；**③ 最后给工程方案**：生产里优先采用「正确配对重写（推荐）」（`ProperEqualsHash`），基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。。",
           "seconds": 120
         }
       ]
     },
     {
       "beat": "take",
-      "title": "带走 3 张核心卡片",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
       "blocks": [
         {
-          "t": "take",
-          "cards": [
-            { "k": "契约铁律", "v": "`equals` 相等则 `hashCode` 必须相等；反之不要求相等。" },
-            { "k": "写死 1 的代价", "v": "全员挤入单桶退化成链表/红黑树，查询耗时呈线性暴涨。" },
-            { "k": "不可变 Key", "v": "入表后改 Key 字段会算错桶号导致「查不到也删不掉」的内存泄漏。" }
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「equals-hashCode 契约」？它在这节课里起了什么关键作用？",
+              "a": "如果 `a.equals(b) == true`，则 `a.hashCode() == b.hashCode()` 必须为 true；反之 hashCode 相同，equals 不一定为 true（允许哈希碰撞）。"
+            },
+            {
+              "q": "面试官问：什么是「常量 hashCode 退化」？它在这节课里起了什么关键作用？",
+              "a": "如果偷懒写 `return 1;`，虽然不丢键，但所有 Key 全部挤进同一个桶退化成 O(N) 链表（或红黑树），HashMap 性能雪崩。"
+            },
+            {
+              "q": "面试官问：什么是「可变 Key 失踪」？它在这节课里起了什么关键作用？",
+              "a": "Key 放进 HashMap 后如果修改了参与算 hashCode 的字段，再查时算出的新桶号和存入时的旧桶号对不上，键值对永久失踪。"
+            },
+            {
+              "q": "实战避坑：`EqualsOnlyLostKey` 为什么会出问题，应该怎么改？",
+              "a": "两个 new Key(i) 内存地址不同导致 hashCode 不同，落进不同桶，命中数 0。 正确做法是改用 `ProperEqualsHash`（正确配对重写（推荐））：基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "说清 equals 与 hashCode 的两条铁律契约",
+            "用实测数据对比「漏写 hashCode 丢键」「常量 hashCode 退化成链表」「可变字段当 Key 失踪」三种事故",
+            "养成用 IDE/Objects.hash 生成不可变字段 equals/hashCode 的习惯"
           ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `EqualsOnlyLostKey`（只重写 equals（不写 hashCode）），优先选用 `ProperEqualsHash`（正确配对重写（推荐））：基于不可变 id 计算 hashCode 与 equals，100% 命中且 O(1) 散列极快。"
         }
       ]
     }
