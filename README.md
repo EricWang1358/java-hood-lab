@@ -135,6 +135,17 @@
 | M1-15 | **SPI 扩展机制与懒加载缓存：JDBC / Dubbo / Spring Boot 是怎么插拔实现的？** | 写一个核心接口，不改核心包一行代码，只往 classpath 放个 jar 就能自动加载实现类——JDK ServiceLoader 怎么做到的？为什么每次重新 load 这么慢？ | `lab.spiloader` | [网页课件](./pages/java-spi-loader.html) · [JSON](./lessons/java-spi-loader.json) · [源码](./src/lab/spiloader/) |
 | M1-16 | **变长参数数组分配、重载静态分派与装箱优先级** | 写了个便捷方法 sum(int... nums)，在热循环里每次传 2 个参数竟然都在偷偷 new int[2]！更迷惑的是 Base ref = new Sub(); 调重载方法 tag(ref) 到底走哪个？ | `lab.varargs` | [网页课件](./pages/java-varargs-overload.html) · [JSON](./lessons/java-varargs-overload.json) · [源码](./src/lab/varargs/) |
 
+### 模块一 · 第四章：集合底层原理与 Stream 陷阱（M1-17～M1-20）
+
+实测 ArrayList 扩容 vs LinkedList 随机访问、fail-fast 与 `removeIf`、HashMap 预分配容量与 8/64 红黑树化。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M1-17 | **ArrayList 1.5 倍扩容 vs LinkedList：随机访问慢在哪？** | 面试都说「LinkedList 适合增删、ArrayList 适合查询」，可为什么用 for(i) 调 LinkedList.get(i) 遍历 4 万条数据直接卡成几百毫秒？ | `lab.arraygrow` | [网页课件](./pages/col-arraylist-grow.html) · [JSON](./lessons/col-arraylist-grow.json) · [源码](./src/lab/arraygrow/) |
+| M1-18 | **fail-fast 快速失败：为什么 for-each 里删元素会炸 ConcurrentModificationException？** | 单线程好端端地遍历一个 ArrayList，顺手删掉偶数元素就立刻炸出 ConcurrentModificationException；换成下标正序删又不报错了，结果竟悄悄漏删了一半！ | `lab.failfast` | [网页课件](./pages/col-fail-fast.html) · [JSON](./lessons/col-fail-fast.json) · [源码](./src/lab/failfast/) |
+| M1-19 | **HashMap 初始容量与负载因子：new HashMap<>(10000) 为什么还是会扩容？** | 明明知道要往 HashMap 里放 10000 条数据，贴心地写了 new HashMap<>(10000)，可源码算下来竟然还是在放第 7501 条时触发了一次全表扩容！ | `lab.mapresize` | [网页课件](./pages/col-hashmap-resize.html) · [JSON](./lessons/col-hashmap-resize.json) · [源码](./src/lab/mapresize/) |
+| M1-20 | **HashMap 哈希碰撞与红黑树化：为什么 8 和 64 两个阈值缺一不可？** | 故意让 4000 个 Key 的 hashCode 全部撞进同一个桶，为什么 Key 实现 Comparable 时查询快如闪电，没实现 Comparable 时却慢成几十倍？ | `lab.treeify` | [网页课件](./pages/col-hashmap-treeify.html) · [JSON](./lessons/col-hashmap-treeify.json) · [源码](./src/lab/treeify/) |
+
 ### 模块二 · 第一章：类加载、初始化与栈堆分配（M2-01～M2-04）
 
 用真实 `ClassLoader` 隔离、`<clinit>` 死锁、栈帧深度爆栈与 Eden TLAB 并发分配实测 JVM 底层运行机制。

@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "col-hashmap-resize",
+  "course": "Java 工程语法与集合",
+  "title": "HashMap 初始容量与负载因子：new HashMap<>(10000) 为什么还是会扩容？",
+  "lead": "明明知道要往 HashMap 里放 10000 条数据，贴心地写了 new HashMap<>(10000)，可源码算下来竟然还是在放第 7501 条时触发了一次全表扩容！",
+  "minutes": 25,
+  "needs": ["知道 HashMap 默认容量 16、负载因子 0.75", "知道扩容阈值 threshold = capacity * loadFactor"],
+  "after": [
+    "说清 HashMap 扩容机制：2 的幂对齐、threshold = cap * 0.75 与 JDK 8 高低位拆链优化",
+    "知道为什么传 new HashMap<>(N) 依然会扩容一次，以及 `(int)(N / 0.75f) + 1` 的正确算法",
+    "理解负载因子 0.75 在空间与哈希碰撞率之间的工程权衡"
+  ],
+  "terms": {
+    "tableSizeFor(cap)": "`HashMap` 构造器把传入的初始容量向上取整到最近的 2 的幂（如传 10000 变成 16384，传 100000 变成 131072）。",
+    "负载因子 0.75": "当 `size > capacity * 0.75` 时触发 2 倍扩容；传入恰好等于 N 的初始容量时，`N > N * 0.75` 仍可能触发扩容！",
+    "JDK 8 高低位拆链": "扩容后新容量是 2 倍，节点新位置要么在原下标 `j`，要么在 `j + oldCap`，无需重新算 hashCode，只需看新增的高位 bit 是 0 还是 1。"
+  },
+  "experiments": {
+    "mapresize": {
+      "runner": "java",
+      "home": "lab.mapresize",
+      "variants": [
+        { "id": "DefaultCapResizeLoop", "code": "DefaultCapResizeLoop.java", "label": "默认 new HashMap<>()（多次翻倍扩容）", "note": "从 16 开始反复 2 倍扩容十几次，每次都要新建数组并搬迁所有节点。" },
+        { "id": "ExactSizeStillResizes", "code": "ExactSizeStillResizes.java", "label": "new HashMap<>(N)（仍可能触发 1 次扩容）", "note": "未除以 0.75 负载因子，N 恰好超过 2 的幂的 0.75 倍时会多扩一次。" },
+        { "id": "PreSizedLoadFactor", "code": "PreSizedLoadFactor.java", "label": "new HashMap<>((int)(N/0.75f)+1)（零扩容）", "note": "或 JDK 19+ HashMap.newHashMap(N)，从头到尾零扩容搬迁，速度最快。" },
+        { "id": "LowLoadFactorWasteful", "code": "LowLoadFactorWasteful.java", "label": "loadFactor=0.25（过度浪费内存与频繁扩容）", "note": "每装满 25% 就扩容，数组膨胀 4 倍且频繁搬迁，得不偿失。" }
+      ],
+      "knob": { "label": "写入键值对数量 N", "values": ["20000", "50000", "100000", "200000"], "default": "100000" },
+      "repeat": 20,
+      "metric": { "key": "size", "expectKey": "expected", "label": "最终写入键数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "HashMap 初始容量与扩容代价",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "《阿里巴巴 Java 开发手册》专门有一条规范：集合初始化时指定集合初始值大小，**`initialCapacity = (需要存储的元素个数 / 负载因子) + 1`**。今天实测不预分配 vs 算错初始容量 vs 正确预分配，性能到底差多少！",
+          "say": "顺便搞懂 `HashMap` 为什么容量必须是 2 的幂。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：HashMap 容量机制两问",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先检验对 HashMap 扩容细节的了解。",
+          "items": [
+            {
+              "have": "为何 2 的幂",
+              "q": "为什么 `HashMap` 的数组长度永远是 2 的幂（16, 32, 64...）？",
+              "options": ["可以用位运算 (n - 1) & hash 代替慢速取模 hash % n，且扩容只需看 1 个高位 bit", "JVM 数组只支持 2 的幂", "防止内存泄漏"],
+              "answer": 0,
+              "why": "前提是 `n` 为 2 的幂，`(n - 1)` 二进制全为 1，`&` 运算才等价于 `%`。"
+            },
+            {
+              "have": "算容量",
+              "q": "预计存入 100 个元素，`new HashMap<>(100)` 会扩容吗？",
+              "options": ["会！100 向上对齐到 128，threshold = 128 * 0.75 = 96 < 100，第 97 个就会扩容到 256！", "不会", "报错"],
+              "answer": 0,
+              "why": "必须算 `(int) (100 / 0.75f) + 1 = 134`，向上对齐到 256，threshold=192 才不扩容。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：DefaultCapResizeLoop vs PreSizedLoadFactor",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "mapresize",
+          "variants": ["DefaultCapResizeLoop", "PreSizedLoadFactor"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：写入 20 万个键，默认容量 vs 预分配容量耗时差多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "mapresize",
+          "question": "写入 20 万条数据时，`DefaultCapResizeLoop` 相比 `PreSizedLoadFactor` 会经历多少次扩容？",
+          "options": ["14 次扩容（从 16 一路翻倍到 262144）", "1 次", "0 次"],
+          "answer": 0,
+          "why": "16 -> 32 -> 64 -> ... -> 262144，累计搬迁几十万个节点并留下十几份废弃大数组给 GC！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种容量配置耗时实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "mapresize",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：构造器参数只设 threshold",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "mapresize",
+          "variant": "ExactSizeStillResizes",
+          "explain": "`HashMap(int initialCapacity)` 并没有当场 `new Node[]`，而是用 `tableSizeFor` 算出 2 的幂暂存在 `threshold` 里；直到首次 `put()` 才按 `threshold` 分配数组并重算 `threshold = cap * 0.75`。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：按负载因子预分配 vs 过低负载因子",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "mapresize",
+          "variants": ["PreSizedLoadFactor", "LowLoadFactorWasteful"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：2 万 → 20 万键耗时对比",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "mapresize",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "HashMap 容量设置规范",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**① 已知确定元素数 N 时，写 `new HashMap<>((int) (N / 0.75f) + 1)`**（Guava 可用 `Maps.newHashMapWithExpectedSize(N)`，JDK 19+ 可用 `HashMap.newHashMap(N)`）；**② 负载因子保持默认 `0.75` 即可**，不要随意调低。",
+          "say": "0.75 是泊松分布下碰撞率与空间利用率的黄金平衡点。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个 JDK 7 vs 8 经典题。",
+          "items": [
+            {
+              "have": "头插 vs 尾插",
+              "q": "JDK 8 把 HashMap 扩容搬迁链表从头插法改成尾插法，主要解决了什么问题？",
+              "options": ["并发扩容时可能形成的环形链表死循环（CPU 100%）", "减少了一半内存", "不需要 hashCode 了"],
+              "answer": 0,
+              "why": "不过要注意：JDK 8 的 HashMap 依然**不是线程安全的**，多线程并发 put 仍会丢数据或触发树化异常，并发必须用 `ConcurrentHashMap`！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) HashMap 为什么容量是 2 的幂、负载因子为什么默认 0.75；2) 为什么 new HashMap<>(100) 存 100 个元素还是会扩容；3) JDK 8 扩容时节点位置怎么重新计算。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "预分配公式", "v": "`(int)(N / 0.75f) + 1`，直接传 `N` 在跨过 `0.75` 阈值时仍会多扩一次。" },
+            { "k": "2 的幂奥秘", "v": "用 `(n - 1) & hash` 替代取模，扩容只需看新增高位 bit 是 0 还是 1。" },
+            { "k": "非线程安全", "v": "JDK 8 尾插法消除了死循环，但并发写仍会丢更新，必须用 `ConcurrentHashMap`。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
