@@ -374,10 +374,10 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 89 / 89 课</span>
+        <span id="shownCount" class="count-note">显示 94 / 94 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (89)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (94)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
@@ -391,6 +391,7 @@
         <button type="button" class="pill" data-filter="m4ch4">MySQL 4 · MVCC 与隔离 (5)</button>
         <button type="button" class="pill" data-filter="m5ch1">Spring 1 · 事务与 AOP (5)</button>
         <button type="button" class="pill" data-filter="m5ch2">Spring 2 · IoC 与自动装配 (5)</button>
+        <button type="button" class="pill" data-filter="m5ch3">Spring 3 · MVC 与链路隔离 (5)</button>
         <button type="button" class="pill" data-filter="m6">模块 6 · Redis / MQ / 微服务 (6)</button>
 
         <button type="button" class="pill" data-filter="m8">模块 8 · 算法与 SQL (10)</button>
@@ -1152,6 +1153,75 @@
           </div>
           <h3 class="card__title">Spring Boot 自动装配：@ConditionalOnMissingBean 为什么有时会失效？</h3>
           <p class="card__lead">自己配了一个 Serializer Bean 想覆盖默认实现，结果要么启动直接报 NoUniqueBeanDefinitionException，要么默认实现抢先占坑！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m5ch3">
+        <div class="chapter__head">
+          <h2>模块五 · 第三章：Spring MVC 请求链路、参数校验与并发隔离（第 48～52 课）</h2>
+          <p>覆盖 Filter vs Interceptor、@Valid/BindingResult 陷阱、雪花 ID 与金额精度、全局异常转发及 Tomcat 线程池雪崩隔离。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/mvc-filter-interceptor.html" data-ch="m5ch3" data-search="48 mvc-filter-interceptor filter interceptor dispatcherservlet 请求链路 lab.mvcchain">
+          <div class="card__top">
+            <span class="card__num">#48</span>
+            <span class="card__pkg">lab.mvcchain</span>
+          </div>
+          <h3 class="card__title">Filter vs Interceptor：为什么跨域/静态资源在拦截器里漏掉了？</h3>
+          <p class="card__lead">同样是「拦截请求」：Filter 在 Servlet 容器外层，Interceptor 在 DispatcherServlet 内层。放错位置，CORS 预检或静态资源全漏掉！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/mvc-param-bind.html" data-ch="m5ch3" data-search="49 mvc-param-bind valid validated bindingresult 参数校验 lab.paramvalid">
+          <div class="card__top">
+            <span class="card__num">#49</span>
+            <span class="card__pkg">lab.paramvalid</span>
+          </div>
+          <h3 class="card__title">参数校验 @Valid 没生效，或 BindingResult 吞掉了全局异常？</h3>
+          <p class="card__lead">DTO 上贴满了 @NotNull/@Min，Controller 却忘了加 @Valid；或者顺手多写了个 BindingResult，结果全局异常处理器再也收不到报错！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/mvc-jackson-trap.html" data-ch="m5ch3" data-search="50 mvc-jackson-trap jackson 雪花 long 精度丢失 bigdecimal 金额 lab.jsontrap">
+          <div class="card__top">
+            <span class="card__num">#50</span>
+            <span class="card__pkg">lab.jsontrap</span>
+          </div>
+          <h3 class="card__title">前后端传 Long 主键与金额：为什么前端收到 ID 尾数全变 0 了？</h3>
+          <p class="card__lead">后端雪花算法生成 19 位 Long 主键，传到前端 JSON.parse 后最后三位全变成 0；用 double 算金额，0.1 + 0.2 竟不等于 0.3！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/mvc-global-exception.html" data-ch="m5ch3" data-search="51 mvc-global-exception restcontrolleradvice filter handlerexceptionresolver 全局异常 lab.exchandler">
+          <div class="card__top">
+            <span class="card__num">#51</span>
+            <span class="card__pkg">lab.exchandler</span>
+          </div>
+          <h3 class="card__title">全局异常 @RestControllerAdvice 为什么兜不住 Filter 抛出的异常？</h3>
+          <p class="card__lead">配了 @RestControllerAdvice 统一返回 JSON 错误码，可 JWT Filter 一抛过期异常，前端收到的竟还是 Tomcat 默认 500 网页！</p>
+          <div class="card__foot">
+            <span>11 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/mvc-thread-pool.html" data-ch="m5ch3" data-search="52 mvc-thread-pool tomcat 线程池 deferredresult 舱壁隔离 雪崩 lab.mvcthread">
+          <div class="card__top">
+            <span class="card__num">#52</span>
+            <span class="card__pkg">lab.mvcthread</span>
+          </div>
+          <h3 class="card__title">Tomcat 线程全被慢接口堵死，连健康检查都挂了？</h3>
+          <p class="card__lead">一个导出报表慢接口拖垮了整个 Spring Boot 应用：所有核心下单接口和 /actuator/health 全部超时雪崩！</p>
           <div class="card__foot">
             <span>11 页 · 约 30 分钟</span>
             <span class="card__go">进入实验 →</span>

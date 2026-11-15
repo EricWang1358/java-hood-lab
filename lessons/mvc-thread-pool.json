@@ -1,0 +1,107 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "mvc-thread-pool",
+  "course": "Spring 全家桶与持久层",
+  "title": "Tomcat 线程全被慢接口堵死，连健康检查都挂了？",
+  "lead": "一个导出报表慢接口拖垮了整个 Spring Boot 应用：所有核心下单接口和 /actuator/health 全部超时雪崩！",
+  "minutes": 30,
+  "needs": ["知道 Tomcat 默认用固定线程池处理 HTTP 请求", "了解异步 Servlet（DeferredResult）与舱壁隔离"],
+  "after": ["讲清慢接口占满 Tomcat 工作池引发全站雪崩的机理", "区分「同步等业务池」与「异步释放 Tomcat 线程」的区别", "掌握舱壁隔离（Semaphore/独立池）保护核心接口"],
+  "terms": {
+    "Tomcat 工作池": "默认 max-threads=200，负责接收解析 HTTP 请求；一旦全被慢 IO 占满，连健康检查都进不来。",
+    "DeferredResult / Callable": "Spring MVC 异步请求：立刻释放 Tomcat 工作线程去接新请求，慢任务在独立业务池跑完再写回响应。",
+    "舱壁隔离": "给慢接口单独设并发上限（如 Semaphore 或独立线程池），超额直接快速失败，绝不拖垮主站。"
+  },
+  "experiments": {
+    "mvcthread": {
+      "runner": "java",
+      "home": "lab.mvcthread",
+      "variants": [
+        { "id": "SharedTomcatPool", "label": "共用 Tomcat 线程池", "note": "慢接口直接占满 Tomcat 4 个工作线程，健康检查 100% 超时。" },
+        { "id": "SyncWaitExternal", "label": "Tomcat 同步等业务池", "note": "虽然丢给了业务池，但 Tomcat 线程 Future.get() 死等，照样占满！" },
+        { "id": "DeferredAsyncPool", "label": "DeferredResult 释放", "note": "Tomcat 线程立刻抽身，慢任务在独立池执行，健康检查 100% 通过。" },
+        { "id": "BulkheadLimit", "label": "Semaphore 舱壁限流", "note": "限制慢接口最多占 2 个并发，超限快速失败，保住主池。" }
+      ],
+      "knob": { "label": "慢请求并发", "values": ["2", "4", "8", "12"], "default": "8" },
+      "repeat": 20,
+      "metric": { "key": "health_ok", "expectKey": "expected", "label": "健康检查按时响应次数(满分20)" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "Tomcat 线程全被慢接口堵死，连健康检查都挂了？",
+      "blocks": [{ "t": "text", "md": "生产常见连环雪崩：**一个低频慢接口（导出/调第三方超时）把 Tomcat 200 个线程全占满，紧接着 K8s 探活 `/health` 超时，容器直接被重启！**", "say": "核心原因只有一个：没有做线程池隔离，或者以为丢给业务池但 Tomcat 线程还在 `.get()` 死等。" }]
+    },
+    {
+      "beat": "hook",
+      "title": "8 个慢请求同时进来，20 次健康检查能过几次？",
+      "bridge": "模拟 Tomcat 池有 4 个线程，预期健康检查全部通过 `health_ok = 20`。",
+      "blocks": [{ "t": "text", "md": "对比共用池、假异步死等、真异步释放与舱壁限流。", "say": "看 `SyncWaitExternal` 为什么也挂了。" }]
+    },
+    {
+      "beat": "code",
+      "title": "看清「假异步」为什么照样堵死 Tomcat",
+      "bridge": "注意 `SyncWaitExternal.java` 里的 `.get()`。",
+      "blocks": [{ "t": "code", "of": "mvcthread.SyncWaitExternal", "say": "看第 14 行。", "walk": [{ "focus": ["try { biz.submit(() -> releaseSlow.await(200, TimeUnit.MILLISECONDS)).get(); }"], "say": "Controller 里自己起业务线程池却同步调 `Future.get()`，Tomcat 线程依然被死死钉在原地动弹不得！", "key": "在 Tomcat 线程里同步 .get() 等业务池，等于白隔离" }] }]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：8 并发慢请求下，`SyncWaitExternal` 健康检查能过几次？",
+      "bridge": "跑之前下注。",
+      "blocks": [{ "t": "predict", "id": "mt_guess", "q": "8 个慢请求占着 `SyncWaitExternal`（4 个 Tomcat 线程），20 次健康检查能过几次？", "options": ["20 次全过", "0 次（Tomcat 线程全被 .get() 钉死）"], "answer": 1, "say": "选出你的判断。" }]
+    },
+    {
+      "beat": "run",
+      "title": "四种隔离策略实测对比",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        { "t": "experiment", "lab": "mvcthread", "show": ["SharedTomcatPool", "SyncWaitExternal", "DeferredAsyncPool", "BulkheadLimit"], "select": "SyncWaitExternal", "say": "`SharedTomcatPool` 和 `SyncWaitExternal` 全是 0；`DeferredAsyncPool` 和 `BulkheadLimit` 稳稳 20/20 全过！" },
+        { "t": "reveal", "of": "mt_guess", "say": "要么用 `DeferredResult`/`Callable` 真释放 Tomcat 线程，要么用舱壁限流控制慢接口最大并发。", "key": "慢接口用 DeferredResult 释放容器线程 + 舱壁限流" },
+        { "t": "try", "say": "把慢请求并发调到 12 观察。" }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "耗时对比",
+      "bridge": "四种写法耗时折线。",
+      "blocks": [{ "t": "chart", "of": "mvcthread", "say": "`DeferredAsyncPool` 与 `BulkheadLimit` 响应时间在 10ms 以内。", "walk": [{ "focus": "BulkheadLimit", "say": "毫秒级保护主站。" }] }]
+    },
+    {
+      "beat": "choose",
+      "title": "高可用隔离选型",
+      "layout": "split",
+      "bridge": "遇到慢接口怎么保主站？",
+      "blocks": [
+        { "t": "decide", "q": "慢接口威胁主站稳定怎么办？", "branches": [{ "when": "接口必须同步返回结果但耗时长", "pick": "DeferredResult / WebAsyncTask + 独立业务池", "eg": "释放 Tomcat 线程" }, { "when": "防止慢接口无限堆积拖垮下游", "pick": "舱壁限流（Semaphore / Sentinel）+ 超时熔断", "eg": "超限快速失败" }], "say": "异步释放保 Tomcat，舱壁限流保业务池。" },
+        { "t": "cases", "tools": ["DeferredResult 异步释放", "Semaphore 舱壁限流", "拆独立微服务/异步导出"], "say": "三个场景选做法。", "items": [{ "text": "长轮询/大模型流式接口，单个请求挂起 30 秒。", "answer": 0, "why": "必须用 `DeferredResult`/`SseEmitter` 释放 Tomcat 工作线程。" }, { "text": "第三方风控接口偶发抖动变慢，希望最多同时放 20 个请求过去，多的直接降级。", "answer": 1, "why": "加舱壁限流（Semaphore/Sentinel 并发线程数隔离）+ 严格超时。" }, { "text": "百万行数据 Excel 导出。", "answer": 2, "why": "改成异步任务（提交任务返回 taskId，轮询下载），彻底不占同步 HTTP 连接。" }] }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频提问。",
+      "blocks": [{ "t": "name", "term": "Tomcat 线程池隔离与雪崩防护", "alias": "DeferredResult · 舱壁隔离 · 快速失败", "oneLine": "慢接口会耗尽 Tomcat 默认 200 工作线程；必须通过==DeferredResult 释放容器线程==、==独立业务池==与==舱壁限流==防雪崩。", "asked": ["如何防止一个慢接口拖垮整个 Spring Boot 服务？"], "say": "结合真实实验讲，非常有说服力。" }]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "快速检验。",
+      "blocks": [{ "t": "quiz", "q": "在 Controller 里把任务提交到自定义线程池后，紧接着调用 `future.get()` 返回结果，能释放 Tomcat 工作线程吗？", "options": [{ "text": "不能，Tomcat 线程仍在阻塞等待 .get()", "ok": true, "why": "正确！必须返回 `Callable` / `DeferredResult` / `CompletableFuture` 让 Spring MVC 挂起请求并归还 Tomcat 线程。" }, { "text": "能，因为任务是在业务池跑的", "ok": false, "why": "Tomcat 线程被 `.get()` 卡住了。" }], "say": "选出正确答案。" }]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [{ "t": "say", "prompt": "如何防止单个慢接口把整个 Spring Boot 应用（Tomcat 线程池）拖垮？", "points": ["Tomcat 默认 200 工作线程共用，慢接口或下游超时会占满全部线程导致健康检查和核心接口雪崩", "一：给外部调用设严格超时（connect/readTimeout）", "二：用舱壁隔离（Sentinel 线程数限流 / Semaphore）限制慢接口最大并发，超限快速失败", "三：长耗时同步接口用 DeferredResult/CompletableFuture 释放 Tomcat 线程到独立业务池（切忌在 Controller 里 .get() 死等）", "四：重任务如大导出直接改异步任务"], "model": "Tomcat 默认只有 200 个工作线程处理所有 HTTP 请求，如果某个慢接口或外部调用没有超时控制，并发一来就会把 Tomcat 线程全部占满，连健康检查都会超时重启。防止雪崩核心四招：第一对所有外部依赖设置严格超时；第二用舱壁隔离（如 Semaphore 或 Sentinel 并发线程数限流）把慢接口限制在固定配额内，超了直接快速失败或降级；第三需要挂起等待的接口返回 `DeferredResult` 或 `CompletableFuture`，真正释放 Tomcat 工作线程到独立业务池（注意不能在 Controller 里调用 `future.get()` 死等）；第四像大文件导出直接改异步提交。", "say": "点击开始自述。" }]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [{ "t": "cards", "items": [{ "q": "Controller 里 `pool.submit().get()` 能防 Tomcat 堵死吗？", "a": "不能，`.get()` 依然阻塞 Tomcat 线程；必须返回 `DeferredResult`/`CompletableFuture`。" }, { "q": "什么是舱壁隔离？", "a": "限制非核心/慢接口的最大并发配额（Semaphore/独立池），不让它吃光全局资源。" }, { "q": "防慢接口拖垮主站第一道防线？", "a": "所有下游 RPC/HTTP/DB 必须设置严格超时时间，禁止无限等待。" }], "say": "三张卡收好。" }]
+    }
+  ]
+}

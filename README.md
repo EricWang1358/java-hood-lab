@@ -185,6 +185,16 @@
 | 46 | **事务方法里开多线程 / @Async，子线程异常主线程怎么不回滚？** | @Transactional 方法里新开线程或调 @Async 写明细表，子线程报错了，主线程却照常 commit——订单有头无尾！ | `lab.txthread` | [网页课件](./pages/spring-tx-multithread.html) · [JSON](./lessons/spring-tx-multithread.json) · [源码](./src/lab/txthread/) |
 | 47 | **Spring Boot 自动装配：@ConditionalOnMissingBean 为什么有时会失效？** | 自己配了一个 Serializer Bean 想覆盖默认实现，结果要么启动直接报 NoUniqueBeanDefinitionException，要么默认实现抢先占坑！ | `lab.autowire` | [网页课件](./pages/spring-boot-autowire.html) · [JSON](./lessons/spring-boot-autowire.json) · [源码](./src/lab/autowire/) |
 
+### 模块五 · 第三章：Spring MVC 请求链路、参数校验与并发隔离（第 48～52 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 48 | **Filter vs Interceptor：为什么跨域/静态资源在拦截器里漏掉了？** | 同样是「拦截请求」：Filter 在 Servlet 容器外层，Interceptor 在 DispatcherServlet 内层。放错位置，CORS 预检或静态资源全漏掉！ | `lab.mvcchain` | [网页课件](./pages/mvc-filter-interceptor.html) · [JSON](./lessons/mvc-filter-interceptor.json) · [源码](./src/lab/mvcchain/) |
+| 49 | **参数校验 @Valid 没生效，或 BindingResult 吞掉了全局异常？** | DTO 上贴满了 @NotNull/@Min，Controller 却忘了加 @Valid；或者顺手多写了个 BindingResult，结果全局异常处理器再也收不到报错！ | `lab.paramvalid` | [网页课件](./pages/mvc-param-bind.html) · [JSON](./lessons/mvc-param-bind.json) · [源码](./src/lab/paramvalid/) |
+| 50 | **前后端传 Long 主键与金额：为什么前端收到 ID 尾数全变 0 了？** | 后端雪花算法生成 19 位 Long 主键，传到前端 JSON.parse 后最后三位全变成 0；用 double 算金额，0.1 + 0.2 竟不等于 0.3！ | `lab.jsontrap` | [网页课件](./pages/mvc-jackson-trap.html) · [JSON](./lessons/mvc-jackson-trap.json) · [源码](./src/lab/jsontrap/) |
+| 51 | **全局异常 @RestControllerAdvice 为什么兜不住 Filter 抛出的异常？** | 配了 @RestControllerAdvice 统一返回 JSON 错误码，可 JWT Filter 一抛过期异常，前端收到的竟还是 Tomcat 默认 500 网页！ | `lab.exchandler` | [网页课件](./pages/mvc-global-exception.html) · [JSON](./lessons/mvc-global-exception.json) · [源码](./src/lab/exchandler/) |
+| 52 | **Tomcat 线程全被慢接口堵死，连健康检查都挂了？** | 一个导出报表慢接口拖垮了整个 Spring Boot 应用：所有核心下单接口和 /actuator/health 全部超时雪崩！ | `lab.mvcthread` | [网页课件](./pages/mvc-thread-pool.html) · [JSON](./lessons/mvc-thread-pool.json) · [源码](./src/lab/mvcthread/) |
+
 
 ### 模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-06）
 
