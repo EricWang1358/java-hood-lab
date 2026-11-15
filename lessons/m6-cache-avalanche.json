@@ -1,0 +1,578 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-cache-avalanche",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "整点批量过期：为什么缓存雪崩打垮库？",
+  "lead": "初始化缓存时给 1 万个 Key 统一设了 `TTL = 3600s`，一小时后整点瞬间全员失效，数据库峰值 QPS 瞬间翻倍宕机。",
+  "minutes": 35,
+  "needs": [
+    "理解缓存 TTL 过期机制",
+    "知道单 Key 击穿与批量雪崩的区别"
+  ],
+  "after": [
+    "量化对比固定 TTL 与随机抖动 TTL 的峰值 DB QPS 差异",
+    "掌握多级缓存与熔断限流在雪崩时的兜底作用",
+    "能给出事前、事中、事后完整的防雪崩架构清单"
+  ],
+  "terms": {
+    "缓存雪崩": "大量缓存 Key 在同一时间集体过期（或缓存集群整体宕机），导致海量请求瞬间全部落向数据库。",
+    "随机抖动": "在基础 TTL 上叠加一个随机偏移量（如 `base + random(1, 300s)`），把集体过期打散。",
+    "多级缓存": "进程内本地缓存（L1）+ 分布式缓存（L2）错峰过期，即使 L2 集体失效也有 L1 缓冲。",
+    "限流降级": "当 DB 压力逼近阈值时直接拒绝或返回兜底默认值，保住数据库不连环宕机。"
+  },
+  "experiments": {
+    "m6_avalanche": {
+      "runner": "java",
+      "home": "lab.m6.avalanche",
+      "knob": {
+        "name": "threads",
+        "label": "并发业务线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "peakDbQps",
+        "expectKey": "expected",
+        "label": "单拍峰值查库",
+        "expect": "DB安全线"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "FixedTtl",
+          "label": "固定TTL",
+          "code": "FixedTtl.java",
+          "note": "所有 Key 统一设 TTL=10，到点全部一起过期打爆 DB。"
+        },
+        {
+          "id": "JitterTtl",
+          "label": "随机抖动",
+          "code": "JitterTtl.java",
+          "note": "TTL 叠加随机偏移，把瞬时洪峰打散成平稳小波。"
+        },
+        {
+          "id": "MultiLevelCache",
+          "label": "多级缓存",
+          "code": "MultiLevelCache.java",
+          "note": "L1 本地短缓存 + L2 抖动，进一步削平回源尖峰。"
+        },
+        {
+          "id": "RateLimitFallback",
+          "label": "限流降级",
+          "code": "RateLimitFallback.java",
+          "note": "超过 DB 单拍配额直接降级兜底，死守 DB 安全线。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "整点批量过期：为什么缓存雪崩打垮库？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "凌晨全量脚本把 5000 个首页配置统一写进 Redis 并全部设了 `EXPIRE 3600`。一小时后整点一到，**5000 个 Key 在同一秒集体过期**，数据库 CPU 瞬间 100%。",
+          "say": "雪崩和击穿最大的区别就是「批量」两个字：击穿是一个热点 Key，雪崩是一大片 Key 一起过期或者 Redis 整个挂掉。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "批量预热陷阱",
+              "q": "初始化脚本用一个循环把 1 万个 Key 写进缓存且 TTL 都写死 1 小时，最危险的时刻是？",
+              "options": [
+                "1 小时后的整点瞬间",
+                "写入刚完成的那 1 秒",
+                "永远不会出问题"
+              ],
+              "answer": 0,
+              "why": "所有 Key 几乎同时写入、同时到期，1 小时后必定集体失效。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：60 个 Key 集体到点",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "数据库单拍安全承载线是 15 次查询；4 个线程连续跑 40 拍。",
+            "actors": [
+              "线程 A (负责偶数Key)",
+              "线程 B (负责奇数Key)"
+            ],
+            "shared": "DB 单拍承载线(15)"
+          },
+          "say": "数据库单拍安全承载线是 15 次查询；4 个线程连续跑 40 拍。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `FixedTtl`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_avalanche.FixedTtl",
+          "say": "这就是最常见的基线写法 `FixedTtl`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`FixedTtl` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "60 个 Key 全部设死 `BASE_TTL = 10`，到第 10 拍时 `FixedTtl` 的峰值查库会飙到多少？",
+          "options": [
+            "平稳保持在 10 次以下",
+            "瞬间飙到 60 次（全量打爆安全线）",
+            "只有 1 次"
+          ],
+          "answer": 1,
+          "say": "60 个 Key 在同一拍全部过期，100% 穿透到数据库。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`FixedTtl` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_avalanche",
+          "show": [
+            "FixedTtl"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "expireAt.put(key, (long) (tick + BASE_TTL));"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `FixedTtl` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_avalanche.FixedTtl",
+          "lines": [
+            "expireAt.put(key, (long) (tick + BASE_TTL));"
+          ],
+          "say": "所有 Key 的过期时间都是整齐划一的 `tick + BASE_TTL`，没有任何打散。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "expireAt = tick + BASE_TTL",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "线程 A (负责偶数Key)",
+            "线程 B (负责奇数Key)"
+          ],
+          "shared": {
+            "name": "DB 单拍承载线(15)",
+            "start": "第10拍全员到期"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "A 遇到 30 个同时过期",
+              "say": "第 10 拍一到，A 负责的 30 个 Key 全部失效，疯狂打库。"
+            },
+            {
+              "lane": 1,
+              "op": "calc",
+              "text": "B 也遇到 30 个同时过期",
+              "say": "同一拍里 B 负责的 30 个 Key 也全部失效，瞬间 60 并发砸穿 DB 安全线！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `JitterTtl`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "给 TTL 加上 `random(1, 9)` 随机抖动后，单拍峰值查库会降到什么水平？",
+          "options": [
+            "压到 15 安全线以内（约 8~12）",
+            "依然是 60",
+            "变成 0"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`FixedTtl` vs `JitterTtl`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_avalanche",
+          "show": [
+            "FixedTtl",
+            "JitterTtl"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `JitterTtl` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_avalanche.JitterTtl",
+          "within": "get(int, int)",
+          "from": "0: getstatic",
+          "to": "areturn",
+          "say": "看 `JitterTtl.get`：只多了一句 `ThreadLocalRandom.nextInt(1, 9)`，就把第 10 拍的 60 次洪峰均匀摊薄到后续 9 拍里。",
+          "walk": [
+            {
+              "focus": [
+                "ThreadLocalRandom"
+              ],
+              "label": "随机偏移打散过期点",
+              "say": "注意不要用 `Math.random()` 或全局锁 `Random`，高并发下用 `ThreadLocalRandom`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`MultiLevelCache` 与 `RateLimitFallback`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_avalanche",
+          "show": [
+            "FixedTtl",
+            "JitterTtl",
+            "MultiLevelCache",
+            "RateLimitFallback"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_avalanche",
+          "variants": [
+            "FixedTtl",
+            "JitterTtl",
+            "MultiLevelCache",
+            "RateLimitFallback"
+          ],
+          "notes": [
+            {
+              "focus": "FixedTtl",
+              "key": "固定 TTL 在每 10 拍周期出现 60 并发尖峰，远超 15 安全线",
+              "say": "FixedTtl 每次集体到期都把数据库打穿 4 倍。"
+            },
+            {
+              "focus": "JitterTtl",
+              "key": "随机抖动把峰值稳稳压在 10 左右，安全线内平稳运行",
+              "say": "仅加一行随机抖动，峰值直接降了 6 倍！"
+            },
+            {
+              "focus": "MultiLevelCache",
+              "key": "L1+L2 多级缓存进一步压低 DB 峰值，耗时也最低",
+              "say": "多级缓存让大量请求在本地内存消化，DB 压力最小。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `RateLimitFallback` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_avalanche.RateLimitFallback",
+          "within": "get(int, int)",
+          "from": "0: getstatic",
+          "to": "areturn",
+          "say": "看 `RateLimitFallback.get`：即使遇到极端集体失效，只要 `tickBudget.getAndDecrement() <= 0`，直接走降级兜底，死守 DB 不崩。",
+          "walk": [
+            {
+              "focus": [
+                "getAndDecrement"
+              ],
+              "label": "配额熔断保底",
+              "key": "宁可部分请求降级兜底，也绝不放洪峰压垮数据库",
+              "say": "这是事中防线：保住数据库存活，系统才不会雪上加霜。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "随机抖动 TTL",
+              "solves": "低成本打散批量过期时间点",
+              "cost": "几乎零额外成本（约 {ms:m6_avalanche.JitterTtl} ms）",
+              "when": "所有批量预热、定时同步写缓存的场景（必加基础防线）",
+              "say": "这是性价比最高的一行代码，永远不要把批量 Key 的 TTL 写死成同一个常数。"
+            },
+            {
+              "name": "多级缓存（L1+L2）",
+              "solves": "Redis 抖动或局部失效时由本地内存扛住",
+              "cost": "约 {ms:m6_avalanche.MultiLevelCache} ms，需处理本地缓存一致性",
+              "when": "读多写少、容忍短时弱一致的高并发核心接口",
+              "say": "Caffeine + Redis 是大厂标配组合。"
+            },
+            {
+              "name": "限流降级兜底",
+              "solves": "极端 Redis 全挂时保住数据库不连环雪崩",
+              "cost": "部分请求返回兜底数据",
+              "when": "所有核心链路的最后一道保命闸门",
+              "say": "配合 Sentinel/网关限流，保库就是保命。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "防雪崩的三道防线分别防什么阶段？",
+          "branches": [
+            {
+              "when": "事前防批量同时到期",
+              "pick": "随机抖动 TTL + 错峰预热",
+              "eg": "base + random(60, 300)"
+            },
+            {
+              "when": "事中防 Redis 整体宕机",
+              "pick": "多级缓存 + 限流降级 + 集群高可用",
+              "eg": "Redis Sentinel + 本地 Caffeine + Sentinel 降级"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "随机抖动 TTL",
+            "多级缓存（L1+L2）",
+            "限流降级兜底"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "每天凌晨 2 点定时任务把 5 万条商品分类刷进 Redis，早上 8 点准时出现 DB 尖峰。",
+              "answer": 0,
+              "why": "典型固定 TTL 批量失效，给每条加上 1~30 分钟随机抖动即可。"
+            },
+            {
+              "text": "Redis 集群主从切换抖动了 3 秒，大量请求穿透过来差点把 MySQL 拖死。",
+              "answer": 2,
+              "why": "Redis 整体不可用时抖动也没用，必须靠限流降级与本地 L1 缓存保住 DB。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：缓存雪崩",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "缓存雪崩",
+          "alias": "Cache Avalanche · Jitter TTL + Multi-Level + Degradation",
+          "oneLine": "大量 Key ==集体失效或缓存宕机==导致洪峰直压 DB，靠==随机抖动+高可用+限流降级==分层拦截。",
+          "asked": [
+            "除了加随机过期时间，Redis 整个挂了怎么防雪崩？",
+            "事前、事中、事后怎么立体防雪崩？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果整个 Redis 集群突然宕机了，下面哪一招能保住数据库不被打死？",
+          "options": [
+            {
+              "text": "给 Key 加随机抖动 TTL",
+              "ok": false,
+              "why": "Redis 都连不上了，TTL 设多少都没用。"
+            },
+            {
+              "text": "本地多级缓存 + 限流熔断降级",
+              "ok": true,
+              "why": "本地内存扛住热点读，限流闸门挡住超额流量，保住 DB 存活。"
+            }
+          ],
+          "say": "区分「批量过期」与「缓存宕机」两种雪崩原因。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么高并发下生成随机抖动推荐用 `ThreadLocalRandom` 而不是 `new Random()`？",
+          "options": [
+            {
+              "text": "ThreadLocalRandom 无 CAS 竞争开销，并发性能远高于共享 Random",
+              "ok": true,
+              "why": "java.util.Random 内部用 AtomicLong CAS 争抢种子，高并发会拖慢吞吐。"
+            },
+            {
+              "text": "Random 不能生成整数",
+              "ok": false,
+              "why": "Random 也能生成，主要是并发竞争问题。"
+            }
+          ],
+          "say": "顺手带出一个高频 Java 并发细节。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "防雪崩「事后」恢复最关键的手段是什么？",
+          "options": [
+            {
+              "text": "Redis RDB/AOF 持久化快速恢复 + 缓存预热",
+              "ok": true,
+              "why": "避免重启后空缓存直接迎接线上流量二次雪崩。"
+            },
+            {
+              "text": "立刻重启数据库",
+              "ok": false,
+              "why": "重启 DB 会让业务彻底中断。"
+            }
+          ],
+          "say": "事前高可用+抖动，事中限流降级，事后持久化+预热。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "什么是缓存雪崩？从事前、事中、事后三个阶段讲清完整应对方案。",
+          "points": [
+            "雪崩指大量 Key 同时过期或缓存整体宕机，瞬间洪峰压垮 DB",
+            "事前：TTL 加随机抖动打散过期点 + Redis 哨兵/集群高可用",
+            "事中：本地 L1 多级缓存缓冲 + 对 DB 做限流熔断降级保命",
+            "事后：依靠 RDB/AOF 快速重启恢复并做热点预热"
+          ],
+          "model": "缓存雪崩是指大量 Key 在同一时间集体过期，或者缓存集群整体故障，导致海量请求瞬间全部落向数据库引发连环崩溃。应对雪崩要按事前、事中、事后分层设防：事前在批量写入缓存时给 TTL 加上随机抖动打散过期时间，并部署 Redis 主从哨兵或 Cluster 保证高可用；事中通过本地 Caffeine 多级缓存扛住部分读请求，并在数据库前加限流熔断降级闸门，宁可部分降级也保住 DB 存活；事后通过 RDB/AOF 快速恢复缓存并做灰度预热。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "雪崩的两大诱因？",
+              "a": "1. 大量 Key 固定 TTL 集体过期；2. 缓存节点/集群整体宕机。"
+            },
+            {
+              "q": "低成本防批量过期？",
+              "a": "基础 TTL + ThreadLocalRandom 随机抖动（如 +10%~20%）。"
+            },
+            {
+              "q": "Redis 整体挂了怎么保库？",
+              "a": "本地 L1 多级缓存 + 网关/接口限流熔断降级。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

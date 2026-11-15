@@ -1,0 +1,569 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-hotkey-split",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "顶流热点 Key 打爆单分片：本地二级缓存与 Key 拆分",
+  "lead": "就算 Redis 搭了 16 个分片集群，某一个顶流热搜 Key 还是只会落到其中 1 个分片上，把单核单分片打到 CPU 100%。",
+  "minutes": 35,
+  "needs": [
+    "了解 Redis Cluster 哈希槽分片机制",
+    "知道单分片单线程模型"
+  ],
+  "after": [
+    "解释为什么 Redis 集群扩容救不了单个热点 Key 倾斜",
+    "对比「进程内 L1 二级缓存」与「热点 Key 加随机后缀多副本拆分」的适用场景",
+    "算清 L1 缓存与 Key 拆分各自对一致性和写入成本的影响"
+  ],
+  "terms": {
+    "热点Key倾斜": "Redis 按 Key 哈希路由到固定分片，单个超高 QPS 的 Key 会把某一台节点打满而其他节点闲着。",
+    "本地二级缓存": "在应用服务器 JVM 内存里加一层极短 TTL 的本地缓存（如 Caffeine），挡掉 95% 以上的网络读。",
+    "Key多副本拆分": "把 `hot-1` 拆成 `hot-1#0` ~ `hot-1#15` 散落到不同分片，读时随机挑一个后缀。"
+  },
+  "experiments": {
+    "m6_hotkey": {
+      "runner": "java",
+      "home": "lab.m6.hotkey",
+      "knob": {
+        "name": "threads",
+        "label": "并发读热点线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "shardHits",
+        "expectKey": "expected",
+        "label": "单分片最高命中",
+        "expect": "单分片阈值"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "SingleShard",
+          "label": "单分片硬扛",
+          "code": "SingleShard.java",
+          "note": "所有流量集中打在同一个分片锁上，多核全在排队。"
+        },
+        {
+          "id": "LocalL1Cache",
+          "label": "本地L1缓存",
+          "code": "LocalL1Cache.java",
+          "note": "JVM 本地缓存拦截绝大多数读，只有未命中才打分片。"
+        },
+        {
+          "id": "ShardedKeyCopy",
+          "label": "Key多副本拆分",
+          "code": "ShardedKeyCopy.java",
+          "note": "把热点 Key 拆到 16 个分片副本，单分片压力直接除 16。"
+        },
+        {
+          "id": "AdaptiveLocalCache",
+          "label": "探测+L1+分片",
+          "code": "AdaptiveLocalCache.java",
+          "note": "本地 L1 抗读 + 后端 16 分片兜底，单分片命中几乎归零。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "顶流热点 Key 打爆单分片：本地二级缓存与 Key 拆分",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "明明花钱买了 16 分片的 Redis 集群，可顶流明星一发动态，**监控显示只有 1 个分片 CPU 飙到 100%，另外 15 个分片在摸鱼**。",
+          "say": "集群能解决总容量和总吞吐，但只要所有请求都用同一个 Key，CRC16 算出来的槽位永远是同一个，扩 100 台机器也没用。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "Redis Cluster 路由",
+              "q": "Redis Cluster 如何决定一个 Key 存在哪个分片节点上？",
+              "options": [
+                "CRC16(key) % 16384 固定路由",
+                "每次请求随机挑一个空闲节点",
+                "按客户端 IP 轮询"
+              ],
+              "answer": 0,
+              "why": "同一个 Key 的哈希槽是固定的，所以单 Key 流量必然全压在同一个主节点上。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：32000 次请求全砸向 `hot-1`",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "4 个线程各读 8000 次同一个热点 Key，观察单分片锁的争抢与耗时。",
+            "actors": [
+              "线程 A",
+              "线程 B"
+            ],
+            "shared": "Shard_0 单分片"
+          },
+          "say": "4 个线程各读 8000 次同一个热点 Key，观察单分片锁的争抢与耗时。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `SingleShard`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_hotkey.SingleShard",
+          "say": "这就是最常见的基线写法 `SingleShard`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`SingleShard` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`SingleShard` 下 4 个线程并发读 `hot-1`，单分片会被打多少次？",
+          "options": [
+            "32000 次全部挤在同一个分片",
+            "自动平均分摊到 4 个分片",
+            "只查 1 次"
+          ],
+          "answer": 0,
+          "say": "全量 32000 次请求排成一队挤进同一把分片锁。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`SingleShard` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_hotkey",
+          "show": [
+            "SingleShard"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "shardLock.lock();"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `SingleShard` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_hotkey.SingleShard",
+          "lines": [
+            "shardLock.lock();"
+          ],
+          "say": "所有线程都去抢同一把 `shardLock`，线程越多排队越惨。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "CRC16(hot-1) -> Shard_0",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "线程 A",
+            "线程 B"
+          ],
+          "shared": {
+            "name": "Shard_0 单分片",
+            "start": "独占锁"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "A 锁住 Shard_0 读 hot-1",
+              "say": "线程 A 路由到 Shard_0 并占住单线程处理。"
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "B 也路由到 Shard_0 被阻塞",
+              "say": "尽管集群还有 15 个空闲分片，B 还是只能老实等 Shard_0。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `LocalL1Cache`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "加上进程内 `LocalL1Cache`（每 500 次过期刷新）后，分片命中和耗时会怎样？",
+          "options": [
+            "分片命中骤降 99% 以上，耗时大幅跳水",
+            "分片命中不变",
+            "耗时变得更慢"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`SingleShard` vs `LocalL1Cache`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_hotkey",
+          "show": [
+            "SingleShard",
+            "LocalL1Cache"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `LocalL1Cache` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_hotkey.LocalL1Cache",
+          "within": "readHot(java.lang.String)",
+          "from": "0: getstatic",
+          "to": "areturn",
+          "say": "看 `LocalL1Cache.readHot`：先查无锁高并发 `l1.get`，命中直接返回，根本不走 `shardLock`。",
+          "walk": [
+            {
+              "focus": [
+                "ConcurrentHashMap.get"
+              ],
+              "label": "本地内存拦截",
+              "say": "连网络 RTT 都省了，单机吞吐直接起飞。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`ShardedKeyCopy` 与 `AdaptiveLocalCache`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_hotkey",
+          "show": [
+            "SingleShard",
+            "LocalL1Cache",
+            "ShardedKeyCopy",
+            "AdaptiveLocalCache"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_hotkey",
+          "variants": [
+            "SingleShard",
+            "LocalL1Cache",
+            "ShardedKeyCopy",
+            "AdaptiveLocalCache"
+          ],
+          "notes": [
+            {
+              "focus": "SingleShard",
+              "key": "单分片随线程数增加锁争抢加剧，耗时一路走高",
+              "say": "单分片硬扛在 8 线程下排队最惨。"
+            },
+            {
+              "focus": "LocalL1Cache",
+              "key": "本地 L1 缓存把耗时压到极低且几乎不随线程数恶化",
+              "say": "LocalL1Cache 省掉了跨分片锁和网络开销，性能提升数倍。"
+            },
+            {
+              "focus": "ShardedKeyCopy",
+              "key": "Key 多副本拆分把单分片命中压低 16 倍",
+              "say": "ShardedKeyCopy 适合不方便加本地缓存、但必须把流量均匀摊到集群各节点的场景。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `AdaptiveLocalCache` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_hotkey.AdaptiveLocalCache",
+          "within": "readHot(java.lang.String)",
+          "from": "0: getstatic",
+          "to": "areturn",
+          "say": "看 `AdaptiveLocalCache.readHot`：L1 未命中时用 `ThreadLocalRandom` 把请求散列到 16 个分片副本，连回源都彻底打散。",
+          "walk": [
+            {
+              "focus": [
+                "ThreadLocalRandom"
+              ],
+              "label": "L1 + 分片双层打散",
+              "key": "L1 抗住绝大部分读，偶发回源也分散到多节点",
+              "say": "既省网络又防单分片被打穿。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "本地 L1 二级缓存",
+              "solves": "拦截 95%+ 热点读并省掉网络 RTT",
+              "cost": "约 {ms:m6_hotkey.LocalL1Cache} ms，各机器本地内存短暂不一致",
+              "when": "读多写少、容忍秒级延迟的热点（热搜、配置、爆款详情）",
+              "say": "最常用解法：配合热点探测组件（如京东 hotkey）动态推本地缓存。"
+            },
+            {
+              "name": "Key 多副本拆分",
+              "solves": "不改本地内存也能把单分片流量均摊到 N 台节点",
+              "cost": "约 {ms:m6_hotkey.ShardedKeyCopy} ms，写操作要同步写 N 份副本",
+              "when": "写入极少、单机内存放不下或要求直连 Redis 读",
+              "say": "如果 Key 经常写，维护 N 份副本的同步成本会比较高。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "治理单 Key 热点倾斜，先看哪两个条件？",
+          "branches": [
+            {
+              "when": "应用机本地内存放得下且容忍秒级延迟",
+              "pick": "本地 L1 二级缓存",
+              "eg": "Caffeine + 动态热点探测"
+            },
+            {
+              "when": "必须直连 Redis 且写入极少",
+              "pick": "Key 加随机后缀多副本拆分",
+              "eg": "hot#0 ~ hot#15"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "本地 L1 二级缓存",
+            "Key 多副本拆分"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "全网直播间同时抢同一个 1KB 活动规则 JSON，应用有 50 台机器。",
+              "answer": 0,
+              "why": "1KB 数据直接放进 50 台机器本地 L1 缓存，瞬间扛住百万 QPS。"
+            },
+            {
+              "text": "某共享计数配置几乎不修改，但客户端必须每次直连 Redis 集群读，单分片已满载。",
+              "answer": 1,
+              "why": "把 Key 拆成 16 份副本，客户端随机拼后缀读取，立刻分摊到 16 个分片。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：热点 Key 治理",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "热点 Key 治理",
+          "alias": "Hot Key · Local L1 Cache + Key Sharding",
+          "oneLine": "==热点探测 + 本地 L1 缓存==拦截绝大部分读，或==Key 多副本拆分==把单分片流量打散。",
+          "asked": [
+            "怎么发现线上突然出现的热点 Key？",
+            "本地缓存和 Redis 之间一致性怎么同步？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么增加 Redis Cluster 分片数量不能解决单个热点 Key 的 CPU 飙高？",
+          "options": [
+            {
+              "text": "因为同一个 Key 经过 CRC16 哈希后永远路由到同一个分片",
+              "ok": true,
+              "why": "所有流量还是只打那一个节点。"
+            },
+            {
+              "text": "因为 Redis Cluster 最多只支持 2 个分片",
+              "ok": false,
+              "why": "Redis Cluster 有 16384 个槽，只是单 Key 只占一个槽。"
+            }
+          ],
+          "say": "看清哈希分片的局限性。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "把热点 Key 拆成 16 份副本（`key#0`~`key#15`）有什么明显副作用？",
+          "options": [
+            {
+              "text": "每次更新数据需要同时修改 16 份副本，写放大且可能短暂不一致",
+              "ok": true,
+              "why": "所以拆分副本只适合读极多、写极少的场景。"
+            },
+            {
+              "text": "会导致 Redis 无法持久化",
+              "ok": false,
+              "why": "不影响持久化。"
+            }
+          ],
+          "say": "记住读写代价的权衡。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "工程上如何低成本发现突发的热点 Key？",
+          "options": [
+            {
+              "text": "客户端本地滑动窗口计数统计 / Redis 4.0+ `redis-cli --hotkeys` / 代理层监控",
+              "ok": true,
+              "why": "客户端侧采样统计几乎零侵入且实时性最高。"
+            },
+            {
+              "text": "人工每天翻业务日志猜",
+              "ok": false,
+              "why": "突发热点等人工看日志早就宕机了。"
+            }
+          ],
+          "say": "先发现，再治理。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "Redis 集群里出现单热点 Key 倾斜怎么办？本地缓存和 Key 拆分怎么选？",
+          "points": [
+            "原因：同一 Key 固定哈希到单分片，扩容分片也无法分摊",
+            "发现：客户端采样统计、代理层统计或 hotkeys 扫描",
+            "解法一：热点探测 + JVM 本地 L1 二级缓存，省掉网络 RTT 并抗住 95%+ 流量",
+            "解法二：Key 拼随机后缀拆成多副本散落多节点，适合极少写的共享数据"
+          ],
+          "model": "Redis 集群中，同一个 Key 会通过 CRC16 固定路由到唯一一个分片上，所以单热点 Key 会打爆单节点 CPU 而其余分片空闲。治理分两步：首先通过客户端本地采样或代理层监控实时发现热点 Key；接着主流解法是引入进程内本地二级缓存（如 Caffeine），将热点数据缓存在应用内存中，直接拦截绝大部分读流量并省去网络 RTT，配合短 TTL 或广播通知保持最终一致；如果数据极少修改且必须直连 Redis，也可以把 Key 拆成多个带随机后缀的副本散落到不同分片，读取时随机挑选副本。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "为什么集群扩容救不了单热点 Key？",
+              "a": "单 Key 哈希槽固定，所有请求仍集中在同一个主分片。"
+            },
+            {
+              "q": "首选治理手段？",
+              "a": "动态热点探测 + 本地 L1 二级缓存（Caffeine）。"
+            },
+            {
+              "q": "Key 多副本拆分的适用边界？",
+              "a": "读极多写极少，否则更新 N 份副本写放大严重。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

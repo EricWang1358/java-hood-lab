@@ -815,6 +815,87 @@
         </a>
         </div>
       </section>
+
+      <section class="chapter" data-ch="m6">
+        <div class="chapter__head">
+          <h2>模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-06）</h2>
+          <p>纯 JDK 零依赖仿真实验室：直击缓存穿透、击穿、雪崩、双写一致性、热点 Key 倾斜与 BigKey/Pipeline 代价。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/m6-cache-penetration.html" data-ch="m6" data-search="m6-01 m6-cache-penetration 不存在的 id 疯狂查库：缓存穿透怎么挡？ 恶意或异常请求专查根本不存在的 id，缓存与数据库双双未命中，每次都直穿到底层 db。 lab.m6.penetration">
+          <div class="card__top">
+            <span class="card__num">#M6-01</span>
+            <span class="card__pkg">lab.m6.penetration</span>
+          </div>
+          <h3 class="card__title">不存在的 ID 疯狂查库：缓存穿透怎么挡？</h3>
+          <p class="card__lead">恶意或异常请求专查根本不存在的 ID，缓存与数据库双双未命中，每次都直穿到底层 DB。</p>
+          <div class="card__foot">
+            <span>22 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/m6-cache-breakdown.html" data-ch="m6" data-search="m6-02 m6-cache-breakdown 热点 key 过期瞬间：互斥锁 vs 逻辑过期 某个爆款热点 key 到点过期的一瞬间，成百上千并发请求同时 miss 挤向数据库，到底该排队等锁还是直接返回旧值？ lab.m6.breakdown">
+          <div class="card__top">
+            <span class="card__num">#M6-02</span>
+            <span class="card__pkg">lab.m6.breakdown</span>
+          </div>
+          <h3 class="card__title">热点 Key 过期瞬间：互斥锁 vs 逻辑过期</h3>
+          <p class="card__lead">某个爆款热点 Key 到点过期的一瞬间，成百上千并发请求同时 miss 挤向数据库，到底该排队等锁还是直接返回旧值？</p>
+          <div class="card__foot">
+            <span>22 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/m6-cache-avalanche.html" data-ch="m6" data-search="m6-03 m6-cache-avalanche 整点批量过期：为什么缓存雪崩打垮库？ 初始化缓存时给大量 key 统一设死 ttl，到点集体失效，数据库峰值 qps 瞬间打穿安全线。 lab.m6.avalanche">
+          <div class="card__top">
+            <span class="card__num">#M6-03</span>
+            <span class="card__pkg">lab.m6.avalanche</span>
+          </div>
+          <h3 class="card__title">整点批量过期：为什么缓存雪崩打垮库？</h3>
+          <p class="card__lead">初始化缓存时给大量 Key 统一设死 TTL，到点集体失效，数据库峰值 QPS 瞬间打穿安全线。</p>
+          <div class="card__foot">
+            <span>22 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/m6-cache-consistency.html" data-ch="m6" data-search="m6-04 m6-cache-consistency 先删缓存还是先改库？并发读写脏数据现场 更新数据时先删缓存还是先改库？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。 lab.m6.consistency">
+          <div class="card__top">
+            <span class="card__num">#M6-04</span>
+            <span class="card__pkg">lab.m6.consistency</span>
+          </div>
+          <h3 class="card__title">先删缓存还是先改库？并发读写脏数据现场</h3>
+          <p class="card__lead">更新数据时先删缓存还是先改库？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。</p>
+          <div class="card__foot">
+            <span>22 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/m6-hotkey-split.html" data-ch="m6" data-search="m6-05 m6-hotkey-split 顶流热点 key 打爆单分片：本地二级缓存与 key 拆分 就算 redis 搭了 16 个分片集群，某一个顶流热搜 key 还是只会落到其中 1 个分片上，把单分片打满。 lab.m6.hotkey">
+          <div class="card__top">
+            <span class="card__num">#M6-05</span>
+            <span class="card__pkg">lab.m6.hotkey</span>
+          </div>
+          <h3 class="card__title">顶流热点 Key 打爆单分片：本地二级缓存与 Key 拆分</h3>
+          <p class="card__lead">就算 Redis 搭了 16 个分片集群，某一个顶流热搜 Key 还是只会落到其中 1 个分片上，把单分片打满。</p>
+          <div class="card__foot">
+            <span>22 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/m6-bigkey-pipeline.html" data-ch="m6" data-search="m6-06 m6-bigkey-pipeline bigkey 阻塞单线程 + pipeline 批量往返代价 一次查 40 条数据，循环单发和 pipeline 差多少？大 key 又是怎么把单线程卡死的？ lab.m6.bigkey">
+          <div class="card__top">
+            <span class="card__num">#M6-06</span>
+            <span class="card__pkg">lab.m6.bigkey</span>
+          </div>
+          <h3 class="card__title">BigKey 阻塞单线程 + Pipeline 批量往返代价</h3>
+          <p class="card__lead">一次查 40 条数据，循环单发和 Pipeline 差多少？大 Key 又是怎么把单线程卡死的？</p>
+          <div class="card__foot">
+            <span>22 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
     </main>
 
     <div class="empty" id="emptyState" hidden>没有找到匹配的课程，试试换一个关键词或切回「全部」。</div>

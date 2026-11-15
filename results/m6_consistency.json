@@ -1,0 +1,1665 @@
+{
+ "id": "m6_consistency",
+ "variants": {
+  "CacheFirstThenDb": {
+   "hash": "26bff659f87bf345",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "staleReads": 64,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 61,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 58,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 62,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 63,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 60,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 53,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 63,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 61,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 58,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "staleReads": 71,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 66,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "staleReads": 60,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "staleReads": 59,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 61,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 64,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 54,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 59,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "staleReads": 54,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "staleReads": 59,
+      "expected": 0,
+      "ms": 45
+     }
+    ],
+    "2": [
+     {
+      "staleReads": 60,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 58,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 60,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "staleReads": 69,
+      "expected": 0,
+      "ms": 56
+     },
+     {
+      "staleReads": 72,
+      "expected": 0,
+      "ms": 57
+     },
+     {
+      "staleReads": 69,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "staleReads": 55,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 57,
+      "expected": 0,
+      "ms": 49
+     },
+     {
+      "staleReads": 61,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 62,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 69,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 56,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "staleReads": 53,
+      "expected": 0,
+      "ms": 50
+     },
+     {
+      "staleReads": 67,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "staleReads": 68,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 66,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 62,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "staleReads": 60,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 63,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 72,
+      "expected": 0,
+      "ms": 43
+     }
+    ],
+    "4": [
+     {
+      "staleReads": 59,
+      "expected": 0,
+      "ms": 67
+     },
+     {
+      "staleReads": 44,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "staleReads": 56,
+      "expected": 0,
+      "ms": 74
+     },
+     {
+      "staleReads": 51,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "staleReads": 52,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "staleReads": 58,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 53,
+      "expected": 0,
+      "ms": 67
+     },
+     {
+      "staleReads": 55,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 57,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 50,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "staleReads": 54,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 62,
+      "expected": 0,
+      "ms": 64
+     },
+     {
+      "staleReads": 66,
+      "expected": 0,
+      "ms": 67
+     },
+     {
+      "staleReads": 59,
+      "expected": 0,
+      "ms": 83
+     },
+     {
+      "staleReads": 51,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 55,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 53,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 58,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 61,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 52,
+      "expected": 0,
+      "ms": 67
+     }
+    ],
+    "8": [
+     {
+      "staleReads": 50,
+      "expected": 0,
+      "ms": 107
+     },
+     {
+      "staleReads": 51,
+      "expected": 0,
+      "ms": 108
+     },
+     {
+      "staleReads": 56,
+      "expected": 0,
+      "ms": 109
+     },
+     {
+      "staleReads": 54,
+      "expected": 0,
+      "ms": 109
+     },
+     {
+      "staleReads": 64,
+      "expected": 0,
+      "ms": 110
+     },
+     {
+      "staleReads": 56,
+      "expected": 0,
+      "ms": 116
+     },
+     {
+      "staleReads": 53,
+      "expected": 0,
+      "ms": 110
+     },
+     {
+      "staleReads": 55,
+      "expected": 0,
+      "ms": 103
+     },
+     {
+      "staleReads": 52,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "staleReads": 52,
+      "expected": 0,
+      "ms": 107
+     },
+     {
+      "staleReads": 47,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "staleReads": 55,
+      "expected": 0,
+      "ms": 105
+     },
+     {
+      "staleReads": 54,
+      "expected": 0,
+      "ms": 105
+     },
+     {
+      "staleReads": 53,
+      "expected": 0,
+      "ms": 106
+     },
+     {
+      "staleReads": 45,
+      "expected": 0,
+      "ms": 113
+     },
+     {
+      "staleReads": 54,
+      "expected": 0,
+      "ms": 108
+     },
+     {
+      "staleReads": 50,
+      "expected": 0,
+      "ms": 106
+     },
+     {
+      "staleReads": 53,
+      "expected": 0,
+      "ms": 113
+     },
+     {
+      "staleReads": 59,
+      "expected": 0,
+      "ms": 109
+     },
+     {
+      "staleReads": 60,
+      "expected": 0,
+      "ms": 110
+     }
+    ]
+   },
+   "inside": "Compiled from \"CacheFirstThenDb.java\"\npublic class lab.m6.consistency.CacheFirstThenDb {\n  static final int ROUNDS;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.Integer> db;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.Integer> cache;\n\n  static final java.util.concurrent.atomic.AtomicInteger staleReads;\n\n  public lab.m6.consistency.CacheFirstThenDb();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void spin(int);\n    Code:\n       0: iload_0\n       1: i2l\n       2: lstore_1\n       3: iconst_0\n       4: istore_3\n       5: iload_3\n       6: iload_0\n       7: if_icmpge     25\n      10: lload_1\n      11: ldc2_w        #7                  // long 31l\n      14: lmul\n      15: iload_3\n      16: i2l\n      17: ladd\n      18: lstore_1\n      19: iinc          3, 1\n      22: goto          5\n      25: lload_1\n      26: ldc2_w        #9                  // long 42l\n      29: lcmp\n      30: ifne          41\n      33: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      36: ldc           #17                 // String\n      38: invokevirtual #19                 // Method java/io/PrintStream.print:(Ljava/lang/String;)V\n      41: return\n\n  static void writeUpdate(int);\n    Code:\n       0: getstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n       3: ldc           #31                 // String k\n       5: invokevirtual #33                 // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;\n       8: pop\n       9: sipush        25000\n      12: invokestatic  #39                 // Method spin:(I)V\n      15: getstatic     #43                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      18: ldc           #31                 // String k\n      20: iload_0\n      21: invokestatic  #46                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      24: invokevirtual #52                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      27: pop\n      28: return\n\n  static int readQuery();\n    Code:\n       0: getstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n       3: ldc           #31                 // String k\n       5: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n       8: checkcast     #47                 // class java/lang/Integer\n      11: astore_0\n      12: aload_0\n      13: ifnull        21\n      16: aload_0\n      17: invokevirtual #59                 // Method java/lang/Integer.intValue:()I\n      20: ireturn\n      21: getstatic     #43                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      24: ldc           #31                 // String k\n      26: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n      29: checkcast     #47                 // class java/lang/Integer\n      32: invokevirtual #59                 // Method java/lang/Integer.intValue:()I\n      35: istore_1\n      36: sipush        15000\n      39: invokestatic  #39                 // Method spin:(I)V\n      42: getstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      45: ldc           #31                 // String k\n      47: iload_1\n      48: invokestatic  #46                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      51: invokevirtual #52                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      54: pop\n      55: iload_1\n      56: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #63                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iconst_1\n       8: iload_1\n       9: iconst_1\n      10: isub\n      11: invokestatic  #67                 // Method java/lang/Math.max:(II)I\n      14: istore_2\n      15: new           #73                 // class java/util/concurrent/CyclicBarrier\n      18: dup\n      19: iload_2\n      20: iconst_1\n      21: iadd\n      22: invokespecial #75                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      25: astore_3\n      26: invokestatic  #77                 // Method java/lang/System.nanoTime:()J\n      29: lstore        4\n      31: iconst_1\n      32: istore        6\n      34: iload         6\n      36: bipush        80\n      38: if_icmpgt     235\n      41: iload         6\n      43: istore        7\n      45: getstatic     #43                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      48: ldc           #31                 // String k\n      50: iload         6\n      52: iconst_1\n      53: isub\n      54: invokestatic  #46                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      57: invokevirtual #52                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      60: pop\n      61: getstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      64: ldc           #31                 // String k\n      66: iload         6\n      68: iconst_1\n      69: isub\n      70: invokestatic  #46                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      73: invokevirtual #52                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      76: pop\n      77: new           #81                 // class java/lang/Thread\n      80: dup\n      81: aload_3\n      82: iload         7\n      84: invokedynamic #83,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;I)Ljava/lang/Runnable;\n      89: invokespecial #87                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      92: astore        8\n      94: iload_2\n      95: anewarray     #81                 // class java/lang/Thread\n      98: astore        9\n     100: iconst_0\n     101: istore        10\n     103: iload         10\n     105: iload_2\n     106: if_icmpge     141\n     109: aload         9\n     111: iload         10\n     113: new           #81                 // class java/lang/Thread\n     116: dup\n     117: aload_3\n     118: invokedynamic #90,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n     123: invokespecial #87                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n     126: aastore\n     127: aload         9\n     129: iload         10\n     131: aaload\n     132: invokevirtual #93                 // Method java/lang/Thread.start:()V\n     135: iinc          10, 1\n     138: goto          103\n     141: aload         8\n     143: invokevirtual #93                 // Method java/lang/Thread.start:()V\n     146: aload         8\n     148: invokevirtual #96                 // Method java/lang/Thread.join:()V\n     151: aload         9\n     153: astore        10\n     155: aload         10\n     157: arraylength\n     158: istore        11\n     160: iconst_0\n     161: istore        12\n     163: iload         12\n     165: iload         11\n     167: if_icmpge     188\n     170: aload         10\n     172: iload         12\n     174: aaload\n     175: astore        13\n     177: aload         13\n     179: invokevirtual #96                 // Method java/lang/Thread.join:()V\n     182: iinc          12, 1\n     185: goto          163\n     188: getstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n     191: ldc           #31                 // String k\n     193: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     196: checkcast     #47                 // class java/lang/Integer\n     199: astore        10\n     201: aload         10\n     203: ifnull        229\n     206: aload         10\n     208: getstatic     #43                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n     211: ldc           #31                 // String k\n     213: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     216: invokevirtual #99                 // Method java/lang/Integer.equals:(Ljava/lang/Object;)Z\n     219: ifne          229\n     222: getstatic     #103                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n     225: invokevirtual #107                // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n     228: pop\n     229: iinc          6, 1\n     232: goto          34\n     235: invokestatic  #77                 // Method java/lang/System.nanoTime:()J\n     238: lload         4\n     240: lsub\n     241: ldc2_w        #112                // long 1000000l\n     244: ldiv\n     245: lstore        6\n     247: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     250: getstatic     #103                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n     253: invokevirtual #114                // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     256: invokedynamic #116,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     261: invokevirtual #120                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     264: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     267: ldc           #123                // String expected=0\n     269: invokevirtual #120                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     272: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     275: lload         6\n     277: invokedynamic #125,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     282: invokevirtual #120                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     285: return\n\n  private static void lambda$main$1(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #128                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: invokestatic  #131                // Method readQuery:()I\n       8: pop\n       9: goto          22\n      12: astore_1\n      13: new           #136                // class java/lang/RuntimeException\n      16: dup\n      17: aload_1\n      18: invokespecial #138                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      21: athrow\n      22: return\n    Exception table:\n       from    to  target type\n           0     9    12   Class java/lang/Exception\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, int);\n    Code:\n       0: aload_0\n       1: invokevirtual #128                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iload_1\n       6: invokestatic  #141                // Method writeUpdate:(I)V\n       9: goto          22\n      12: astore_2\n      13: new           #136                // class java/lang/RuntimeException\n      16: dup\n      17: aload_2\n      18: invokespecial #138                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      21: athrow\n      22: return\n    Exception table:\n       from    to  target type\n           0     9    12   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #34                 // class java/util/concurrent/ConcurrentHashMap\n       3: dup\n       4: invokespecial #144                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n       7: putstatic     #43                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      10: new           #34                 // class java/util/concurrent/ConcurrentHashMap\n      13: dup\n      14: invokespecial #144                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n      17: putstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      20: new           #108                // class java/util/concurrent/atomic/AtomicInteger\n      23: dup\n      24: invokespecial #145                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      27: putstatic     #103                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n      30: return\n}\n"
+  },
+  "DbFirstThenCache": {
+   "hash": "5aded24f16f016c0",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 5,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 12,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "staleReads": 7,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 35
+     },
+     {
+      "staleReads": 4,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 11,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 5,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "staleReads": 4,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 6,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 41
+     }
+    ],
+    "2": [
+     {
+      "staleReads": 4,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "staleReads": 4,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "staleReads": 4,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 8,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 5,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 5,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "staleReads": 4,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 4,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 8,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 5,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 4,
+      "expected": 0,
+      "ms": 41
+     }
+    ],
+    "4": [
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 66
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 73
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 4,
+      "expected": 0,
+      "ms": 66
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 71
+     }
+    ],
+    "8": [
+     {
+      "staleReads": 5,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 112
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 119
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "staleReads": 4,
+      "expected": 0,
+      "ms": 106
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 114
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 112
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 112
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 114
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 105
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 106
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 113
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 116
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 107
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 113
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 109
+     },
+     {
+      "staleReads": 3,
+      "expected": 0,
+      "ms": 113
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 107
+     },
+     {
+      "staleReads": 2,
+      "expected": 0,
+      "ms": 110
+     }
+    ]
+   },
+   "inside": "Compiled from \"DbFirstThenCache.java\"\npublic class lab.m6.consistency.DbFirstThenCache {\n  static final int ROUNDS;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.Integer> db;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.Integer> cache;\n\n  static final java.util.concurrent.atomic.AtomicInteger staleReads;\n\n  public lab.m6.consistency.DbFirstThenCache();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void spin(int);\n    Code:\n       0: iload_0\n       1: i2l\n       2: lstore_1\n       3: iconst_0\n       4: istore_3\n       5: iload_3\n       6: iload_0\n       7: if_icmpge     25\n      10: lload_1\n      11: ldc2_w        #7                  // long 31l\n      14: lmul\n      15: iload_3\n      16: i2l\n      17: ladd\n      18: lstore_1\n      19: iinc          3, 1\n      22: goto          5\n      25: lload_1\n      26: ldc2_w        #9                  // long 42l\n      29: lcmp\n      30: ifne          41\n      33: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      36: ldc           #17                 // String\n      38: invokevirtual #19                 // Method java/io/PrintStream.print:(Ljava/lang/String;)V\n      41: return\n\n  static void writeUpdate(int);\n    Code:\n       0: sipush        5000\n       3: invokestatic  #25                 // Method spin:(I)V\n       6: getstatic     #31                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n       9: ldc           #35                 // String k\n      11: iload_0\n      12: invokestatic  #37                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      15: invokevirtual #43                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      18: pop\n      19: sipush        10000\n      22: invokestatic  #25                 // Method spin:(I)V\n      25: getstatic     #49                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      28: ldc           #35                 // String k\n      30: invokevirtual #52                 // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;\n      33: pop\n      34: return\n\n  static int readQuery();\n    Code:\n       0: getstatic     #49                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n       3: ldc           #35                 // String k\n       5: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n       8: checkcast     #38                 // class java/lang/Integer\n      11: astore_0\n      12: aload_0\n      13: ifnull        21\n      16: aload_0\n      17: invokevirtual #59                 // Method java/lang/Integer.intValue:()I\n      20: ireturn\n      21: getstatic     #31                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      24: ldc           #35                 // String k\n      26: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n      29: checkcast     #38                 // class java/lang/Integer\n      32: invokevirtual #59                 // Method java/lang/Integer.intValue:()I\n      35: istore_1\n      36: sipush        25000\n      39: invokestatic  #25                 // Method spin:(I)V\n      42: getstatic     #49                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      45: ldc           #35                 // String k\n      47: iload_1\n      48: invokestatic  #37                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      51: invokevirtual #43                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      54: pop\n      55: iload_1\n      56: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #63                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iconst_1\n       8: iload_1\n       9: iconst_1\n      10: isub\n      11: invokestatic  #67                 // Method java/lang/Math.max:(II)I\n      14: istore_2\n      15: new           #73                 // class java/util/concurrent/CyclicBarrier\n      18: dup\n      19: iload_2\n      20: iconst_1\n      21: iadd\n      22: invokespecial #75                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      25: astore_3\n      26: invokestatic  #77                 // Method java/lang/System.nanoTime:()J\n      29: lstore        4\n      31: iconst_1\n      32: istore        6\n      34: iload         6\n      36: bipush        80\n      38: if_icmpgt     228\n      41: iload         6\n      43: istore        7\n      45: getstatic     #31                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      48: ldc           #35                 // String k\n      50: iload         6\n      52: iconst_1\n      53: isub\n      54: invokestatic  #37                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      57: invokevirtual #43                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      60: pop\n      61: getstatic     #49                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      64: ldc           #35                 // String k\n      66: invokevirtual #52                 // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;\n      69: pop\n      70: new           #81                 // class java/lang/Thread\n      73: dup\n      74: aload_3\n      75: iload         7\n      77: invokedynamic #83,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;I)Ljava/lang/Runnable;\n      82: invokespecial #87                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      85: astore        8\n      87: iload_2\n      88: anewarray     #81                 // class java/lang/Thread\n      91: astore        9\n      93: iconst_0\n      94: istore        10\n      96: iload         10\n      98: iload_2\n      99: if_icmpge     134\n     102: aload         9\n     104: iload         10\n     106: new           #81                 // class java/lang/Thread\n     109: dup\n     110: aload_3\n     111: invokedynamic #90,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n     116: invokespecial #87                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n     119: aastore\n     120: aload         9\n     122: iload         10\n     124: aaload\n     125: invokevirtual #93                 // Method java/lang/Thread.start:()V\n     128: iinc          10, 1\n     131: goto          96\n     134: aload         8\n     136: invokevirtual #93                 // Method java/lang/Thread.start:()V\n     139: aload         8\n     141: invokevirtual #96                 // Method java/lang/Thread.join:()V\n     144: aload         9\n     146: astore        10\n     148: aload         10\n     150: arraylength\n     151: istore        11\n     153: iconst_0\n     154: istore        12\n     156: iload         12\n     158: iload         11\n     160: if_icmpge     181\n     163: aload         10\n     165: iload         12\n     167: aaload\n     168: astore        13\n     170: aload         13\n     172: invokevirtual #96                 // Method java/lang/Thread.join:()V\n     175: iinc          12, 1\n     178: goto          156\n     181: getstatic     #49                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n     184: ldc           #35                 // String k\n     186: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     189: checkcast     #38                 // class java/lang/Integer\n     192: astore        10\n     194: aload         10\n     196: ifnull        222\n     199: aload         10\n     201: getstatic     #31                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n     204: ldc           #35                 // String k\n     206: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     209: invokevirtual #99                 // Method java/lang/Integer.equals:(Ljava/lang/Object;)Z\n     212: ifne          222\n     215: getstatic     #103                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n     218: invokevirtual #107                // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n     221: pop\n     222: iinc          6, 1\n     225: goto          34\n     228: invokestatic  #77                 // Method java/lang/System.nanoTime:()J\n     231: lload         4\n     233: lsub\n     234: ldc2_w        #112                // long 1000000l\n     237: ldiv\n     238: lstore        6\n     240: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     243: getstatic     #103                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n     246: invokevirtual #114                // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     249: invokedynamic #116,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     254: invokevirtual #120                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     257: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     260: ldc           #123                // String expected=0\n     262: invokevirtual #120                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     265: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     268: lload         6\n     270: invokedynamic #125,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     275: invokevirtual #120                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     278: return\n\n  private static void lambda$main$1(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #128                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: invokestatic  #131                // Method readQuery:()I\n       8: pop\n       9: goto          22\n      12: astore_1\n      13: new           #136                // class java/lang/RuntimeException\n      16: dup\n      17: aload_1\n      18: invokespecial #138                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      21: athrow\n      22: return\n    Exception table:\n       from    to  target type\n           0     9    12   Class java/lang/Exception\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, int);\n    Code:\n       0: aload_0\n       1: invokevirtual #128                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iload_1\n       6: invokestatic  #141                // Method writeUpdate:(I)V\n       9: goto          22\n      12: astore_2\n      13: new           #136                // class java/lang/RuntimeException\n      16: dup\n      17: aload_2\n      18: invokespecial #138                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      21: athrow\n      22: return\n    Exception table:\n       from    to  target type\n           0     9    12   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #44                 // class java/util/concurrent/ConcurrentHashMap\n       3: dup\n       4: invokespecial #144                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n       7: putstatic     #31                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      10: new           #44                 // class java/util/concurrent/ConcurrentHashMap\n      13: dup\n      14: invokespecial #144                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n      17: putstatic     #49                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      20: new           #108                // class java/util/concurrent/atomic/AtomicInteger\n      23: dup\n      24: invokespecial #145                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      27: putstatic     #103                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n      30: return\n}\n"
+  },
+  "DelayedDoubleDelete": {
+   "hash": "993a6ff4561b0ba6",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 66
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 40
+     }
+    ],
+    "2": [
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 49
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 57
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     }
+    ],
+    "4": [
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 66
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 73
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 73
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 99
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 73
+     }
+    ],
+    "8": [
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 127
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 130
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 169
+     },
+     {
+      "staleReads": 1,
+      "expected": 0,
+      "ms": 135
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 105
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 108
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 112
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 113
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 109
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 115
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 114
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 112
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 116
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 139
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 114
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 124
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 113
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 101
+     }
+    ]
+   },
+   "inside": "Compiled from \"DelayedDoubleDelete.java\"\npublic class lab.m6.consistency.DelayedDoubleDelete {\n  static final int ROUNDS;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.Integer> db;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.Integer> cache;\n\n  static final java.util.concurrent.atomic.AtomicInteger staleReads;\n\n  public lab.m6.consistency.DelayedDoubleDelete();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void spin(int);\n    Code:\n       0: iload_0\n       1: i2l\n       2: lstore_1\n       3: iconst_0\n       4: istore_3\n       5: iload_3\n       6: iload_0\n       7: if_icmpge     25\n      10: lload_1\n      11: ldc2_w        #7                  // long 31l\n      14: lmul\n      15: iload_3\n      16: i2l\n      17: ladd\n      18: lstore_1\n      19: iinc          3, 1\n      22: goto          5\n      25: lload_1\n      26: ldc2_w        #9                  // long 42l\n      29: lcmp\n      30: ifne          41\n      33: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      36: ldc           #17                 // String\n      38: invokevirtual #19                 // Method java/io/PrintStream.print:(Ljava/lang/String;)V\n      41: return\n\n  static void writeUpdate(int);\n    Code:\n       0: getstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n       3: ldc           #31                 // String k\n       5: invokevirtual #33                 // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;\n       8: pop\n       9: getstatic     #39                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      12: ldc           #31                 // String k\n      14: iload_0\n      15: invokestatic  #42                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      18: invokevirtual #48                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      21: pop\n      22: ldc           #52                 // int 35000\n      24: invokestatic  #53                 // Method spin:(I)V\n      27: getstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      30: ldc           #31                 // String k\n      32: invokevirtual #33                 // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;\n      35: pop\n      36: return\n\n  static int readQuery();\n    Code:\n       0: getstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n       3: ldc           #31                 // String k\n       5: invokevirtual #57                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n       8: checkcast     #43                 // class java/lang/Integer\n      11: astore_0\n      12: aload_0\n      13: ifnull        21\n      16: aload_0\n      17: invokevirtual #60                 // Method java/lang/Integer.intValue:()I\n      20: ireturn\n      21: getstatic     #39                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      24: ldc           #31                 // String k\n      26: invokevirtual #57                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n      29: checkcast     #43                 // class java/lang/Integer\n      32: invokevirtual #60                 // Method java/lang/Integer.intValue:()I\n      35: istore_1\n      36: sipush        15000\n      39: invokestatic  #53                 // Method spin:(I)V\n      42: getstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      45: ldc           #31                 // String k\n      47: iload_1\n      48: invokestatic  #42                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      51: invokevirtual #48                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      54: pop\n      55: iload_1\n      56: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #64                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iconst_1\n       8: iload_1\n       9: iconst_1\n      10: isub\n      11: invokestatic  #68                 // Method java/lang/Math.max:(II)I\n      14: istore_2\n      15: new           #74                 // class java/util/concurrent/CyclicBarrier\n      18: dup\n      19: iload_2\n      20: iconst_1\n      21: iadd\n      22: invokespecial #76                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      25: astore_3\n      26: invokestatic  #78                 // Method java/lang/System.nanoTime:()J\n      29: lstore        4\n      31: iconst_1\n      32: istore        6\n      34: iload         6\n      36: bipush        80\n      38: if_icmpgt     235\n      41: iload         6\n      43: istore        7\n      45: getstatic     #39                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      48: ldc           #31                 // String k\n      50: iload         6\n      52: iconst_1\n      53: isub\n      54: invokestatic  #42                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      57: invokevirtual #48                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      60: pop\n      61: getstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      64: ldc           #31                 // String k\n      66: iload         6\n      68: iconst_1\n      69: isub\n      70: invokestatic  #42                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      73: invokevirtual #48                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      76: pop\n      77: new           #82                 // class java/lang/Thread\n      80: dup\n      81: aload_3\n      82: iload         7\n      84: invokedynamic #84,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;I)Ljava/lang/Runnable;\n      89: invokespecial #88                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      92: astore        8\n      94: iload_2\n      95: anewarray     #82                 // class java/lang/Thread\n      98: astore        9\n     100: iconst_0\n     101: istore        10\n     103: iload         10\n     105: iload_2\n     106: if_icmpge     141\n     109: aload         9\n     111: iload         10\n     113: new           #82                 // class java/lang/Thread\n     116: dup\n     117: aload_3\n     118: invokedynamic #91,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n     123: invokespecial #88                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n     126: aastore\n     127: aload         9\n     129: iload         10\n     131: aaload\n     132: invokevirtual #94                 // Method java/lang/Thread.start:()V\n     135: iinc          10, 1\n     138: goto          103\n     141: aload         8\n     143: invokevirtual #94                 // Method java/lang/Thread.start:()V\n     146: aload         8\n     148: invokevirtual #97                 // Method java/lang/Thread.join:()V\n     151: aload         9\n     153: astore        10\n     155: aload         10\n     157: arraylength\n     158: istore        11\n     160: iconst_0\n     161: istore        12\n     163: iload         12\n     165: iload         11\n     167: if_icmpge     188\n     170: aload         10\n     172: iload         12\n     174: aaload\n     175: astore        13\n     177: aload         13\n     179: invokevirtual #97                 // Method java/lang/Thread.join:()V\n     182: iinc          12, 1\n     185: goto          163\n     188: getstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n     191: ldc           #31                 // String k\n     193: invokevirtual #57                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     196: checkcast     #43                 // class java/lang/Integer\n     199: astore        10\n     201: aload         10\n     203: ifnull        229\n     206: aload         10\n     208: getstatic     #39                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n     211: ldc           #31                 // String k\n     213: invokevirtual #57                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     216: invokevirtual #100                // Method java/lang/Integer.equals:(Ljava/lang/Object;)Z\n     219: ifne          229\n     222: getstatic     #104                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n     225: invokevirtual #108                // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n     228: pop\n     229: iinc          6, 1\n     232: goto          34\n     235: invokestatic  #78                 // Method java/lang/System.nanoTime:()J\n     238: lload         4\n     240: lsub\n     241: ldc2_w        #113                // long 1000000l\n     244: ldiv\n     245: lstore        6\n     247: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     250: getstatic     #104                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n     253: invokevirtual #115                // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     256: invokedynamic #117,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     261: invokevirtual #121                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     264: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     267: ldc           #124                // String expected=0\n     269: invokevirtual #121                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     272: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     275: lload         6\n     277: invokedynamic #126,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     282: invokevirtual #121                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     285: return\n\n  private static void lambda$main$1(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #129                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: invokestatic  #132                // Method readQuery:()I\n       8: pop\n       9: goto          22\n      12: astore_1\n      13: new           #137                // class java/lang/RuntimeException\n      16: dup\n      17: aload_1\n      18: invokespecial #139                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      21: athrow\n      22: return\n    Exception table:\n       from    to  target type\n           0     9    12   Class java/lang/Exception\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, int);\n    Code:\n       0: aload_0\n       1: invokevirtual #129                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iload_1\n       6: invokestatic  #142                // Method writeUpdate:(I)V\n       9: goto          22\n      12: astore_2\n      13: new           #137                // class java/lang/RuntimeException\n      16: dup\n      17: aload_2\n      18: invokespecial #139                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      21: athrow\n      22: return\n    Exception table:\n       from    to  target type\n           0     9    12   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #34                 // class java/util/concurrent/ConcurrentHashMap\n       3: dup\n       4: invokespecial #145                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n       7: putstatic     #39                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      10: new           #34                 // class java/util/concurrent/ConcurrentHashMap\n      13: dup\n      14: invokespecial #145                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n      17: putstatic     #25                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      20: new           #109                // class java/util/concurrent/atomic/AtomicInteger\n      23: dup\n      24: invokespecial #146                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      27: putstatic     #104                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n      30: return\n}\n"
+  },
+  "VersionedOutbox": {
+   "hash": "bb43cebe0a6e2478",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     }
+    ],
+    "2": [
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 50
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 49
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 37
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 38
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 47
+     }
+    ],
+    "4": [
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 79
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 65
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 75
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 74
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 85
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 64
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 73
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 87
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 78
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 74
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 73
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 69
+     }
+    ],
+    "8": [
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 108
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 116
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 110
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 124
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 118
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 124
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 128
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 141
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 110
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 114
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 113
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 114
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 113
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 109
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 104
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 110
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 115
+     },
+     {
+      "staleReads": 0,
+      "expected": 0,
+      "ms": 108
+     }
+    ]
+   },
+   "inside": "Compiled from \"VersionedOutbox.java\"\npublic class lab.m6.consistency.VersionedOutbox {\n  static final int ROUNDS;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.Integer> db;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.Integer> cache;\n\n  static final java.util.concurrent.atomic.AtomicInteger staleReads;\n\n  public lab.m6.consistency.VersionedOutbox();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void spin(int);\n    Code:\n       0: iload_0\n       1: i2l\n       2: lstore_1\n       3: iconst_0\n       4: istore_3\n       5: iload_3\n       6: iload_0\n       7: if_icmpge     25\n      10: lload_1\n      11: ldc2_w        #7                  // long 31l\n      14: lmul\n      15: iload_3\n      16: i2l\n      17: ladd\n      18: lstore_1\n      19: iinc          3, 1\n      22: goto          5\n      25: lload_1\n      26: ldc2_w        #9                  // long 42l\n      29: lcmp\n      30: ifne          41\n      33: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      36: ldc           #17                 // String\n      38: invokevirtual #19                 // Method java/io/PrintStream.print:(Ljava/lang/String;)V\n      41: return\n\n  static void writeUpdate(int);\n    Code:\n       0: getstatic     #25                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n       3: ldc           #31                 // String k\n       5: iload_0\n       6: invokestatic  #33                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n       9: invokevirtual #39                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      12: pop\n      13: getstatic     #45                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      16: ldc           #31                 // String k\n      18: iload_0\n      19: invokestatic  #33                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      22: invokedynamic #48,  0             // InvokeDynamic #0:apply:()Ljava/util/function/BiFunction;\n      27: invokevirtual #52                 // Method java/util/concurrent/ConcurrentHashMap.merge:(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;\n      30: pop\n      31: return\n\n  static int readQuery();\n    Code:\n       0: getstatic     #45                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n       3: ldc           #31                 // String k\n       5: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n       8: checkcast     #34                 // class java/lang/Integer\n      11: astore_0\n      12: aload_0\n      13: ifnull        21\n      16: aload_0\n      17: invokevirtual #60                 // Method java/lang/Integer.intValue:()I\n      20: ireturn\n      21: getstatic     #25                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      24: ldc           #31                 // String k\n      26: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n      29: checkcast     #34                 // class java/lang/Integer\n      32: invokevirtual #60                 // Method java/lang/Integer.intValue:()I\n      35: istore_1\n      36: sipush        25000\n      39: invokestatic  #64                 // Method spin:(I)V\n      42: getstatic     #45                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      45: ldc           #31                 // String k\n      47: iload_1\n      48: invokestatic  #33                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      51: invokedynamic #48,  0             // InvokeDynamic #0:apply:()Ljava/util/function/BiFunction;\n      56: invokevirtual #52                 // Method java/util/concurrent/ConcurrentHashMap.merge:(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;\n      59: pop\n      60: iload_1\n      61: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #68                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iconst_1\n       8: iload_1\n       9: iconst_1\n      10: isub\n      11: invokestatic  #72                 // Method java/lang/Math.max:(II)I\n      14: istore_2\n      15: new           #78                 // class java/util/concurrent/CyclicBarrier\n      18: dup\n      19: iload_2\n      20: iconst_1\n      21: iadd\n      22: invokespecial #80                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      25: astore_3\n      26: invokestatic  #82                 // Method java/lang/System.nanoTime:()J\n      29: lstore        4\n      31: iconst_1\n      32: istore        6\n      34: iload         6\n      36: bipush        80\n      38: if_icmpgt     228\n      41: iload         6\n      43: istore        7\n      45: getstatic     #25                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      48: ldc           #31                 // String k\n      50: iload         6\n      52: iconst_1\n      53: isub\n      54: invokestatic  #33                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      57: invokevirtual #39                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      60: pop\n      61: getstatic     #45                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      64: ldc           #31                 // String k\n      66: invokevirtual #86                 // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;\n      69: pop\n      70: new           #89                 // class java/lang/Thread\n      73: dup\n      74: aload_3\n      75: iload         7\n      77: invokedynamic #91,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;I)Ljava/lang/Runnable;\n      82: invokespecial #95                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      85: astore        8\n      87: iload_2\n      88: anewarray     #89                 // class java/lang/Thread\n      91: astore        9\n      93: iconst_0\n      94: istore        10\n      96: iload         10\n      98: iload_2\n      99: if_icmpge     134\n     102: aload         9\n     104: iload         10\n     106: new           #89                 // class java/lang/Thread\n     109: dup\n     110: aload_3\n     111: invokedynamic #98,  0             // InvokeDynamic #2:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n     116: invokespecial #95                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n     119: aastore\n     120: aload         9\n     122: iload         10\n     124: aaload\n     125: invokevirtual #101                // Method java/lang/Thread.start:()V\n     128: iinc          10, 1\n     131: goto          96\n     134: aload         8\n     136: invokevirtual #101                // Method java/lang/Thread.start:()V\n     139: aload         8\n     141: invokevirtual #104                // Method java/lang/Thread.join:()V\n     144: aload         9\n     146: astore        10\n     148: aload         10\n     150: arraylength\n     151: istore        11\n     153: iconst_0\n     154: istore        12\n     156: iload         12\n     158: iload         11\n     160: if_icmpge     181\n     163: aload         10\n     165: iload         12\n     167: aaload\n     168: astore        13\n     170: aload         13\n     172: invokevirtual #104                // Method java/lang/Thread.join:()V\n     175: iinc          12, 1\n     178: goto          156\n     181: getstatic     #45                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n     184: ldc           #31                 // String k\n     186: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     189: checkcast     #34                 // class java/lang/Integer\n     192: astore        10\n     194: aload         10\n     196: ifnull        222\n     199: aload         10\n     201: getstatic     #25                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n     204: ldc           #31                 // String k\n     206: invokevirtual #56                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     209: invokevirtual #107                // Method java/lang/Integer.equals:(Ljava/lang/Object;)Z\n     212: ifne          222\n     215: getstatic     #111                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n     218: invokevirtual #115                // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n     221: pop\n     222: iinc          6, 1\n     225: goto          34\n     228: invokestatic  #82                 // Method java/lang/System.nanoTime:()J\n     231: lload         4\n     233: lsub\n     234: ldc2_w        #120                // long 1000000l\n     237: ldiv\n     238: lstore        6\n     240: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     243: getstatic     #111                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n     246: invokevirtual #122                // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     249: invokedynamic #124,  0            // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n     254: invokevirtual #128                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     257: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     260: ldc           #131                // String expected=0\n     262: invokevirtual #128                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     265: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     268: lload         6\n     270: invokedynamic #133,  0            // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n     275: invokevirtual #128                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     278: return\n\n  private static void lambda$main$1(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #136                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: invokestatic  #139                // Method readQuery:()I\n       8: pop\n       9: goto          22\n      12: astore_1\n      13: new           #144                // class java/lang/RuntimeException\n      16: dup\n      17: aload_1\n      18: invokespecial #146                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      21: athrow\n      22: return\n    Exception table:\n       from    to  target type\n           0     9    12   Class java/lang/Exception\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, int);\n    Code:\n       0: aload_0\n       1: invokevirtual #136                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iload_1\n       6: invokestatic  #149                // Method writeUpdate:(I)V\n       9: goto          22\n      12: astore_2\n      13: new           #144                // class java/lang/RuntimeException\n      16: dup\n      17: aload_2\n      18: invokespecial #146                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      21: athrow\n      22: return\n    Exception table:\n       from    to  target type\n           0     9    12   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #40                 // class java/util/concurrent/ConcurrentHashMap\n       3: dup\n       4: invokespecial #152                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n       7: putstatic     #25                 // Field db:Ljava/util/concurrent/ConcurrentHashMap;\n      10: new           #40                 // class java/util/concurrent/ConcurrentHashMap\n      13: dup\n      14: invokespecial #152                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n      17: putstatic     #45                 // Field cache:Ljava/util/concurrent/ConcurrentHashMap;\n      20: new           #116                // class java/util/concurrent/atomic/AtomicInteger\n      23: dup\n      24: invokespecial #153                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      27: putstatic     #111                // Field staleReads:Ljava/util/concurrent/atomic/AtomicInteger;\n      30: return\n}\n"
+  }
+ }
+}

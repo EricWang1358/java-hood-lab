@@ -1,0 +1,596 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-cache-consistency",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "先删缓存还是先改库？并发读写脏数据现场",
+  "lead": "更新数据时到底「先删缓存再改库」还是「先改库再删缓存」？用并发实验亲眼看看旧值是怎么被读线程倒灌回缓存的。",
+  "minutes": 45,
+  "needs": [
+    "熟悉 Cache-Aside 读未命中回填流程",
+    "了解第 32 课 Outbox 单调版本号思想"
+  ],
+  "after": [
+    "复现「先删缓存再改库」高概率产生长期脏缓存的完整交错时序",
+    "解释「先改库再删缓存」为何脏概率极低但仍非绝对零",
+    "对比延迟双删与版本号/Binlog 订阅的工程取舍"
+  ],
+  "terms": {
+    "先删后改": "写请求先删除缓存，再去更新数据库；极易被并发读线程把旧值重新填回缓存。",
+    "先改后删": "写请求先更新数据库，提交后再删除缓存（Cache-Aside 推荐顺序）。",
+    "延迟双删": "先删缓存、再改库、休眠一小段时间后再删一次缓存，清除期间被读线程回填的脏数据。",
+    "Binlog异步删": "写库后通过 Canal 监听 MySQL Binlog 异步删缓存，或配合版本号单调覆盖。"
+  },
+  "experiments": {
+    "m6_consistency": {
+      "runner": "java",
+      "home": "lab.m6.consistency",
+      "knob": {
+        "name": "threads",
+        "label": "并发读写线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "staleReads",
+        "expectKey": "expected",
+        "label": "脏缓存残留次数",
+        "expect": "应残留"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "CacheFirstThenDb",
+          "label": "先删再改库",
+          "code": "CacheFirstThenDb.java",
+          "note": "先 remove 缓存再慢写库，读线程极易把旧值回填成长期脏缓存。"
+        },
+        {
+          "id": "DbFirstThenCache",
+          "label": "先改库再删",
+          "code": "DbFirstThenCache.java",
+          "note": "先更新 DB 再删缓存，只有极端「读在写前、回填在删后」才会脏。"
+        },
+        {
+          "id": "DelayedDoubleDelete",
+          "label": "延迟双删",
+          "code": "DelayedDoubleDelete.java",
+          "note": "改库后等待读窗口结束再补删一次，大幅压缩脏残留。"
+        },
+        {
+          "id": "VersionedOutbox",
+          "label": "版本号单调写",
+          "code": "VersionedOutbox.java",
+          "note": "带单调版本号 merge(Math::max)，旧值永远覆盖不了新值，零脏读。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "先删缓存还是先改库？并发读写脏数据现场",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "更新数据时，为什么工程规范几乎一边倒推荐**先更新数据库，再删除缓存**（而不是更新缓存，也不是先删缓存）？今天用 80 轮并发读写撞给你看。",
+          "say": "面试被问双写一致性，千万别只会背「延迟双删」四个字，你要能画出为什么「先删再改」随便一撞就脏，而「先改再删」为什么稳得多。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "删缓存 vs 改缓存",
+              "q": "更新 DB 后为什么通常「删除缓存」而不是「直接把新值写进缓存」？",
+              "options": [
+                "懒加载省计算，且避免两次并发写乱序覆盖成旧值",
+                "Redis 不支持覆盖写已有 Key",
+                "删除比写入永远慢"
+              ],
+              "answer": 0,
+              "why": "如果直接更新缓存，并发写 A 和写 B 可能「先改库 B 再改库 A，却先写缓存 A 后写缓存 B」，且冷数据白算。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：1 个写线程 + 3 个读线程",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "80 轮并发更新 `k` 的值，每轮结束后检查缓存里留着的是不是旧值。",
+            "actors": [
+              "写线程 W",
+              "读线程 R"
+            ],
+            "shared": "k 缓存 vs DB"
+          },
+          "say": "80 轮并发更新 `k` 的值，每轮结束后检查缓存里留着的是不是旧值。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `CacheFirstThenDb`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_consistency.CacheFirstThenDb",
+          "say": "这就是最常见的基线写法 `CacheFirstThenDb`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`CacheFirstThenDb` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`CacheFirstThenDb`（先删缓存再改库）跑 80 轮，大概会留下多少次长期脏缓存？",
+          "options": [
+            "0 次，删了缓存就会读最新库",
+            "几十次甚至过半（旧值被读线程倒灌回缓存）",
+            "只有 1 次"
+          ],
+          "answer": 1,
+          "say": "删完缓存到改完库之间有个巨大的时间窗口，读线程立刻进来读到旧库并回填缓存！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`CacheFirstThenDb` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_consistency",
+          "show": [
+            "CacheFirstThenDb"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "cache.remove(\"k\");",
+            "spin(25_000);",
+            "db.put(\"k\", newVal);"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `CacheFirstThenDb` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_consistency.CacheFirstThenDb",
+          "lines": [
+            "cache.remove(\"k\");",
+            "spin(25_000);",
+            "db.put(\"k\", newVal);"
+          ],
+          "say": "删完缓存后写库需要耗时，这段空窗期正中读线程下怀。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "remove(cache) -> update(db) || get(cache) -> get(db) -> put(cache)",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "写线程 W",
+            "读线程 R"
+          ],
+          "shared": {
+            "name": "k 缓存 vs DB",
+            "start": "DB=0, 缓存=0"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "W 删掉缓存",
+              "say": "写线程 W 第一步先把缓存删成空。"
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "R 读缓存未命中，去查 DB 拿到旧值 0",
+              "say": "W 还没来得及把 DB 改成 1，读线程 R 已经从 DB 读走了旧值 0！"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "W 把 DB 改成 1",
+              "say": "W 终于把 DB 更新成 1，心满意足地结束了。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "text": "R 把旧值 0 写回缓存",
+              "say": "最后 R 把刚才拿到的旧值 0 写回缓存——从此 DB 是 1，缓存永远卡在 0！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `DbFirstThenCache`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "调换顺序成 `DbFirstThenCache`（先改库再删缓存），脏缓存残留会怎样？",
+          "options": [
+            "几乎降为 0（仅极端并发交错才可能出现）",
+            "比先删再改更严重",
+            "绝对 100% 为 0"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`CacheFirstThenDb` vs `DbFirstThenCache`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_consistency",
+          "show": [
+            "CacheFirstThenDb",
+            "DbFirstThenCache"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `DbFirstThenCache` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_consistency.DbFirstThenCache",
+          "within": "writeUpdate(int)",
+          "from": "0: ldc",
+          "to": "return",
+          "say": "看 `DbFirstThenCache.writeUpdate`：先 `db.put` 再 `cache.remove`。要想脏，必须同时满足「缓存刚好失效 + 读在写前查旧库 + 写全套跑完后读才回填缓存」，由于写库通常比读库慢，这种概率极低。",
+          "walk": [
+            {
+              "focus": [
+                "db.put",
+                "cache.remove"
+              ],
+              "label": "先写库后删缓存",
+              "say": "绝大多数业务场景用「先改库再删缓存 + 缓存短 TTL 兜底」就足够了。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`DelayedDoubleDelete` 与 `VersionedOutbox`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_consistency",
+          "show": [
+            "CacheFirstThenDb",
+            "DbFirstThenCache",
+            "DelayedDoubleDelete",
+            "VersionedOutbox"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_consistency",
+          "variants": [
+            "CacheFirstThenDb",
+            "DbFirstThenCache",
+            "DelayedDoubleDelete",
+            "VersionedOutbox"
+          ],
+          "notes": [
+            {
+              "focus": "CacheFirstThenDb",
+              "key": "先删缓存再改库在并发下脏数据率极高（常超 50%）",
+              "say": "CacheFirstThenDb 是面试里最典型的反面教材，并发一来必脏。"
+            },
+            {
+              "focus": "DbFirstThenCache",
+              "key": "先改库再删缓存把脏率压到接近 0",
+              "say": "调换两行代码顺序，一致性天壤之别。"
+            },
+            {
+              "focus": "VersionedOutbox",
+              "key": "单调版本号合并实现绝对零脏读且耗时稳健",
+              "say": "如果业务是金融/库存等零容忍场景，必须上单调版本号或分布式锁。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `VersionedOutbox` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_consistency.VersionedOutbox",
+          "within": "writeUpdate(int)",
+          "from": "0: getstatic",
+          "to": "return",
+          "say": "看 `VersionedOutbox.writeUpdate`：用 `cache.merge(\"k\", newVal, Math::max)` 保证版本号/状态只升不降，旧读线程即使迟到也覆盖不掉新值。",
+          "walk": [
+            {
+              "focus": [
+                "Math::max"
+              ],
+              "label": "单调版本护城河",
+              "key": "无论线程如何乱序，旧版本永远无法覆写新版本",
+              "say": "在分布式场景下，对应 Redis Lua 脚本比对版本号再写入，或基于 Binlog 顺序消费。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "先改库再删缓存 + TTL",
+              "solves": "满足 95% 互联网业务的最终一致性",
+              "cost": "约 {ms:m6_consistency.DbFirstThenCache} ms，删缓存失败需重试",
+              "when": "普通业务（文章、用户信息、商品基础属性）",
+              "say": "简单可靠，删缓存失败可借助 MQ/Binlog 重试。"
+            },
+            {
+              "name": "延迟双删",
+              "solves": "压低先删后改或极端读写交错的脏窗口",
+              "cost": "约 {ms:m6_consistency.DelayedDoubleDelete} ms，sleep 时间难精确",
+              "when": "读从库主从延迟明显时",
+              "say": "延迟时间通常设为略大于一次读操作耗时，但仍属概率性降低而非绝对零。"
+            },
+            {
+              "name": "Binlog / 版本号单调写",
+              "solves": "彻底消除乱序覆盖与删缓存失败",
+              "cost": "约 {ms:m6_consistency.VersionedOutbox} ms，需维护版本或 Canal 链路",
+              "when": "价格、状态机、风控等不允许长期脏读的核心数据",
+              "say": "真要绝对不脏，靠单调版本号或读写加锁。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "业务对缓存脏数据的容忍度有多高？",
+          "branches": [
+            {
+              "when": "容忍极小概率短时不一致（配 TTL 兜底）",
+              "pick": "先改库再删缓存 + MQ/Binlog 重试",
+              "eg": "用户昵称/商品详情"
+            },
+            {
+              "when": "绝不容忍旧值倒灌",
+              "pick": "单调版本号校验 / 读写锁串行",
+              "eg": "订单状态/账户额度"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "先改库再删缓存",
+            "延迟双删",
+            "版本号单调写"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "用户修改个人签名，要求代码尽量简单，允许极端并发下几秒后过期恢复一致。",
+              "answer": 0,
+              "why": "先改库再删缓存加合理 TTL 即可，无需过度设计。"
+            },
+            {
+              "text": "价格中心更新商品报价，绝不允许迟到的慢读请求把老价格倒灌回 Redis。",
+              "answer": 2,
+              "why": "必须带单调版本号（如 Lua 校验 version > cachedVersion 才写入）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：缓存双写一致性",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "缓存双写一致性",
+          "alias": "Cache-Aside Consistency · Update DB then Delete Cache",
+          "oneLine": "==先改库再删缓存==把脏窗口压到极小；删失败靠 ==Binlog/MQ 重试==；零容忍靠==单调版本号==。",
+          "asked": [
+            "为什么推荐先改库再删缓存，而不是先删缓存再改库？",
+            "先改库再删缓存就 100% 不会脏吗？",
+            "删缓存失败了怎么办？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "「先删缓存再改库」为什么极易产生长期脏数据？",
+          "options": [
+            {
+              "text": "删完缓存后改库未完成前，并发读线程查旧库并把旧值回填进了缓存",
+              "ok": true,
+              "why": "写库通常比读库慢，这个时间窗非常大。"
+            },
+            {
+              "text": "因为 Redis 不允许先删后写",
+              "ok": false,
+              "why": "纯粹是并发交错时序问题。"
+            }
+          ],
+          "say": "能口头复述出 4 步交错时序就稳了。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "「先改库再删缓存」在什么极端情况下仍可能出现脏缓存？",
+          "options": [
+            {
+              "text": "缓存刚好过期 -> 读线程查出旧值 -> 写线程改库并删缓存 -> 读线程最后才把旧值写回缓存",
+              "ok": true,
+              "why": "必须读操作卡得比整个写库还慢才可能撞上，现实概率极低。"
+            },
+            {
+              "text": "只要缓存没过期就会脏",
+              "ok": false,
+              "why": "缓存没过期时读线程直接命中缓存不会去回填。"
+            }
+          ],
+          "say": "这就是面试官最爱追问的「先改库再删真的绝对安全吗」。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果先改库成功了，但紧接着删缓存时网络抖动失败了怎么办？",
+          "options": [
+            {
+              "text": "发 MQ 消息重试删除，或由 Canal 订阅 MySQL Binlog 异步补删",
+              "ok": true,
+              "why": "Binlog 异步补偿不侵入业务代码，是最优雅的工程解法。"
+            },
+            {
+              "text": "直接忽略不管",
+              "ok": false,
+              "why": "忽略会导致缓存一直留着旧值直到 TTL 过期。"
+            }
+          ],
+          "say": "记得补上删缓存失败的补偿机制。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "更新数据时先删缓存还是先改库？分别有什么并发坑？生产怎么保证最终一致？",
+          "points": [
+            "先删缓存再改库：删后改前窗口大，读线程极易把旧值回填成长期脏缓存",
+            "先改库再删缓存：只有「读在写前且回填在删后」才会脏，因读比写快得多概率极低",
+            "删缓存失败补偿：通过 MQ 异步重试或 Canal 订阅 Binlog 解耦删除",
+            "强一致补充：配合缓存 TTL 兜底，或使用单调版本号 Lua 校验/分布式读写锁"
+          ],
+          "model": "更新数据时通常采用 Cache-Aside 的「先更新数据库，再删除缓存」。如果先删缓存再改库，在删完到写库完成这个大窗口内，并发读请求会读到数据库旧值并回填回缓存，造成长期脏数据。调换成先改库再删缓存后，只有「缓存恰好失效、读线程先查到旧值、随后写线程完成改库删缓存、最后读线程才回填旧值」这种极端交错才会脏，因为读通常远快于写，概率极低。工程上再配合 Canal 监听 Binlog 异步重试删除防止删失败，以及 TTL 兜底；若业务零容忍，则加上单调版本号校验或读写锁。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "双写为什么删缓存而不是更新缓存？",
+              "a": "避免并发写乱序覆盖，且遵循懒加载省去无效序列化开销。"
+            },
+            {
+              "q": "推荐顺序及原因？",
+              "a": "先改库再删缓存：把脏数据交错窗口缩到极小。"
+            },
+            {
+              "q": "删缓存失败怎么兜底？",
+              "a": "MQ 重试或 Canal 订阅 Binlog 异步删除 + 合理 TTL 兜底。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}
