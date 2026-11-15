@@ -131,6 +131,16 @@
 | 48 | **联合索引范围后面的列，ICP 怎么少回一半表？** | 建了 (name, age) 联合索引，查 name LIKE '张%' AND age = 20。age 明明被范围截断了，为什么 MySQL 5.6 之后还是变快了？ | `lab.icp` | [网页课件](./pages/index-condition-pushdown.html) · [JSON](./lessons/index-condition-pushdown.json) · [源码](./src/lab/icp/) |
 | 49 | **字符串建前缀索引，ORDER BY 怎么还文件排序？** | 给长邮箱建了前缀索引 idx_email(email(8)) 省了不少空间，可不仅回表变多，ORDER BY email 竟然也用不上索引排序！ | `lab.prefixidx` | [网页课件](./pages/prefix-index-order.html) · [JSON](./lessons/prefix-index-order.json) · [源码](./src/lab/prefixidx/) |
 
+### 模块四 · 第三章：EXPLAIN 慢 SQL 诊断与索引失效现场（第 50～54 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 50 | **EXPLAIN 里 type=ALL 和 ref，扫描行数差多少？** | 慢 SQL 排查第一件事就是敲 EXPLAIN。type 列里 ALL、index、range、ref 到底差几个数量级？ | `lab.explaintype` | [网页课件](./pages/explain-type-cost.html) · [JSON](./lessons/explain-type-cost.json) · [源码](./src/lab/explaintype/) |
+| 51 | **索引列套了个函数或隐式转换，索引怎么直接哑火？** | 明明给 phone 和 created_at 建了索引，结果 WHERE YEAR(created_at)=2026 和 WHERE phone=138... 全都退化成全表扫描！ | `lab.idxfunc` | [网页课件](./pages/index-func-implicit.html) · [JSON](./lessons/index-func-implicit.json) · [源码](./src/lab/idxfunc/) |
+| 52 | **LIKE '%abc' 和 OR 没加索引，为啥全表扫？** | LIKE 'abc%' 能走索引，加了个前导百分号 LIKE '%abc' 就废了；WHERE a=1 OR b=2 只要 b 没索引，连 a 的索引也一起拖下水！ | `lab.likeor` | [网页课件](./pages/index-like-or.html) · [JSON](./lessons/index-like-or.json) · [源码](./src/lab/likeor/) |
+| 53 | **范围查询后面的联合索引列，怎么突然失效了？** | 建了 (a, b, c) 联合索引，查 a=1 AND b>10 AND c=2。明明三列全在条件里，为什么 key_len 显示只用到了 (a, b)？ | `lab.rangebreak` | [网页课件](./pages/index-range-break.html) · [JSON](./lessons/index-range-break.json) · [源码](./src/lab/rangebreak/) |
+| 54 | **ORDER BY 和 GROUP BY 混用，Extra 怎么冒出 Using filesort？** | 明明只取 LIMIT 20，为什么 EXPLAIN 里出现了 Using filesort，慢到把 Sort Buffer 打满甚至落盘归并？ | `lab.filesort` | [网页课件](./pages/filesort-temp-table.html) · [JSON](./lessons/filesort-temp-table.json) · [源码](./src/lab/filesort/) |
+
 ### 模块五 · 第一章：Spring 事务失效、动态代理与 AOP 切面（第 38～42 课）
 
 用纯 JDK 动态代理与字节码证据，亲手复现同类自调用、异常吞没、传播行为连坐回滚、JDK/CGLIB 代理坑与多切面洋葱错序。
