@@ -107,6 +107,18 @@
 | 36 | **WHERE 和 HAVING 混用，全表都被扫了一遍？** | 同样是筛选 status = 'PAID'，写在 WHERE 里只要 2 毫秒，写在 HAVING 里为什么把临时表撑爆？ | `lab.wherehaving` | [网页课件](./pages/sql-group-having.html) · [JSON](./lessons/sql-group-having.json) · [源码](./src/lab/wherehaving/) |
 | 37 | **字段允许 NULL，!= 怎么把数据全漏掉了？** | 用 WHERE id NOT IN (SELECT ...) 查黑名单外用户，子查询里只混进了一个 NULL，整条 SQL 竟然返回 0 行！ | `lab.nulltrap` | [网页课件](./pages/sql-null-trap.html) · [JSON](./lessons/sql-null-trap.json) · [源码](./src/lab/nulltrap/) |
 
+### 模块五 · 第一章：Spring 事务失效、动态代理与 AOP 切面（第 38～42 课）
+
+用纯 JDK 动态代理与字节码证据，亲手复现同类自调用、异常吞没、传播行为连坐回滚、JDK/CGLIB 代理坑与多切面洋葱错序。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 38 | **同类自调用，@Transactional 为什么没回滚？** | 外层方法没加事务，内部直接 this.payAndRecord() 调了加 @Transactional 的方法。抛异常后，库存却没回滚！ | `lab.txself` | [网页课件](./pages/spring-tx-self.html) · [JSON](./lessons/spring-tx-self.json) · [源码](./src/lab/txself/) |
+| 39 | **异常被吞或抛检查异常，事务怎么照样提交了？** | 明明加了 @Transactional，也确实出错了——但要么被 try-catch 吞掉，要么抛了 IOException，结果扣款照样 commit！ | `lab.txswallow` | [网页课件](./pages/spring-tx-swallow.html) · [JSON](./lessons/spring-tx-swallow.json) · [源码](./src/lab/txswallow/) |
+| 40 | **外层 catch 住内层异常，整个事务怎么还是全炸了？** | 主流程加了事务，调用「加积分」子方法时用 try-catch 兜住了异常——结果提交时竟抛出 UnexpectedRollbackException，连主订单一起回滚！ | `lab.txprop` | [网页课件](./pages/spring-tx-prop.html) · [JSON](./lessons/spring-tx-prop.json) · [源码](./src/lab/txprop/) |
+| 41 | **JDK 动态代理 vs CGLIB：强转就炸、final 就失效** | 有接口用 JDK 代理，强转实现类直接 ClassCastException；换成 CGLIB 子类代理，加个 final 切面就静默失效！ | `lab.proxykind` | [网页课件](./pages/spring-proxy-kind.html) · [JSON](./lessons/spring-proxy-kind.json) · [源码](./src/lab/proxykind/) |
+| 42 | **多个 @Aspect 切面叠在一起：锁、日志、事务谁先谁后？** | 下单方法同时挂了分布式锁切面和 @Transactional。如果锁在事务里面——锁都放开了事务还没提交，下一个线程直接读到旧余额！ | `lab.aoporder` | [网页课件](./pages/spring-aop-order.html) · [JSON](./lessons/spring-aop-order.json) · [源码](./src/lab/aoporder/) |
+
 ## 本地动手运行实验代码
 
 仓库中的所有示例仅使用 JDK 标准库，无任何第三方依赖（第 31 课 `virtual-race` 需 **JDK 21+**，其余课程兼容常见 JDK；全部实验数据实测于 **JDK 25**）。

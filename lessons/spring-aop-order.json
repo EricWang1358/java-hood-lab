@@ -1,0 +1,266 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "spring-aop-order",
+  "course": "Spring 全家桶与持久层",
+  "title": "多个 @Aspect 切面叠在一起：锁、日志、事务谁先谁后？",
+  "lead": "下单方法同时挂了分布式锁切面和 @Transactional。如果锁在事务里面——锁都放开了事务还没提交，下一个线程直接读到旧余额！",
+  "minutes": 35,
+  "needs": ["知道 AOP 切面像洋葱一样层层包裹目标方法", "知道 @Order 值越小优先级越高（越在最外层）", "了解锁与数据库事务提交的先后关系"],
+  "after": ["讲清多个切面的洋葱模型执行顺序", "说出锁切面在事务切面内层时导致并发脏读/丢更新的原因", "掌握用 @Order 或编程式 TransactionTemplate 保证锁包住事务"],
+  "terms": {
+    "@Order": "Spring 切面排序注解：数值越小越先进入、越晚退出（即包在洋葱最外层）。",
+    "洋葱模型": "外层切面 Before -> 内层切面 Before -> 目标方法 -> 内层 After -> 外层 After。",
+    "TransactionTemplate": "Spring 编程式事务工具：只把真正需要事务的 DB 操作包起来，精准控制事务与锁的边界。",
+    "事务未提交": "方法体刚跑完时，SQL 修改还在事务里未 commit；此时如果锁提前释放，并发线程读不到新值。"
+  },
+  "experiments": {
+    "aoporder": {
+      "runner": "java",
+      "home": "lab.aoporder",
+      "variants": [
+        { "id": "UnorderedLockInsideTx", "label": "锁在事务内层（错序）", "note": "先开事务再加锁：锁先释放、事务后提交，并发线程读到旧余额导致丢更新。" },
+        { "id": "LogSwallowTx", "label": "内层日志切面吞异常", "note": "日志切面在事务内层且吞了异常，外层事务切面以为成功而提交。" },
+        { "id": "OrderedOnion", "label": "@Order 锁包住事务", "note": "@Order(1) 锁在外层，@Order(2) 事务在内层：事务提交完才放锁，0 丢失。" },
+        { "id": "ProgrammaticTx", "label": "锁内用 TransactionTemplate", "note": "锁在外层，内部用编程式事务只包 DB 段，安全且持锁最短。" }
+      ],
+      "knob": { "label": "并发线程", "values": ["1", "2", "4", "8"], "default": "2" },
+      "repeat": 20,
+      "metric": { "key": "lost", "expectKey": "expected", "label": "丢更新 / 异常提交数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "多个 @Aspect 切面叠在一起：锁、日志、事务谁先谁后？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "生产高并发接口最经典的双切面事故：**方法上既有 `@DistributedLock`（加锁），又有 `@Transactional`（事务），可并发压测照样超卖/丢更新！**",
+          "say": "原因不在锁没生效，也不在事务没生效，而是**两层切面套反了**。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热个身",
+      "bridge": "先确认切面嵌套时的进入和退出顺序。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "两道关于切面顺序的小题。",
+          "items": [
+            {
+              "have": "@Order 大小",
+              "q": "切面 A 标了 `@Order(1)`，切面 B 标了 `@Order(2)`，谁先执行前置逻辑、后执行收尾逻辑？",
+              "options": ["A（@Order(1)）包在最外层：先入后出", "B（@Order(2)）包在最外层"],
+              "answer": 0,
+              "why": "`@Order` 值越小优先级越高，站在洋葱最外层：最先进入，最后退出。"
+            },
+            {
+              "have": "锁与提交",
+              "q": "为了防止下一个线程读到上一个线程未提交的数据，应该先释放锁还是先提交事务？",
+              "options": ["先释放锁，再提交事务", "先提交事务，再释放锁"],
+              "answer": 1,
+              "why": "必须先提交事务，让新数据对其他连接可见后，再释放锁。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "加了锁又加了事务，余额怎么还是扣错了？",
+      "bridge": "2 个线程各扣减 2000 次（总余额 4000），如果锁放错了位置，最后余额会剩多少？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "多线程并发扣减，预期最后剩余 `lost = 0`。",
+          "say": "直接看代码 `UnorderedLockInsideTx` 发生了什么。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看清「先放锁、后提交」的缝隙",
+      "bridge": "注意 `lock.unlock()` 和 `db.committedBalance = txLocal` 的先后顺序。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "aoporder.UnorderedLockInsideTx",
+          "say": "看线程里这段代码：锁只包住了计算，事务提交却在 `unlock()` 之后。",
+          "walk": [
+            { "focus": ["lock.unlock(); // 锁先释放了，事务还没提交！"], "say": "如果锁切面在事务切面里面，方法体一结束锁就放开了，但此时事务切面还没执行 `commit`！", "key": "锁在事务内层 = 锁先释放、事务后提交" },
+            { "focus": ["db.committedBalance = txLocal; // 事务提交覆盖别人"], "say": "就在这微秒级的缝隙里，下一个线程拿到锁读到了还没更新的旧余额，两个线程同时提交，直接发生丢失更新！" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：并发跑完会丢吗？",
+      "bridge": "单线程时一切正常，多线程呢？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "aop_guess",
+          "q": "2 个线程运行 `UnorderedLockInsideTx`，最终余额 `lost` 是？",
+          "options": ["0（有锁保护，绝对安全）", "大于 0（并发缝隙导致丢失更新）"],
+          "answer": 1,
+          "say": "虽然加了锁，但锁保护的窗口没覆盖到事务提交。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测 20 次：单线程全对，2 线程开始丢更新",
+      "bridge": "把 `UnorderedLockInsideTx` 的 20 次实测放出来，再切到 1/2/4/8 线程。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "aoporder",
+          "show": ["UnorderedLockInsideTx"],
+          "knob": false,
+          "hand": true,
+          "focus": ["lock.unlock(); // 锁先释放了，事务还没提交！"],
+          "say": "2 线程下几乎每次都有丢更新，而且每次丢的数都不一样。"
+        },
+        {
+          "t": "reveal",
+          "of": "aop_guess",
+          "say": "锁和事务都在，但顺序反了，照样出现并发丢更新。",
+          "key": "锁必须包住事务提交，不能在事务提交前放锁"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种切面编排同台对比",
+      "bridge": "同时对比 `UnorderedLockInsideTx`、`LogSwallowTx`（内层日志切面吞异常）、`OrderedOnion`（`@Order` 锁包住事务）、`ProgrammaticTx`（锁内编程式事务）。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "aoporder",
+          "show": ["UnorderedLockInsideTx", "LogSwallowTx", "OrderedOnion", "ProgrammaticTx"],
+          "select": "OrderedOnion",
+          "say": "看 `LogSwallowTx`：如果日志切面在事务内层还吞了异常，直接 2000 笔全错！切到 `OrderedOnion` 和 `ProgrammaticTx`，全部归 0。"
+        },
+        {
+          "t": "try",
+          "say": "把并发线程调到 4 和 8，只有 `OrderedOnion` 和 `ProgrammaticTx` 稳稳守住 0 丢失。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "耗时与工程取舍",
+      "bridge": "看看两种正确方案的耗时折线。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "aoporder",
+          "say": "实心点表示 0 丢失。",
+          "walk": [
+            { "focus": "OrderedOnion", "say": "用 `@Order(1)` 标锁切面、`@Order(2)`（或 `Ordered.LOWEST_PRECEDENCE`）标事务切面，保证锁包住事务，0 丢失。" },
+            { "focus": "ProgrammaticTx", "say": "在锁内用 `TransactionTemplate` 精确包裹 DB 操作，不靠隐式 `@Order` 约定，最不容易被同事改乱，是高并发工程首选。", "key": "高并发推荐：锁切面 + 编程式 TransactionTemplate" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "切面顺序选型",
+      "layout": "split",
+      "bridge": "把多切面叠加原则用起来。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "多切面同时作用在一个方法上怎么排？",
+          "branches": [
+            { "when": "限流 / 分布式锁 + @Transactional", "pick": "锁 @Order 更小（在最外层）", "eg": "先拿锁 -> 开事务 -> 提交 -> 放锁" },
+            { "when": "日志/监控切面 + @Transactional", "pick": "日志不吞异常或放事务外层", "eg": "异常原样抛给事务切面" },
+            { "when": "方法里既有 RPC 又有 DB 事务", "pick": "锁内用 TransactionTemplate", "eg": "只包 DB 段，减少事务连接占用" }
+          ],
+          "say": "记住洋葱顺序：外层进得早、出得晚。"
+        },
+        {
+          "t": "cases",
+          "tools": ["调小锁切面 @Order", "内层切面 rethrow 异常", "改用 TransactionTemplate"],
+          "say": "三个线上问题，选出对症改法。",
+          "items": [
+            { "text": "库存扣减方法同时贴了 `@RedisLock` 和 `@Transactional`，压测偶发超卖，日志显示 B 线程读到了 A 提交前的值。", "answer": 0, "why": "把 `@RedisLock` 的 `@Order` 调小（如 `Ordered.HIGHEST_PRECEDENCE`），确保在事务外层。" },
+            { "text": "同事写了个 `@Around` 统一打印方法耗时和异常，结果所有 `@Transactional` 都不回滚了。", "answer": 1, "why": "`@Around` 切面里 `catch` 后忘了 `throw e`，导致外层事务切面收不到异常。" },
+            { "text": "下单方法需要先调风控 HTTP 接口再写库，想用锁防重，又不想让 HTTP 耗时拖垮数据库连接池。", "answer": 2, "why": "先拿锁，调完风控后，只用 `TransactionTemplate` 包裹写库那几行。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对应面试高频追问。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "AOP 切面洋葱模型与 @Order",
+          "alias": "Ordered · 锁与事务顺序 · TransactionTemplate",
+          "oneLine": "`@Order` 值越小越在==洋葱最外层==（先入后出）；分布式锁必须在事务外层，保证==先提交事务、再释放锁==。",
+          "asked": ["多个 @Aspect 切面同时拦截一个方法，执行顺序是怎样的？", "分布式锁和 @Transactional 一起用要注意什么？", "为什么有时推荐使用编程式事务 TransactionTemplate？"],
+          "say": "这三问经常连环发问，现在你全部有实测支撑。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "检验洋葱模型顺序。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "切面 A（`@Order(1)`）和切面 B（`@Order(10)`）同时拦截 `pay()`，完整的执行顺序是？",
+          "options": [
+            { "text": "A.before -> B.before -> pay() -> A.after -> B.after", "ok": false, "why": "不是平行队列，是嵌套的洋葱模型！" },
+            { "text": "A.before -> B.before -> pay() -> B.after -> A.after", "ok": true, "why": "正确！`@Order(1)` 包在最外层，最先进入、最后退出。" }
+          ],
+          "say": "选出洋葱模型的正确顺序。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "多个 @Aspect 切面怎么排顺序？分布式锁和 @Transactional 一起用为什么容易出并发问题？",
+          "points": [
+            "AOP 遵循洋葱模型，@Order 值越小越在最外层（先入后出）",
+            "如果锁在事务内层，方法结束锁先释放，但事务还没 commit，并发线程会读到旧数据",
+            "修法一：用 @Order 确保锁切面值小于事务切面，先提交再放锁",
+            "修法二：在锁内部显式用编程式 TransactionTemplate，边界最清晰且减少长事务"
+          ],
+          "model": "多个 `@Aspect` 切面采用洋葱模型包裹目标方法，`@Order` 数值越小越在最外层，也就是先进入前置增强、最后执行后置收尾。当分布式锁切面和 `@Transactional` 同时使用时，如果锁排在事务内层，就会出现「方法刚跑完锁就提前释放了，但外层事务还没来得及提交」的窗口期，导致下一个拿到锁的线程读到未提交前的旧数据，引发超卖或丢失更新。解决方式有两种：要么通过 `@Order` 把锁切面显式放到事务切面外层，确保先 `commit` 再 `unlock`；要么在生产高并发场景下，直接在锁内使用编程式事务 `TransactionTemplate`，既不会受切面排序误改影响，又能把事务粒度缩到最小。",
+          "say": "点击开始自述。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心要点。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "多个 `@Aspect` 切面按什么顺序执行？", "a": "洋葱模型：`@Order` 值越小越在外层，先进入、后退出。" },
+            { "q": "锁和 `@Transactional` 谁应该在外面？", "a": "锁必须在事务外层，保证「先提交事务，再释放锁」，避免并发读到未更新的旧值。" },
+            { "q": "为什么高并发常用 `TransactionTemplate` 替代注解事务？", "a": "避免切面顺序配错，且能精确包裹 DB 操作，不把前置检查/RPC 拖进事务。" }
+          ],
+          "say": "收好这三张卡。"
+        }
+      ]
+    }
+  ]
+}
