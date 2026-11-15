@@ -1,0 +1,819 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "cas-aba",
+  "course": "Java 并发从零",
+  "title": "值变回 19，CAS 怎么还是发重了？",
+  "lead": "第 2 节学过无锁 CAS，可若值先从 A 变 B 又改回 A，只查当前值的 compareAndSet 会怎样？",
+  "minutes": 40,
+  "needs": [
+    "CAS 只比较并替换当前值（第 2 节）",
+    "读写之间留空档会引发竞态（第 3 节）",
+    "同时拿多把锁可能引发死锁（第 12 节）"
+  ],
+  "after": [
+    "看清值从 A→B→A 变回原样为何仍会骗过普通 CAS",
+    "对比无锁普通版、只认值 CAS、加锁、版本号 CAS 的实测差异",
+    "会用带版本号的 CAS 让每次改动递增版本戳，拦截旧 snapshot",
+    "分清何时纯计数可用普通 CAS，何时必须加版本号或加锁"
+  ],
+  "terms": {
+    "CAS": "Compare-And-Swap，先比对当前值是不是预期值，相等才原子写入新值。",
+    "ABA": "共享值先从 A 变成 B 又被改回 A，让只看值的 CAS 误以为从未变过。",
+    "AtomicInteger": "JUC 里的整数原子类，用 compareAndSet 保证单次更新原子性。",
+    "AtomicBoolean": "线程安全的布尔原子标记，用于记录补贴是否已经发放过。",
+    "AtomicStampedReference": "带整数版本号 stamp 的原子引用，更新时同时校验对象引用与版本号。",
+    "compareAndSet": "CAS 核心方法：只有当前值与版本号都符合预期才替换成功，否则返回 false。",
+    "stamp": "紧跟变量一起保存的版本号整数；只要改过一次就加 1，哪怕值改回原样也能认出。",
+    "synchronized": "Java 内置互斥锁，同一时刻只许一条线程进入临界区，其余线程排队等待。",
+    "CyclicBarrier": "多线程发令枪：凑齐这一波全部线程后再一起起跑，波末统一核对总账。",
+    "getstatic": "JVM 字节码指令，从类静态字段读取 balance 或 used 的当前值。",
+    "putstatic": "JVM 字节码指令，把算出来的新值直接写回类静态字段。",
+    "iadd": "JVM 字节码指令，把两个 int 整数相加，比如把旧余额加上 20 或把版本号加 1。",
+    "invokevirtual": "JVM 字节码指令，调用对象实例上的方法（如 get 或 compareAndSet）。",
+    "invokestatic": "JVM 字节码指令，调用类的静态方法（如模拟风控算账的 work）。",
+    "iaload": "JVM 字节码指令，从 int[] 数组下标 0 里取出刚读到的旧版本号。"
+  },
+  "experiments": {
+    "aba": {
+      "runner": "java",
+      "home": "lab.aba",
+      "knob": {
+        "name": "threads",
+        "label": "线程数",
+        "values": ["1", "2", "4", "8"],
+        "default": "4"
+      },
+      "metric": {
+        "key": "cleanOps",
+        "expectKey": "expected",
+        "label": "只发1次波数",
+        "expect": "该过"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "inside": "Plain,CasOnly,StampedCas",
+      "repeat": 20,
+      "variants": [
+        { "id": "Plain", "label": "无锁普通版", "class": "lab.aba.Plain", "code": "Plain.java" },
+        { "id": "CasOnly", "label": "只认值CAS", "class": "lab.aba.CasOnly", "code": "CasOnly.java" },
+        { "id": "Sync", "label": "加锁整段", "class": "lab.aba.Sync", "code": "Sync.java" },
+        { "id": "StampedCas", "label": "带版本号CAS", "class": "lab.aba.StampedCas", "code": "StampedCas.java" }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "今天讲什么：值变回原样就安全吗",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "第 12 节见识过加多把锁容易死锁，不少人转头用无锁 `CAS`；可如果共享值先从 **19 变成 9，又变回 19**，只核对「现在是不是 19」还会出事吗？",
+          "say": "前面刚学完加多把锁怎么防死锁，今天我们回头看无锁方案的暗坑：如果一个值被人悄悄改走又改了回来，表面看着纹丝未动，只认当前值的无锁更新能察觉吗？"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先点热第 2 节和第 12 节的三块底座",
+      "bridge": "今天要给无锁更新找茬，先花半分钟把前面三块相关的记忆唤醒。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道热身题都来自第 2、3 和第 12 节，点选后会直接看到核对说明。",
+          "items": [
+            {
+              "have": "第 2 节：无锁 CAS",
+              "q": "compareAndSet(19, 39) 成功，它到底核对了什么？",
+              "options": ["写入瞬间当前值恰好等于 19", "保证中途没被任何线程改过"],
+              "answer": 0,
+              "why": "CAS 只在最后改写那一刻对比当前值是不是 19，根本不知中间发生过几次改动。"
+            },
+            {
+              "have": "第 2/12 节：为何用无锁",
+              "q": "为什么很多高并发场景宁愿用 CAS，而不随手加多把锁？",
+              "options": ["不用阻塞排队，也没有死锁风险", "只要用了原子类就绝不会出错"],
+              "answer": 0,
+              "why": "第 12 节刚见过互等加锁会卡死；无锁 CAS 靠对比重试，既不阻塞也不怕死锁。"
+            },
+            {
+              "have": "第 3 节：读取与写入间隔",
+              "q": "先读出余额算一会儿风控，再回来改余额，中间空档会怎样？",
+              "options": ["另一线程可能趁空档改过数值", "算账期间共享变量会自动冻结"],
+              "answer": 0,
+              "why": "第 3 节见过竞态空档：读取和写入分两步走，中间足够别人跑完一轮操作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "场景：限领一次的首充补贴怎么发重了",
+      "bridge": "底座点热了。下面把这套问题放进一个每天都会碰见的发券逻辑里：小额补贴限领 1 次。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": ["补贴线程", "消费线程"],
+            "shared": { "name": "balance", "value": "19" }
+          },
+          "story": "账户初始余额 **19** 元（低于 20 元可领 **20 元**补贴，每波**限领 1 次**）。补贴线程读到 19 后先做风控；就在此时，消费线程先把 19 花成 **9** 并领走那 1 次补贴，又立刻充值回 **19**。",
+          "say": "看清楚这两个角色的动作：每一波发补贴机会只有 1 次，可一个人去算风控的功夫，另一个人先把余额折腾了一圈又放回 19。",
+          "map": [
+            {
+              "scene": "两人盯着的同一份余额",
+              "on": "shared",
+              "tag": "balance",
+              "code": "balance (初始 19)",
+              "say": "大家共同读写这一个 `balance`；不管谁抢先发了这 1 次奖励，另一个人就该停手。"
+            },
+            {
+              "scene": "一快一慢两条线程",
+              "on": "actors",
+              "tag": "双线程并发",
+              "code": "补贴 与 消费线程",
+              "say": "0 号线程负责核验发放补贴，其余线程模拟用户发起消费再立即充值回原样。"
+            },
+            {
+              "scene": "花成 9 元再充回 19 元",
+              "on": "action",
+              "tag": "19 → 9 → 19",
+              "code": "spendAndTopUp()",
+              "say": "消费线程抢先完成 `19→9` 并记下已领 1 次，紧接着充值把余额恢复成 `19`。"
+            },
+            {
+              "scene": "每波只许发 1 次的账本",
+              "code": "gifts / used",
+              "say": "`used` 标记本波是否已发奖，`gifts` 统计实际发了几次；波末只认 `gifts == 1` 才算没发重。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "普通 CAS 上阵，能拦住这次偷梁换柱吗",
+      "bridge": "账本立好了，先问最核心的悬念：把第 2 节治好超卖的普通 CAS 搬到这里，够用吗？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "每跑完 **250 波**统计一次 `cleanOps`（只发 1 次的波数）。单线程下人人都全对；一旦开启多线程，换上 `AtomicInteger` 的 `compareAndSet` 还安全吗？",
+          "say": "如果普通 CAS 在这里依然翻车，就说明「原子类」三个字并不是万能护身符。我们先看清楚两种基础写法的代码。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基准代码：无锁普通版 Plain",
+      "bridge": "老规矩，先拿最朴素的普通变量当对照，几十行代码把整轮发奖和验账摊开。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "aba.Plain",
+          "say": "顺着三步看下来，带虚线的词都能点开看解释。",
+          "walk": [
+            {
+              "focus": ["if (balance == 19 && !used)", "work(WORK_BONUS);", "balance = balance + 20;"],
+              "key": "补贴线程读完 19 要先跑一阵风控再加 20",
+              "say": "`grantBonus` 先确认 `balance == 19` 且没领过，接着跑风控 `work(WORK_BONUS)`，算完才给余额加 20 并记一笔 `gifts`。"
+            },
+            {
+              "focus": ["balance = 9;", "used = true;", "balance = 19;"],
+              "say": "另一头的 `spendAndTopUp` 等极短一会后也检查条件：满足就把 19 花成 9、领走这 1 次奖，随后立刻充回 19。"
+            },
+            {
+              "focus": ["CyclicBarrier barrier", "if (gifts.get() == 1) cleanOps.incrementAndGet();"],
+              "say": "每波靠 `CyclicBarrier` 齐步起跑；波末只检查 `gifts.get() == 1`，发重成 2 次以上就不算干净波数。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "再看换上普通 CAS 的 CasOnly",
+      "bridge": "普通变量没任何保护肯定会乱，那马上把 `balance` 换成第 2 节学过的原子整数试试看。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "aba.CasOnly",
+          "say": "几乎全套骨架不变，只把读写更新换成了 `AtomicInteger` 和 `AtomicBoolean`。",
+          "walk": [
+            {
+              "focus": ["int cur = balance.get();", "if (cur != 19 || used.get()) return;"],
+              "say": "`grantBonus` 先用 `get()` 取出当前余额存成 `cur`，确认是 19 且 `used` 为假后才去算风控。"
+            },
+            {
+              "focus": ["work(WORK_BONUS);", "if (balance.compareAndSet(cur, cur + 20))"],
+              "key": "风控算完只靠 compareAndSet(19, 39) 一锤定音",
+              "say": "算完风控回来，直接调用 `compareAndSet(cur, cur + 20)`：只要此刻内存里的余额还是 19 就写入 39。"
+            },
+            {
+              "focus": ["if (balance.compareAndSet(19, 9))", "balance.compareAndSet(9, 19);"],
+              "say": "消费线程同样用 CAS：先把 19 原子扣成 9、标记 `used` 为真并记奖，再紧接着用 CAS 把 9 充回 19。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜：CasOnly 跑 4 线程会全对吗",
+      "bridge": "代码一行没藏，而且全程都用上了正经的原子类。在你点运行前，先押一注结果。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "cas-4t",
+          "q": "4 线程跑 `CasOnly` 250 波，能守住「每波只发 1 次」吗？",
+          "options": [
+            "单线程就错，4 线程错更多",
+            "1 线程全对，4 线程依然大量发重",
+            "已经用了 AtomicInteger，4 线程肯定 250/250 全对",
+            "会因为自旋卡死直到超时"
+          ],
+          "answer": 1,
+          "say": "想想第 2 节学过 `compareAndSet` 只核对哪一个值，再结合消费线程先改成 9 又改回 19 的动作押注。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "逐轮揭晓：CasOnly 真的挡住了吗",
+      "bridge": "押注完毕，这台电脑已经真实跑完 20 轮 `CasOnly`。先一轮一轮把结果放出来看看。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "aba",
+          "show": ["CasOnly"],
+          "knob": false,
+          "hand": true,
+          "focus": ["int cur = balance.get();", "if (balance.compareAndSet(cur, cur + 20))"],
+          "say": "先点「看第 1 次运行」盯住只发 1 次波数，多点两轮看稳不稳定，再全部放出。"
+        },
+        {
+          "t": "reveal",
+          "of": "cas-4t",
+          "key": "只认值的 CAS 依然 20 轮全错，250 波里两百多波发重",
+          "say": "20 轮没有一轮跑满 250 波，几乎每波都被发成了 2 次奖——哪怕每一步都调用了正经原子类的 `compareAndSet`，照样被骗过去了。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨到 1 线程对照：逻辑根本没写错",
+      "bridge": "难道是我们条件写反了？照老办法先拨到 1 个线程去掉并发，对比 `Plain` 和 `CasOnly`。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "aba",
+          "show": ["Plain", "CasOnly"],
+          "select": "CasOnly",
+          "say": "上面能直接切 `1、2、4、8` 四个线程数，点不同线程数看 20 轮实测怎么变。"
+        },
+        {
+          "t": "try",
+          "key": "1 线程全对，只要 2 线程以上两版双双大量发重",
+          "say": "拨到 1 时两个版本 20 轮全踩在 250 虚线上；一拨到 2、4、8，`Plain` 和 `CasOnly` 的干净波数齐刷刷掉离虚线，错得同样惨。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "在源码里点出漏网的那两行",
+      "bridge": "1 线程全对证明逻辑没毛病，问题全出在并发期间的读取与替换之间。去代码里把那两行点出来。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "aba.CasOnly",
+          "q": "在 `grantBonus` 里，哪两行之间夹着风控算账，让消费线程趁机跑完 19→9→19？",
+          "answer": ["int cur = balance.get();", "if (balance.compareAndSet(cur, cur + 20))"],
+          "hint": "提示：找 `grantBonus` 里先读出 `cur` 那一行，以及算完 `work` 后尝试写回的那一行。",
+          "found": "抓准了！第一行先拿走旧值 19，中间算完风控回来，下一行只问「此刻是不是 19」，根本没问「是不是还是刚才那份 19」。",
+          "say": "直接在代码里点中那一读一改两行，点偏了会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "先拿 javap 照一照普通版 Plain",
+      "bridge": "源码看准了，用 `javap` 拆开字节码对比看，先扫一眼最原始的 `Plain` 有多散，再看 `CasOnly`。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "aba.Plain",
+          "within": "static void grantBonus()",
+          "from": "0: getstatic",
+          "to": "28: iconst_1",
+          "say": "看字节码里的 `getstatic`、`invokestatic`、`iadd` 和 `putstatic`：没有任何拦截，写回去前甚至重新读了一次已经被改过的余额。",
+          "walk": [
+            {
+              "focus": ["0: getstatic", "3: bipush"],
+              "label": "只读不锁直接过",
+              "say": "一进方法先用 `getstatic` 读 `balance`，比完 `19` 又查 `used`，两关放行就往前跑。"
+            },
+            {
+              "focus": ["16: invokestatic"],
+              "label": "算风控停好一阵",
+              "say": "接着 `invokestatic` 跑去调用 `work` 算风控，留足了整段竞态窗口。"
+            },
+            {
+              "focus": ["19: getstatic", "24: iadd", "25: putstatic"],
+              "label": "重读再加直接覆盖",
+              "say": "回来后甚至重新 `getstatic` 读到充回来的 19，用 `iadd` 加 20 算成 39，直接 `putstatic` 写死发重。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "再照 CasOnly：字节码只传了两个值",
+      "bridge": "那换上 `AtomicInteger` 呢？字节码确实多了 `compareAndSet`，可仔细看它到底往底层塞了几个参数。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "aba.CasOnly",
+          "within": "static void grantBonus()",
+          "from": "0: getstatic",
+          "to": "39: ifeq",
+          "say": "盯着 `invokevirtual` 后面括号里的参数签名：这里只有 `(II)Z`，也就是两个整数，没有第三个版本号。",
+          "walk": [
+            {
+              "focus": ["3: invokevirtual", "6: istore_0"],
+              "label": "先读19存进cur",
+              "say": "开头先调用 `get()` 把 `19` 取出来存进局部变量 `cur`（槽位 0）。"
+            },
+            {
+              "focus": ["25: invokestatic"],
+              "label": "算风控留出空档",
+              "say": "紧接着 `invokestatic` 去执行耗时风控 `work`；就在这一步里，`used` 其实早被别的线程改成真了。"
+            },
+            {
+              "focus": ["31: iload_0", "compareAndSet:(II)Z"],
+              "label": "只传旧值19和新值",
+              "key": "compareAndSet 只收预期值和新值，认不出中间来回改过",
+              "say": "算完回来把 `cur`（19）和 `cur + 20`（39）塞给 `compareAndSet:(II)Z`；指令只看内存此刻是不是 19，根本没问中间变成过 9 没有。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "泳道慢放：19 → 9 → 19 怎么骗过 CAS",
+      "bridge": "指令只比对一个数，已经很明确了。把两条线程并排拉开，一格一格看消费线程怎么在风控空档偷换现场。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "CAS(19, 39)",
+          "parts": { "read": "先读旧值", "calc": "算补贴或扣充", "write": "CAS 改回写" },
+          "lanes": ["补贴线程", "消费线程"],
+          "shared": { "name": "balance", "start": "19" },
+          "say": "波初 `balance = 19`、`used = 假`。两条线程只要交错执行，就会撞出经典的 `ABA` 偷换。",
+          "steps": [
+            {
+              "lane": 0, "op": "read", "text": "读余额 = 19",
+              "say": "补贴线程先动身，读走 `balance = 19` 且此时 `used` 还是假。"
+            },
+            {
+              "lane": 0, "op": "calc", "text": "风控算 = 39",
+              "say": "补贴线程转身跑去算风控，准备一会儿把 19 加上 20 改成 39。"
+            },
+            {
+              "lane": 1, "op": "read", "text": "读余额 = 19",
+              "say": "补贴线程还没回来，消费线程也看了一眼：此刻还是 19 且没领过奖！"
+            },
+            {
+              "lane": 1, "op": "write", "value": "9", "text": "CAS 19→9",
+              "say": "消费线程手脚快，直接用 `CAS` 把 19 扣成 9，顺手把 `used` 设为真、记下第 1 次发奖。"
+            },
+            {
+              "lane": 1, "op": "write", "value": "19", "text": "充回 9→19",
+              "say": "紧接着消费线程又发起充值，用 `CAS` 把 9 改回了 19！",
+              "ask": {
+                "q": "消费线程领完 1 次补贴并充回后，此刻内存里的 balance 变成多少了？",
+                "options": ["还是 9，补贴会失败", "又变回 19 了"],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 0, "op": "note", "tone": "fail", "text": "以为还是原 19",
+              "say": "补贴线程这时算完风控回来了：它只拿着手里的旧 `cur = 19` 去问 `balance` 现在是不是 19。"
+            },
+            {
+              "lane": 0, "op": "write", "value": "39", "text": "CAS 19→39",
+              "say": "内存此刻确实写着 19！`compareAndSet(19, 39)` 当场判定匹配，一笔把余额改成了 39。"
+            },
+            {
+              "lane": 0, "op": "note", "tone": "fail", "text": "发重成 2 次!",
+              "say": "明明消费线程早就发过 1 次，补贴线程照样把 `gifts` 加成 2——这就是只看值的无锁偷换。"
+            }
+          ],
+          "verdict": "中间经历了 19→9→19，只认当前值的 CAS ==彻底被骗==，照常写进 39。",
+          "verdictSay": "现在答案清清楚楚：要想拦住，要么把「检查、算风控、写入」全锁进同一扇门里不让人插队，要么给每次改写配一个只涨不退的「版本号」。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修法一：加锁整段，彻底不准中途插队",
+      "bridge": "先看最直白的修法 `Sync`：既然问题出在中间让人插了一腿，那就用 `synchronized` 把两段都护死。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "aba.Sync",
+          "say": "两边的临界区全部用同一把类锁 `Sync.class` 包起来。",
+          "walk": [
+            {
+              "focus": ["static synchronized void grantBonus()"],
+              "say": "`grantBonus` 直接标成 `synchronized`，拿不到锁进不来，拿到锁期间别人也改不动余额。"
+            },
+            {
+              "focus": ["work(WORK_USER);", "synchronized (Sync.class)"],
+              "say": "消费线程先在锁外做好前戏 `work`，真正读余额改 9 再充回 19 时，也必须抢到同一把 `Sync.class` 锁。"
+            },
+            {
+              "focus": ["if (balance == 19 && !used)"],
+              "key": "只要谁先抢到锁，另一方进门时就看见 used 已为真",
+              "say": "哪怕消费线程先抢进锁把 19 折腾成 9 再改回 19，它同时已经把 `used` 改成了真；后进锁的一看 `used` 为真直接退出。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修法二的思路：给值贴上只增不减的版本戳",
+      "bridge": "加锁虽稳，可所有线程要在门口排队等锁。能不能沿用无锁 CAS 的轻快，只补上「辨认经历」这一环？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**19 只代表数值，不代表第几版**。用 `AtomicStampedReference` 绑上只增不减的 `stamp`：`(19, 0) → (9, 1) → (19, 2)`，值回到 19 时版本早已不是 0！",
+          "say": "打个比方：就像纸币上面额都是 100 块，可每张纸币都有独一无二的冠字号；被人换过一张放回桌上，虽然面额还是 100，冠字号早就对不上了。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修法二代码：带版本号的 StampedCas",
+      "bridge": "带上冠字号以后，无锁版本怎么写？下面看 `StampedCas` 怎么把值和版本号一起传进 CAS。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "aba.StampedCas",
+          "say": "核心变化只有两步：读的时候连值带版本号一起取，改的时候连值带版本号一起比。",
+          "walk": [
+            {
+              "focus": ["int[] stamp = new int[1];", "int cur = balance.get(stamp);", "int s = stamp[0];"],
+              "say": "带版本原子类用一个长度为 1 的数组把当前版本 `s` 顺道带出来：此时不仅知道 `cur = 19`，还记住了这是第 `s` 版。"
+            },
+            {
+              "focus": ["if (balance.compareAndSet(cur, cur + 20, s, s + 1))"],
+              "key": "必须「当前值 == cur 且 版本号 == s」双双匹配才写入",
+              "say": "算完风控回来更新时同时传四个参数：不仅要求此刻余额还是 `cur`，还要求版本号依然等于刚才读到的 `s`。"
+            },
+            {
+              "focus": ["if (balance.compareAndSet(19, 9, s, s + 1))", "balance.compareAndSet(9, 19, s + 1, s + 2);"],
+              "say": "消费线程每动一次余额都把版本往上加 1：扣成 9 时加到 `s + 1`，充回 19 时再加到 `s + 2`，绝不走回头路。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "上实验台：Sync 与版本 CAS 真全对吗",
+      "bridge": "两种修法的代码都写完了，现在把 `CasOnly`、`Sync` 和 `StampedCas` 并排跑一遍真实结果。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "aba",
+          "show": ["CasOnly", "Sync", "StampedCas"],
+          "select": "StampedCas",
+          "say": "默认是 4 线程，分别点不同变体和 `1/2/4/8` 线程数，盯紧波数对不对、耗时差多少。"
+        },
+        {
+          "t": "try",
+          "key": "加锁版和版本号版全部 250/250 零出错，且版本号版明显更省时",
+          "say": "在 4 线程下，`CasOnly` 依然错得一塌糊涂；`Sync` 和带版本号版全都稳稳 250 满分。再看耗时：加锁版在 4 和 8 线程明显更慢，版本号版几乎贴着无锁跑。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条曲线同屏看：快慢与对错一眼分明",
+      "bridge": "把刚才四个版本的 1、2、4、8 线程结果全部拉进一张图里，看清楚每条线怎么走。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "aba",
+          "say": "实心点表示 20 轮零出错，空心点表示有波次发重；纵轴越低越快。一条条对照来看。",
+          "walk": [
+            {
+              "focus": "Plain",
+              "say": "无锁普通版 2 线程起全是空心点，虽然跑在底下，但几乎波波发重，完全不可用。"
+            },
+            {
+              "focus": "CasOnly",
+              "say": "只认值的 CAS 2 线程起照样全是空心点——可见在偷梁换柱面前，普通原子类跟没加锁一样拦不住。"
+            },
+            {
+              "focus": "Sync",
+              "key": "加锁整段全实心零出错，但 4/8 线程排队等锁让耗时往上翘",
+              "say": "`Sync` 全程实心点零出错！不过从 2 线程起就要排队等风控进锁，曲线明显抬高，始终高过带版本号的无锁版。"
+            },
+            {
+              "focus": "StampedCas",
+              "key": "带版本号 CAS 同样全实心零出错，同时保留无锁低延迟",
+              "say": "带版本号版同样全是实心满分，而且从 2 线程到 8 线程都稳稳压在加锁版下方一截，省去了整段堵门排队。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "拆开 StampedCas 字节码：多比了哪两个整数",
+      "bridge": "同样是无锁 CAS，带版本号版凭什么能认出 19 已经不是原来的 19？再拿 `javap` 看它传进去的四个参数。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "aba.StampedCas",
+          "within": "static void grantBonus()",
+          "from": "4: getstatic",
+          "to": "64: ifeq",
+          "say": "和刚才 `CasOnly` 的字节码对照看，这里多了一次 `iaload` 取版本号，最后方法签名也变成了四参。",
+          "walk": [
+            {
+              "focus": ["8: invokevirtual", "20: iaload"],
+              "label": "同时取出值与版本号",
+              "say": "调用 `get` 拿到余额对象 `cur` 后，紧接着用 `iaload` 从 `stamp[0]` 里把当时的整数版本号 `s` 也装进局部变量。"
+            },
+            {
+              "focus": ["40: invokestatic"],
+              "label": "照样无锁算风控",
+              "say": "同样通过 `invokestatic` 不加锁去算风控，不拦住任何其他线程。"
+            },
+            {
+              "focus": ["60: iadd", "compareAndSet:(Ljava/lang/Object;Ljava/lang/Object;II)Z"],
+              "label": "四参同时核对值与版本",
+              "key": "签名变成四参：旧值、新值、旧版本、新版本缺一不可",
+              "say": "最后 `compareAndSet` 传入四个参数：先用 `iadd` 算出 `s + 1`，底层只有「值等于旧值且版本等于旧版本」同时成立才改写。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "再慢放一次泳道：19 还在，为什么被当场拦下",
+      "bridge": "四参比对看清了，回到同一条双线程赛道，看看这回消费线程把余额改回 19 以后发生了什么。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "CAS(19, 39, v0, v1)",
+          "parts": { "read": "读值与版本", "calc": "算新值版本", "write": "双核对 CAS" },
+          "lanes": ["补贴线程", "消费线程"],
+          "shared": { "name": "值 / 版本", "start": "19 / v0" },
+          "say": "这回每次改值都必须把版本号 `v` 往上加 1，起点是 `19 / v0`。",
+          "steps": [
+            {
+              "lane": 0, "op": "read", "text": "读 19 与 v0",
+              "say": "补贴线程读走余额 19，顺便把版本号 `v0` 也记在手心。"
+            },
+            {
+              "lane": 0, "op": "calc", "text": "算新 = 39/v1",
+              "say": "跑去算风控，准备一会儿把账本改成 39、版本改成 `v1`。"
+            },
+            {
+              "lane": 1, "op": "read", "text": "读 19 与 v0",
+              "say": "风控算一半时消费线程也读到了 `19 / v0`。"
+            },
+            {
+              "lane": 1, "op": "write", "value": "9 / v1", "text": "改 9 与 v1",
+              "say": "消费线程抢先把 19 扣成 9，版本号跳成 `v1`，把奖领走并记下已用。"
+            },
+            {
+              "lane": 1, "op": "write", "value": "19 / v2", "text": "充 19 与 v2",
+              "say": "紧接着充值恢复成 19，但版本号继续递增变成 `v2`！",
+              "ask": {
+                "q": "余额又回到 19 了，但此时账本上跟着的版本号变成多少了？",
+                "options": ["退回成 v0，跟刚才一样", "已经涨成 v2 了"],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 0, "op": "note", "tone": "fail", "text": "比 v0≠v2 失败",
+              "say": "补贴线程风控算完回来提交：虽然 19 还等于 19，可手里的 `v0` 撞上了账本的 `v2`，双核对失败！"
+            },
+            {
+              "lane": 0, "op": "read", "text": "重读 used=真",
+              "say": "失败后进入下一轮循环重读状态，一眼看到 `used` 已经变成真。"
+            },
+            {
+              "lane": 0, "op": "note", "tone": "ok", "text": "直接退出不发重",
+              "say": "补贴线程乖乖直接返回，整波稳稳只发 1 次奖，一分不重。"
+            }
+          ],
+          "verdict": "余额虽回到 19，但版本已跳到 ==v2==，旧 `v0` 当场被拒。",
+          "verdictSay": "靠一个永不倒退的版本号，哪怕中间经历了一百次来回修改，旧线程一回来也绝对逃不过那双比对。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "四个版本摆上桌：到底怎么挑才合适",
+      "bridge": "原理和实测都摆在台面上了，把这几种常见选择放进同一张表里定下选型尺子。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "盯紧默认 4 线程下的正误和实测耗时，分清什么时候用老 CAS，什么时候该加版本或加锁。",
+          "options": [
+            {
+              "name": "只认值 CAS",
+              "solves": "不加锁，单步读写增减很快，但认不出 A→B→A",
+              "cost": "4 线程跑出 {ms:aba.CasOnly} ms 且几乎波波发重，仅适合不关心中间路径",
+              "when": "纯计数累计（如点亮总次数、只增不减统计）",
+              "say": "如果你只是加 1 减 1、不在乎中间谁绕过一圈，普通 `AtomicInteger` 更轻巧；一旦中间改变代表业务状态变过，它就会掉坑。"
+            },
+            {
+              "name": "加锁整段 Sync",
+              "solves": "把读、算、改包成原子块，彻底消除插队与重发",
+              "cost": "4 线程全对耗时 {ms:aba.Sync} ms，高并发排队拖慢且跨多锁小心死锁",
+              "when": "要同时联动改多个字段、流程复杂、不想写自旋重试",
+              "say": "锁整段逻辑最省脑子，尤其还要改好几个变量时，直接加锁往往比在无锁代码里硬凑更不容易写错。"
+            },
+            {
+              "name": "带版本号 CAS",
+              "solves": "无锁同时核对「值 + 版本号」，完美拦住 A→B→A",
+              "cost": "4 线程全对只要 {ms:aba.StampedCas} ms，略多一次小对象装箱与版本维护",
+              "when": "高并发无锁队列/栈、幂等状态更新、怕阻塞或怕死锁场景",
+              "say": "既不想排队堵在锁上，又要认出变量是不是中途悄悄动过手脚，就把值和只增不减的版本戳绑在一起用 CAS。"
+            }
+          ],
+          "rule": "只看当前结果就用普通 CAS；要在乎「是否被偷偷动过」就配版本号 CAS；跨多字段复杂联动直接加锁。",
+          "ruleSay": "写无锁 CAS 前多问自己半句：如果别人趁我转头把它改走又改回来，我还要不要接着改？要拦就加版本号，懒得绕弯干脆加锁。",
+          "ruleKey": "在乎中间改过就加版本号 CAS，多字段复杂逻辑直接加锁"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实需求，现场拍板选哪套",
+      "layout": "split",
+      "bridge": "选型规则定好了，对照这棵决策树把三个真实开发需求一一对号入座。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "并发更新先看哪一问？",
+          "branches": [
+            { "when": "只在乎终值，不管中途动几次", "pick": "只认值普通 CAS", "eg": "全站浏览量自增、限流计数" },
+            { "when": "要无锁又不能被 A→B→A 骗过", "pick": "带版本号 CAS", "eg": "无锁链表栈、单据状态机" },
+            { "when": "一次要改多个关联变量", "pick": "加锁整段护住", "eg": "同时改余额、积分与流水" }
+          ],
+          "say": "先扫树上三条路，再给每道需求挑最合适的一套，看树干哪一支随之点亮。"
+        },
+        {
+          "t": "cases",
+          "tools": ["只认值普通 CAS", "带版本号 CAS", "加锁整段护住"],
+          "say": "逐个选出你的答案，系统会点亮对应规则并核对为什么。",
+          "items": [
+            {
+              "text": "接口监控每收到一个请求就把总请求数加 1，只统计最终总量，不在乎中间顺序。",
+              "answer": 0,
+              "why": "纯次数累计只在乎加减总和正确，哪怕期间被别人改过也不影响总量语义，普通 CAS（或长按并发用累加器）最干净。"
+            },
+            {
+              "text": "实现一个无锁任务栈：线程刚看中栈顶节点 A、正准备换成 B，期间别人弹出 A 和 B 又把 A 压回栈顶。",
+              "answer": 1,
+              "why": "这正是经典无锁栈陷阱！虽然栈顶又指回 A，但 B 已经被消费或改坏了，必须靠版本号区分「这是第几回的 A」。"
+            },
+            {
+              "text": "一次订单核销要同时扣优惠券、改订单状态并记录三张关联表字段，希望代码好维护少踩坑。",
+              "answer": 2,
+              "why": "CAS（哪怕带版本号）一次只能护住单个引用；跨多字段复杂联动直接用锁整段包住最稳妥。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "起个名字：ABA 问题与带版本号 CAS",
+      "bridge": "踩完坑、看过字节码、也定好选型表了。最后把今天这整个现象和解法收进正式面试术语。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "ABA 问题",
+          "alias": "ABA Problem · AtomicStampedReference · 版本号 CAS",
+          "oneLine": "共享变量从 ==A 改成 B 又改回 A==，只认当前值的 CAS 会误判从未修改；给值配个只增不减的版本戳即可识破。",
+          "asked": [
+            "什么是 CAS 里的 ABA 问题？举个实际场景例子。",
+            "Java 用啥解决 `ABA`？AtomicStampedReference 差在哪？",
+            "只用 boolean 标记改没改过（Markable）能完全代替整数版本号吗？"
+          ],
+          "say": "注意这第三个高频追问：只用一个真假开关来标「改没改」，万一别人翻转两回从假变真又变回假，还是会被骗；只有递增整数版本号才一去不回。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一：为什么第 2 节的 CAS 没掉进这个坑",
+      "bridge": "概念点名了，做两道小题验一验是不是真分清了「普通 CAS 的边界」。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "第 2 节用 `AtomicInteger` 拦住了超卖，为什么到今天的补贴实验却拦不住了？",
+          "options": [
+            {
+              "text": "第 2 节库存只会单调递减；今天余额 19→9→19 又走回了原值",
+              "ok": true,
+              "why": "精准！单向扣库存不会从 B 倒退回 A；只要状态允许走回头路，只看当前值就无法分辨「原封不动」和「绕了一圈」。"
+            },
+            {
+              "text": "因为 `AtomicInteger` 在 4 线程下会自动退化成不加锁",
+              "ok": false,
+              "why": "`AtomicInteger` 从来就没有加锁，靠的是 CPU 原子指令；它失效纯属只比值、不比历史。"
+            },
+            {
+              "text": "因为 `used` 变量没换成 `volatile` 导致一直读到假",
+              "ok": false,
+              "why": "`CasOnly` 里的 `used` 已经是 `AtomicBoolean`，只是补贴线程早在别人动手前就已经过了 `used.get()` 那道门。"
+            }
+          ],
+          "say": "对照第 2 节的库存减法与今天的充值回弹，想想是什么决定了会不会绕回原值。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二：只加一个真假标记够防 ABA 吗",
+      "bridge": "最后一道考一个常见误区：如果不想用整数版本，只配一个 `boolean` 标记位来回翻，行不行？",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "假设有人不用 `AtomicStampedReference` 的整数版本，改用只在「真/假」间切换的布尔标记防 ABA，会怎样？",
+          "options": [
+            {
+              "text": "如果中间线程改了两次把标记又翻回原状，照样会被骗过",
+              "ok": true,
+              "why": "对！只有两个状态的标记（对应 `AtomicMarkableReference`）只适合「是否被删除过一次」这种单程开关，翻两回照样撞回同款。"
+            },
+            {
+              "text": "完全一样可靠，因为 JVM 会自动把布尔标记转成时间戳",
+              "ok": false,
+              "why": "JVM 不会替布尔值保存历史次数；只有单调递增的整数版本（不考虑极大值溢出环绕时）才能区分经历了几次变更。"
+            },
+            {
+              "text": "布尔标记会导致线程阻塞等锁变慢",
+              "ok": false,
+              "why": "带布尔标记同样走无锁 CAS 路线，不会阻塞；它吃亏在状态空间只有 2 个，防不住偶数次改回。"
+            }
+          ],
+          "say": "想一想开关只有开和关两面，而递增序号是一直往前走的。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上笔记，开口讲给面试官听",
+      "bridge": "两道小题全过！下面合上提示，一口气把今天的问题成因、实验现象和修复方案串讲一遍。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "什么是 CAS 的 ABA 问题？怎么发现、又怎么解决和选型？",
+          "points": [
+            "CAS 只比对写入瞬间内存值是否等于预期值，不记录中间历程",
+            "值若从 A→B→A 变回原样（如 19→9→19 或无锁栈复用节点），普通 CAS 会误判成功",
+            "绑定只增不减的版本戳（如 AtomicStampedReference），每次改值版本加 1",
+            "选型：纯单调计数用普通 CAS；在乎变更历程用版本号 CAS；多字段联动直接加锁"
+          ],
+          "model": "ABA 问题指的是多线程下，线程一读到共享变量为 A 后去执行别的计算，期间线程二把变量从 A 改成 B 又改回 A；等线程一回来调用普通 compareAndSet(A, C) 时，指令只检查当前内存值是不是 A，发现还是 A 就误以为期间没变过而修改成功，在无锁栈复用节点或一次性状态校验里就会埋下重复处理或结构错乱的隐患。解决办法是把「值和单调递增的版本号 stamp」绑成一体一起比对和更新，Java 里对应 AtomicStampedReference，每次修改不论数值是否变回原样都要把版本号加 1，旧线程带着老版本号回来 CAS 就会失败重试。实际工程里，纯单向计数可以直接用普通 CAS，需要防止中途绕回原值的状态或指针操作加版本号，涉及多个关联字段协同改动则直接加锁更稳妥。",
+          "say": "点击计时，按上面四步一口气讲完整——重点讲清「为什么值回到 19 了还要拦住」和「普通 CAS 与加锁各自留给谁」。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张 ABA 避坑卡",
+      "bridge": "第 13 课收官！这三张卡把「无锁 CAS 不等于无条件安全」牢牢钉进直觉里。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "什么是 CAS 的 ABA 问题？", "a": "变量从 A 变 B 又被改回 A，普通 `compareAndSet` 只核对当前值是不是 A，误以为没变过而写错。" },
+            { "q": "Java 用什么堵住无锁 ABA 漏洞？", "a": "用 `AtomicStampedReference` 把值和只增不减的版本号 `stamp` 一起传进四参 CAS，每次改值版本加 1。" },
+            { "q": "普通 CAS、版本号 CAS、加锁怎么分工？", "a": "纯单向计数用普通 CAS；怕 A→B→A 偷换用版本号 CAS；一次联动改多个字段直接上锁最稳。" }
+          ],
+          "say": "到这一步，无锁 CAS 的核心暗坑与版本号对策就彻底打通了。下次写下 `compareAndSet` 前，先问一句：这个值允许中途变成别数再变回来吗？"
+        }
+      ]
+    }
+  ]
+}

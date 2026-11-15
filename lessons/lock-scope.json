@@ -1,0 +1,787 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "lock-scope",
+  "course": "Java 并发从零",
+  "title": "方法都加了 synchronized，怎么还丢数？",
+  "lead": "给 add() 加上了 synchronized，为什么每个线程各自 new 对象来调时，静态总账还是照样少？",
+  "minutes": 45,
+  "needs": [
+    "count++ 为什么会丢数（第一节）",
+    "static 变量全类共有一份（第一、三节）",
+    "锁的作用范围要对准共享状态（第七节）"
+  ],
+  "after": [
+    "说清实例方法 synchronized 锁住的是当前 this 对象",
+    "解释各自 new 实例去改 static 账本为何锁不住",
+    "会用类锁、统一锁对象或 AtomicInteger 守住静态状态",
+    "分清锁粒度、锁对象与无锁原子类的使用边界"
+  ],
+  "terms": {
+    "static": "属于类本身的静态成员，不管 new 出多少个实例，全程序永远只有这同一份。",
+    "synchronized": "Java 内置互斥锁：同一时刻只允许一个线程拿着同一把锁进门执行。",
+    "this": "当前正在执行这个方法的对象实例；每次 new 出来的对象都有自己不同的 this。",
+    "ClassLock.class": "代表 ClassLock 这个类本身的对象，全 JVM 唯一，所有实例都能拿它当同一把锁。",
+    "AtomicInteger": "自带 CAS 原子加减的整数类，多线程同时累加一个数不需要互斥锁排队。",
+    "incrementAndGet": "AtomicInteger 的原子加一方法，在硬件 CAS 保护下完成读改写三步。",
+    "Thread": "一条独立往下跑代码的执行流，多个线程可以同时调用同一个方法。",
+    "join()": "主线程停在这里等着，直到这条子线程跑完再继续往下统计。",
+    "new": "在堆里创建一个全新的对象实例，每执行一次就多出一扇新的大门。",
+    "invokespecial": "JVM 字节码指令，在这里调用新对象的构造方法完成初始化。",
+    "invokevirtual": "JVM 字节码指令，通过刚才拿到的对象实例去调用它的 add 方法。",
+    "getstatic": "JVM 字节码指令，把静态字段 total 的值读进线程自己的栈里。",
+    "iadd": "JVM 字节码指令，在当前线程操作数栈上把读到的旧数加上 1。",
+    "putstatic": "JVM 字节码指令，把算好的新值写回类的静态字段 total。",
+    "ldc": "JVM 字节码指令，把类对象常量 ClassLock.class 压进栈里当成锁对象。",
+    "monitorenter": "JVM 进门加锁指令，拿走栈顶对象的管程锁，别人想锁同一对象就得排队。",
+    "monitorexit": "JVM 出门放锁指令，把对象锁交还出来，让外面排队的下一个线程进去。"
+  },
+  "experiments": {
+    "lockscope": {
+      "runner": "java",
+      "home": "lab.lockscope",
+      "knob": {
+        "name": "threads",
+        "label": "几个线程同时记账",
+        "values": ["1", "2", "4", "8"],
+        "default": "4"
+      },
+      "metric": {
+        "key": "total",
+        "expectKey": "expected",
+        "label": "实际总账",
+        "expect": "应记"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        { "id": "Plain", "label": "无锁记账", "note": "基准写法：每次 new 实例调普通 add()，修改同一份 static int total。" },
+        { "id": "NewLock", "label": "锁新对象", "note": "只给 add() 加上 synchronized，但每次仍 new 新实例调用，锁的只是各自 this。" },
+        { "id": "ClassLock", "label": "锁类对象", "note": "改用 synchronized (ClassLock.class) 锁住全类唯一的类对象（等价于 static synchronized）。" },
+        { "id": "Atomic", "label": "原子累加", "note": "换成 static final AtomicInteger，用 CAS 原子递增代替锁一个类对象。" }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "方法都加了锁，账本怎么还少钱？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "上一节我们拆穿了「以为 `get` 只读就加 `readLock`」的假锁。今天遇上一个更让新人摸不着头脑的坑：**明明老老实实给方法加上了互斥的** `synchronized`**，为什么一跑起来账本还是照样少钱？**",
+          "say": "上一节刚躲开读锁放行多人的坑，今天大家学乖了，干脆一上来就给记账方法加上最硬的互斥锁 `synchronized`。可上线一核对总账，照样丢得稀里哗啦。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，点热前七节的三块积木",
+      "bridge": "破解这把「失灵的锁」之前，先把前七节里今天必定用得上的三条根基翻出来。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题都来自第 1 到第 7 节学过的内容。每题选一个答案，等会儿就能一眼看穿问题出在哪。",
+          "items": [
+            {
+              "have": "第一节：读改写",
+              "q": "无锁时 `total++` 为什么会少记？",
+              "options": ["编译器加法算错了", "读加写三步之间被插队", "线程自己会跳过循环"],
+              "answer": 1,
+              "why": "凡是先读旧数、手里加一、再写回的三步动作，没挡住别人插队就会互相抹平。"
+            },
+            {
+              "have": "第一、三节：静态共享",
+              "q": "不管 `new` 出多少个对象，`static int total` 在内存里有几份？",
+              "options": ["每个对象各自有一份", "全类永远只有同一份", "每个线程复制一份"],
+              "answer": 1,
+              "why": "`static` 变量归类本身所有，不在单个对象身上；一万个新对象改的还是同一块黑板。"
+            },
+            {
+              "have": "第七节：锁的对象",
+              "q": "两个线程要能互相拦住对方，关键前提是什么？",
+              "options": ["只要方法名上有锁字就行", "必须抢同一把互斥的锁", "线程数不能超过四个"],
+              "answer": 1,
+              "why": "上一节刚见识过假拦门；今天我们要看更隐蔽的一幕——两扇门上各挂一把真锁，照样互不拦着。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景",
+      "bridge": "热身完毕。这次我们走进一家快餐店：墙上挂着唯一一块全店共用的大营收白板，可每位收银员手里却自己带了一扇随身旋转门。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": ["线程 A", "线程 B"],
+            "shared": { "name": "static账本", "value": "5" }
+          },
+          "story": "店里所有订单的营业额都记在同一块静态总账 `static int total` 上。可接口每次来新请求，都会临时 `new` 一个新收银员对象出来调 `add()` 往墙上加 1。如果收银员只在**自己身上**挂了把门锁，自己锁自己、却同时扑向墙上同一块白板，能拦得住谁？",
+          "say": "把这段业务记在眼里：墙上白板全店只有一块，可收银员却是每接一单现造一个，用完就扔。",
+          "map": [
+            {
+              "scene": "同时收银的两条请求",
+              "on": "actors",
+              "tag": "线程",
+              "code": "多条 `Thread`",
+              "say": "每条线程代表一路并发请求，各跑各的循环处理 50 万笔单子。"
+            },
+            {
+              "scene": "墙上唯一的营收总账",
+              "on": "shared",
+              "tag": "static total",
+              "code": "`static int total`",
+              "say": "因为带了 `static`，这个总账属于整个类，不管造出多少个对象，改的全是它。"
+            },
+            {
+              "scene": "每次现造一个临时收银机",
+              "on": "action",
+              "tag": "new()调add",
+              "code": "`new Plain().add()`",
+              "say": "注意这句写法：每来一笔就 `new` 一个新实例再去调用实例方法 `add()`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "写好锁关键字，到底护住了啥",
+      "bridge": "很多人写代码时习惯性在业务方法上顺手添一个 `synchronized`，心想「总算线程安全了」。可他们往往没问一句：这把锁到底挂在谁门前？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "先把没加锁的 `Plain` 摆出来当标尺；等会儿我们**只在** `add()` **前面加上一个** `synchronized` **词**变成 `NewLock`，亲眼看它照样大把丢数！",
+          "say": "今天照样只改一个词看对照：先把没加任何锁的基准版本看透，再把只加了一个词的锁版本拉上台验真伪。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "二十多行，看清基准怎么记账",
+      "bridge": "不到三十行 Java 代码就把刚才的临时收银员和静态账本写出来了。点步骤走完三处核心位置。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "lockscope.Plain",
+          "say": "带虚线的词都能点开看解释。重点留意谁带了 `static`，谁又在循环里被一次次 `new` 出来。",
+          "walk": [
+            {
+              "focus": ["static int total = 0;"],
+              "key": "total 带 static，全程序只有这一份共享",
+              "say": "第一处是共享账本：`static int total`，全类只有一份，不管外面生成多少个对象，读写的都是同一处数字。"
+            },
+            {
+              "focus": ["void add() {", "total++;"],
+              "say": "第二处是实例方法 `add()`：注意它前面没有 `static`，是个普通实例方法，里面执行 `total++`。"
+            },
+            {
+              "focus": ["for (int i = 0; i < ROUNDS; i++) {", "new Plain().add();"],
+              "say": "第三处是每个线程跑 50 万轮：每轮先用 `new` 造出一个临时对象，再立刻调用它身上的 `add()`，等全部 `join()` 完后对账。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先拿基准版下个注",
+      "bridge": "基准版 `Plain` 没有任何锁，4 条线程同时 `new` 对象往静态 `total` 上加 50 万次，一共该记 200 万。猜一猜结果。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "plain",
+          "q": "4 个线程跑无锁的 `Plain`，最终打印的 `total` 会怎样？",
+          "options": ["正好 2,000,000，因为每次都 new 了新对象", "明显少于 2,000,000，而且每次跑都不同", "会报错崩掉", "只有 8 线程才少"],
+          "answer": 1,
+          "say": "虽然每回都 `new` 了新对象，可它们加的到底是各自的小本还是同一块 `static` 白板？选一个答案。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来，先看基准怎么丢",
+      "bridge": "直接看你这台电脑上真跑出的 20 轮记录。点击下面的按钮把结果一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "lockscope",
+          "show": ["Plain"],
+          "knob": false,
+          "hand": true,
+          "focus": ["total++;"],
+          "say": "点「看第 1 次运行」，瞅瞅实际总账离 200 万差多少；再点一次看看是不是每次少的数量都不一样，看够了就把剩下的全放出来。"
+        },
+        {
+          "t": "reveal",
+          "of": "plain",
+          "key": "new 再多新对象，只要共用 static 字段就会并发丢数",
+          "say": "20 轮没有一次够 200 万！虽然每次 `add()` 都是全新的对象在执行，但它们抬头改的是同一块 `static` 黑板，照样撞成一团。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "只开一条线程还会少吗",
+      "bridge": "照例把线程数拨到 1 做对照组，先排除循环计数或逻辑写歪的可能。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "lockscope",
+          "show": ["Plain"],
+          "say": "这是同一份 `Plain` 程序在 1、2、4、8 线程下各跑 20 轮的结果。把旋钮拨去 1 看一眼。"
+        },
+        {
+          "t": "try",
+          "key": "1 线程次次全对，2 线程起就开始丢",
+          "say": "调到 1 时 20 个点全部严丝合缝贴在 50 万虚线上；一拨去 2、4、8 就全掉到虚线左边。说明问题只出在多条线程同时改 `static int total`。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "在源码里点出那两处要害",
+      "bridge": "既然问题就在「多个新对象同时改一份静态账本」，回 `Plain.java` 里把制造共享和制造临时实例的两行点出来。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "lockscope.Plain",
+          "q": "点出全程序共享的那份账本声明，以及每轮现造新对象并调用记账的那一行。",
+          "answer": ["static int total = 0;", "new Plain().add();"],
+          "hint": "提示：一行在类顶部带 `static`，另一行在线程循环里用了 `new`。",
+          "found": "找得准！上面那行把 `total` 变成了全类共享的白板，下面这行每转一圈都在造新实例去改那块白板。",
+          "say": "去左边源码里点中这两行关键位置。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "为什么每个新实例都在改同一块板",
+      "bridge": "先把 `Plain.class` 的真实字节码和泳道过一遍，确认 `new Plain().add()` 在底层到底操作谁的内存。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "lockscope.Plain",
+          "within": "void add()",
+          "from": "getstatic",
+          "to": "return",
+          "say": "尽管外面每次都在 `new Plain()`，可进到 `add()` 方法里面，字节码根本不看 `this`，直接盯住静态字段 `total`。",
+          "walk": [
+            {
+              "focus": ["getstatic", "iadd", "putstatic"],
+              "label": "直改 static 字段",
+              "key": "不管外部造多少实例，指令全指向唯一的 static total",
+              "say": "三条指令 `getstatic`、`iadd`、`putstatic` 合起来还是经典的读、加、写回三步，而且操作目标全都是类上的同一份 `total`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "无锁时两个新实例怎样在静态账本撞车",
+      "bridge": "把两路各自 `new` 出的临时对象放进泳道，看清它们是怎么在同一块 `static` 白板上互相抹平更新的。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "new Plain().add()",
+          "parts": {
+            "read": "读 static 账",
+            "calc": "手里算加 1",
+            "write": "写回 total"
+          },
+          "lanes": ["线程 A", "线程 B"],
+          "shared": { "name": "static账本", "start": "5" },
+          "say": "墙上的静态账本目前记着 5。线程 A 造实例 A、线程 B 造实例 B，两路各自跑进 `add()`。",
+          "steps": [
+            {
+              "lane": 0, "op": "read", "text": "A读total=5",
+              "say": "A 刚调 `getstatic`，从共用的静态账本读走 5。",
+              "ask": {
+                "q": "此时 B 自己 new 了一个新实例进来调 add()，它读到的 `total` 是几？",
+                "options": ["还是 5，因为看同一块静态账", "0，因为新对象有新账本"],
+                "answer": 0
+              }
+            },
+            {
+              "lane": 1, "op": "read", "text": "B也读到5",
+              "say": "新对象并不会复制 `static` 变量！B 看到的照样是墙上那个还没改过的 5。"
+            },
+            {
+              "lane": 0, "op": "calc", "text": "A算成 5+1=6",
+              "say": "A 在手里把 5 加 1 算成 6。"
+            },
+            {
+              "lane": 1, "op": "calc", "text": "B也算成 6",
+              "say": "B 同样照着旧数 5 算出 6。"
+            },
+            {
+              "lane": 0, "op": "write", "value": "6", "text": "A写回6",
+              "say": "A 把 6 写回静态账本。"
+            },
+            {
+              "lane": 1, "op": "write", "value": "6", "text": "B覆写回6",
+              "say": "B 把自己手里的 6 也盖上去，一笔账直接蒸发。"
+            }
+          ],
+          "verdict": "对象虽然各自 `new`，改的却是==同一份 static 账本==。",
+          "verdictSay": "既然问题出在共用静态总账没拦门，接下来看大多数人会顺手写出来的第一反应改法。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "第一反应：方法前添 `synchronized`",
+      "bridge": "好，很多人立刻会在 `add()` 方法签名最前面添一个词：`synchronized void add()`。这回门总算锁上了吧？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "newlock",
+          "q": "加上 `synchronized void add()` 后，4 线程结果如何？",
+          "options": ["20 轮全部精准等于 2,000,000", "照样稳定丢更新，一次都凑不够 2,000,000", "只会错头 1 次，后面就稳了", "会死锁不动"],
+          "answer": 1,
+          "say": "只改了一个词：方法名变成了 `synchronized void add()`，循环里的 `new NewLock().add()` 原封未动。凭你对实例锁的理解押一注。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测打脸：加了锁还是次次少",
+      "bridge": "把 `NewLock` 拉上台和 `Plain` 并排摆着看，不靠背八股，直接看你电脑跑出来的 20 轮实数。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "lockscope",
+          "show": ["Plain", "NewLock"],
+          "select": "NewLock",
+          "say": "看左边高亮的差异行：确实实打实加上了 `synchronized`！可再看右边点图——没有一个点飞上虚线。"
+        },
+        {
+          "t": "reveal",
+          "of": "newlock",
+          "key": "实例锁锁住各自 this，护不住静态总账",
+          "say": "2、4、8 线程下，加了锁的 `NewLock` 依然 20 轮全错，每档都静悄悄地丢掉上万到几十万笔账！"
+        },
+        {
+          "t": "try",
+          "say": "把旋钮拨去 1、2、4、8 轮流看看：除了 1 线程本身没人抢之外，2、4、8 线程每一档都跟虚线隔开一大截。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "拆开 `NewLock` 字节码：锁在哪，对象造在哪",
+      "bridge": "为什么堂堂 `synchronized` 关键字竟然形同虚设？我们用 `javap` 直接把 `NewLock.class` 拆开，看线程进门到底拿了哪把锁。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "lockscope.NewLock",
+          "within": "lambda$main$0",
+          "from": "new",
+          "to": "invokevirtual",
+          "say": "先看线程循环体里的真实字节码指令：每转一圈先 `new` 再 `invokespecial` 初始化，最后 `invokevirtual` 调实例方法。",
+          "walk": [
+            {
+              "focus": ["new", "invokespecial"],
+              "label": "每圈造新对象",
+              "say": "每次循环一上来就是 `new` 分配一块新内存，再经 `invokespecial` 初始化出全新的实例。注意：这是各造各的，互不共享。"
+            },
+            {
+              "focus": ["invokevirtual"],
+              "label": "调用实例 add",
+              "key": "实例锁只锁住了刚 new 出的当前 this",
+              "say": "最后 `invokevirtual` 在刚才那个崭新的 `this` 上调用 `synchronized void add()`——也就是说，每转一圈都在锁一把全程序只有自己拿着的孤立新锁！"
+            }
+          ]
+        },
+        {
+          "t": "inside",
+          "of": "lockscope.NewLock",
+          "within": "synchronized void add",
+          "from": "getstatic",
+          "to": "return",
+          "say": "再看 `add()` 方法内部指令：方法体里没有任何全类统一的 `monitorenter`，直接就去 `getstatic` 和 `putstatic` 改静态总账。",
+          "walk": [
+            {
+              "focus": ["getstatic", "iadd", "putstatic"],
+              "label": "改的是静态总账",
+              "key": "锁在私有的 this 上，改的却是公有的 static total",
+              "say": "你看清了吗：里面改的是全类唯一的 `total`，门口锁着的却只是刚 `new` 出来的 `this` 对象，锁对象和被护数据根本不在同一层！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "两条泳道看清：两把锁怎么谁也不挡谁",
+      "bridge": "把两路请求放进泳道图，看一看线程 A 锁着自己的 A 实例、线程 B 锁着自己的 B 实例时，墙上那块静态账本是怎么被撞花的。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "new NewLock().add() // 各自锁 this",
+          "parts": {
+            "read": "读 static 账",
+            "calc": "手里算加 1",
+            "write": "写回 total"
+          },
+          "lanes": ["线程 A", "线程 B"],
+          "shared": { "name": "static账本", "start": "5" },
+          "say": "现在壁挂静态总账里记着 5。线程 A 造了实例 A，线程 B 造了实例 B，双方同时走进各自的 `synchronized` 方法。",
+          "steps": [
+            {
+              "lane": 0, "op": "note", "tone": "ok", "text": "A锁住实例A",
+              "say": "线程 A 造出收银机 A 并拿到了收银机 A 身上的锁，顺利进门。"
+            },
+            {
+              "lane": 1, "op": "note", "tone": "ok", "text": "B也锁住实例B",
+              "say": "同一时刻线程 B 造出了收银机 B，拿的是收银机 B 的锁！两人锁的根本不是同一个对象，B 根本不用等！",
+              "ask": {
+                "q": "此时 A 和 B 各自持有一把锁，能互相挡住对方进门吗？",
+                "options": ["不能，各自锁了不同的对象", "能，只要有 synchronized 就能挡住"],
+                "answer": 0
+              }
+            },
+            {
+              "lane": 0, "op": "read", "text": "A读total=5",
+              "say": "A 进去从壁挂静态白板读到 5。"
+            },
+            {
+              "lane": 1, "op": "read", "text": "B也读到5",
+              "say": "B 也毫无阻拦地进去，从同一块静态白板读到了 5！"
+            },
+            {
+              "lane": 0, "op": "calc", "text": "A算出5+1=6",
+              "say": "A 在自己的手里按旧数算出 `5 + 1 = 6`，此时静态总账还写着 5。"
+            },
+            {
+              "lane": 0, "op": "write", "value": "6", "text": "A写回6",
+              "say": "A 先把 6 写回静态白板后释放实例 A 的锁。"
+            },
+            {
+              "lane": 1, "op": "write", "value": "6", "text": "B也覆写回6",
+              "say": "B 按刚才拿到的旧数 5 算出 6 并覆写上去，白白丢了一笔账！"
+            }
+          ],
+          "verdict": "门各锁各的，人却==全挤在同一块 static 白板上==互相覆盖。",
+          "verdictSay": "记住这句口诀：「锁必须比你要保护的数据活得更共享、更长久」——保护类级别的 `static` 数据，就绝不能挂在随用随扔的局部实例 `this` 上。",
+          "verdictKey": "多把不同对象锁之间互不互斥，护不住同一份共享数据"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "两种真能修好的写法：类锁 vs 原子类",
+      "bridge": "病根查明：不是 `synchronized` 不灵，是我们把锁挂错了地方！现在端出两种真能修好的改法：`ClassLock` 锁定全类共享对象，以及 `Atomic` 直接改用原子整数。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "lockscope",
+          "show": ["Plain", "NewLock", "ClassLock", "Atomic"],
+          "select": "ClassLock",
+          "say": "「锁类对象」在 `add()` 里改用类锁（等价于 `static synchronized`）；「原子累加」直接换成 `AtomicInteger` 调 `incrementAndGet`。"
+        },
+        {
+          "t": "try",
+          "key": "锁住同一个共享类对象，或改用原子累加，全部零出错",
+          "say": "把旋钮从 1 拨到 2、4、8 验货：「锁类对象」和「原子累加」是不是每一轮都稳稳落在虚线上？留意旁边两者的耗时对比，去下一页看曲线。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "看清字节码里的真统一门锁",
+      "bridge": "切进 `ClassLock.class` 的真实字节码，把 `ldc`、`monitorenter` 和 `monitorexit` 亲眼对出来。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "lockscope.ClassLock",
+          "within": "void add()",
+          "from": "ldc",
+          "to": "14: monitorexit",
+          "say": "和刚才 `NewLock` 的反编译对比一下：即使外头依然每次 `new` 新实例，方法体内多出了真正盯住同一对象的加锁解锁指令。",
+          "walk": [
+            {
+              "focus": ["ldc", "monitorenter"],
+              "label": "锁住唯一的类对象",
+              "key": "ClassLock.class 全类唯一，新实例排进一队",
+              "say": "第一句 `ldc` 把 `ClassLock.class` 这个全程序唯一的类对象压到栈顶，接着 `monitorenter` 锁死它！哪怕外面 `new` 出千万个实例，进到这里抢的都是这同一把大门锁。"
+            },
+            {
+              "focus": ["getstatic", "putstatic", "monitorexit"],
+              "label": "改完总账再放锁",
+              "say": "锁住类对象之后才安心 `getstatic`、`iadd`、`putstatic`，改完再执行 `monitorexit` 交出锁。顺便一提，直接写成 `static synchronized void add()` 也是锁这同一把类对象。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时曲线：买对了真锁，代价长啥样",
+      "bridge": "现在把 1、2、4、8 线程下四个版本的真实耗时中位数画成曲线。实心点代表全对，空心点代表有丢数。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "lockscope",
+          "say": "纵轴越低越快，盯着实心点看。我们把四条线一条一条过一遍，看看统一那把锁要花多少钱。",
+          "walk": [
+            {
+              "focus": "Plain",
+              "say": "「无锁记账」1 线程实心点；从 2 线程起全是空心点，线程越多耗时还一路往上蹿，又丢数又跑不快。"
+            },
+            {
+              "focus": "NewLock",
+              "say": "「锁新对象」虽然走得靠下，可从 2 到 8 线程全是空心点！没护住数据的假锁跑得再快也是废的。"
+            },
+            {
+              "focus": "ClassLock",
+              "key": "锁类对象全对但所有线程排成一条长队，线程越多越陡",
+              "say": "「锁类对象」1 到 8 线程全是实心点！代价也很扎眼：所有线程全堵在唯一那把类锁外面排队，线一路高高翘到最顶上。"
+            },
+            {
+              "focus": "Atomic",
+              "key": "单纯计数不用锁整段，原子类同样全对且低得多",
+              "say": "「原子累加」同样全部实心点，多线程几档的耗时却比「锁类对象」低出一大截！单纯记一个数时，原子指令比互斥排队轻得多。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "统一类锁泳道：为什么 `new` 再多也拦得住",
+      "bridge": "看清楚统一用 `ClassLock.class`（或者统一 `static final Object LOCK`）之后，线程 A 和线程 B 在泳道里是怎么被同一道闸门拦住的。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "synchronized (ClassLock.class)",
+          "parts": {
+            "read": "读 static 账",
+            "calc": "算加 1",
+            "write": "写回并放锁"
+          },
+          "lanes": ["线程 A", "线程 B"],
+          "shared": { "name": "static账本", "start": "5" },
+          "say": "虽然 A 和 B 各自依然 `new` 了不同实例，但进了 `add()` 以后大家抬头撞向同一把类锁。",
+          "steps": [
+            {
+              "lane": 0, "op": "note", "tone": "ok", "text": "A抢到类锁",
+              "say": "A 造完实例 A 进方法，抢先拿到唯一的那把 `ClassLock.class` 类锁。"
+            },
+            {
+              "lane": 1, "op": "note", "tone": "wait", "text": "B在类锁外等",
+              "say": "B 虽然拿着自己的实例 B，但一进 `add()` 发现也要抢同一把类锁，只能在门口乖乖停住等。",
+              "ask": {
+                "q": "A 在屋里改静态账本写回 6 之前，B 能抢先读走旧数 5 吗？",
+                "options": ["不能，类锁只放一人进去", "能，因为 B 是另一个新实例"],
+                "answer": 0
+              }
+            },
+            {
+              "lane": 0, "op": "read", "text": "A读total=5",
+              "say": "A 拿着唯一的类锁进屋后，安安稳稳从墙上白板读到了最新的 5。"
+            },
+            {
+              "lane": 0, "op": "write", "value": "6", "text": "A写6并放类锁",
+              "say": "A 算出 6 并写回静态账本，随后执行 `monitorexit` 释放类锁。"
+            },
+            {
+              "lane": 1, "op": "note", "tone": "ok", "text": "B拿到类锁",
+              "say": "门外排队的 B 这才拿到这同一把类锁进屋。"
+            },
+            {
+              "lane": 1, "op": "read", "text": "B读最新6",
+              "say": "B 稳稳读到最新的 6。"
+            },
+            {
+              "lane": 1, "op": "write", "value": "7", "text": "B写回7",
+              "say": "B 写入 7 后出门放锁，两笔账严丝合缝。"
+            }
+          ],
+          "verdict": "不管外面 `new` 了多少个新对象，进门认的都是==同一把类锁==。",
+          "verdictSay": "实际工程里，比起直接锁 `.class` 对外暴露的类对象，更推荐在类里建一个私有的 `static final Object LOCK = new Object()` 当门锁，避免外面别的代码乱锁你的类引起意外冲突。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "锁定范围与工具选择，现在摆在一起比",
+      "bridge": "今天不光分清了实例锁与类锁的范围，也把单数原子类和显式互斥锁放在默认 4 线程数据下一起对齐。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "锁到底该挂在哪里、什么时候干脆不用大锁，按下面三条标准一目了然。",
+          "options": [
+            {
+              "name": "实例锁 synchronized",
+              "solves": "只保护当前这个对象自己内部非静态的私有字段",
+              "cost": "4 线程护静态字段错跑成 {ms:lockscope.NewLock} ms，跨实例全漏",
+              "when": "共享状态就挂在这个唯一实例里面（如单例服务、单个账户对象）",
+              "say": "实例方法加 `synchronized` 不是错，只是它只能护住 `this` 自己身上的实例字段；一旦里面改了 `static` 或全局共享变量，立刻失效。"
+            },
+            {
+              "name": "类锁 / 静态锁对象",
+              "solves": "跨所有实例保护 static 全局状态，或多变量多步复合动作",
+              "cost": "4 线程全对约 {ms:lockscope.ClassLock} ms；高并发下全部单队排队",
+              "when": "每次请求都在 new 实例却改静态变量，或需要跨多变量绑定",
+              "say": "要护住全类共用的 `static` 状态或一串复合业务动作，就把锁也升到类级别（`.class` 或私有 `static final` 锁对象），让锁的作用域盖住共享数据。"
+            },
+            {
+              "name": "AtomicInteger",
+              "solves": "单个静态或实例数字的高并发精准加减，无需锁门排队",
+              "cost": "4 线程全对约 {ms:lockscope.Atomic} ms；护不住多个字段联动",
+              "when": "全程序只是单数计数、生成序号或开关标志位",
+              "say": "如果这堆实例每次 `new` 出来只是为了往一个总计数器上加 1，连类锁都不用上，直接一个 `static final` 的原子整数又稳又便宜。"
+            }
+          ],
+          "rule": "锁要和被护数据同范围；改静态用类锁，单数累加用原子类。",
+          "ruleSay": "以后见到任何 `synchronized`，第一眼不要先夸「真安全」，先用手指顺藤摸瓜问两句：它锁在谁身上？里面改的又是谁的字段？",
+          "ruleKey": "锁对象的作用域，必须等于或大于被保护数据的共享范围"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "四个场景，挑准锁的落点",
+      "layout": "split",
+      "bridge": "把刚才这句原则放进四个日常代码审查场景里，亲自挑出那把正对着数据作用域的工具。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "被改的数据归谁共享，有几个字段？",
+          "branches": [
+            { "when": "每个请求自己独用，根本不共享", "pick": "无锁普通变量", "eg": "局部临时计数" },
+            { "when": "唯一共享实例里的多步字段", "pick": "实例锁 synchronized", "eg": "单个账户余额和状态" },
+            { "when": "跨多个实例共享的 static 复合逻辑", "pick": "类锁 / 静态锁对象", "eg": "多例改静态库存与日志" },
+            { "when": "大家共用但只改一个数字", "pick": "AtomicInteger", "eg": "全局接口请求总次数" }
+          ],
+          "say": "先顺着选择树问「数据到底归谁共享，改一个数还是改一串」，再给四个代码场景下手挑。"
+        },
+        {
+          "t": "cases",
+          "tools": ["无锁普通变量", "实例锁 synchronized", "类锁 / 静态锁对象", "AtomicInteger"],
+          "say": "每个场景点一个答案，当场会解释对错，选择树上对应那一支也会亮出来。",
+          "items": [
+            {
+              "text": "多例控制器每次请求都 new 出来，里面要把一个全局 static 计数器加 1。",
+              "answer": 3,
+              "why": "改的是静态全局单数，别去加实例锁，直接换成 `static final AtomicInteger` 最快最稳。"
+            },
+            {
+              "text": "每个请求 new 一个临时处理器，内部要同时扣减 static 库存并写入 static 流水数组。",
+              "answer": 2,
+              "why": "跨实例共享的 `static` 多变量联动，单靠原子整数搞不定，必须上类锁或私有静态锁对象。"
+            },
+            {
+              "text": "全系统单例只有一个银行账户对象，两个线程同时扣款并记录账户内上次修改时间。",
+              "answer": 1,
+              "why": "所有线程拿的本来就是这同一个账户实例，而且要联动改实例内两个字段，实例方法 `synchronized` 正合适。"
+            },
+            {
+              "text": "在请求方法内部自己声明一个 `int sum = 0` 循环算完这一单的总价后就返回。",
+              "answer": 0,
+              "why": "栈上的局部变量别人压根碰不到，任何锁或原子类都是白费劲，普通变量就好。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "起个名字：锁作用域不匹配",
+      "bridge": "实验跑了、字节码看穿了、场景也挑熟了。把今天这个隐蔽的锁错误立个正式名称，以后代码审查一抓一个准。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "锁对象作用域错配",
+          "alias": "实例锁护静态状态 · lock scope mismatch",
+          "oneLine": "给方法加上了真锁，可锁挂在各自新建的局部对象上，==管不到全局静态共享数据==。",
+          "asked": [
+            "synchronized 加在静态方法和普通方法上锁的对象一样吗？",
+            "为什么方法加了 synchronized 还是线程不安全？",
+            "用私有 static final Object 当锁比锁 .class 好在哪里？"
+          ],
+          "say": "面试常问「`synchronized` 修饰静态方法和普通实例方法有什么区别」，现在你不仅能背出锁 `this` 还是锁 `.class`，还能讲出跨实例改静态字段必丢数的实证。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一：同班不同对象，锁得住吗",
+      "bridge": "两道小题考考你能不能绕开代码评审里最常见的伪装。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "各线程各自 new 实例去调 synchronized 方法改同一 static 变量，结果怎样？",
+          "options": [
+            { "text": "完全安全，因为两个对象都是同一个类创建的", "ok": false, "why": "同类不同对象照样各有各的锁！线程 1 锁对象 A、线程 2 锁对象 B，两个锁井水不犯河水。" },
+            { "text": "照样丢更新，因为两把不同的对象锁根本不互斥", "ok": true, "why": "完全正确！锁的是两个不同的 `this` 实例，改的却是同一个 `static` 变量，锁作用域小于数据共享域。" },
+            { "text": "第二个线程会被第一个线程挡在门外等待", "ok": false, "why": "只有锁住同一个对象时才会互斥等待；各自拿着不同对象的锁直接并发进去撞车。" }
+          ],
+          "say": "记住一句话：JVM 只看内存里是不是同一个对象，不看它们是不是同一个类印出来的。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二：改哪一处才能把两路锁进同一扇门",
+      "bridge": "第二道考修法：在外部依然每次 `new` 对象的前提下，怎么把门锁真正统一到一起？",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "下面哪种写法能保证「多次 `new` 实例修改同一份 `static` 多字段」不出并发问题？",
+          "options": [
+            { "text": "把 static 字段加上 volatile 关键字", "ok": false, "why": "`volatile` 既不保护读改写原子性，更保不住多字段联动一致性。" },
+            { "text": "把方法改成 static synchronized，或同步块锁统一静态对象 LOCK", "ok": true, "why": "对！类对象 `.class` 与 `static final Object LOCK` 都是全类唯一的一把锁，所有新对象都会在这里汇合排队。" },
+            { "text": "在方法里写 synchronized (new Object())", "ok": false, "why": "每次进方法现 `new` 一把锁比锁 `this` 还短命，每条线程每次都在锁一把新锁，100% 锁不住！" }
+          ],
+          "say": "顺便挑出那个比 `this` 更离谱的错误选项，保证自己这辈子不犯。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，讲出这把锁的前因后果",
+      "bridge": "小测全部过关。现在合上屏幕，面对面试官「给方法加了 `synchronized` 为什么还会丢更新」这句经典追问，自己顺一遍。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么方法加了 synchronized 还是线程不安全？实例锁、类锁和原子类怎么选？",
+          "points": [
+            "普通实例方法 synchronized 锁的是 this 实例本身",
+            "如果每次请求都 new 新对象，各自锁了不同的 this，互相不互斥",
+            "被改的变量带 static 时全类共享，必须用类锁或静态锁对象匹配作用域",
+            "若是单数计数可直接用 static final AtomicInteger 省去排队开销"
+          ],
+          "model": "给方法加了 `synchronized` 照样丢更新，最常见的原因就是锁对象和共享数据的作用域没对上。普通实例方法上的 `synchronized` 锁的是调用它的 `this` 实例；如果业务代码每次请求都 `new` 一个新对象去调用，每个线程锁的就是各自刚建出来的不同对象，互相之间根本不互斥。偏偏它们在方法里面去改全类唯一的 `static` 变量，结果照样并发读改写覆盖丢数。修法是把锁升到全类唯一：改成 `static synchronized`（锁类对象）或用私有的 `static final Object` 锁对象；如果只是单纯给一个数累加，直接换成 `static final AtomicInteger` 还能省掉锁排队开销。",
+          "say": "对着四个提示点自己讲一两遍，做到不看参考也能连贯把「锁错了谁、怎么对准」讲清。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张防踩坑卡",
+      "bridge": "第 8 课的三句核心口诀存进工具箱。顺便留个预告：下节课锁对象的位置放对了，可类型选错了，照样在眼皮底下被掉包！",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "实例方法加 synchronized 为什么改 static 变量照样错？", "a": "实例方法锁的是当前 this 实例；每次 new 出不同实例时锁互不相干，拦不住大家同改一份 static 变量。" },
+            { "q": "护住 static 全局多步状态要锁谁？", "a": "用 `static synchronized` 锁类对象，或推荐在类里放私有 `static final Object LOCK` 统一充当同一扇门锁。" },
+            { "q": "写下任何一把锁前先核对哪一句话？", "a": "问自己：多条并发线程抢的到底是不是内存里同一把锁？锁的范围有没有覆盖被改数据的共享范围？" }
+          ],
+          "say": "下节课我们继续追着这把锁往深处走：这次我把锁对象也老老实实写成了 `static`，还是放在全局唯一的地方——可为什么锁着 `Integer count` 照样锁不住？"
+        }
+      ]
+    }
+  ]
+}

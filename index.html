@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Java Hood Lab — 32 节交互式 Java 并发实验课</title>
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem("java-hood-lab-theme");
+        if (saved === "light" || saved === "dark") {
+          document.documentElement.setAttribute("data-theme", saved);
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    :root {
+      --canvas: #f1ede6;
+      --surface: #faf8f4;
+      --raised: #ffffff;
+      --sunken: #e8e3da;
+      --ink: #1e1a15;
+      --ink-2: #453e35;
+      --muted: #635b51;
+      --faint: #7b7368;
+      --rule: #2a1c0e24;
+      --rule-strong: #2a1c0e52;
+      --accent: #c03a1f;
+      --accent-text: #ad4025;
+      --accent-wash: #c03a1f14;
+      --ok: #1c6c48;
+      --font: "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+      --display: "Segoe UI Variable Display", "SF Pro Display", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+      --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --canvas: #161412;
+        --surface: #1e1b18;
+        --raised: #26231f;
+        --sunken: #110f0d;
+        --ink: #efe9df;
+        --ink-2: #c5bdb1;
+        --muted: #a59d91;
+        --faint: #958e84;
+        --rule: #fff1dc21;
+        --rule-strong: #fff1dc4d;
+        --accent: #d8492c;
+        --accent-text: #ec6a4a;
+        --accent-wash: #ec6a4a1f;
+        --ok: #62c092;
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --canvas: #161412;
+      --surface: #1e1b18;
+      --raised: #26231f;
+      --sunken: #110f0d;
+      --ink: #efe9df;
+      --ink-2: #c5bdb1;
+      --muted: #a59d91;
+      --faint: #958e84;
+      --rule: #fff1dc21;
+      --rule-strong: #fff1dc4d;
+      --accent: #d8492c;
+      --accent-text: #ec6a4a;
+      --accent-wash: #ec6a4a1f;
+      --ok: #62c092;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html { font-size: 16px; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: var(--font);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; color: inherit; }
+
+    .wrap {
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 1.5rem clamp(1rem, 4vw, 2.5rem) 4rem;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--rule);
+    }
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+    .brand__name {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -0.01em;
+    }
+    .brand__tag {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 9px;
+      border: 1px solid var(--rule-strong);
+      background: var(--raised);
+      font-size: 0.84rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+    .btn:hover { border-color: var(--ink-2); }
+
+    .hero {
+      padding: 2.2rem 0 1.6rem;
+      border-bottom: 1px solid var(--rule);
+    }
+    .hero h1 {
+      font-family: var(--display);
+      font-size: clamp(1.9rem, 4vw, 2.9rem);
+      line-height: 1.16;
+      font-weight: 730;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.7rem;
+      text-wrap: balance;
+    }
+    .hero__sub {
+      margin: 0 0 1.1rem;
+      max-width: 44em;
+      font-size: 1.06rem;
+      color: var(--ink-2);
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.2rem;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+    .stats span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .stats strong { color: var(--ink); font-weight: 650; }
+
+    .controls {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--canvas);
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--rule);
+      display: grid;
+      gap: 0.8rem;
+    }
+    .search-row {
+      display: flex;
+      gap: 0.8rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .search {
+      flex: 1 1 18rem;
+      padding: 0.6rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid var(--rule-strong);
+      background: var(--raised);
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .search:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-wash); }
+    .count-note {
+      font-size: 0.84rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .pills {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+    .pill {
+      border: 1px solid var(--rule-strong);
+      background: var(--surface);
+      color: var(--ink-2);
+      border-radius: 999px;
+      padding: 0.28rem 0.8rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pill:hover { border-color: var(--ink-2); color: var(--ink); }
+    .pill.is-on {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--canvas);
+      font-weight: 600;
+    }
+
+    .chapter {
+      margin-top: 2.2rem;
+    }
+    .chapter[hidden] { display: none; }
+    .chapter__head {
+      margin-bottom: 1rem;
+    }
+    .chapter__head h2 {
+      font-family: var(--display);
+      font-size: 1.32rem;
+      font-weight: 680;
+      margin: 0 0 0.25rem;
+    }
+    .chapter__head p {
+      margin: 0;
+      font-size: 0.92rem;
+      color: var(--muted);
+      max-width: 52em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 1.05rem 1.1rem;
+      border-radius: 12px;
+      border: 1px solid var(--rule);
+      background: var(--raised);
+      transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+      overflow-wrap: anywhere;
+    }
+    .card[hidden] { display: none; }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--rule-strong);
+      box-shadow: 0 8px 20px -14px #00000050;
+    }
+    .card__top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .card__num {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--accent-text);
+      background: var(--accent-wash);
+      padding: 0.12rem 0.48rem;
+      border-radius: 6px;
+    }
+    .card__pkg {
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      color: var(--muted);
+      background: var(--sunken);
+      padding: 0.12rem 0.45rem;
+      border-radius: 6px;
+    }
+    .card__title {
+      margin: 0.15rem 0 0;
+      font-family: var(--display);
+      font-size: 1.08rem;
+      font-weight: 650;
+      line-height: 1.35;
+    }
+    .card__lead {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--ink-2);
+      flex: 1 1 auto;
+    }
+    .card__foot {
+      margin-top: 0.4rem;
+      padding-top: 0.55rem;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .card__go {
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .card:hover .card__go { color: var(--accent-text); }
+
+    .empty {
+      margin: 2.5rem 0;
+      padding: 2rem;
+      text-align: center;
+      border: 1px dashed var(--rule-strong);
+      border-radius: 12px;
+      color: var(--muted);
+    }
+    .empty[hidden] { display: none; }
+
+    .footer {
+      margin-top: 3.5rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid var(--rule);
+      font-size: 0.84rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.6rem 1.5rem;
+    }
+    .footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (max-width: 760px) {
+      .controls { position: static; }
+      .grid { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__name">java-hood-lab</span>
+        <span class="brand__tag">Under the Hood · 交互式 Java 并发实验课</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://github.com/EricWang1358/java-hood-lab" target="_blank" rel="noopener">GitHub 仓库</a>
+        <button type="button" class="btn" id="themeBtn" aria-label="切换亮暗主题">切换主题</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h1>先猜、亲眼撞坏、拆字节码、再挑工具</h1>
+      <p class="hero__sub">
+        零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
+      </p>
+      <div class="stats">
+        <span><strong>32</strong> 节循序渐进实验课</span>
+        <span><strong>128</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>JDK 25</strong> 实测数据与字节码证据</span>
+        <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
+      </div>
+    </section>
+
+    <div class="controls">
+      <div class="search-row">
+        <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池）…" autocomplete="off">
+        <span id="shownCount" class="count-note">显示 32 / 32 课</span>
+      </div>
+      <div class="pills" id="pills">
+        <button type="button" class="pill is-on" data-filter="all">全部 (32)</button>
+        <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
+        <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
+        <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
+        <button type="button" class="pill" data-filter="ch4">第四章 · 线程封闭与线程池 (6)</button>
+        <button type="button" class="pill" data-filter="ch5">第五章 · 工程模式与新特性 (11)</button>
+      </div>
+    </div>
+
+    <main id="catalog">
+      <section class="chapter" data-ch="ch1">
+        <div class="chapter__head">
+          <h2>第一章：竞态与并发容器（第 1～7 课）</h2>
+          <p>从最基础的 count++ 丢数出发，建立「读-改-写回被插队」模型，打破「换上线程安全容器/写时复制就绝对安全」的误区。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/counter-race.html" data-ch="ch1" data-search="01 counter-race 两个线程一起数数，能数对吗 每个线程把同一个数加 100 万次。两个线程一起，最后是多少？ lab.counter">
+          <div class="card__top">
+            <span class="card__num">#01</span>
+            <span class="card__pkg">lab.counter</span>
+          </div>
+          <h3 class="card__title">两个线程一起数数，能数对吗</h3>
+          <p class="card__lead">每个线程把同一个数加 100 万次。两个线程一起，最后是多少？</p>
+          <div class="card__foot">
+            <span>25 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/stock-oversell.html" data-ch="ch1" data-search="02 stock-oversell 库存只有这么多，会卖超吗 几个线程一起卖货，每次先看有没有货，有就拿走一件。最后会卖出多少？ lab.stock">
+          <div class="card__top">
+            <span class="card__num">#02</span>
+            <span class="card__pkg">lab.stock</span>
+          </div>
+          <h3 class="card__title">库存只有这么多，会卖超吗</h3>
+          <p class="card__lead">几个线程一起卖货，每次先看有没有货，有就拿走一件。最后会卖出多少？</p>
+          <div class="card__foot">
+            <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/tally-map.html" data-ch="ch1" data-search="03 tally-map 换了安全容器，销量怎么还是少？ 大家都说线程安全的 concurrenthashmap，先取再加一放回为什么照样丢？ lab.tally">
+          <div class="card__top">
+            <span class="card__num">#03</span>
+            <span class="card__pkg">lab.tally</span>
+          </div>
+          <h3 class="card__title">换了安全容器，销量怎么还是少？</h3>
+          <p class="card__lead">大家都说线程安全的 ConcurrentHashMap，先取再加一放回为什么照样丢？</p>
+          <div class="card__foot">
+            <span>27 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/absent-init.html" data-ch="ch1" data-search="04 absent-init 换成 putifabsent，连接还会多建吗？ 懒加载缓存时换成 concurrenthashmap 的 putifabsent，为什么连接照样被新建了好几遍？ lab.absent">
+          <div class="card__top">
+            <span class="card__num">#04</span>
+            <span class="card__pkg">lab.absent</span>
+          </div>
+          <h3 class="card__title">换成 putIfAbsent，连接还会多建吗？</h3>
+          <p class="card__lead">懒加载缓存时换成 ConcurrentHashMap 的 putIfAbsent，为什么连接照样被新建了好几遍？</p>
+          <div class="card__foot">
+            <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/list-append.html" data-ch="ch1" data-search="05 list-append 列表加 volatile，日志还是少？ 多线程把日志一条条写进共享列表，为什么不光少条数，给列表加上 volatile 照样挡不住？ lab.listadd">
+          <div class="card__top">
+            <span class="card__num">#05</span>
+            <span class="card__pkg">lab.listadd</span>
+          </div>
+          <h3 class="card__title">列表加 volatile，日志还是少？</h3>
+          <p class="card__lead">多线程把日志一条条写进共享列表，为什么不光少条数，给列表加上 volatile 照样挡不住？</p>
+          <div class="card__foot">
+            <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/cow-iter.html" data-ch="ch1" data-search="06 cow-iter 加了同步包装，遍历还是炸？ 读多写少的白名单换成 collections.synchronizedlist，为什么一边遍历一边改照样炸出异常？ lab.cow">
+          <div class="card__top">
+            <span class="card__num">#06</span>
+            <span class="card__pkg">lab.cow</span>
+          </div>
+          <h3 class="card__title">加了同步包装，遍历还是炸？</h3>
+          <p class="card__lead">读多写少的白名单换成 Collections.synchronizedList，为什么一边遍历一边改照样炸出异常？</p>
+          <div class="card__foot">
+            <span>25 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/lru-visit.html" data-ch="ch1" data-search="07 lru-visit 只调 get 不修改，读写锁怎么也撞坏？ 开启按访问排序的 linkedhashmap 后，连读取都要改双向链表；以为只读就上 readlock 照样把缓存搞碎。 lab.lru">
+          <div class="card__top">
+            <span class="card__num">#07</span>
+            <span class="card__pkg">lab.lru</span>
+          </div>
+          <h3 class="card__title">只调 get 不修改，读写锁怎么也撞坏？</h3>
+          <p class="card__lead">开启按访问排序的 LinkedHashMap 后，连读取都要改双向链表；以为只读就上 readLock 照样把缓存搞碎。</p>
+          <div class="card__foot">
+            <span>25 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="ch2">
+        <div class="chapter__head">
+          <h2>第二章：锁的边界、读写分离与死锁（第 8～12 课）</h2>
+          <p>为什么加了 synchronized 还是锁不住？弄清锁对象身份、装箱陷阱、读写锁与乐观读切点，以及按序加锁防死锁。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/lock-scope.html" data-ch="ch2" data-search="08 lock-scope 方法都加了 synchronized，怎么还丢数？ 给 add() 加上了 synchronized，为什么每个线程各自 new 对象来调时，静态总账还是照样少？ lab.lockscope">
+          <div class="card__top">
+            <span class="card__num">#08</span>
+            <span class="card__pkg">lab.lockscope</span>
+          </div>
+          <h3 class="card__title">方法都加了 synchronized，怎么还丢数？</h3>
+          <p class="card__lead">给 add() 加上了 synchronized，为什么每个线程各自 new 对象来调时，静态总账还是照样少？</p>
+          <div class="card__foot">
+            <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/box-lock.html" data-ch="ch2" data-search="09 box-lock 锁在 static 变量上，怎么照样锁不住？ 这次锁对象老实写成了 static 全局共享，可只因为把 integer count 拿去加锁，它竟在眼皮底下被掉包了。 lab.boxlock">
+          <div class="card__top">
+            <span class="card__num">#09</span>
+            <span class="card__pkg">lab.boxlock</span>
+          </div>
+          <h3 class="card__title">锁在 static 变量上，怎么照样锁不住？</h3>
+          <p class="card__lead">这次锁对象老实写成了 static 全局共享，可只因为把 Integer count 拿去加锁，它竟在眼皮底下被掉包了。</p>
+          <div class="card__foot">
+            <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/rw-lock.html" data-ch="ch2" data-search="10 rw-lock 读多写少，读写锁什么时候真该请出场？ 两个关联字段都加上 volatile 照样读到半截数；真正只读且读远多于写时，读写锁怎么胜出？ lab.rwlock">
+          <div class="card__top">
+            <span class="card__num">#10</span>
+            <span class="card__pkg">lab.rwlock</span>
+          </div>
+          <h3 class="card__title">读多写少，读写锁什么时候真该请出场？</h3>
+          <p class="card__lead">两个关联字段都加上 volatile 照样读到半截数；真正只读且读远多于写时，读写锁怎么胜出？</p>
+          <div class="card__foot">
+            <span>27 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/stamped-opt.html" data-ch="ch2" data-search="11 stamped-opt 不占读锁也能防撕裂吗 用版本戳替掉读写锁的读计数，为什么还是读出半新半旧的一对数？ lab.stamped">
+          <div class="card__top">
+            <span class="card__num">#11</span>
+            <span class="card__pkg">lab.stamped</span>
+          </div>
+          <h3 class="card__title">不占读锁也能防撕裂吗</h3>
+          <p class="card__lead">用版本戳替掉读写锁的读计数，为什么还是读出半新半旧的一对数？</p>
+          <div class="card__foot">
+            <span>25 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/deadlock-order.html" data-ch="ch2" data-search="12 deadlock-order 两个账户各自上锁，转账怎么还卡死？ 前面学会了 reentrantlock 与读写锁，可只要一次操作同时要拿两把锁，照着参数顺序各自加锁竟会互相卡死。 lab.deadlock">
+          <div class="card__top">
+            <span class="card__num">#12</span>
+            <span class="card__pkg">lab.deadlock</span>
+          </div>
+          <h3 class="card__title">两个账户各自上锁，转账怎么还卡死？</h3>
+          <p class="card__lead">前面学会了 ReentrantLock 与读写锁，可只要一次操作同时要拿两把锁，照着参数顺序各自加锁竟会互相卡死。</p>
+          <div class="card__foot">
+            <span>27 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="ch3">
+        <div class="chapter__head">
+          <h2>第三章：无锁 CAS、分段累加与不可变快照（第 13～15 课）</h2>
+          <p>直面 CAS 的 ABA 欺骗、LongAdder 散列计数为何不能卡硬上限，以及多字段关联时「两个原子类拼接仍撕裂」的真相。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/cas-aba.html" data-ch="ch3" data-search="13 cas-aba 值变回 19，cas 怎么还是发重了？ 第 2 节学过无锁 cas，可若值先从 a 变 b 又改回 a，只查当前值的 compareandset 会怎样？ lab.aba">
+          <div class="card__top">
+            <span class="card__num">#13</span>
+            <span class="card__pkg">lab.aba</span>
+          </div>
+          <h3 class="card__title">值变回 19，CAS 怎么还是发重了？</h3>
+          <p class="card__lead">第 2 节学过无锁 CAS，可若值先从 A 变 B 又改回 A，只查当前值的 compareAndSet 会怎样？</p>
+          <div class="card__foot">
+            <span>27 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/adder-limit.html" data-ch="ch3" data-search="14 adder-limit 用 longadder 抢券为什么还是超发？ 面经说 longadder 更快，可用来卡抢券上限怎么照样超发？ lab.adder">
+          <div class="card__top">
+            <span class="card__num">#14</span>
+            <span class="card__pkg">lab.adder</span>
+          </div>
+          <h3 class="card__title">用 LongAdder 抢券为什么还是超发？</h3>
+          <p class="card__lead">面经说 LongAdder 更快，可用来卡抢券上限怎么照样超发？</p>
+          <div class="card__foot">
+            <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/multi-ref.html" data-ch="ch3" data-search="15 multi-ref 两字段各自换成原子类，还读半套？ 折扣和门槛必须配套生效；各换成 atomicinteger 分开改，怎么还是读出新折扣配旧门槛？ lab.multiref">
+          <div class="card__top">
+            <span class="card__num">#15</span>
+            <span class="card__pkg">lab.multiref</span>
+          </div>
+          <h3 class="card__title">两字段各自换成原子类，还读半套？</h3>
+          <p class="card__lead">折扣和门槛必须配套生效；各换成 AtomicInteger 分开改，怎么还是读出新折扣配旧门槛？</p>
+          <div class="card__foot">
+            <span>27 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="ch4">
+        <div class="chapter__head">
+          <h2>第四章：线程封闭、线程池反压与异步编排（第 16～21 课）</h2>
+          <p>告别共享与排队：彻底厘清无状态局部隔离、ThreadLocal 池复用串号、异步快照透传、队列反压策略与异步汇总失误。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/date-format.html" data-ch="ch4" data-search="16 date-format 静态日期工具为啥会串味？ 看似无状态的静态日期格式化，并发下一方面串出别人日期，另一方面直接抛异常。 lab.datefmt">
+          <div class="card__top">
+            <span class="card__num">#16</span>
+            <span class="card__pkg">lab.datefmt</span>
+          </div>
+          <h3 class="card__title">静态日期工具为啥会串味？</h3>
+          <p class="card__lead">看似无状态的静态日期格式化，并发下一方面串出别人日期，另一方面直接抛异常。</p>
+          <div class="card__foot">
+            <span>27 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/singleton-state.html" data-ch="ch4" data-search="17 singleton-state 单例成员暂存单价，为何一并发就串单？ 看似先写后用没毛病，一多线程全乱套，加 volatile 也白搭。 lab.singleton">
+          <div class="card__top">
+            <span class="card__num">#17</span>
+            <span class="card__pkg">lab.singleton</span>
+          </div>
+          <h3 class="card__title">单例成员暂存单价，为何一并发就串单？</h3>
+          <p class="card__lead">看似先写后用没毛病，一多线程全乱套，加 volatile 也白搭。</p>
+          <div class="card__foot">
+            <span>25 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/threadlocal-pool.html" data-ch="ch4" data-search="18 threadlocal-pool 线程各有口袋，进线程池怎么还串号？ 每个线程独享一份上下文，进了线程池反复复用，为什么还是把上一单身份串给了下一单？ lab.tlpool">
+          <div class="card__top">
+            <span class="card__num">#18</span>
+            <span class="card__pkg">lab.tlpool</span>
+          </div>
+          <h3 class="card__title">线程各有口袋，进线程池怎么还串号？</h3>
+          <p class="card__lead">每个线程独享一份上下文，进了线程池反复复用，为什么还是把上一单身份串给了下一单？</p>
+          <div class="card__foot">
+            <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/tl-inherit.html" data-ch="ch4" data-search="19 tl-inherit 异步丢进线程池，traceid 还能传过去吗？ 上游把 traceid 放进 threadlocal，进线程池却读成 null；换可继承版怎么还串号？ lab.tlinherit">
+          <div class="card__top">
+            <span class="card__num">#19</span>
+            <span class="card__pkg">lab.tlinherit</span>
+          </div>
+          <h3 class="card__title">异步丢进线程池，traceId 还能传过去吗？</h3>
+          <p class="card__lead">上游把 traceId 放进 ThreadLocal，进线程池却读成 null；换可继承版怎么还串号？</p>
+          <div class="card__foot">
+            <span>27 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/pool-reject.html" data-ch="ch4" data-search="20 pool-reject 队列满了换「不报错」策略，怎么还在丢单？ 吞掉拒单异常或换成不抛错的丢弃策略，表面一片安静，订单却悄悄没了；怎么在不撑爆队列的前提下反压保单？ lab.poolreject">
+          <div class="card__top">
+            <span class="card__num">#20</span>
+            <span class="card__pkg">lab.poolreject</span>
+          </div>
+          <h3 class="card__title">队列满了换「不报错」策略，怎么还在丢单？</h3>
+          <p class="card__lead">吞掉拒单异常或换成不抛错的丢弃策略，表面一片安静，订单却悄悄没了；怎么在不撑爆队列的前提下反压保单？</p>
+          <div class="card__foot">
+            <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/cf-combine.html" data-ch="ch4" data-search="21 cf-combine allof 等完了，总账怎么还是错？ 三个异步分支并行算优惠、积分和运费，加了 allof().join() 等收尾，为何共享总账照样丢更新？ lab.cfcombine">
+          <div class="card__top">
+            <span class="card__num">#21</span>
+            <span class="card__pkg">lab.cfcombine</span>
+          </div>
+          <h3 class="card__title">allOf 等完了，总账怎么还是错？</h3>
+          <p class="card__lead">三个异步分支并行算优惠、积分和运费，加了 allOf().join() 等收尾，为何共享总账照样丢更新？</p>
+          <div class="card__foot">
+            <span>27 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="ch5">
+        <div class="chapter__head">
+          <h2>第五章：高并发工程模式与新特性实战（第 22～32 课）</h2>
+          <p>把单机并发推向真实后端生产场景：Semaphore 限流、按用户加锁、CAS 状态机、SingleFlight 防击穿、分段扣库存、位打包发号、DCL 双检锁、虚拟线程与 Outbox 发件箱。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/semaphore-gate.html" data-ch="ch5" data-search="22 semaphore-gate semaphore：同时只放 2 个线程 下游最多扛 2 并发，先查再加照样打超，互斥锁又只放 1 个，用 semaphore 精准卡在 2。 lab.semgate">
+          <div class="card__top">
+            <span class="card__num">#22</span>
+            <span class="card__pkg">lab.semgate</span>
+          </div>
+          <h3 class="card__title">Semaphore：同时只放 2 个线程</h3>
+          <p class="card__lead">下游最多扛 2 并发，先查再加照样打超，互斥锁又只放 1 个，用 Semaphore 精准卡在 2。</p>
+          <div class="card__foot">
+            <span>26 页 · 约 15 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/once-per-user.html" data-ch="ch5" data-search="23 once-per-user 每人限领一次：按用户加锁 同一个人连点两下要拦住，不相干的人还得同时领。 lab.userlock">
+          <div class="card__top">
+            <span class="card__num">#23</span>
+            <span class="card__pkg">lab.userlock</span>
+          </div>
+          <h3 class="card__title">每人限领一次：按用户加锁</h3>
+          <p class="card__lead">同一个人连点两下要拦住，不相干的人还得同时领。</p>
+          <div class="card__foot">
+            <span>27 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/order-state.html" data-ch="ch5" data-search="24 order-state 同一张订单，怎么又付款又取消？ 支付回调和超时关单同时扑向一张待支付订单，为什么连 volatile 也拦不住双方同时放行？ lab.orderstate">
+          <div class="card__top">
+            <span class="card__num">#24</span>
+            <span class="card__pkg">lab.orderstate</span>
+          </div>
+          <h3 class="card__title">同一张订单，怎么又付款又取消？</h3>
+          <p class="card__lead">支付回调和超时关单同时扑向一张待支付订单，为什么连 volatile 也拦不住双方同时放行？</p>
+          <div class="card__foot">
+            <span>27 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/cache-aside.html" data-ch="ch5" data-search="25 cache-aside 换成安全表先查后放，怎么还会多查库？ 缓存已换安全表，先判空查库再调 putifabsent；冷键并发一来，数据库还是被重复查了很多遍。 lab.cacheaside">
+          <div class="card__top">
+            <span class="card__num">#25</span>
+            <span class="card__pkg">lab.cacheaside</span>
+          </div>
+          <h3 class="card__title">换成安全表先查后放，怎么还会多查库？</h3>
+          <p class="card__lead">缓存已换安全表，先判空查库再调 putIfAbsent；冷键并发一来，数据库还是被重复查了很多遍。</p>
+          <div class="card__foot">
+            <span>27 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/sharded-stock.html" data-ch="ch5" data-search="26 sharded-stock 热点库存分片：16 桶为何还超卖 爆品秒杀挤死一把全局锁，有人把库存拆进 16 个普通桶却照样卖超；改用分段 cas 加顺延探测才稳。 lab.shardstock">
+          <div class="card__top">
+            <span class="card__num">#26</span>
+            <span class="card__pkg">lab.shardstock</span>
+          </div>
+          <h3 class="card__title">热点库存分片：16 桶为何还超卖</h3>
+          <p class="card__lead">爆品秒杀挤死一把全局锁，有人把库存拆进 16 个普通桶却照样卖超；改用分段 CAS 加顺延探测才稳。</p>
+          <div class="card__foot">
+            <span>25 页 · 约 20 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/id-gen.html" data-ch="ch5" data-search="27 id-gen 位打包 cas 发号：告别跨窗重号 把时间窗和序列号分开放，为什么加了原子类跨窗瞬间还是会撞出重复 id？ lab.idgen">
+          <div class="card__top">
+            <span class="card__num">#27</span>
+            <span class="card__pkg">lab.idgen</span>
+          </div>
+          <h3 class="card__title">位打包 CAS 发号：告别跨窗重号</h3>
+          <p class="card__lead">把时间窗和序列号分开放，为什么加了原子类跨窗瞬间还是会撞出重复 ID？</p>
+          <div class="card__foot">
+            <span>26 页 · 约 15 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/compound-avg.html" data-ch="ch5" data-search="28 compound-avg 两数各换 atomiclong，均值还算劈？ 实时延迟监控累加 (count, sum)，每笔 10ms；各自换成原子类，为什么还会算出错位均值？ lab.compavg">
+          <div class="card__top">
+            <span class="card__num">#28</span>
+            <span class="card__pkg">lab.compavg</span>
+          </div>
+          <h3 class="card__title">两数各换 AtomicLong，均值还算劈？</h3>
+          <p class="card__lead">实时延迟监控累加 (count, sum)，每笔 10ms；各自换成原子类，为什么还会算出错位均值？</p>
+          <div class="card__foot">
+            <span>27 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/lazy-singleton.html" data-ch="ch5" data-search="29 lazy-singleton 外面判空里面又加锁，怎么还建出两份实例？ 只在锁外判空、进锁直接建，并发仍造两份；全方法加锁拖慢纯读，靠 volatile 双检锁只建一次又秒读。 lab.lazysingle">
+          <div class="card__top">
+            <span class="card__num">#29</span>
+            <span class="card__pkg">lab.lazysingle</span>
+          </div>
+          <h3 class="card__title">外面判空里面又加锁，怎么还建出两份实例？</h3>
+          <p class="card__lead">只在锁外判空、进锁直接建，并发仍造两份；全方法加锁拖慢纯读，靠 volatile 双检锁只建一次又秒读。</p>
+          <div class="card__foot">
+            <span>27 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/queue-drain.html" data-ch="ch5" data-search="30 queue-drain 换了安全队列再 clear，怎么还丢日志？ 并发安全的队列保得住单次入队，却护不住「遍历拷贝」与「整队清空」之间的间隙。 lab.queuedrain">
+          <div class="card__top">
+            <span class="card__num">#30</span>
+            <span class="card__pkg">lab.queuedrain</span>
+          </div>
+          <h3 class="card__title">换了安全队列再 clear，怎么还丢日志？</h3>
+          <p class="card__lead">并发安全的队列保得住单次入队，却护不住「遍历拷贝」与「整队清空」之间的间隙。</p>
+          <div class="card__foot">
+            <span>25 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/virtual-race.html" data-ch="ch5" data-search="31 virtual-race 换上虚拟线程，共享计数还需要锁吗 只把平台线程换成 thread.ofvirtual()，百万次 count++ 会少掉吗？ lab.virtrace">
+          <div class="card__top">
+            <span class="card__num">#31</span>
+            <span class="card__pkg">lab.virtrace</span>
+          </div>
+          <h3 class="card__title">换上虚拟线程，共享计数还需要锁吗</h3>
+          <p class="card__lead">只把平台线程换成 Thread.ofVirtual()，百万次 count++ 会少掉吗？</p>
+          <div class="card__foot">
+            <span>27 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/tx-outbox.html" data-ch="ch5" data-search="32 tx-outbox 库与缓存各用原子数组，为啥还会写反？ 更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？ lab.txoutbox">
+          <div class="card__top">
+            <span class="card__num">#32</span>
+            <span class="card__pkg">lab.txoutbox</span>
+          </div>
+          <h3 class="card__title">库与缓存各用原子数组，为啥还会写反？</h3>
+          <p class="card__lead">更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？</p>
+          <div class="card__foot">
+            <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+    </main>
+
+    <div class="empty" id="emptyState" hidden>没有找到匹配的课程，试试换一个关键词或切回「全部」。</div>
+
+    <footer class="footer">
+      <span>MIT License · Built with real JDK benchmarks &amp; <code>javap -c -p</code> evidence</span>
+      <span><a href="./README.md">查看 README 目录说明</a> · <a href="./pages/counter-race.html">从第 1 课开始 →</a></span>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var qEl = document.getElementById("q");
+      var pillsEl = document.getElementById("pills");
+      var countEl = document.getElementById("shownCount");
+      var emptyEl = document.getElementById("emptyState");
+      var sections = Array.from(document.querySelectorAll(".chapter"));
+      var cards = Array.from(document.querySelectorAll(".card"));
+      var activeCh = "all";
+
+      function applyFilter() {
+        var kw = (qEl.value || "").trim().toLowerCase();
+        var shown = 0;
+
+        cards.forEach(function (card) {
+          var chMatch = activeCh === "all" || card.dataset.ch === activeCh;
+          var kwMatch = !kw || card.dataset.search.indexOf(kw) !== -1;
+          var visible = chMatch && kwMatch;
+          card.hidden = !visible;
+          if (visible) shown++;
+        });
+
+        sections.forEach(function (sec) {
+          var any = Array.from(sec.querySelectorAll(".card")).some(function (c) {
+            return !c.hidden;
+          });
+          sec.hidden = !any;
+        });
+
+        countEl.textContent = "显示 " + shown + " / " + cards.length + " 课";
+        emptyEl.hidden = shown > 0;
+      }
+
+      qEl.addEventListener("input", applyFilter);
+
+      pillsEl.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-filter]");
+        if (!btn) return;
+        activeCh = btn.dataset.filter;
+        Array.from(pillsEl.querySelectorAll(".pill")).forEach(function (p) {
+          p.classList.toggle("is-on", p === btn);
+        });
+        applyFilter();
+      });
+
+      var themeBtn = document.getElementById("themeBtn");
+      function currentTheme() {
+        var attr = document.documentElement.getAttribute("data-theme");
+        if (attr === "light" || attr === "dark") return attr;
+        return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+      }
+      function updateThemeBtn() {
+        themeBtn.textContent = currentTheme() === "dark" ? "浅色纸面" : "深色夜间";
+      }
+      themeBtn.addEventListener("click", function () {
+        var next = currentTheme() === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        try {
+          localStorage.setItem("java-hood-lab-theme", next);
+        } catch (e) {}
+        updateThemeBtn();
+      });
+      updateThemeBtn();
+    })();
+  </script>
+</body>
+</html>

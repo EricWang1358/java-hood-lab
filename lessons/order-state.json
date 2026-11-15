@@ -1,0 +1,822 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "order-state",
+  "course": "Java 并发从零",
+  "title": "同一张订单，怎么又付款又取消？",
+  "lead": "支付回调和超时关单同时扑向一张待支付订单，为什么连 volatile 也拦不住双方同时放行？",
+  "minutes": 35,
+  "needs": [
+    "先查再改的竞态空窗（第 2 课）",
+    "CAS 比较并替换机制（第 13 课）",
+    "volatile 只保单次读写可见（第 1 课）"
+  ],
+  "after": [
+    "讲清支付回调与超时取消为何能双双放行",
+    "拿出字节码证据说明 volatile 护不住先查再改",
+    "会用 AtomicInteger.compareAndSet 实现无锁状态机",
+    "能把 CAS 状态机映射到数据库乐观锁 WHERE 条件防重"
+  ],
+  "terms": {
+    "volatile": "变量修饰符：保证单次读看到最新写入，但不把先查后写合并成原子步骤。",
+    "AtomicInteger": "JUC 整数原子类，提供 compareAndSet 等原子更新方法。",
+    "compareAndSet": "CAS 核心方法：只在当前值等于预期值时原子写入新值，成功返回 true。",
+    "synchronized": "Java 互斥锁：同一时刻只放一条线程进入临界区，其余线程外排队等待。",
+    "CyclicBarrier": "多线程发令枪：凑齐这一波全部线程后再一起起跑，并在波末统一收账。",
+    "CREATED": "订单初始态（值为 0），代表待支付，只允许从它成功流转出去一次。",
+    "PAID": "已支付态（值为 1），支付回调线程抢占后要把订单翻成的目标状态。",
+    "CANCELED": "已取消态（值为 2），超时关单定时线程抢占后要把订单翻成的目标状态。",
+    "tryTransition": "状态流转方法：尝试把订单从 CREATED 推进到 next，返回是否赢下资格。",
+    "wins": "挂在每张订单上的成功计数：只要一条线流转成功就加 1，理想情况只能是 1。",
+    "cleanOrders": "统计整轮 16000 次竞态里「wins 恰好等于 1」的正常流转订单数。",
+    "CAS": "Compare-And-Swap：对比内存现值符合预期才写入新值，硬件层面保原子。",
+    "aload_0": "JVM 字节码指令：把当前对象引用 this 压入操作数栈准备读字段。",
+    "getfield": "JVM 字节码指令：从堆上对象实例中读取字段当前值（例如 state）。",
+    "ifne": "JVM 字节码指令：若栈顶整数不等于 0 就跳转分支，否则继续往下。",
+    "invokestatic": "JVM 字节码指令：调用类的静态方法（本例调用 work 模拟业务耗时）。",
+    "iload_1": "JVM 字节码指令：把方法第一个参数（目标状态 next）压入操作数栈。",
+    "putfield": "JVM 字节码指令：直接把新值写进对象字段，写入前不会再核对现值。",
+    "invokevirtual": "JVM 字节码指令：调用实例方法（在 CasState 里直接调 compareAndSet）。",
+    "ireturn": "JVM 字节码指令：把栈顶的 boolean 结果（1 或 0）返回给调用者。"
+  },
+  "experiments": {
+    "orderstate": {
+      "runner": "java",
+      "home": "lab.orderstate",
+      "knob": {
+        "name": "threads",
+        "label": "并发线程数",
+        "values": ["1", "2", "4", "8"],
+        "default": "4"
+      },
+      "metric": {
+        "key": "cleanOrders",
+        "expectKey": "expected",
+        "label": "只转1次订单数",
+        "expect": "该过"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "inside": "VolatileState,CasState",
+      "repeat": 20,
+      "variants": [
+        { "id": "Plain", "label": "普通先查后写", "class": "lab.orderstate.Plain", "code": "Plain.java" },
+        { "id": "VolatileState", "label": "volatile版", "class": "lab.orderstate.VolatileState", "code": "VolatileState.java" },
+        { "id": "GlobalSync", "label": "全局锁包整段", "class": "lab.orderstate.GlobalSync", "code": "GlobalSync.java" },
+        { "id": "CasState", "label": "CAS 状态机", "class": "lab.orderstate.CasState", "code": "CasState.java" }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "今天讲什么：一张订单怎会又付款又取消",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "生产上最头疼的灵异事件之一：**同一张待支付订单，既收了钱正常发货，又被系统超时关单退回库存**。不少同学第一反应是把状态字段加上 `volatile`，可故障照样半夜响警报。今天追到底。",
+          "say": "两个线程明明都在改同一张订单的同一个状态字段，却偏偏双方都以为自己赢了、各自把后续发货和退库存跑了一遍。加个 `volatile` 为什么还是挡不住？"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先唤醒第 1、2、13 课的三块底座",
+      "bridge": "查清今天这个故障前，先点热前面学过的三块相关拼图。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题回忆第 2 课的先查再改、第 1 课的 `volatile` 边界和第 13 课的 `CAS`，点选即可核对。",
+          "items": [
+            {
+              "have": "第 2 课：先查再改",
+              "q": "先检查状态满足条件，过一会儿再赋值新状态，并发下最怕什么？",
+              "options": ["另一线程在判断和写入之间插进来", "JVM 会把整段 if 自动合并成一步"],
+              "answer": 0,
+              "why": "第 2 课的库存超卖就栽在这：判断放行后还没来得及写回，另一线程也已经过了判断关口。"
+            },
+            {
+              "have": "第 1 课：可见性边界",
+              "q": "把共享状态字段标上 volatile，能让「先判断再改写」变成一步吗？",
+              "options": ["可以，加了就会护住整段读写", "不能，它只保单次读和单次写立即可见"],
+              "answer": 1,
+              "why": "第 1 课就验证过：`volatile` 管看得见，却不管「读完到写完」中间不被打断。"
+            },
+            {
+              "have": "第 13 课：CAS 机制",
+              "q": "调用 compareAndSet(0, 1) 返回 true，到底证明了什么？",
+              "options": ["写入瞬间现值恰好为 0 且已改成 1", "拿到对象锁且别人进不来这个方法"],
+              "answer": 0,
+              "why": "CAS 不加互斥锁，而是在硬件层面把「比对预期旧值 + 写入新值」焊成不可分割的一步。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "场景：支付回调撞上超时自动关单",
+      "bridge": "底座点热了。现在把真实线上事故搬进实验台：两条业务线同时盯上同一张待支付订单。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": ["支付回调", "超时关单"],
+            "shared": { "name": "state", "value": "待支付" }
+          },
+          "story": "订单下单时状态是 `CREATED`（待支付）。到了超时临界那一毫秒，用户恰好付款成功，**支付回调**赶来改 `PAID`；同一瞬间**超时关单**扫单任务也扫中这单，要改成 `CANCELED`。每单只许有一方胜出。",
+          "say": "画面很直白：同一张订单在中间，左右两路线程同时往里冲；不论谁赢，另一边都必须立刻收手。",
+          "map": [
+            {
+              "scene": "两拨人共同修改的单据状态",
+              "on": "shared",
+              "tag": "order.state",
+              "code": "int state = CREATED",
+              "say": "状态值初始为 `CREATED`（0），只允许被唯一一名胜者改成 `PAID`（1）或 `CANCELED`（2）。"
+            },
+            {
+              "scene": "并发扑来的两条业务线",
+              "on": "actors",
+              "tag": "支付与取消对撞",
+              "code": "支付线 vs 取消线",
+              "say": "一对并发线程成双成对分配同一批订单，分别充当支付回调与超时取消任务。"
+            },
+            {
+              "scene": "各自扫一眼待支付就往后冲",
+              "on": "action",
+              "tag": "先查再改窗口",
+              "code": "tryTransition(next)",
+              "say": "`tryTransition` 返回真就继续跑后续发券或退库存，并给该单 `wins` 加 1。"
+            },
+            {
+              "scene": "只认一单赢一次的硬账本",
+              "code": "cleanOrders / wins",
+              "say": "每波跑完检查每张订单的 `wins`：只有恰好等于 1 才算进 `cleanOrders`，双赢或双输都不算。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "加上 volatile，订单就不会撞车了吗",
+      "bridge": "现场摆齐了。下面直接切进最经典的开发误区：加一行 `volatile` 能不能救场？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "实验一共 **100 波 × 160 张订单 = 16000 次**支付与取消对撞。`Plain` 是没有任何保护的普通 `int`；而不少代码评审会把字段改成 `volatile int state`——你觉得它能全对吗？",
+          "say": "很多人看到并发故障，随手给状态加上 `volatile` 就以为万事大吉。我们先把 `Plain` 和 `VolatileState` 的代码摊开看清楚。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基准代码：普通先查后写 Plain",
+      "bridge": "先看最朴素的基准版本 `Plain`，看清楚每波怎么发令、怎么校验每张订单有没有撞车。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "orderstate.Plain",
+          "say": "总共不到八十行，核心就看 `tryTransition` 和 `handle` 两段。",
+          "walk": [
+            {
+              "focus": ["int state = CREATED;", "if (state == CREATED) {", "state = next;"],
+              "key": "先判断是不是待支付，再覆盖新状态并直接返回 true",
+              "say": "`tryTransition` 先检查 `state` 是不是 `CREATED`，隔一段校验开销 `work(150)` 后把 `state` 改成 `next` 并返回真。"
+            },
+            {
+              "focus": ["if (order.tryTransition(next)) {", "work(10_500);", "order.wins.incrementAndGet();"],
+              "say": "`handle` 里只要 `tryTransition` 返回真，就往下执行发货或退库存（`work`），并给这单的 `wins` 记上一笔成功。"
+            },
+            {
+              "focus": ["if (o.wins.getAndSet(0) == 1) cleanOrders.incrementAndGet();", "o.state = CREATED;"],
+              "say": "每波结束前靠 `CyclicBarrier` 统一收账：只有 `wins == 1` 的订单才计入 `cleanOrders`，然后把订单重置成 `CREATED` 进下一波。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "误区代码：只加 volatile 的版本",
+      "bridge": "普通版本肯定保不住并发，现在按很多人的习惯做法，把状态字段改成 `volatile`。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "orderstate.VolatileState",
+          "say": "留意和刚才 `Plain` 的高亮差异，其实整份代码只加了一个单词。",
+          "walk": [
+            {
+              "focus": ["volatile int state = CREATED;"],
+              "key": "只给 state 加上 volatile，先查再改的代码一字未动",
+              "say": "唯一的变化只有把 `state` 声明成 `volatile`，希望一方改完之后另一方能立刻看见新状态。"
+            },
+            {
+              "focus": ["if (state == CREATED) {", "work(150);", "state = next;"],
+              "say": "`tryTransition` 照旧是「先读出 `state` 对比是不是 `CREATED`，再赋值为 `next`」，中间没有任何锁也没有原子比较。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜：加 volatile 能全对吗",
+      "bridge": "代码看明白了，在真正点下实验运行前，先对默认 4 线程的结果押上一注。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "volatile-4t",
+          "q": "4 线程跑 `VolatileState` 共 16000 次对撞，能保住每单只转成功 1 次吗？",
+          "options": [
+            "1 线程就错，4 线程更乱",
+            "加了 volatile 就能立即可见，4 线程肯定全对",
+            "1 线程全对，4 线程依然每轮都有订单双双放行",
+            "4 线程会直接死锁卡住超时"
+          ],
+          "answer": 2,
+          "say": "回忆第 1 课 `volatile` 管不管得住两步拆开的读写，再选出你的判断。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "逐轮开奖：VolatileState 到底挡没挡住",
+      "bridge": "押注锁定，台面已经跑好了真实的 20 轮 `VolatileState`。先一轮轮翻开看看。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "orderstate",
+          "show": ["VolatileState"],
+          "knob": false,
+          "hand": true,
+          "focus": ["volatile int state = CREATED;", "if (state == CREATED) {"],
+          "say": "先点几轮「看第 1 次运行」，盯紧实际算出的正常单数有没有踩上 16000 虚线，再全部放出。"
+        },
+        {
+          "t": "reveal",
+          "of": "volatile-4t",
+          "key": "VolatileState 20 轮全错，每轮仍有数百单双双放行",
+          "say": "整整 20 轮全部低于 16000 虚线！哪怕字段加上了 `volatile`，每轮依然有几百张订单同时被支付和取消放行。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨到 1 线程对照：逻辑没写错，全输在并发",
+      "bridge": "为了排除代码本身写错条件，拨到 1 线程把并发拿掉，再对比 `Plain` 和 `VolatileState`。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "orderstate",
+          "show": ["Plain", "VolatileState"],
+          "select": "VolatileState",
+          "say": "上面可以自由切换 `1、2、4、8` 线程，亲手点拨看两版在有无并发下的变化。"
+        },
+        {
+          "t": "try",
+          "key": "1 线程两版全对，2 线程起双双跌离 16000 虚线",
+          "say": "拨到 1 线程时两个版本 20 轮稳稳全对；只要拨上 2、4、8 线程，两版立刻全数掉线——`volatile` 只少了部分陈旧缓存误判，却依然守不住并发空窗。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "在源码里点出双双放行的那两行",
+      "bridge": "既然逻辑没错、字段也标了 `volatile`，直接到 `VolatileState` 代码里揪出放跑两只老虎的两行。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "orderstate.VolatileState",
+          "q": "在 `tryTransition` 里，哪两行把「读状态」和「写新状态」切成了可插队的两步？",
+          "answer": ["if (state == CREATED) {", "state = next;"],
+          "hint": "提示：找先用 `if` 读取判断的一行，和最后直接赋值写入 `next` 的那一行。",
+          "found": "抓得准！第一行只把当时看见的值领进门，等下面这行落笔覆盖时，根本没问刚才别人改过没有。",
+          "say": "直接点中左侧代码里这一读一写两行，点偏会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "javap 拆开看：读与写之间留着空窗",
+      "bridge": "点出这两行还不够，用 `javap` 把 `VolatileState` 编译后的字节码拆开，亲眼看指令是怎么分家走的。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "orderstate.VolatileState",
+          "within": "boolean tryTransition(int);",
+          "from": "0: aload_0",
+          "to": "21: ireturn",
+          "say": "整段 `tryTransition` 只有十来条字节码，`volatile` 并没有让判断和赋值粘成一条指令。",
+          "walk": [
+            {
+              "focus": ["0: aload_0", "1: getfield", "4: ifne"],
+              "label": "只做单次读和跳转",
+              "say": "`aload_0` 压入对象后，靠 `getfield` 读出 `volatile` 字段，再用 `ifne` 判是不是 0；一旦是 0 就放行往下走，读写权限瞬间结束。"
+            },
+            {
+              "focus": ["7: sipush", "10: invokestatic"],
+              "label": "中间空窗大敞开",
+              "say": "放行后通过 `invokestatic` 去跑校验工作，没有任何锁护体，另一条线程此时读到的依然是 `CREATED`。"
+            },
+            {
+              "focus": ["13: aload_0", "14: iload_1", "15: putfield"],
+              "label": "直接覆写不查旧值",
+              "key": "getfield 与 putfield 之间完全没挡人",
+              "say": "最后 `iload_1` 拿到 `next`，靠 `putfield` 硬生生覆盖回去，随后 `ireturn` 返回 `true`——先写的人被覆盖，后写的人照样领到 `true`！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "泳道慢放：支付线与取消线怎么双双放行",
+      "bridge": "字节码空窗看得清清楚楚。现在把两条线程摆在泳道里，慢放一次双重流转是怎么踩出来的。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "if (state == CREATED) state = next",
+          "parts": { "read": "读 state", "calc": "判待支付", "write": "盲写新态" },
+          "lanes": ["支付回调", "超时关单"],
+          "shared": { "name": "state", "start": "待付" },
+          "say": "订单初态是 `CREATED`。就算 `state` 加了 `volatile`，只要两条线程前后脚扫过那道 `if`，灾难就开始了。",
+          "steps": [
+            {
+              "lane": 0, "op": "read", "text": "读 CREATED",
+              "say": "支付回调先读 `volatile int state`，清清楚楚看到是 `CREATED`。"
+            },
+            {
+              "lane": 0, "op": "calc", "text": "判待付 = 放行",
+              "say": "支付回调判断通过 `if (state == CREATED)`，放行准备往下写入 `PAID`。"
+            },
+            {
+              "lane": 1, "op": "read", "text": "读 CREATED",
+              "say": "支付回调还没写回，超时关单同时来读：因为内存里还是 `CREATED`，照样看见 `CREATED`！"
+            },
+            {
+              "lane": 1, "op": "calc", "text": "判待付 = 放行",
+              "say": "超时关单同样通过 `if` 校验，手里也握着通行证，准备往下写入 `CANCELED`。"
+            },
+            {
+              "lane": 0, "op": "write", "value": "已付", "text": "写入 PAID",
+              "say": "支付回调先落笔 `putfield`，把 `state` 改写成 `PAID`，并拿着返回的 `true` 去发货。",
+              "ask": {
+                "q": "支付线刚写入 PAID，接下来超时关单执行 putfield 会停下吗？",
+                "options": ["不会，直接覆写成 CANCELED 且返回 true", "会报错或立刻返回 false"],
+                "answer": 0
+              }
+            },
+            {
+              "lane": 1, "op": "write", "value": "取消", "text": "写 CANCELED",
+              "say": "`putfield` 根本不检查现值是不是 `CREATED`！超时关单一笔把 `PAID` 覆盖成 `CANCELED`，同样拿到 `true`。"
+            },
+            {
+              "lane": 0, "op": "note", "tone": "ok", "text": "自认成了→发货",
+              "say": "支付回调以为自己独赢，欢天喜地去算积分、发优惠券并通知仓库发货。"
+            },
+            {
+              "lane": 1, "op": "note", "tone": "fail", "text": "也胜出→退库存",
+              "say": "超时关单也以为自己赢了，转头把订单关掉并退回库存——一单就这样既发货又取消。"
+            }
+          ],
+          "verdict": "双方都在写入前看见了 ==CREATED==，各自放行把后置动作全跑了一遍。",
+          "verdictSay": "根因彻底水落石出：`volatile` 只保证读那一刻看见真值，却让两拨人同时拿到准考证进场；要堵住漏洞，就必须把「核对是不是 CREATED」和「改写新状态」合在同一次原子操作里。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修法一：GlobalSync 全单同一把大锁",
+      "bridge": "既然问题出在判断和改写之间能插队，先试最直觉的修法：挂上一把全局互斥锁把门看死。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "orderstate.GlobalSync",
+          "say": "`GlobalSync` 在普通先查再改的基础上，只往静态处理方法头上加了一个 `synchronized`。",
+          "walk": [
+            {
+              "focus": ["static synchronized void handle(GlobalSync order, int next)"],
+              "key": "全局唯一一把类锁，一次只放一条线程进门流转",
+              "say": "`static synchronized` 锁住了整个 `GlobalSync.class`，不管手上是第几号订单，所有请求都得在这道单行门前排队。"
+            },
+            {
+              "focus": ["if (order.tryTransition(next)) {", "work(10_500);"],
+              "say": "进门的线程一边握着大锁一边查 `CREATED`、改 `next` 再跑完整个后置业务，确实绝对安全；但 1 号订单办业务时，2 号到 160 号订单全被堵在门外。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修法二的思路：每单自带原子 CAS 状态机",
+      "bridge": "1 号订单付款凭什么堵住毫无关系的 2 号订单？如果让每张订单自己仲裁谁赢，就不用挤同一扇门了。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "把每单 `state` 升级成 `AtomicInteger`，流转直接调 `compareAndSet(CREATED, next)`。硬件单步比对现值并改写：唯一胜者拿 `true` 发货，败方拿 `false` 退出！",
+          "say": "妙在两件事同时成立：第一，每单只有一次从 `CREATED` 起跳的胜出机会，绝不双放行；第二，每单只和自己这一颗 `AtomicInteger` 较劲，一万张不相关的订单完全并行跑飞。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修法二代码：原子流转版 CasState",
+      "bridge": "思路清楚了，把这段单行状态机落地成可运行实验代码，看看有多精简。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "orderstate.CasState",
+          "say": "从 `Plain` 的整套 `if` 赋值退后一步看，状态流转方法浓缩成了真正的一句话。",
+          "walk": [
+            {
+              "focus": ["final AtomicInteger state = new AtomicInteger(CREATED);"],
+              "say": "每张订单各自持有一颗 `AtomicInteger`，初始值固定为 `CREATED`。"
+            },
+            {
+              "focus": ["boolean tryTransition(int next) {", "return state.compareAndSet(CREATED, next);"],
+              "key": "compareAndSet 一句完成核对与改写",
+              "say": "不再先 `if` 再赋值，而是直接把预期旧值 `CREATED` 和目标新态 `next` 传给 `CAS`，硬件一步裁决谁赢。"
+            },
+            {
+              "focus": ["if (order.tryTransition(next)) {", "work(10_650);", "order.wins.incrementAndGet();"],
+              "say": "外面只有拿到 `true` 的那一方才会去跑后续发货或退库存（总计算量和前面完全一致），拿到 `false` 的败方直接安静跳过。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "上实验台：大锁版与 CAS 版都能零出错吗",
+      "bridge": "两种修法代码摆齐了，现在把 `VolatileState`、`GlobalSync` 和 `CasState` 拉上同一个实验台实跑验账。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "orderstate",
+          "show": ["VolatileState", "GlobalSync", "CasState"],
+          "select": "CasState",
+          "say": "逐个切换版本，再拨动 `1、2、4、8` 线程数，盯紧「对不对」和「耗不耗时」两条线索。"
+        },
+        {
+          "t": "try",
+          "key": "两版修法全踩 16000 零出错，高并发下 CasState 甩开全局锁",
+          "say": "`VolatileState` 在多线程依然掉队；而 `GlobalSync` 和 `CasState` 在 1、2、4、8 线程下全都 20 轮零出错。可一到 2、4、8 线程，全局锁越堵越慢，`CasState` 却靠无锁并行一直稳稳压在低位。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条曲线同屏看：对错与并行度全看清",
+      "bridge": "把四个版本横跨 1、2、4、8 线程的所有实测点拉成一张总览图，一眼定胜负。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "orderstate",
+          "say": "实心点代表 20 轮全部零出错，空心点代表存在撞单错误；纵轴越低越快。",
+          "walk": [
+            {
+              "focus": "Plain",
+              "say": "普通先查后写从 2 线程起全是空心点，既缺可见性又缺原子流转，错得最彻底。"
+            },
+            {
+              "focus": "VolatileState",
+              "say": "`volatile` 状态从 2 线程起照样全是空心点——可见性再好，也拦不住两条线同时跨过 `if` 门框。"
+            },
+            {
+              "focus": "GlobalSync",
+              "key": "全局锁全实心零出错，但线程越多排队越久耗时反涨",
+              "say": "`GlobalSync` 全程都是实心点、绝对零撞单！可所有无辜订单都共用一把门锁，线程一多曲线反而一路往上翘。"
+            },
+            {
+              "focus": "CasState",
+              "key": "CAS 状态机全实心零出错，多线程靠无锁并行贴底运行",
+              "say": "`CasState` 全程实心满分，一进多线程就靠无锁并行大幅压低耗时贴底运行，把上面越走越高的全局锁狠狠甩开。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "再照 CasState 字节码：一次指令交卷",
+      "bridge": "为什么 `CasState` 能做到零撞单又不留空窗？再拿 `javap` 照一眼它修完以后的字节码。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "orderstate.CasState",
+          "within": "boolean tryTransition(int);",
+          "from": "0: aload_0",
+          "to": "9: ireturn",
+          "say": "对比前面十几行且夹带空窗的 `VolatileState`，这里一共只剩五条指令，中间再无插队缝隙。",
+          "walk": [
+            {
+              "focus": ["0: aload_0", "1: getfield"],
+              "label": "取出状态机对象",
+              "say": "`aload_0` 与 `getfield` 把不可变的 `AtomicInteger` 状态机实例压上操作数栈。"
+            },
+            {
+              "focus": ["4: iconst_0", "5: iload_1"],
+              "label": "备好旧值0与新态",
+              "say": "紧接着压入预期旧值 0（`CREATED`）和 `iload_1` 传入的目标状态 `next`。"
+            },
+            {
+              "focus": ["6: invokevirtual", "9: ireturn"],
+              "label": "硬件比改并交卷",
+              "key": "调 compareAndSet 一步判胜负直接返回",
+              "say": "`invokevirtual` 一口气调进底层原子 `compareAndSet`，成功改写就带回 `true` 经 `ireturn` 返回，失败当场退回 `false`，不给第二条线留半点空档。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "再走一遍泳道：CasState 怎么只放行胜者",
+      "bridge": "指令层面没有缝隙了，回到同一对支付回调与超时关单线程，慢放它们怎么在唯一门闩前分出唯一胜负。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "state.compareAndSet(0, next)",
+          "parts": { "read": "预期旧值", "calc": "备好新态", "write": "原子比并改" },
+          "lanes": ["支付回调", "超时关单"],
+          "shared": { "name": "state", "start": "待付" },
+          "say": "初态同样是 `CREATED`，这一回双方手里不再是各写各的 `putfield`，而是必须核对预期旧值 `CREATED` 才能动手。",
+          "steps": [
+            {
+              "lane": 0, "op": "read", "text": "预期CREATED",
+              "say": "支付回调把预期旧值设定为 `CREATED`（只认这个起跳态）。"
+            },
+            {
+              "lane": 0, "op": "calc", "text": "拟改 = PAID",
+              "say": "支付回调备好目标新态 `PAID`，准备向 `AtomicInteger` 发起原子流转。"
+            },
+            {
+              "lane": 1, "op": "read", "text": "预期CREATED",
+              "say": "超时关单同一时间也赶到门前，同样拿着预期旧值 `CREATED`。"
+            },
+            {
+              "lane": 1, "op": "calc", "text": "转=CANCELED",
+              "say": "超时关单备好目标新态 `CANCELED`，双方在单条硬件原子指令前正面对决。"
+            },
+            {
+              "lane": 0, "op": "write", "value": "已付", "text": "CAS→PAID成",
+              "say": "支付回调抢先命中！硬件核对现值确是 `CREATED`，原子改写成 `PAID` 并返回 `true`。",
+              "ask": {
+                "q": "state 已变 PAID，取消线再调 compareAndSet(0, CANCELED) 会怎样？",
+                "options": ["发现非 CREATED，返回 false", "照样把 PAID 覆盖成 CANCELED"],
+                "answer": 0
+              }
+            },
+            {
+              "lane": 0, "op": "note", "tone": "ok", "text": "胜出→去发货",
+              "say": "只有拿到 `true` 的支付回调获准往下走，稳稳发券、推进履约发货。"
+            },
+            {
+              "lane": 1, "op": "write", "value": "已付", "text": "CAS失败不变",
+              "say": "轮到超时关单执行原子对比：预期 `CREATED` 对不上此刻的 `PAID`，写入当场作废，状态保持 `PAID`。"
+            },
+            {
+              "lane": 1, "op": "note", "tone": "fail", "text": "返回false→停",
+              "say": "超时关单领到 `false`，立刻止步，绝不退库存，整张订单完美只转 1 次。"
+            }
+          ],
+          "verdict": "硬件只放行第一位把 ==CREATED== 改掉的胜者，败者拿 `false` 退场。",
+          "verdictSay": "而且同样这套「携带预期旧值做原子流转」的思路，往上一层落进数据库时，就成了高并发系统里最常用的一条防重更新语句。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "四种解法放上选型台：各自留给谁",
+      "bridge": "原理、曲线和泳道全走通了，现在把不同手段并排放上台面，定好以后做工程决策的尺子。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "对比默认 4 线程下的实测耗时与适用边界，别再把 `volatile` 用到状态流转上，也别无脑上全局大锁。",
+          "options": [
+            {
+              "name": "volatile 状态字段",
+              "solves": "只保单次读写立即可见，无任何阻塞队列",
+              "cost": "4 线程跑出 {ms:orderstate.VolatileState} ms 却每轮数百单双放行",
+              "when": "一写多读、不依赖旧值的布尔停机开关或状态通知",
+              "say": "`volatile` 适合「一个写手发信号、别人只看最新通知」；一旦需要先判旧状态再写入新状态，它就肯定兜不住。"
+            },
+            {
+              "name": "全局 synchronized 锁",
+              "solves": "把读、改与后置业务整段包死，绝不撞单",
+              "cost": "4 线程全对但耗时拉高到 {ms:orderstate.GlobalSync} ms（全单排队）",
+              "when": "单机并发极低、或者一次联动修改多张关联对象无法拆分",
+              "say": "业务复杂、同时改多处又几乎没并发冲突时，一把锁最稳最省脑；但千万别拿全表一把大锁去顶高并发下单与回调。"
+            },
+            {
+              "name": "CAS 状态机 / 乐观锁",
+              "solves": "单步比对旧态并改写，仅唯一胜者触发后置动作",
+              "cost": "4 线程全对只要 {ms:orderstate.CasState} ms；落库需转成 SQL 乐观锁",
+              "when": "支付/关单抢态、抢单扣券、分库或分布式多实例落库防重",
+              "say": "内存里单对象状态机就用 `compareAndSet(old, new)`；真正线上多台机器部署，把这句搬进数据库变成带旧状态条件的 `UPDATE` 即可全网防重。"
+            }
+          ],
+          "rule": "只通知不判旧值用 volatile；单对象/单据防重流转用 CAS 或 SQL 乐观锁；跨多对象复杂联动才加锁。",
+          "ruleSay": "一句话记住分工：内存状态机靠 `CAS`，线上多实例落库靠 `WHERE state = 旧态` 乐观锁，千万别拿 `volatile` 防状态抢占。",
+          "ruleKey": "状态流转用 CAS 或 SQL 乐观锁，禁用 volatile 判重"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实需求，现场拍板挑方案",
+      "layout": "split",
+      "bridge": "选型规则立好了，对照右边的决策树把左边三个真实开发需求一一对号入座。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "状态修改先看哪一问？",
+          "branches": [
+            { "when": "纯发信号，不用先查旧值", "pick": "volatile 通知开关", "eg": "停机标记、降级开关" },
+            { "when": "只抢单条记录的唯一流转权", "pick": "CAS / SQL 乐观锁", "eg": "支付回调 vs 超时取消" },
+            { "when": "同一次事务联动多对象多字段", "pick": "互斥锁包住整段", "eg": "同时扣券改积分加流水" }
+          ],
+          "say": "先扫右边三条分叉，再给左边三道业务场景选出最匹配的一招，点完分支会同步点亮。"
+        },
+        {
+          "t": "cases",
+          "tools": ["volatile 通知开关", "CAS / SQL 乐观锁", "互斥锁包住整段"],
+          "say": "逐题作答，核对每一种并发更新究竟该交给谁。",
+          "items": [
+            {
+              "text": "消费线程每轮只检查布尔标记 stop 是否为真决定是否停下，由主线程统一置为 true。",
+              "answer": 0,
+              "why": "一边只写一次、另一边只读新值，没有任何先查后改竞争，最轻量有效的就是 `volatile`。"
+            },
+            {
+              "text": "订单服务多台机器跑在生产上，支付回调与超时定时任务同时去把待支付订单改成已支付或已取消。",
+              "answer": 1,
+              "why": "多实例内存不共享，但底层逻辑完全同构：把 `compareAndSet(CREATED, next)` 写成数据库 `UPDATE` 带旧状态条件并校验影响行数为 1。"
+            },
+            {
+              "text": "单机内存账本要在一次核销里同时修改账户余额、权益卡次数与等级徽章三个对象且保持齐步生效。",
+              "answer": 2,
+              "why": "单次 CAS 护不住跨多个对象的联动不变量，用互斥锁（注意锁粒度按账户拆开，别用全局大锁）最不容易写错。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "起个名字：CAS 状态机与数据库乐观锁",
+      "bridge": "实验做完、规律也握紧了，最后把这套内存与数据库互通的解法正式命名并记住面试追问。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "CAS 状态机与乐观锁",
+          "alias": "compareAndSet(CREATED, next) · WHERE 条件乐观锁",
+          "oneLine": "用 ==原子比对旧态并写入== 替代先查后改；落库就是带 `WHERE state = 旧态` 的更新并看影响行数。",
+          "asked": [
+            "订单 state 已经加了 volatile，为何仍会又支付又取消？",
+            "CasState 怎么靠 CAS 保证每单只转成功 1 次？",
+            "多机部署时，内存 CAS 怎么映射到数据库防重？"
+          ],
+          "say": "关键就在第三问的无缝映射：单机把状态机写进 `compareAndSet(CREATED, next)`，多机落库就写带旧态条件的 `UPDATE`，再检查影响行数是不是 1——谁拿到 1 谁往下发货或退单，拿到 0 的直接安静返回。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一：volatile 到底管不管得住两步抢单",
+      "bridge": "面试官最常拿「我加了 `volatile` 为什么还出事」做开场白，用第一道小题验一下火候。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "某同学见订单并发撞车，把 `int state` 改成 `volatile int state`，为何依然会出现既付款又取消？",
+          "options": [
+            {
+              "text": "`volatile` 只保读写可见，挡不住两线程双双过 `if`",
+              "ok": true,
+              "why": "说透了！`javap` 已经拆穿：读判断与写入仍分两条指令，两线程全看见 `CREATED` 后，后写的 `putfield` 会直接覆盖且双方都返回 `true`。"
+            },
+            {
+              "text": "因为 Java 里的 `volatile` 对 `int` 基本类型不起作用，只对对象引用生效",
+              "ok": false,
+              "why": "`volatile` 对 `int` 完全有效，能保证最新写入立即可见；错不在类型，而在它无法把「先查再改」合成一步原子操作。"
+            },
+            {
+              "text": "因为支付回调和超时任务不在同一个线程组里，JVM 无法共享 `volatile` 缓存",
+              "ok": false,
+              "why": "只要运行在同一 JVM 进程、共享同一张订单对象，所有线程都遵守同一个内存可见性约定，跟线程组无关。"
+            }
+          ],
+          "say": "回想一下 `VolatileState` 的字节码截图，分清「看见新值」和「不被插队」是两码事。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二：CasState 为何又准又快",
+      "bridge": "原因清楚了，第二道题考一考 `CasState` 的两条核心收益：做对与做快各自靠什么。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "对比 `GlobalSync` 和 `CasState`，为什么后者同样 0 出错却在高并发下显著更快？",
+          "options": [
+            {
+              "text": "每单靠各自 AtomicInteger 原子抢赢，无关订单全并行",
+              "ok": true,
+              "why": "精准！`CasState` 把裁决点缩到单张订单的那颗 `AtomicInteger` 上，只由硬件原子指令裁决唯一的 `true` 胜者，不同订单之间零阻塞排队。"
+            },
+            {
+              "text": "因为 `CasState` 在 `compareAndSet` 失败时会直接抛异常把另一方跳过",
+              "ok": false,
+              "why": "`compareAndSet` 失败不会抛异常，而是平稳返回 `false`，让败方乖乖跳过后置的发货或退库存工作。"
+            },
+            {
+              "text": "因为 `AtomicInteger` 把 `work(10_650)` 的计算自动优化删掉了",
+              "ok": false,
+              "why": "每张订单依然有一名胜者完整执行 `work(10_650)`；快出来的全是原本浪费在全局单锁门口苦等的时间。"
+            }
+          ],
+          "say": "想清楚两点：单张订单内部靠唯一返回值 `true/false` 抢唯一资格；订单与订单之间靠无锁放开并行。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三：单机内存 CAS 怎么落成多机数据库防重",
+      "bridge": "最后一道收口工程实战：线下单机内存跑通了，上了多台服务器落数据库该写哪句 SQL？",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "线上多台机器部署订单服务时，想把内存里的 `compareAndSet(CREATED, next)` 落进数据库防重，该怎么做？",
+          "options": [
+            {
+              "text": "用带 `WHERE state = 'CREATED'` 的更新，只认影响行数为 1",
+              "ok": true,
+              "why": "满分！数据库行锁配 `WHERE state = 'CREATED'` 就是持久层 CAS；拿影响行数 1 才继续，0 就幂等退出。"
+            },
+            {
+              "text": "先 `SELECT` 查出是 `CREATED`，再到代码里直接执行 `UPDATE`",
+              "ok": false,
+              "why": "这就把内存里 `Plain` 的「先查再改」搬到数据库里重演了一遍，两台机器照样同时查到 `CREATED` 然后双双放行！"
+            },
+            {
+              "text": "只要把数据库订单对象的 Java 字段加上 `volatile`，多机之间就能自动互斥",
+              "ok": false,
+              "why": "`volatile` 连单机先查后改都拦不住，更管不到跨多台机器各自独立 JVM 之间的并发竞争。"
+            }
+          ],
+          "say": "记住数据库版的「先查再改禁区」：千万别先 `SELECT` 再盲 `UPDATE`，一定要把条件写死在 `UPDATE` 的 `WHERE` 子句里。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上笔记，把整套原理与实战讲给面试官",
+      "bridge": "三道小题全部通关！现在合上提示，练一遍六十秒完整面试口述。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "支付回调和超时取消同时修改一张订单状态，怎么防止既付款又取消？加 volatile 行吗？",
+          "points": [
+            "普通先查再改会双双通过 if 检查，后者覆盖状态且双方都以为成功执行后续动作",
+            "volatile 只保单次读写可见，字节码里 getfield 与 putfield 间仍有插队空窗",
+            "用 compareAndSet(CREATED, next) 抢唯一一次 true",
+            "比全局锁快在无关订单并行；落库靠 WHERE 旧态防重"
+          ],
+          "model": "普通先查再改或加 volatile 均防不住双重流转，因为 volatile 只保单次读写可见，字节码里 getfield 读判和 putfield 写回之间仍留完整空窗，两线同时看见 CREATED 就会覆盖且双双返回 true。内存状态机应使用 AtomicInteger.compareAndSet(CREATED, next)，硬件单步比对旧态并改写，唯一胜者拿 true 执行发货或退库存，败者拿 false 退出且无关订单全并行不堵锁。落库时对应带 WHERE state = 'CREATED' 的更新，仅影响行数为 1 时推进后续业务。",
+          "say": "对照四条要点顺一遍思路，试着一气呵成讲出来，尤其要把「`volatile` 为什么挡不住」和「数据库 `WHERE` 条件怎么对应」串联起来。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张订单状态机避坑卡",
+      "bridge": "第 24 课收官！把今天这三张高含金量卡收进面试口袋，下回再碰状态流转直接条件反射。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "为什么订单 state 加了 volatile 仍会又付款又取消？",
+              "a": "`volatile` 只保单次读写可见，挡不住 `getfield` 判完 `CREATED` 后、在 `putfield` 写入前双方双双放行。"
+            },
+            {
+              "q": "状态机 CAS 比全局 synchronized 锁好在哪？",
+              "a": "单单依靠 `compareAndSet(CREATED, next)` 只放行一个 `true` 胜者，且不同订单之间零排队全速并行。"
+            },
+            {
+              "q": "如何把 CAS 状态机无损映射到线上数据库？",
+              "a": "放弃先 `SELECT` 后 `UPDATE`，改用带旧状态条件的 `WHERE state = 'CREATED'` 更新，只认影响行数等于 1 的胜者。"
+            }
+          ],
+          "say": "至此，单机状态机防重到数据库乐观锁的链路已经全部接通。下回代码评审再看见 `if (order.getState() == CREATED)` 紧跟 `setState`，直接动手换成 CAS 或带旧态条件的更新！"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1644 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>换了安全容器，销量怎么还是少？</title>
+<script>try{var t=localStorage.getItem("lesson-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>
+/* Lesson page. One stage, one teacher line at the bottom: every press brings one sentence and one visible change.
+   Colours follow StudyHub's paper tokens (ui/tokens.css). The accent means "look here, now" and nothing else;
+   green = came out as it should, plum = did not. No shadows beyond a hairline, no gradients, no decoration. */
+:root {
+  --canvas: #f1ede6; --surface: #faf8f4; --raised: #ffffff; --sunken: #e8e3da;
+  --ink: #1e1a15; --ink-2: #453e35; --muted: #635b51; --faint: #7b7368;
+  --rule: #2a1c0e24; --rule-strong: #2a1c0e52;
+  --accent: #c03a1f; --accent-text: #ad4025; --accent-ink: #fffaf5; --accent-wash: #c03a1f14;
+  --ok: #1c6c48; --ok-wash: #1c6c4817; --bad: #a23461; --bad-wash: #a2346114; --info: #346287; --ochre: #8a5a10;
+  --code-k: #8a3b1f;
+  --s1: #1c5cab; --s2: #e0703a; --s3: #16a37a; --s4: #8a5a10;
+  --font: "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --display: "Segoe UI Variable Display", "SF Pro Display", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Microsoft YaHei UI", monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { font-size: clamp(16px, .5vw + 10.5px, 19px); -webkit-text-size-adjust: 100%; }
+body { margin: 0; height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden;
+  background: var(--canvas); color: var(--ink); font-family: var(--font); line-height: 1.6; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--mono); }
+p code, li code, .opt code, .voice code { font-size: .9em; background: var(--sunken); padding: .08em .36em; border-radius: 5px; }
+mark { background: none; color: inherit; box-shadow: inset 0 -.5em 0 var(--accent-wash); font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* top: where this lesson is going */
+.top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 1rem; padding: .55rem 1.4rem; border-bottom: 1px solid var(--rule); }
+.top__title { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top__tools { display: flex; justify-content: flex-end; align-items: center; gap: .8rem; font-size: .8rem; color: var(--muted); }
+.beats { display: flex; align-items: center; }
+.beat { display: flex; align-items: center; gap: .4rem; padding: .3rem .55rem; border: 0; background: none; border-radius: 8px; font-size: .78rem; color: var(--faint); cursor: pointer; white-space: nowrap; }
+.beat::before { content: ""; width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid currentColor; }
+.beat:hover { color: var(--ink); }
+.beat.is-done { color: var(--muted); }
+.beat.is-done::before { background: currentColor; }
+.beat.is-now { color: var(--ink); font-weight: 650; }
+.beat.is-now::before { background: var(--accent); border-color: var(--accent); }
+.tool { border: 1px solid var(--rule); background: none; border-radius: 8px; padding: .25rem .6rem; cursor: pointer; }
+.tool:hover { border-color: var(--rule-strong); color: var(--ink); }
+
+/* stage */
+/* no top padding on the scroller itself: a sticky bar inside it must be able to reach the very top */
+.stage { overflow-x: hidden; overflow-y: auto; padding: 0 clamp(1rem, 4vw, 3.4rem) 2rem; }
+.slide { width: 100%; max-width: 68rem; margin: 0 auto; padding-top: clamp(1.4rem, 4vh, 2.8rem); }
+.slide__title { font-family: var(--display); font-size: clamp(1.5rem, 2.6vw, 2.3rem); line-height: 1.22; font-weight: 680; letter-spacing: -.01em; margin: 0 0 1.3rem; text-wrap: balance; }
+.slide__blocks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+.slide--split .slide__blocks { grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); column-gap: 2.4rem; align-items: start; }
+.slide--split .block:first-child { grid-row: 1 / span 4; }
+.block { transition: opacity .28s var(--ease), transform .28s var(--ease); }
+.block.is-waiting { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+.slide--hook .slide__title { font-size: clamp(2.2rem, 5vw, 4rem); line-height: 1.12; font-weight: 720; letter-spacing: -.02em; max-width: 13em; margin-top: clamp(.5rem, 7vh, 4.5rem); margin-bottom: 1.6rem; }
+.hook__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.4rem; margin-top: 2.4rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); max-width: 52rem; }
+.hook__meta h3 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .5rem; }
+.hook__meta ul { margin: 0; padding: 0; list-style: none; font-size: .92rem; color: var(--ink-2); }
+.hook__meta li { padding: .14rem 0; }
+
+.text { font-size: 1.18rem; line-height: 1.65; color: var(--ink-2); margin: 0; max-width: 34em; }
+.slide--hook .text { font-size: 1.4rem; color: var(--ink); }
+.points { margin: 0; padding: 0; list-style: none; display: grid; gap: .7rem; font-size: 1.08rem; line-height: 1.55; }
+.points li { display: grid; grid-template-columns: 1.1rem 1fr; }
+.points li::before { content: ""; width: 6px; height: 6px; margin-top: .62em; background: var(--ink-2); }
+.callout { border-left: 3px solid var(--info); padding: .1rem 0 .1rem 1rem; max-width: 36em; }
+.callout--pitfall { border-left-color: var(--bad); }
+.callout h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.callout p { margin: 0; color: var(--ink-2); }
+
+/* code */
+.code { background: var(--raised); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+.code__path { padding: .55rem 1rem .5rem; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: .68rem; color: var(--faint); }
+.code__scroll { overflow: auto; max-height: min(58vh, 31rem); padding: .5rem 0 .8rem; scrollbar-width: thin; }
+.code__line { display: grid; grid-template-columns: 3em minmax(0, 1fr); font-family: var(--mono); font-size: .78rem; line-height: 1.68; white-space: pre; padding-right: 1rem; border-left: 3px solid transparent; transition: opacity .3s, background-color .3s; }
+.code__no { text-align: right; padding-right: 1em; color: var(--faint); opacity: .7; user-select: none; }
+.code.has-focus .code__line { opacity: .4; }
+.code.has-focus .code__line.is-focus { opacity: 1; background: var(--accent-wash); border-left-color: var(--accent); }
+.code .code__line.is-changed { opacity: 1; background: var(--ok-wash); border-left-color: var(--ok); }
+.tk-k { color: var(--code-k); font-weight: 600; }
+.tk-s { color: var(--ok); }
+.tk-n { color: var(--info); }
+.tk-c { color: var(--faint); font-style: italic; }
+
+/* buttons and segmented choices */
+.btn { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 10px; padding: .5rem 1rem; cursor: pointer; }
+.btn:hover { border-color: var(--ink-2); }
+.btn--primary { background: var(--ink); border-color: var(--ink); color: var(--canvas); font-weight: 600; }
+.btn--primary:hover { border-color: var(--ink); opacity: .86; }
+.btn--quiet { border-color: transparent; background: none; color: var(--muted); padding: .2rem .5rem; font-size: .78rem; }
+.btn--quiet:hover { color: var(--ink); border-color: var(--rule); }
+.btn:disabled { opacity: .4; cursor: default; }
+.seg { display: inline-flex; align-items: center; gap: .6rem; font-size: .82rem; color: var(--muted); }
+.seg__set { display: inline-flex; padding: 3px; background: var(--sunken); border-radius: 10px; }
+.seg__set button { border: 0; background: none; padding: .32rem .8rem; border-radius: 8px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.seg__set button:hover { color: var(--ink); }
+.seg__set button[aria-pressed="true"] { background: var(--raised); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--rule), 0 1px 2px #0000001a; }
+
+/* experiment: the code on the left, what really happened on the right */
+.exp__bar { display: flex; justify-content: space-between; align-items: center; gap: .8rem 1.5rem; flex-wrap: wrap; margin-bottom: .4rem; padding: .5rem 0; position: sticky; top: 0; z-index: 2; background: var(--canvas); }
+.exp__body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 1.6rem; align-items: start; }
+.exp .code__scroll { max-height: min(34vh, 22rem); }
+.block:has(> .try) { display: none; }
+.exp.is-invited .seg__set { animation: invite 2.4s var(--ease); }
+@keyframes invite { 0%, 70% { box-shadow: 0 0 0 2px var(--accent); } }
+.exp__q { margin: .1rem 0 .7rem; font-size: .92rem; color: var(--ink-2); }
+.plot__row { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; align-items: center; gap: .8rem; width: 100%; padding: 0; border: 0; border-top: 1px solid var(--rule); background: none; text-align: left; cursor: pointer; }
+.plot__row[disabled] { cursor: default; }
+.plot__label { font-size: .86rem; color: var(--muted); }
+.plot__row.is-on .plot__label { color: var(--ink); font-weight: 650; }
+.plot__track { position: relative; height: 3.3rem; }
+.plot__track::before { content: ""; position: absolute; inset: 50% 0 auto 0; border-top: 1px solid var(--rule); }
+.plot__track::after { content: ""; position: absolute; top: 0; bottom: 0; left: var(--expect); border-left: 1.5px dashed var(--ok); opacity: .7; }
+.dot { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--bad); z-index: 1;
+  transition: left .55s var(--ease), transform .55s var(--ease), opacity .3s, background-color .3s; }
+.dot.is-ok { background: var(--ok); }
+.dot.is-waiting { opacity: 0; pointer-events: none; }
+.plot__row:not(.is-on) .dot { opacity: .5; }
+.plot__row:not(.is-on) .dot.is-waiting { opacity: 0; }
+.plot__sum { text-align: right; font-size: .8rem; color: var(--muted); line-height: 1.35; }
+.plot__sum b { display: block; font-size: .9rem; color: var(--bad); }
+.plot__sum b.is-ok { color: var(--ok); }
+.plot__axis { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; gap: .8rem; border-top: 1px solid var(--rule); font-size: .72rem; color: var(--faint); }
+.plot__ticks { position: relative; height: 1.6rem; }
+.plot__ticks span { position: absolute; top: .3rem; white-space: nowrap; }
+.plot__ticks .is-expect { left: var(--expect); transform: translateX(-100%); padding-right: .4rem; color: var(--ok); font-weight: 600; }
+.exp__finding { margin: .9rem 0 0; font-size: 1.04rem; line-height: 1.55; min-height: 3.2em; }
+.exp__finding b { font-variant-numeric: tabular-nums; }
+.exp__foot { margin-top: .5rem; display: flex; align-items: center; gap: .3rem .9rem; flex-wrap: wrap; font-size: .72rem; color: var(--faint); }
+.cmd { font-family: var(--mono); background: var(--sunken); color: var(--ink-2); padding: .15rem .5rem; border-radius: 6px; }
+
+/* lanes: two threads and the one thing they share; time runs downward */
+.lanes__expr { display: flex; align-items: center; gap: .6rem 1.4rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.lanes__code { font-family: var(--mono); font-size: 1.5rem; font-weight: 650; }
+.lanes__parts { display: flex; align-items: center; gap: .45rem; font-size: .84rem; color: var(--faint); }
+.part { padding: .2rem .7rem; border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); transition: color .25s, border-color .25s, background-color .25s; }
+.part.is-now { color: var(--accent-text); border-color: var(--accent); background: var(--accent-wash); font-weight: 600; }
+.lanes__grid { display: grid; grid-template-columns: minmax(0, 1fr) 5.4rem minmax(0, 1fr); max-width: 46rem; margin: 0; }
+.lanes__head { font-size: .82rem; color: var(--muted); padding-bottom: .5rem; border-bottom: 1px solid var(--rule); }
+.lanes__head--a { text-align: right; padding-right: 3.6rem; }
+.lanes__head--b { padding-left: 3.6rem; }
+.lanes__head--mid { text-align: center; font-family: var(--mono); color: var(--ink); font-weight: 600; }
+.lcell { min-height: 2.9rem; display: flex; align-items: center; transition: opacity .3s var(--ease); }
+.lcell--a { justify-content: flex-end; }
+.lcell--mid { justify-content: center; position: relative; }
+.lcell--mid::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid var(--rule-strong); }
+.lrow { display: contents; }
+.lrow.is-waiting .lcell > * { opacity: 0; }
+.lcell > * { transition: opacity .3s var(--ease); }
+.chip { font-size: .92rem; padding: .32rem .8rem; border-radius: 8px; background: var(--raised); border: 1px solid var(--rule); white-space: nowrap; }
+.lrow.is-now .chip { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.arrow { flex: 0 0 3rem; height: 0; border-top: 1.5px solid var(--ink-2); position: relative; margin: 0 .3rem; }
+.arrow::after { content: ""; position: absolute; top: -5px; border: 4.25px solid transparent; }
+.arrow--right::after { right: -2px; border-left: 7px solid var(--ink-2); border-right: 0; }
+.arrow--left::after { left: -2px; border-right: 7px solid var(--ink-2); border-left: 0; }
+.arrow--none { border-top-color: transparent; }
+.arrow--none::after { display: none; }
+.val { position: relative; z-index: 1; min-width: 2.7rem; text-align: center; font-family: var(--mono); font-size: .98rem; font-weight: 650; padding: .2rem .6rem; border-radius: 8px; background: var(--canvas); border: 1.5px solid var(--ink-2); }
+.val--write { border-color: var(--accent); color: var(--accent-text); }
+.lanes__verdict { max-width: 46rem; margin: .9rem 0 0; padding-top: .9rem; border-top: 1px solid var(--rule); font-size: 1.15rem; font-weight: 650; transition: opacity .3s; }
+.lanes__verdict.is-waiting { opacity: 0; }
+
+/* guess, then see */
+.predict__q, .quiz__q { font-size: 1.3rem; font-weight: 650; line-height: 1.4; margin: 0 0 1rem; }
+.opts { display: grid; gap: .55rem; max-width: 40rem; }
+.opt { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto; align-items: center; gap: .6rem; width: 100%; text-align: left; padding: .75rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--raised); cursor: pointer; font-size: 1.02rem; }
+.opt:hover { border-color: var(--ink-2); }
+.opt__key { font-family: var(--mono); font-size: .82rem; color: var(--faint); }
+.opt__tag { font-size: .74rem; font-weight: 600; }
+.opt.is-picked { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.opt.is-picked .opt__tag { color: var(--ink-2); }
+.opt.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); }
+.opt.is-right .opt__tag { color: var(--ok); }
+.opt.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
+.opt.is-wrong .opt__tag { color: var(--bad); }
+.opt__why { grid-column: 2 / -1; font-size: .88rem; color: var(--ink-2); }
+.reveal { display: flex; gap: .5rem 2.6rem; flex-wrap: wrap; padding-top: .8rem; border-top: 1px solid var(--rule); max-width: 46rem; }
+.reveal dl { margin: 0; }
+.reveal dt { font-size: .76rem; color: var(--muted); }
+.reveal dd { margin: .1rem 0 0; font-size: 1.02rem; font-weight: 600; }
+.reveal .is-ok { color: var(--ok); }
+.reveal .is-miss { color: var(--bad); }
+
+/* the name comes last */
+.name__term { font-family: var(--display); font-size: clamp(2.4rem, 5.4vw, 4.2rem); line-height: 1.1; font-weight: 720; letter-spacing: -.02em; margin: 0; }
+.name__alias { font-family: var(--mono); font-size: .92rem; color: var(--muted); margin: .5rem 0 0; }
+.name__line { font-size: 1.28rem; line-height: 1.55; margin: 1.1rem 0 0; max-width: 30em; }
+.name__asked { margin: 1.8rem 0 0; padding-top: 1rem; border-top: 1px solid var(--rule); max-width: 40rem; }
+.name__asked h4 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .4rem; }
+.name__asked ul { margin: 0; padding: 0; list-style: none; font-size: 1.02rem; color: var(--ink-2); }
+.name__asked li { padding: .2rem 0; }
+
+/* say it aloud, take three cards */
+.say__prompt { font-size: 1.5rem; font-weight: 650; line-height: 1.4; margin: 0 0 1.2rem; max-width: 26em; text-wrap: balance; }
+.say__row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.say__clock { font-family: var(--mono); font-size: 1.7rem; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 3.4em; }
+.say__points { margin: 1.4rem 0 0; padding: 1rem 0 0; border-top: 1px solid var(--rule); list-style: none; display: grid; gap: .5rem; max-width: 40rem; }
+.say__points label { display: grid; grid-template-columns: 1.4rem 1fr; gap: .5rem; align-items: start; cursor: pointer; font-size: 1.02rem; }
+.say__points input { width: 1.05rem; height: 1.05rem; margin-top: .32rem; accent-color: var(--ok); }
+.say__score { margin: .8rem 0 0; font-size: .92rem; color: var(--muted); }
+.cards { display: grid; gap: 0; max-width: 44rem; border-bottom: 1px solid var(--rule); }
+.card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem 1rem; align-items: baseline; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.card__q { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.card__a { grid-column: 1 / -1; margin: 0; color: var(--ink-2); }
+
+/* the teacher: what a person standing next to you would say right now. It leads; the stage shows. */
+.voice { border-top: 1px solid var(--rule); padding: 1rem clamp(1rem, 4vw, 3.4rem) 1.1rem; }
+.voice__inner { max-width: 68rem; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.6rem; align-items: end; }
+.voice__line { margin: 0; font-size: 1.2rem; line-height: 1.62; min-height: 4.86em; max-width: 43em; }
+.voice__line > span { display: block; }
+.voice__line.is-fresh > span { animation: line-in .32s var(--ease); }
+.voice__nav { display: flex; gap: .5rem; }
+@keyframes line-in { from { opacity: 0; transform: translateY(5px); } }
+
+.voice__key { margin: .4rem 0 0; font-size: .8rem; color: var(--muted); animation: line-in .32s var(--ease); }
+.tool.is-flash { animation: flash 1.2s var(--ease); }
+@keyframes flash { 0%, 40% { background: var(--accent-wash); border-color: var(--accent); color: var(--ink); } }
+
+/* reminders at the moment of need */
+.term { border-bottom: 1.5px dotted var(--ochre); cursor: help; border-radius: 2px; }
+.term:hover, .term:focus-visible { background: var(--accent-wash); }
+.tip { position: fixed; z-index: 20; max-width: 22rem; padding: .6rem .8rem; border-radius: 10px; background: var(--ink); color: var(--canvas); font-size: .86rem; line-height: 1.5; box-shadow: 0 8px 24px -10px #000000a0; }
+.tip b { display: block; font-size: .8rem; opacity: .75; margin-bottom: .1rem; }
+.tip code { background: none; padding: 0; }
+.notes { position: relative; }
+.notes__list { position: absolute; right: 0; top: calc(100% + .5rem); z-index: 15; width: min(22rem, 86vw); margin: 0; padding: .7rem 1rem .7rem 2rem; background: var(--raised); border: 1px solid var(--rule-strong); border-radius: 12px; font-size: .88rem; color: var(--ink); line-height: 1.5; box-shadow: 0 14px 34px -20px #000000a0; }
+.notes__list li { padding: .15rem 0; }
+.notes__list .is-empty { list-style: none; margin-left: -1rem; color: var(--muted); }
+
+.exp__note { margin: .5rem 0 0; font-size: .84rem; color: var(--muted); min-height: 1.4em; }
+button.plot__label { border: 0; background: none; padding: .3rem 0; text-align: left; cursor: pointer; line-height: 1.3; }
+button.plot__label:hover { color: var(--ink); }
+.plot__row { cursor: default; }
+.dot { cursor: pointer; }
+.dot::after { content: ""; position: absolute; inset: -5px; }
+.dot:hover { box-shadow: 0 0 0 3px var(--canvas), 0 0 0 4.5px currentColor; color: var(--ink-2); }
+.exp__probe { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.lrow-list { display: contents; }
+.lrow--controls .lcell { padding-top: .7rem; }
+.lrow--controls .lcell--a { padding-right: .8rem; }
+.lrow--controls .lcell--b { padding-left: .8rem; }
+.sched__bar { display: flex; align-items: center; justify-content: flex-start; gap: .6rem 1.2rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.goals { display: flex; gap: .5rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; font-size: .86rem; }
+.goal { display: flex; align-items: center; gap: .4rem; padding: .22rem .7rem; border: 1px solid var(--rule-strong); border-radius: 999px; color: var(--ink-2); }
+.goal::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid currentColor; }
+.goal.is-done { color: var(--ok); border-color: var(--ok); font-weight: 600; }
+.goal.is-done::before { background: var(--ok); border-color: var(--ok); }
+.sched__result { max-width: 46rem; margin: .9rem 0 0; min-height: 3.2em; font-size: 1.05rem; }
+
+.block > .code { max-width: 46rem; }
+.lrow--controls .btn { border-color: var(--ink-2); font-weight: 600; }
+.lrow--controls .btn:disabled { border-color: var(--rule-strong); font-weight: 400; }
+
+/* small answer buttons, shared by the warm-up, the lanes question and the cases */
+.picks { display: flex; gap: .45rem; flex-wrap: wrap; }
+.pick { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 9px; padding: .36rem .85rem; font-size: .95rem; cursor: pointer; }
+.pick:hover:not(:disabled) { border-color: var(--ink-2); }
+.pick:disabled { cursor: default; color: var(--muted); }
+.pick.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); color: var(--ok); font-weight: 600; }
+.pick.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); color: var(--bad); }
+.pick--tool { font-family: var(--mono); font-size: .86rem; }
+
+/* opening: what you already have, then a picture to hang the lesson on */
+.recall, .cases { max-width: 50rem; }
+.recall__item { display: grid; grid-template-columns: 7.4rem minmax(0, 1fr); gap: .4rem 1.2rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.recall__have { grid-row: 1 / span 3; font-size: .82rem; color: var(--muted); padding-top: .2rem; }
+.recall__q, .cases__text { margin: 0; font-size: 1.08rem; font-weight: 600; line-height: 1.5; }
+.recall__why, .cases__why { margin: 0; font-size: .92rem; color: var(--ink-2); }
+.recall__score, .cases__score { margin: 0; padding-top: .8rem; border-top: 1px solid var(--rule); font-size: .92rem; color: var(--muted); min-height: 2.4em; }
+.cases__item { display: grid; gap: .5rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.cases__text { font-weight: 400; }
+.scene__story { margin: 0 0 1.4rem; font-size: 1.28rem; line-height: 1.7; max-width: 33em; }
+.scene__map { max-width: 44rem; transition: opacity .3s var(--ease); }
+.scene__map.is-waiting, .scene__row.is-waiting { opacity: 0; }
+.scene__head, .scene__row { display: grid; grid-template-columns: minmax(0, 1fr) 2.6rem minmax(0, 1.1fr); align-items: center; }
+.scene__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; border-bottom: 1px solid var(--rule); }
+.scene__row { padding: .58rem 0; border-bottom: 1px solid var(--rule); font-size: 1.04rem; transition: opacity .3s var(--ease); }
+.scene__arrow { color: var(--faint); }
+.scene__row.is-now .scene__arrow { color: var(--accent); }
+.scene__to { font-weight: 600; }
+
+/* find the line; look inside */
+.inside { max-width: 46rem; }
+.spot { display: grid; grid-template-columns: minmax(0, 46rem) minmax(13rem, 19rem); gap: 0 2rem; align-items: start; }
+.spot__q { grid-column: 1 / -1; }
+.spot__how { margin: .2rem 0 .8rem; font-size: .92rem; color: var(--muted); }
+.spot__q { margin: 0 0 .8rem; font-size: 1.18rem; font-weight: 650; line-height: 1.45; }
+.spot .code__scroll { max-height: max(12rem, calc(100vh - 21.5rem)); }
+.code.is-pickable .code__line { cursor: pointer; }
+.code.is-pickable .code__line:hover { background: var(--sunken); }
+.code__line.is-wrong { background: var(--bad-wash); border-left-color: var(--bad); }
+.spot__out { margin: 0; font-size: 1rem; line-height: 1.7; color: var(--ink-2); }
+.spot__out.is-ok { color: var(--ok); font-weight: 600; }
+.inside__what { margin: 0 0 .6rem; font-size: .86rem; color: var(--muted); }
+.inside .code__line { position: relative; font-size: .88rem; line-height: 2.2; }
+.code__tag { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); font-family: var(--font); font-size: .78rem; font-weight: 600; line-height: 1.7; padding: 0 .7rem; border-radius: 999px; background: var(--raised); border: 1px solid var(--rule-strong); }
+.code__line.is-focus .code__tag { border-color: var(--accent); color: var(--accent-text); }
+
+/* lanes: a question between two steps; steps that touch nothing */
+.lanes--long .lcell { min-height: 2.5rem; }
+.chip--wait { border-style: dashed; color: var(--muted); }
+.chip--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.chip--ok { border-color: var(--ok); color: var(--ok); }
+.lanes__ask { max-width: 46rem; margin-top: .8rem; padding: .8rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--surface); display: grid; gap: .5rem; }
+.lanes__ask[hidden] { display: none; }
+.lanes__ask p { margin: 0; font-weight: 600; }
+.lanes__ask .ask__out { font-weight: 400; font-size: .9rem; color: var(--muted); min-height: 1.5em; }
+
+/* runs let out by hand; a reference answer after speaking */
+.exp__hand { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; }
+.exp__hand[hidden] { display: none; }
+.plot__sum.is-held > * { visibility: hidden; }
+.say__model { margin: 1rem 0 0; padding: .9rem 1.1rem; border-left: 3px solid var(--rule-strong); background: var(--surface); font-size: 1rem; line-height: 1.8; max-width: 42rem; }
+
+/* how to choose between the tools just met */
+.choose { max-width: 62rem; }
+.choose__head, .choose__row { display: grid; grid-template-columns: 9.6rem repeat(3, minmax(0, 1fr)); gap: 0 1.6rem; }
+.choose__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; }
+.choose__row { padding: .8rem 0; border-top: 1px solid var(--rule); font-size: .98rem; line-height: 1.5; color: var(--ink-2); }
+.choose__row { transition: opacity .3s var(--ease); }
+.choose.is-walking .choose__row:not(.is-now) { opacity: .42; }
+.choose__name { font-family: var(--mono); font-weight: 650; color: var(--ink); }
+.choose__rule.is-waiting { visibility: hidden; }
+.choose__rule { margin: 0; padding-top: .9rem; border-top: 1px solid var(--rule-strong); font-size: 1.12rem; font-weight: 600; }
+
+/* pictures: two actors and the thing they share. Drawn at a fixed size so every part has a known place. */
+.pic { position: relative; width: 300px; height: 300px; flex: none; font-size: 16px; line-height: 1.3; }
+.pic__lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.pic__arrow { opacity: 0; transition: opacity .25s var(--ease); }
+.pic__arrow.is-on { opacity: 1; }
+.pic__arrow line { stroke: var(--accent); stroke-width: 1.75; }
+.pic__arrow polygon { fill: var(--accent); }
+.pic--plain .pic__arrow line { stroke: var(--ink-2); }
+.pic--plain .pic__arrow polygon { fill: var(--ink-2); }
+.pic__over { position: absolute; left: 0; right: 0; bottom: calc(100% - 38px); display: grid; justify-items: center; gap: 3px; }
+.pic__name { font-size: 13px; color: var(--muted); }
+.pic__tags { display: grid; justify-items: center; gap: 3px; }
+.pic__tags span { font-family: var(--mono); font-size: 12.5px; font-weight: 650; color: var(--ink); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--rule-strong); background: var(--surface); white-space: nowrap; }
+.pic__board { position: absolute; left: 90px; top: 44px; width: 120px; height: 62px; display: grid; place-items: center; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .25s, box-shadow .25s; }
+.pic__board.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__value { font-family: var(--mono); font-size: 28px; font-weight: 650; line-height: 1; }
+.pic__board.is-now .pic__value { color: var(--accent-text); }
+.pic__hand { position: absolute; top: 146px; width: 64px; height: 38px; display: grid; place-items: center; border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--raised); font-family: var(--mono); font-size: 16px; transition: border-color .25s, box-shadow .25s; }
+.pic__hand--a { left: 50px; }
+.pic__hand--b { left: 186px; }
+.pic__hand small { position: absolute; left: 0; right: 0; top: -18px; text-align: center; font-family: var(--font); font-size: 11px; color: var(--faint); }
+.pic__hand.is-empty { border-style: dashed; background: none; }
+.pic__hand.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__actor { position: absolute; top: 196px; width: 110px; display: grid; justify-items: center; gap: 3px; }
+.pic__actor--a { left: 0; }
+.pic__actor--b { left: 190px; }
+.pic__figure { width: 44px; height: 40px; fill: var(--raised); stroke: var(--ink-2); stroke-width: 1.5; transition: stroke .25s; }
+.pic__actor.is-now .pic__figure { stroke: var(--accent); }
+.pic__note { font-size: 12.5px; padding: 2px 8px; border-radius: 7px; border: 1px solid var(--rule-strong); background: var(--raised); white-space: nowrap; }
+.pic__note:empty { display: none; }
+.pic__note--wait { border-style: dashed; color: var(--muted); }
+.pic__note--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.pic__note--ok { border-color: var(--ok); color: var(--ok); }
+.pic__note.is-now { box-shadow: 0 0 0 1px currentColor; }
+.pic__action { position: absolute; left: 0; right: 0; top: 138px; text-align: center; font-family: var(--mono); font-weight: 650; font-size: 14px; color: var(--ink); }
+.pic__action.is-now { color: var(--accent-text); }
+.pic__action:empty { display: none; }
+.scene__body.has-picture { display: grid; grid-template-columns: minmax(0, 44rem) 300px; gap: 0 2.4rem; align-items: start; }
+.lanes { display: grid; grid-template-columns: minmax(0, 46rem) 300px; gap: 0 2rem; align-items: start; }
+.lanes__side { position: sticky; top: .6rem; }
+.lanes__now { margin: 0 0 .1rem; font-size: .76rem; color: var(--muted); text-align: center; }
+@media (max-width: 1220px) { .lanes { grid-template-columns: minmax(0, 1fr); } .lanes__side { display: none; } }
+
+/* chart: the recorded runs as lines. Colour names the way of writing; a hollow point means that group came out wrong. */
+.chart { margin: 0; display: grid; grid-template-columns: minmax(0, 44rem) minmax(13rem, 1fr); gap: 0 2rem; align-items: start; }
+.chart__cap { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem 1rem; font-size: .84rem; color: var(--muted); margin-bottom: .5rem; }
+.chart__cap b { font-size: 1rem; color: var(--ink); }
+.chart__marks { display: inline-flex; align-items: center; gap: .4rem; }
+.chart__mark { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--ink-2); border: 2px solid var(--ink-2); }
+.chart__mark.is-wrong { background: transparent; margin-left: .7rem; }
+.chart__picks { display: grid; justify-items: start; gap: .4rem; margin-bottom: 1rem; }
+.chart__pick { display: inline-flex; align-items: center; gap: .5rem; padding: .26rem .75rem; border: 1px solid var(--rule-strong); border-radius: 999px; background: none; font-size: .86rem; color: var(--ink-2); cursor: pointer; }
+.chart__pick:hover { border-color: var(--ink-2); }
+.chart__pick[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); font-weight: 600; background: var(--raised); }
+.chart__key { flex: none; width: 18px; height: 0; border-top: 3px solid var(--s, var(--ink-2)); border-radius: 2px; }
+.chart__key--1, .chart__series--1 { --s: var(--s1); }
+.chart__key--2, .chart__series--2 { --s: var(--s2); }
+.chart__key--3, .chart__series--3 { --s: var(--s3); }
+.chart__key--4, .chart__series--4 { --s: var(--s4); }
+.chart__plot { position: relative; }
+.chart__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart__grid { stroke: var(--rule); stroke-width: 1; }
+.chart__base { stroke: var(--rule-strong); stroke-width: 1; }
+.chart__tick { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.chart__series { transition: opacity .25s var(--ease); }
+.chart__series.is-dim { opacity: .2; }
+.chart__line { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; transition: stroke-width .2s; }
+.chart__series.is-on .chart__line { stroke-width: 3.2; }
+.chart__lead { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 1; opacity: .55; }
+.chart__dot { fill: var(--s, var(--ink-2)); stroke: var(--canvas); stroke-width: 2; }
+.chart__dot.is-wrong { fill: var(--canvas); stroke: var(--s, var(--ink-2)); }
+.chart__name { font-size: 11.5px; fill: var(--ink-2); }
+.chart__end { font-weight: 650; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.chart__cross { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+.chart__cross.is-on { opacity: .7; }
+.chart__hit { fill: transparent; cursor: crosshair; outline: none; }
+.chart__hit:focus-visible { stroke: var(--ink-2); stroke-dasharray: 2 3; }
+.chart__tip { position: absolute; top: 4%; z-index: 2; min-width: 16rem; padding: .55rem .7rem; border-radius: 10px; background: var(--raised); border: 1px solid var(--rule-strong); box-shadow: 0 8px 22px -14px #000000a0; font-size: .8rem; display: grid; gap: .25rem; pointer-events: none; }
+.chart__tip[hidden] { display: none; }
+.chart__row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto 4.8em; gap: .5rem; align-items: center; }
+.chart__row.is-dim { opacity: .45; }
+.chart__row span:last-child { color: var(--muted); text-align: right; }
+.chart__row span.is-wrong { color: var(--bad); }
+.chart__read { margin: 0 0 .8rem; min-height: 6.4em; font-size: .98rem; line-height: 1.65; color: var(--ink-2); }
+.chart__table { font-size: .8rem; color: var(--muted); }
+.chart__table summary { cursor: pointer; width: max-content; }
+.chart__table table { border-collapse: collapse; margin-top: .4rem; font-variant-numeric: tabular-nums; }
+.chart__table th, .chart__table td { padding: .22rem .5rem; border-bottom: 1px solid var(--rule); text-align: right; font-weight: 400; white-space: nowrap; }
+.chart__table th:first-child { text-align: left; }
+
+/* decide: the rule for choosing, as a small tree */
+.decide { max-width: 19rem; padding: 1rem 1.1rem; border: 1px solid var(--rule-strong); border-radius: 12px; background: var(--surface); }
+.decide__q { margin: 0; font-weight: 650; font-size: 1.02rem; }
+.decide__list { list-style: none; margin: 0; padding: .5rem 0 0 .5rem; }
+.decide__branch { position: relative; display: grid; gap: .2rem; padding: .5rem 0 .6rem 1.4rem; border-left: 1.5px solid var(--ink-2); }
+.decide__branch:last-child { border-left-color: transparent; }
+.decide__branch::before { content: ""; position: absolute; left: -1.5px; top: 0; width: 1rem; height: 1.2rem; border-left: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2); border-bottom-left-radius: 9px; }
+.decide__when { font-size: .92rem; color: var(--ink-2); }
+.decide__pick { justify-self: start; font-family: var(--mono); font-weight: 650; font-size: .92rem; padding: .18rem .6rem; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .3s, color .3s; }
+.decide__eg { font-size: .78rem; color: var(--muted); }
+.decide__branch.is-used .decide__pick { border-color: var(--ok); color: var(--ok); }
+.decide__branch.is-hit .decide__pick { animation: hit 1.6s var(--ease); }
+@keyframes hit { 0%, 55% { box-shadow: 0 0 0 5px var(--ok-wash), 0 0 0 1.5px var(--ok); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr) 19rem; }
+.slide--split .block:has(> .decide) { grid-column: 2; position: sticky; top: .6rem; }
+.slide--split .block:has(> .decide) ~ .block { grid-column: 1; grid-row: 1; }
+
+@media (max-width: 860px) {
+  .top { grid-template-columns: minmax(0, 1fr) auto; padding: .5rem .9rem; }
+  .top__title, #count { display: none; }
+  .beat:not(.is-now) { font-size: 0; gap: 0; padding: .3rem .22rem; }
+  .stage { padding: 0 .9rem 1.4rem; }
+  .slide { padding-top: 1rem; }
+  .exp__bar { position: static; }
+  .slide--split .slide__blocks, .exp__body, .hook__meta { grid-template-columns: minmax(0, 1fr); }
+  .hook__meta { gap: 1.2rem; }
+  .slide--split .block:first-child { grid-row: auto; }
+  .code__scroll, .exp .code__scroll { max-height: 15rem; }
+  .seg, .seg__set { flex-wrap: wrap; }
+  .plot__label { font-size: .72rem; overflow-wrap: anywhere; }
+  .plot__sum { font-size: .72rem; }
+  .plot__sum b { font-size: .8rem; }
+  .lrow--controls .btn { padding: .45rem .5rem; font-size: .8rem; }
+  .lrow--controls .lcell--a { padding-right: .3rem; } .lrow--controls .lcell--b { padding-left: .3rem; }
+  .plot__row, .plot__axis { grid-template-columns: 5.8em minmax(0, 1fr) 4.4em; gap: .4rem; }
+  .lanes__grid { grid-template-columns: minmax(0, 1fr) 3.4rem minmax(0, 1fr); }
+  .lanes__head--a { padding-right: 1.4rem; } .lanes__head--b { padding-left: 1.4rem; }
+  .arrow { flex-basis: 1rem; margin: 0 .15rem; }
+  .chip { font-size: .78rem; padding: .28rem .45rem; }
+  .val { min-width: 2.2rem; padding: .2rem .3rem; font-size: .88rem; }
+  .voice { padding: .7rem .9rem .8rem; }
+  .voice__inner { gap: .7rem; }
+  .voice__line { font-size: 1rem; line-height: 1.55; min-height: 0; }
+  .exp__body > :first-child { order: 2; }
+  .choose__head { display: none; }
+  .recall__item { grid-template-columns: minmax(0, 1fr); }
+  .spot { grid-template-columns: minmax(0, 1fr); }
+  .spot .code__scroll { max-height: 46vh; }
+  .spot__side { margin-top: .7rem; }
+  .spot__how { display: none; }
+  .recall__have { grid-row: auto; }
+  .scene__body.has-picture, .chart { grid-template-columns: minmax(0, 1fr); }
+  .scene__body .pic { order: -1; justify-self: center; margin-bottom: .6rem; }
+  .chart__picks { display: flex; flex-wrap: wrap; margin: .6rem 0; }
+  .chart__pick { font-size: .8rem; padding: .22rem .6rem; }
+  .chart__tick, .chart__name { font-size: 19px; }
+  .chart__label { display: none; }
+  .chart__dot { r: 7px; }
+  .chart__line { stroke-width: 3; }
+  .scene__head, .scene__row { column-gap: .4rem; }
+  .chart__read { min-height: 0; }
+  .chart__tip { min-width: 13rem; }
+  .slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr); }
+  .slide--split .block:has(> .decide), .slide--split .block:has(> .decide) ~ .block { grid-column: auto; grid-row: auto; position: static; }
+  .decide { max-width: none; }
+  .code__tag { position: static; transform: none; grid-column: 2; justify-self: start; margin-bottom: .3rem; }
+  .choose__row { grid-template-columns: minmax(0, 1fr); gap: .2rem; }
+  .choose__row > [data-label]::before { content: attr(data-label) "："; color: var(--muted); font-size: .82em; }
+  .voice__nav .btn { padding: .5rem .7rem; }
+  .btn__label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+@media print { body { height: auto; overflow: visible; display: block; } .voice__nav, .top__tools { display: none; } }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top__title" id="title"></div>
+  <nav class="beats" id="beats" aria-label="这节课走到哪了"></nav>
+  <div class="top__tools">
+    <span class="num" id="count"></span>
+    <div class="notes"><button class="tool" id="notes" type="button">要点 0</button><ul class="notes__list" id="notes-list" hidden></ul></div>
+    <button class="tool" id="theme" type="button">深色</button>
+  </div>
+</header>
+<main class="stage" id="stage"></main>
+<footer class="voice" aria-label="老师的讲解">
+  <div class="voice__inner">
+    <div><p class="voice__line" id="line" aria-live="polite"></p><p class="voice__key" id="key" hidden></p></div>
+    <div class="voice__nav">
+      <button class="btn" id="prev" type="button" aria-label="上一步">←</button>
+      <button class="btn btn--primary" id="next" type="button"><span class="btn__label">下一步 </span>→</button>
+    </div>
+  </div>
+</footer>
+<script type="application/json" id="lesson-data">{"format":"studyhub-lesson/1","template":"experiment","id":"tally-map","course":"Java 并发从零","title":"换了安全容器，销量怎么还是少？","lead":"大家都说线程安全的 ConcurrentHashMap，先取再加一放回为什么照样丢？","minutes":45,"needs":["count++ 为什么会丢数（第一节）","先查再改为什么会超卖（第二节）","知道 HashMap 能按键存数字"],"after":["说清容器方法安全与复合动作不安全的区别","解释 ConcurrentHashMap 先 get 再 put 为何还丢","会用 synchronized 或 merge 写准分组计数","把单数、条件判断、键值表串成一套选择规则"],"terms":{"HashMap":"最常用的键值表，本身不加锁，多线程一起写会互相覆盖。","Map":"按键存、按键取的集合接口，HashMap 和 ConcurrentHashMap 都实现了它。","ConcurrentHashMap":"线程安全的键值表，单次 get、put、merge 都有保护，不会搞坏结构。","synchronized":"给方法或代码块加门锁，同一时刻只放一个线程进去执行。","merge":"ConcurrentHashMap 的原子方法，把查找、算新值、写回合成一步。","Integer::sum":"把两个整数相加的方法引用，交给 merge 用来给旧销量加 1。","Thread":"一条独立往下跑代码的执行流，多个线程可以同时执行同一个方法。","invokeinterface":"JVM 字节码指令，通过 Map 接口去调用 get 或 put 方法。","invokevirtual":"JVM 字节码指令，直接调用 ConcurrentHashMap 类自己的方法。","iadd":"JVM 字节码指令，把两个 int 相加；从 get 到 put 之间就夹着它。"},"experiments":{"tally":{"runner":"java","home":"lab.tally","knob":{"name":"threads","label":"几个线程同时记账","values":["1","2","4","8"],"default":"4"},"metric":{"key":"total","expectKey":"expected","label":"实际记账","expect":"该记"},"time":{"key":"ms","unit":"ms","label":"耗时"},"inside":"Plain,SafeMap","repeat":20,"variants":[{"id":"Plain","label":"普通 Map","class":"lab.tally.Plain","code":"Plain.java"},{"id":"SafeMap","label":"换安全 Map","class":"lab.tally.SafeMap","code":"SafeMap.java"},{"id":"Sync","label":"加锁整段","class":"lab.tally.Sync","code":"Sync.java"},{"id":"Merge","label":"merge 一步","class":"lab.tally.Merge","code":"Merge.java"}],"lang":"java","sources":{"Plain":"package lab.tally;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class Plain {\n    static final String[] ITEMS = {\"apple\", \"milk\", \"bread\", \"egg\", \"rice\", \"tea\", \"soap\", \"juice\"};\n    static final Map\u003cString, Integer> sales = new HashMap\u003c>();\n    static final int ROUNDS = 200_000;\n\n    static void addSale(String item) {\n        Integer n = sales.get(item);\n        sales.put(item, n + 1);\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        for (String item : ITEMS) sales.put(item, 0);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int offset = t;\n            workers[t] = new Thread(() -> {\n                for (int i = 0; i \u003c ROUNDS; i++) {\n                    addSale(ITEMS[(i + offset) % ITEMS.length]);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        int total = 0;\n        for (int count : sales.values()) total += count;\n        System.out.println(\"total=\" + total);\n        System.out.println(\"expected=\" + (threads * ROUNDS));\n        System.out.println(\"ms=\" + ms);\n    }\n}","SafeMap":"package lab.tally;\n\nimport java.util.concurrent.ConcurrentHashMap;\n\npublic class SafeMap {\n    static final String[] ITEMS = {\"apple\", \"milk\", \"bread\", \"egg\", \"rice\", \"tea\", \"soap\", \"juice\"};\n    static final ConcurrentHashMap\u003cString, Integer> sales = new ConcurrentHashMap\u003c>();\n    static final int ROUNDS = 200_000;\n\n    static void addSale(String item) {\n        Integer n = sales.get(item);\n        sales.put(item, n + 1);\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        for (String item : ITEMS) sales.put(item, 0);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int offset = t;\n            workers[t] = new Thread(() -> {\n                for (int i = 0; i \u003c ROUNDS; i++) {\n                    addSale(ITEMS[(i + offset) % ITEMS.length]);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        int total = 0;\n        for (int count : sales.values()) total += count;\n        System.out.println(\"total=\" + total);\n        System.out.println(\"expected=\" + (threads * ROUNDS));\n        System.out.println(\"ms=\" + ms);\n    }\n}","Sync":"package lab.tally;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class Sync {\n    static final String[] ITEMS = {\"apple\", \"milk\", \"bread\", \"egg\", \"rice\", \"tea\", \"soap\", \"juice\"};\n    static final Map\u003cString, Integer> sales = new HashMap\u003c>();\n    static final int ROUNDS = 200_000;\n\n    static synchronized void addSale(String item) {\n        Integer n = sales.get(item);\n        sales.put(item, n + 1);\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        for (String item : ITEMS) sales.put(item, 0);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int offset = t;\n            workers[t] = new Thread(() -> {\n                for (int i = 0; i \u003c ROUNDS; i++) {\n                    addSale(ITEMS[(i + offset) % ITEMS.length]);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        int total = 0;\n        for (int count : sales.values()) total += count;\n        System.out.println(\"total=\" + total);\n        System.out.println(\"expected=\" + (threads * ROUNDS));\n        System.out.println(\"ms=\" + ms);\n    }\n}","Merge":"package lab.tally;\n\nimport java.util.concurrent.ConcurrentHashMap;\n\npublic class Merge {\n    static final String[] ITEMS = {\"apple\", \"milk\", \"bread\", \"egg\", \"rice\", \"tea\", \"soap\", \"juice\"};\n    static final ConcurrentHashMap\u003cString, Integer> sales = new ConcurrentHashMap\u003c>();\n    static final int ROUNDS = 200_000;\n\n    static void addSale(String item) {\n        sales.merge(item, 1, Integer::sum);\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        for (String item : ITEMS) sales.put(item, 0);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int offset = t;\n            workers[t] = new Thread(() -> {\n                for (int i = 0; i \u003c ROUNDS; i++) {\n                    addSale(ITEMS[(i + offset) % ITEMS.length]);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        int total = 0;\n        for (int count : sales.values()) total += count;\n        System.out.println(\"total=\" + total);\n        System.out.println(\"expected=\" + (threads * ROUNDS));\n        System.out.println(\"ms=\" + ms);\n    }\n}"},"paths":{"Plain":"src/lab/tally/Plain.java","SafeMap":"src/lab/tally/SafeMap.java","Sync":"src/lab/tally/Sync.java","Merge":"src/lab/tally/Merge.java"},"shown":{"Plain":"java -cp out lab.tally.Plain","SafeMap":"java -cp out lab.tally.SafeMap","Sync":"java -cp out lab.tally.Sync","Merge":"java -cp out lab.tally.Merge"},"results":{"id":"tally","variants":{"Plain":{"hash":"0bda5acbe7ae79c5","repeat":20,"runs":{"1":[{"total":200000,"expected":200000,"ms":30},{"total":200000,"expected":200000,"ms":21},{"total":200000,"expected":200000,"ms":18},{"total":200000,"expected":200000,"ms":20},{"total":200000,"expected":200000,"ms":30},{"total":200000,"expected":200000,"ms":44},{"total":200000,"expected":200000,"ms":27},{"total":200000,"expected":200000,"ms":31},{"total":200000,"expected":200000,"ms":23},{"total":200000,"expected":200000,"ms":21},{"total":200000,"expected":200000,"ms":18},{"total":200000,"expected":200000,"ms":21},{"total":200000,"expected":200000,"ms":20},{"total":200000,"expected":200000,"ms":22},{"total":200000,"expected":200000,"ms":30},{"total":200000,"expected":200000,"ms":23},{"total":200000,"expected":200000,"ms":22},{"total":200000,"expected":200000,"ms":23},{"total":200000,"expected":200000,"ms":22},{"total":200000,"expected":200000,"ms":20}],"2":[{"total":363625,"expected":400000,"ms":29},{"total":369898,"expected":400000,"ms":41},{"total":362740,"expected":400000,"ms":35},{"total":373680,"expected":400000,"ms":36},{"total":357971,"expected":400000,"ms":34},{"total":360897,"expected":400000,"ms":27},{"total":357794,"expected":400000,"ms":35},{"total":361724,"expected":400000,"ms":48},{"total":364936,"expected":400000,"ms":49},{"total":366428,"expected":400000,"ms":64},{"total":369956,"expected":400000,"ms":46},{"total":362330,"expected":400000,"ms":33},{"total":366582,"expected":400000,"ms":27},{"total":348801,"expected":400000,"ms":33},{"total":365730,"expected":400000,"ms":31},{"total":366702,"expected":400000,"ms":30},{"total":366752,"expected":400000,"ms":40},{"total":368970,"expected":400000,"ms":50},{"total":365873,"expected":400000,"ms":42},{"total":367532,"expected":400000,"ms":46}],"4":[{"total":584519,"expected":800000,"ms":94},{"total":576394,"expected":800000,"ms":134},{"total":571309,"expected":800000,"ms":68},{"total":588078,"expected":800000,"ms":86},{"total":579616,"expected":800000,"ms":56},{"total":574455,"expected":800000,"ms":55},{"total":571929,"expected":800000,"ms":66},{"total":584475,"expected":800000,"ms":98},{"total":577961,"expected":800000,"ms":138},{"total":577979,"expected":800000,"ms":128},{"total":571798,"expected":800000,"ms":147},{"total":566733,"expected":800000,"ms":99},{"total":578154,"expected":800000,"ms":55},{"total":590120,"expected":800000,"ms":54},{"total":584156,"expected":800000,"ms":55},{"total":574817,"expected":800000,"ms":69},{"total":598158,"expected":800000,"ms":82},{"total":582337,"expected":800000,"ms":64},{"total":571498,"expected":800000,"ms":54},{"total":576667,"expected":800000,"ms":50}],"8":[{"total":930697,"expected":1600000,"ms":117},{"total":929434,"expected":1600000,"ms":142},{"total":869097,"expected":1600000,"ms":132},{"total":915437,"expected":1600000,"ms":163},{"total":926500,"expected":1600000,"ms":116},{"total":922899,"expected":1600000,"ms":142},{"total":901061,"expected":1600000,"ms":137},{"total":870329,"expected":1600000,"ms":151},{"total":874767,"expected":1600000,"ms":236},{"total":913496,"expected":1600000,"ms":184},{"total":918399,"expected":1600000,"ms":153},{"total":915186,"expected":1600000,"ms":168},{"total":904988,"expected":1600000,"ms":144},{"total":899994,"expected":1600000,"ms":173},{"total":920107,"expected":1600000,"ms":175},{"total":920227,"expected":1600000,"ms":170},{"total":898844,"expected":1600000,"ms":200},{"total":901550,"expected":1600000,"ms":155},{"total":891402,"expected":1600000,"ms":136},{"total":872167,"expected":1600000,"ms":112}]},"inside":"Compiled from \"Plain.java\"\npublic class lab.tally.Plain {\n  static final java.lang.String[] ITEMS;\n\n  static final java.util.Map\u003cjava.lang.String, java.lang.Integer> sales;\n\n  static final int ROUNDS;\n\n  public lab.tally.Plain();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static void addSale(java.lang.String);\n    Code:\n         0: getstatic     #7                  // Field sales:Ljava/util/Map;\n         3: aload_0\n         4: invokeinterface #13,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n         9: checkcast     #19                 // class java/lang/Integer\n        12: astore_1\n        13: getstatic     #7                  // Field sales:Ljava/util/Map;\n        16: aload_0\n        17: aload_1\n        18: invokevirtual #21                 // Method java/lang/Integer.intValue:()I\n        21: iconst_1\n        22: iadd\n        23: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n        26: invokeinterface #29,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n        31: pop\n        32: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #33                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: getstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        10: astore_2\n        11: aload_2\n        12: arraylength\n        13: istore_3\n        14: iconst_0\n        15: istore        4\n        17: iload         4\n        19: iload_3\n        20: if_icmpge     50\n        23: aload_2\n        24: iload         4\n        26: aaload\n        27: astore        5\n        29: getstatic     #7                  // Field sales:Ljava/util/Map;\n        32: aload         5\n        34: iconst_0\n        35: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n        38: invokeinterface #29,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n        43: pop\n        44: iinc          4, 1\n        47: goto          17\n        50: iload_1\n        51: anewarray     #41                 // class java/lang/Thread\n        54: astore_2\n        55: invokestatic  #43                 // Method java/lang/System.nanoTime:()J\n        58: lstore_3\n        59: iconst_0\n        60: istore        5\n        62: iload         5\n        64: iload_1\n        65: if_icmpge     103\n        68: iload         5\n        70: istore        6\n        72: aload_2\n        73: iload         5\n        75: new           #41                 // class java/lang/Thread\n        78: dup\n        79: iload         6\n        81: invokedynamic #49,  0             // InvokeDynamic #0:run:(I)Ljava/lang/Runnable;\n        86: invokespecial #53                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        89: aastore\n        90: aload_2\n        91: iload         5\n        93: aaload\n        94: invokevirtual #56                 // Method java/lang/Thread.start:()V\n        97: iinc          5, 1\n       100: goto          62\n       103: aload_2\n       104: astore        5\n       106: aload         5\n       108: arraylength\n       109: istore        6\n       111: iconst_0\n       112: istore        7\n       114: iload         7\n       116: iload         6\n       118: if_icmpge     139\n       121: aload         5\n       123: iload         7\n       125: aaload\n       126: astore        8\n       128: aload         8\n       130: invokevirtual #59                 // Method java/lang/Thread.join:()V\n       133: iinc          7, 1\n       136: goto          114\n       139: invokestatic  #43                 // Method java/lang/System.nanoTime:()J\n       142: lload_3\n       143: lsub\n       144: ldc2_w        #62                 // long 1000000l\n       147: ldiv\n       148: lstore        5\n       150: iconst_0\n       151: istore        7\n       153: getstatic     #7                  // Field sales:Ljava/util/Map;\n       156: invokeinterface #64,  1           // InterfaceMethod java/util/Map.values:()Ljava/util/Collection;\n       161: invokeinterface #68,  1           // InterfaceMethod java/util/Collection.iterator:()Ljava/util/Iterator;\n       166: astore        8\n       168: aload         8\n       170: invokeinterface #74,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n       175: ifeq          203\n       178: aload         8\n       180: invokeinterface #80,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n       185: checkcast     #19                 // class java/lang/Integer\n       188: invokevirtual #21                 // Method java/lang/Integer.intValue:()I\n       191: istore        9\n       193: iload         7\n       195: iload         9\n       197: iadd\n       198: istore        7\n       200: goto          168\n       203: getstatic     #84                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       206: iload         7\n       208: invokedynamic #88,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n       213: invokevirtual #92                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       216: getstatic     #84                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       219: iload_1\n       220: ldc           #98                 // int 200000\n       222: imul\n       223: invokedynamic #99,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       228: invokevirtual #92                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       231: getstatic     #84                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       234: lload         5\n       236: invokedynamic #100,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       241: invokevirtual #92                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       244: return\n\n  private static void lambda$main$0(int);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: ldc           #98                 // int 200000\n         5: if_icmpge     29\n         8: getstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        11: iload_1\n        12: iload_0\n        13: iadd\n        14: getstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        17: arraylength\n        18: irem\n        19: aaload\n        20: invokestatic  #103                // Method addSale:(Ljava/lang/String;)V\n        23: iinc          1, 1\n        26: goto          2\n        29: return\n\n  static {};\n    Code:\n         0: bipush        8\n         2: anewarray     #106                // class java/lang/String\n         5: dup\n         6: iconst_0\n         7: ldc           #108                // String apple\n         9: aastore\n        10: dup\n        11: iconst_1\n        12: ldc           #110                // String milk\n        14: aastore\n        15: dup\n        16: iconst_2\n        17: ldc           #112                // String bread\n        19: aastore\n        20: dup\n        21: iconst_3\n        22: ldc           #114                // String egg\n        24: aastore\n        25: dup\n        26: iconst_4\n        27: ldc           #116                // String rice\n        29: aastore\n        30: dup\n        31: iconst_5\n        32: ldc           #118                // String tea\n        34: aastore\n        35: dup\n        36: bipush        6\n        38: ldc           #120                // String soap\n        40: aastore\n        41: dup\n        42: bipush        7\n        44: ldc           #122                // String juice\n        46: aastore\n        47: putstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        50: new           #124                // class java/util/HashMap\n        53: dup\n        54: invokespecial #126                // Method java/util/HashMap.\"\u003cinit>\":()V\n        57: putstatic     #7                  // Field sales:Ljava/util/Map;\n        60: return\n}"},"SafeMap":{"hash":"d6c87e7b007fc56a","repeat":20,"runs":{"1":[{"total":200000,"expected":200000,"ms":20},{"total":200000,"expected":200000,"ms":20},{"total":200000,"expected":200000,"ms":27},{"total":200000,"expected":200000,"ms":19},{"total":200000,"expected":200000,"ms":17},{"total":200000,"expected":200000,"ms":14},{"total":200000,"expected":200000,"ms":15},{"total":200000,"expected":200000,"ms":16},{"total":200000,"expected":200000,"ms":15},{"total":200000,"expected":200000,"ms":19},{"total":200000,"expected":200000,"ms":22},{"total":200000,"expected":200000,"ms":19},{"total":200000,"expected":200000,"ms":21},{"total":200000,"expected":200000,"ms":19},{"total":200000,"expected":200000,"ms":19},{"total":200000,"expected":200000,"ms":19},{"total":200000,"expected":200000,"ms":17},{"total":200000,"expected":200000,"ms":16},{"total":200000,"expected":200000,"ms":15},{"total":200000,"expected":200000,"ms":16}],"2":[{"total":371401,"expected":400000,"ms":36},{"total":370528,"expected":400000,"ms":44},{"total":371174,"expected":400000,"ms":51},{"total":371585,"expected":400000,"ms":48},{"total":370562,"expected":400000,"ms":59},{"total":372319,"expected":400000,"ms":96},{"total":374048,"expected":400000,"ms":78},{"total":370062,"expected":400000,"ms":56},{"total":371032,"expected":400000,"ms":74},{"total":370833,"expected":400000,"ms":65},{"total":373341,"expected":400000,"ms":43},{"total":370826,"expected":400000,"ms":37},{"total":371334,"expected":400000,"ms":46},{"total":372882,"expected":400000,"ms":53},{"total":372234,"expected":400000,"ms":57},{"total":372232,"expected":400000,"ms":64},{"total":373793,"expected":400000,"ms":87},{"total":371419,"expected":400000,"ms":80},{"total":370806,"expected":400000,"ms":62},{"total":370335,"expected":400000,"ms":43}],"4":[{"total":666117,"expected":800000,"ms":97},{"total":672736,"expected":800000,"ms":110},{"total":668700,"expected":800000,"ms":162},{"total":668184,"expected":800000,"ms":91},{"total":669758,"expected":800000,"ms":94},{"total":677955,"expected":800000,"ms":143},{"total":671809,"expected":800000,"ms":167},{"total":670948,"expected":800000,"ms":134},{"total":676020,"expected":800000,"ms":163},{"total":672709,"expected":800000,"ms":124},{"total":671961,"expected":800000,"ms":123},{"total":664655,"expected":800000,"ms":94},{"total":665979,"expected":800000,"ms":88},{"total":669612,"expected":800000,"ms":114},{"total":668683,"expected":800000,"ms":107},{"total":667594,"expected":800000,"ms":97},{"total":669085,"expected":800000,"ms":101},{"total":669142,"expected":800000,"ms":99},{"total":666411,"expected":800000,"ms":96},{"total":670113,"expected":800000,"ms":103}],"8":[{"total":1225292,"expected":1600000,"ms":207},{"total":1226849,"expected":1600000,"ms":260},{"total":1218951,"expected":1600000,"ms":261},{"total":1216014,"expected":1600000,"ms":275},{"total":1216283,"expected":1600000,"ms":214},{"total":1211792,"expected":1600000,"ms":223},{"total":1223383,"expected":1600000,"ms":217},{"total":1226273,"expected":1600000,"ms":195},{"total":1219712,"expected":1600000,"ms":321},{"total":1228686,"expected":1600000,"ms":406},{"total":1211334,"expected":1600000,"ms":338},{"total":1213477,"expected":1600000,"ms":246},{"total":1224228,"expected":1600000,"ms":261},{"total":1232779,"expected":1600000,"ms":370},{"total":1242600,"expected":1600000,"ms":338},{"total":1231030,"expected":1600000,"ms":332},{"total":1236734,"expected":1600000,"ms":334},{"total":1212689,"expected":1600000,"ms":260},{"total":1215538,"expected":1600000,"ms":301},{"total":1230617,"expected":1600000,"ms":236}]},"inside":"Compiled from \"SafeMap.java\"\npublic class lab.tally.SafeMap {\n  static final java.lang.String[] ITEMS;\n\n  static final java.util.concurrent.ConcurrentHashMap\u003cjava.lang.String, java.lang.Integer> sales;\n\n  static final int ROUNDS;\n\n  public lab.tally.SafeMap();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static void addSale(java.lang.String);\n    Code:\n         0: getstatic     #7                  // Field sales:Ljava/util/concurrent/ConcurrentHashMap;\n         3: aload_0\n         4: invokevirtual #13                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n         7: checkcast     #19                 // class java/lang/Integer\n        10: astore_1\n        11: getstatic     #7                  // Field sales:Ljava/util/concurrent/ConcurrentHashMap;\n        14: aload_0\n        15: aload_1\n        16: invokevirtual #21                 // Method java/lang/Integer.intValue:()I\n        19: iconst_1\n        20: iadd\n        21: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n        24: invokevirtual #29                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n        27: pop\n        28: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #33                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: getstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        10: astore_2\n        11: aload_2\n        12: arraylength\n        13: istore_3\n        14: iconst_0\n        15: istore        4\n        17: iload         4\n        19: iload_3\n        20: if_icmpge     48\n        23: aload_2\n        24: iload         4\n        26: aaload\n        27: astore        5\n        29: getstatic     #7                  // Field sales:Ljava/util/concurrent/ConcurrentHashMap;\n        32: aload         5\n        34: iconst_0\n        35: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n        38: invokevirtual #29                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n        41: pop\n        42: iinc          4, 1\n        45: goto          17\n        48: iload_1\n        49: anewarray     #41                 // class java/lang/Thread\n        52: astore_2\n        53: invokestatic  #43                 // Method java/lang/System.nanoTime:()J\n        56: lstore_3\n        57: iconst_0\n        58: istore        5\n        60: iload         5\n        62: iload_1\n        63: if_icmpge     101\n        66: iload         5\n        68: istore        6\n        70: aload_2\n        71: iload         5\n        73: new           #41                 // class java/lang/Thread\n        76: dup\n        77: iload         6\n        79: invokedynamic #49,  0             // InvokeDynamic #0:run:(I)Ljava/lang/Runnable;\n        84: invokespecial #53                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        87: aastore\n        88: aload_2\n        89: iload         5\n        91: aaload\n        92: invokevirtual #56                 // Method java/lang/Thread.start:()V\n        95: iinc          5, 1\n        98: goto          60\n       101: aload_2\n       102: astore        5\n       104: aload         5\n       106: arraylength\n       107: istore        6\n       109: iconst_0\n       110: istore        7\n       112: iload         7\n       114: iload         6\n       116: if_icmpge     137\n       119: aload         5\n       121: iload         7\n       123: aaload\n       124: astore        8\n       126: aload         8\n       128: invokevirtual #59                 // Method java/lang/Thread.join:()V\n       131: iinc          7, 1\n       134: goto          112\n       137: invokestatic  #43                 // Method java/lang/System.nanoTime:()J\n       140: lload_3\n       141: lsub\n       142: ldc2_w        #62                 // long 1000000l\n       145: ldiv\n       146: lstore        5\n       148: iconst_0\n       149: istore        7\n       151: getstatic     #7                  // Field sales:Ljava/util/concurrent/ConcurrentHashMap;\n       154: invokevirtual #64                 // Method java/util/concurrent/ConcurrentHashMap.values:()Ljava/util/Collection;\n       157: invokeinterface #68,  1           // InterfaceMethod java/util/Collection.iterator:()Ljava/util/Iterator;\n       162: astore        8\n       164: aload         8\n       166: invokeinterface #74,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n       171: ifeq          199\n       174: aload         8\n       176: invokeinterface #80,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n       181: checkcast     #19                 // class java/lang/Integer\n       184: invokevirtual #21                 // Method java/lang/Integer.intValue:()I\n       187: istore        9\n       189: iload         7\n       191: iload         9\n       193: iadd\n       194: istore        7\n       196: goto          164\n       199: getstatic     #84                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       202: iload         7\n       204: invokedynamic #88,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n       209: invokevirtual #92                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       212: getstatic     #84                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       215: iload_1\n       216: ldc           #98                 // int 200000\n       218: imul\n       219: invokedynamic #99,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       224: invokevirtual #92                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       227: getstatic     #84                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       230: lload         5\n       232: invokedynamic #100,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       237: invokevirtual #92                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       240: return\n\n  private static void lambda$main$0(int);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: ldc           #98                 // int 200000\n         5: if_icmpge     29\n         8: getstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        11: iload_1\n        12: iload_0\n        13: iadd\n        14: getstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        17: arraylength\n        18: irem\n        19: aaload\n        20: invokestatic  #103                // Method addSale:(Ljava/lang/String;)V\n        23: iinc          1, 1\n        26: goto          2\n        29: return\n\n  static {};\n    Code:\n         0: bipush        8\n         2: anewarray     #106                // class java/lang/String\n         5: dup\n         6: iconst_0\n         7: ldc           #108                // String apple\n         9: aastore\n        10: dup\n        11: iconst_1\n        12: ldc           #110                // String milk\n        14: aastore\n        15: dup\n        16: iconst_2\n        17: ldc           #112                // String bread\n        19: aastore\n        20: dup\n        21: iconst_3\n        22: ldc           #114                // String egg\n        24: aastore\n        25: dup\n        26: iconst_4\n        27: ldc           #116                // String rice\n        29: aastore\n        30: dup\n        31: iconst_5\n        32: ldc           #118                // String tea\n        34: aastore\n        35: dup\n        36: bipush        6\n        38: ldc           #120                // String soap\n        40: aastore\n        41: dup\n        42: bipush        7\n        44: ldc           #122                // String juice\n        46: aastore\n        47: putstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        50: new           #14                 // class java/util/concurrent/ConcurrentHashMap\n        53: dup\n        54: invokespecial #124                // Method java/util/concurrent/ConcurrentHashMap.\"\u003cinit>\":()V\n        57: putstatic     #7                  // Field sales:Ljava/util/concurrent/ConcurrentHashMap;\n        60: return\n}"},"Sync":{"hash":"4674fff3bbbb1674","repeat":20,"runs":{"1":[{"total":200000,"expected":200000,"ms":39},{"total":200000,"expected":200000,"ms":27},{"total":200000,"expected":200000,"ms":23},{"total":200000,"expected":200000,"ms":17},{"total":200000,"expected":200000,"ms":15},{"total":200000,"expected":200000,"ms":15},{"total":200000,"expected":200000,"ms":19},{"total":200000,"expected":200000,"ms":18},{"total":200000,"expected":200000,"ms":16},{"total":200000,"expected":200000,"ms":17},{"total":200000,"expected":200000,"ms":14},{"total":200000,"expected":200000,"ms":16},{"total":200000,"expected":200000,"ms":16},{"total":200000,"expected":200000,"ms":15},{"total":200000,"expected":200000,"ms":12},{"total":200000,"expected":200000,"ms":14},{"total":200000,"expected":200000,"ms":17},{"total":200000,"expected":200000,"ms":20},{"total":200000,"expected":200000,"ms":19},{"total":200000,"expected":200000,"ms":15}],"2":[{"total":400000,"expected":400000,"ms":43},{"total":400000,"expected":400000,"ms":44},{"total":400000,"expected":400000,"ms":45},{"total":400000,"expected":400000,"ms":44},{"total":400000,"expected":400000,"ms":45},{"total":400000,"expected":400000,"ms":44},{"total":400000,"expected":400000,"ms":48},{"total":400000,"expected":400000,"ms":53},{"total":400000,"expected":400000,"ms":46},{"total":400000,"expected":400000,"ms":47},{"total":400000,"expected":400000,"ms":48},{"total":400000,"expected":400000,"ms":50},{"total":400000,"expected":400000,"ms":55},{"total":400000,"expected":400000,"ms":45},{"total":400000,"expected":400000,"ms":53},{"total":400000,"expected":400000,"ms":52},{"total":400000,"expected":400000,"ms":57},{"total":400000,"expected":400000,"ms":88},{"total":400000,"expected":400000,"ms":96},{"total":400000,"expected":400000,"ms":72}],"4":[{"total":800000,"expected":800000,"ms":77},{"total":800000,"expected":800000,"ms":68},{"total":800000,"expected":800000,"ms":71},{"total":800000,"expected":800000,"ms":78},{"total":800000,"expected":800000,"ms":70},{"total":800000,"expected":800000,"ms":66},{"total":800000,"expected":800000,"ms":63},{"total":800000,"expected":800000,"ms":61},{"total":800000,"expected":800000,"ms":60},{"total":800000,"expected":800000,"ms":71},{"total":800000,"expected":800000,"ms":64},{"total":800000,"expected":800000,"ms":68},{"total":800000,"expected":800000,"ms":79},{"total":800000,"expected":800000,"ms":64},{"total":800000,"expected":800000,"ms":75},{"total":800000,"expected":800000,"ms":72},{"total":800000,"expected":800000,"ms":70},{"total":800000,"expected":800000,"ms":71},{"total":800000,"expected":800000,"ms":60},{"total":800000,"expected":800000,"ms":70}],"8":[{"total":1600000,"expected":1600000,"ms":135},{"total":1600000,"expected":1600000,"ms":115},{"total":1600000,"expected":1600000,"ms":111},{"total":1600000,"expected":1600000,"ms":108},{"total":1600000,"expected":1600000,"ms":105},{"total":1600000,"expected":1600000,"ms":133},{"total":1600000,"expected":1600000,"ms":172},{"total":1600000,"expected":1600000,"ms":213},{"total":1600000,"expected":1600000,"ms":197},{"total":1600000,"expected":1600000,"ms":150},{"total":1600000,"expected":1600000,"ms":133},{"total":1600000,"expected":1600000,"ms":126},{"total":1600000,"expected":1600000,"ms":140},{"total":1600000,"expected":1600000,"ms":154},{"total":1600000,"expected":1600000,"ms":202},{"total":1600000,"expected":1600000,"ms":129},{"total":1600000,"expected":1600000,"ms":116},{"total":1600000,"expected":1600000,"ms":155},{"total":1600000,"expected":1600000,"ms":127},{"total":1600000,"expected":1600000,"ms":111}]},"inside":"Compiled from \"Sync.java\"\npublic class lab.tally.Sync {\n  static final java.lang.String[] ITEMS;\n\n  static final java.util.Map\u003cjava.lang.String, java.lang.Integer> sales;\n\n  static final int ROUNDS;\n\n  public lab.tally.Sync();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static synchronized void addSale(java.lang.String);\n    Code:\n         0: getstatic     #7                  // Field sales:Ljava/util/Map;\n         3: aload_0\n         4: invokeinterface #13,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n         9: checkcast     #19                 // class java/lang/Integer\n        12: astore_1\n        13: getstatic     #7                  // Field sales:Ljava/util/Map;\n        16: aload_0\n        17: aload_1\n        18: invokevirtual #21                 // Method java/lang/Integer.intValue:()I\n        21: iconst_1\n        22: iadd\n        23: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n        26: invokeinterface #29,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n        31: pop\n        32: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #33                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: getstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        10: astore_2\n        11: aload_2\n        12: arraylength\n        13: istore_3\n        14: iconst_0\n        15: istore        4\n        17: iload         4\n        19: iload_3\n        20: if_icmpge     50\n        23: aload_2\n        24: iload         4\n        26: aaload\n        27: astore        5\n        29: getstatic     #7                  // Field sales:Ljava/util/Map;\n        32: aload         5\n        34: iconst_0\n        35: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n        38: invokeinterface #29,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n        43: pop\n        44: iinc          4, 1\n        47: goto          17\n        50: iload_1\n        51: anewarray     #41                 // class java/lang/Thread\n        54: astore_2\n        55: invokestatic  #43                 // Method java/lang/System.nanoTime:()J\n        58: lstore_3\n        59: iconst_0\n        60: istore        5\n        62: iload         5\n        64: iload_1\n        65: if_icmpge     103\n        68: iload         5\n        70: istore        6\n        72: aload_2\n        73: iload         5\n        75: new           #41                 // class java/lang/Thread\n        78: dup\n        79: iload         6\n        81: invokedynamic #49,  0             // InvokeDynamic #0:run:(I)Ljava/lang/Runnable;\n        86: invokespecial #53                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        89: aastore\n        90: aload_2\n        91: iload         5\n        93: aaload\n        94: invokevirtual #56                 // Method java/lang/Thread.start:()V\n        97: iinc          5, 1\n       100: goto          62\n       103: aload_2\n       104: astore        5\n       106: aload         5\n       108: arraylength\n       109: istore        6\n       111: iconst_0\n       112: istore        7\n       114: iload         7\n       116: iload         6\n       118: if_icmpge     139\n       121: aload         5\n       123: iload         7\n       125: aaload\n       126: astore        8\n       128: aload         8\n       130: invokevirtual #59                 // Method java/lang/Thread.join:()V\n       133: iinc          7, 1\n       136: goto          114\n       139: invokestatic  #43                 // Method java/lang/System.nanoTime:()J\n       142: lload_3\n       143: lsub\n       144: ldc2_w        #62                 // long 1000000l\n       147: ldiv\n       148: lstore        5\n       150: iconst_0\n       151: istore        7\n       153: getstatic     #7                  // Field sales:Ljava/util/Map;\n       156: invokeinterface #64,  1           // InterfaceMethod java/util/Map.values:()Ljava/util/Collection;\n       161: invokeinterface #68,  1           // InterfaceMethod java/util/Collection.iterator:()Ljava/util/Iterator;\n       166: astore        8\n       168: aload         8\n       170: invokeinterface #74,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n       175: ifeq          203\n       178: aload         8\n       180: invokeinterface #80,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n       185: checkcast     #19                 // class java/lang/Integer\n       188: invokevirtual #21                 // Method java/lang/Integer.intValue:()I\n       191: istore        9\n       193: iload         7\n       195: iload         9\n       197: iadd\n       198: istore        7\n       200: goto          168\n       203: getstatic     #84                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       206: iload         7\n       208: invokedynamic #88,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n       213: invokevirtual #92                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       216: getstatic     #84                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       219: iload_1\n       220: ldc           #98                 // int 200000\n       222: imul\n       223: invokedynamic #99,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       228: invokevirtual #92                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       231: getstatic     #84                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       234: lload         5\n       236: invokedynamic #100,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       241: invokevirtual #92                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       244: return\n\n  private static void lambda$main$0(int);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: ldc           #98                 // int 200000\n         5: if_icmpge     29\n         8: getstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        11: iload_1\n        12: iload_0\n        13: iadd\n        14: getstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        17: arraylength\n        18: irem\n        19: aaload\n        20: invokestatic  #103                // Method addSale:(Ljava/lang/String;)V\n        23: iinc          1, 1\n        26: goto          2\n        29: return\n\n  static {};\n    Code:\n         0: bipush        8\n         2: anewarray     #106                // class java/lang/String\n         5: dup\n         6: iconst_0\n         7: ldc           #108                // String apple\n         9: aastore\n        10: dup\n        11: iconst_1\n        12: ldc           #110                // String milk\n        14: aastore\n        15: dup\n        16: iconst_2\n        17: ldc           #112                // String bread\n        19: aastore\n        20: dup\n        21: iconst_3\n        22: ldc           #114                // String egg\n        24: aastore\n        25: dup\n        26: iconst_4\n        27: ldc           #116                // String rice\n        29: aastore\n        30: dup\n        31: iconst_5\n        32: ldc           #118                // String tea\n        34: aastore\n        35: dup\n        36: bipush        6\n        38: ldc           #120                // String soap\n        40: aastore\n        41: dup\n        42: bipush        7\n        44: ldc           #122                // String juice\n        46: aastore\n        47: putstatic     #37                 // Field ITEMS:[Ljava/lang/String;\n        50: new           #124                // class java/util/HashMap\n        53: dup\n        54: invokespecial #126                // Method java/util/HashMap.\"\u003cinit>\":()V\n        57: putstatic     #7                  // Field sales:Ljava/util/Map;\n        60: return\n}"},"Merge":{"hash":"052f83b46f4ef18e","repeat":20,"runs":{"1":[{"total":200000,"expected":200000,"ms":23},{"total":200000,"expected":200000,"ms":18},{"total":200000,"expected":200000,"ms":21},{"total":200000,"expected":200000,"ms":21},{"total":200000,"expected":200000,"ms":24},{"total":200000,"expected":200000,"ms":19},{"total":200000,"expected":200000,"ms":21},{"total":200000,"expected":200000,"ms":18},{"total":200000,"expected":200000,"ms":18},{"total":200000,"expected":200000,"ms":18},{"total":200000,"expected":200000,"ms":19},{"total":200000,"expected":200000,"ms":20},{"total":200000,"expected":200000,"ms":18},{"total":200000,"expected":200000,"ms":22},{"total":200000,"expected":200000,"ms":22},{"total":200000,"expected":200000,"ms":23},{"total":200000,"expected":200000,"ms":23},{"total":200000,"expected":200000,"ms":22},{"total":200000,"expected":200000,"ms":19},{"total":200000,"expected":200000,"ms":22}],"2":[{"total":400000,"expected":400000,"ms":36},{"total":400000,"expected":400000,"ms":36},{"total":400000,"expected":400000,"ms":45},{"total":400000,"expected":400000,"ms":39},{"total":400000,"expected":400000,"ms":44},{"total":400000,"expected":400000,"ms":42},{"total":400000,"expected":400000,"ms":45},{"total":400000,"expected":400000,"ms":41},{"total":400000,"expected":400000,"ms":42},{"total":400000,"expected":400000,"ms":38},{"total":400000,"expected":400000,"ms":35},{"total":400000,"expected":400000,"ms":50},{"total":400000,"expected":400000,"ms":39},{"total":400000,"expected":400000,"ms":47},{"total":400000,"expected":400000,"ms":47},{"total":400000,"expected":400000,"ms":39},{"total":400000,"expected":400000,"ms":40},{"total":400000,"expected":400000,"ms":45},{"total":400000,"expected":400000,"ms":41},{"total":400000,"expected":400000,"ms":33}],"4":[{"total":800000,"expected":800000,"ms":73},{"total":800000,"expected":800000,"ms":88},{"total":800000,"expected":800000,"ms":93},{"total":800000,"expected":800000,"ms":96},{"total":800000,"expected":800000,"ms":99},{"total":800000,"expected":800000,"ms":104},{"total":800000,"expected":800000,"ms":85},{"total":800000,"expected":800000,"ms":83},{"total":800000,"expected":800000,"ms":78},{"total":800000,"expected":800000,"ms":77},{"total":800000,"expected":800000,"ms":116},{"total":800000,"expected":800000,"ms":92},{"total":800000,"expected":800000,"ms":84},{"total":800000,"expected":800000,"ms":90},{"total":800000,"expected":800000,"ms":92},{"total":800000,"expected":800000,"ms":87},{"total":800000,"expected":800000,"ms":89},{"total":800000,"expected":800000,"ms":95},{"total":800000,"expected":800000,"ms":125},{"total":800000,"expected":800000,"ms":88}],"8":[{"total":1600000,"expected":1600000,"ms":215},{"total":1600000,"expected":1600000,"ms":278},{"total":1600000,"expected":1600000,"ms":372},{"total":1600000,"expected":1600000,"ms":336},{"total":1600000,"expected":1600000,"ms":203},{"total":1600000,"expected":1600000,"ms":160},{"total":1600000,"expected":1600000,"ms":154},{"total":1600000,"expected":1600000,"ms":190},{"total":1600000,"expected":1600000,"ms":164},{"total":1600000,"expected":1600000,"ms":201},{"total":1600000,"expected":1600000,"ms":168},{"total":1600000,"expected":1600000,"ms":165},{"total":1600000,"expected":1600000,"ms":165},{"total":1600000,"expected":1600000,"ms":213},{"total":1600000,"expected":1600000,"ms":174},{"total":1600000,"expected":1600000,"ms":186},{"total":1600000,"expected":1600000,"ms":149},{"total":1600000,"expected":1600000,"ms":173},{"total":1600000,"expected":1600000,"ms":167},{"total":1600000,"expected":1600000,"ms":199}]},"inside":"Compiled from \"Merge.java\"\npublic class lab.tally.Merge {\n  static final java.lang.String[] ITEMS;\n\n  static final java.util.concurrent.ConcurrentHashMap\u003cjava.lang.String, java.lang.Integer> sales;\n\n  static final int ROUNDS;\n\n  public lab.tally.Merge();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static void addSale(java.lang.String);\n    Code:\n         0: getstatic     #7                  // Field sales:Ljava/util/concurrent/ConcurrentHashMap;\n         3: aload_0\n         4: iconst_1\n         5: invokestatic  #13                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n         8: invokedynamic #19,  0             // InvokeDynamic #0:apply:()Ljava/util/function/BiFunction;\n        13: invokevirtual #23                 // Method java/util/concurrent/ConcurrentHashMap.merge:(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;\n        16: pop\n        17: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #29                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: getstatic     #33                 // Field ITEMS:[Ljava/lang/String;\n        10: astore_2\n        11: aload_2\n        12: arraylength\n        13: istore_3\n        14: iconst_0\n        15: istore        4\n        17: iload         4\n        19: iload_3\n        20: if_icmpge     48\n        23: aload_2\n        24: iload         4\n        26: aaload\n        27: astore        5\n        29: getstatic     #7                  // Field sales:Ljava/util/concurrent/ConcurrentHashMap;\n        32: aload         5\n        34: iconst_0\n        35: invokestatic  #13                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n        38: invokevirtual #37                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n        41: pop\n        42: iinc          4, 1\n        45: goto          17\n        48: iload_1\n        49: anewarray     #41                 // class java/lang/Thread\n        52: astore_2\n        53: invokestatic  #43                 // Method java/lang/System.nanoTime:()J\n        56: lstore_3\n        57: iconst_0\n        58: istore        5\n        60: iload         5\n        62: iload_1\n        63: if_icmpge     101\n        66: iload         5\n        68: istore        6\n        70: aload_2\n        71: iload         5\n        73: new           #41                 // class java/lang/Thread\n        76: dup\n        77: iload         6\n        79: invokedynamic #49,  0             // InvokeDynamic #1:run:(I)Ljava/lang/Runnable;\n        84: invokespecial #53                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        87: aastore\n        88: aload_2\n        89: iload         5\n        91: aaload\n        92: invokevirtual #56                 // Method java/lang/Thread.start:()V\n        95: iinc          5, 1\n        98: goto          60\n       101: aload_2\n       102: astore        5\n       104: aload         5\n       106: arraylength\n       107: istore        6\n       109: iconst_0\n       110: istore        7\n       112: iload         7\n       114: iload         6\n       116: if_icmpge     137\n       119: aload         5\n       121: iload         7\n       123: aaload\n       124: astore        8\n       126: aload         8\n       128: invokevirtual #59                 // Method java/lang/Thread.join:()V\n       131: iinc          7, 1\n       134: goto          112\n       137: invokestatic  #43                 // Method java/lang/System.nanoTime:()J\n       140: lload_3\n       141: lsub\n       142: ldc2_w        #62                 // long 1000000l\n       145: ldiv\n       146: lstore        5\n       148: iconst_0\n       149: istore        7\n       151: getstatic     #7                  // Field sales:Ljava/util/concurrent/ConcurrentHashMap;\n       154: invokevirtual #64                 // Method java/util/concurrent/ConcurrentHashMap.values:()Ljava/util/Collection;\n       157: invokeinterface #68,  1           // InterfaceMethod java/util/Collection.iterator:()Ljava/util/Iterator;\n       162: astore        8\n       164: aload         8\n       166: invokeinterface #74,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n       171: ifeq          199\n       174: aload         8\n       176: invokeinterface #80,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n       181: checkcast     #14                 // class java/lang/Integer\n       184: invokevirtual #84                 // Method java/lang/Integer.intValue:()I\n       187: istore        9\n       189: iload         7\n       191: iload         9\n       193: iadd\n       194: istore        7\n       196: goto          164\n       199: getstatic     #88                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       202: iload         7\n       204: invokedynamic #92,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       209: invokevirtual #96                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       212: getstatic     #88                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       215: iload_1\n       216: ldc           #102                // int 200000\n       218: imul\n       219: invokedynamic #103,  0            // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n       224: invokevirtual #96                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       227: getstatic     #88                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       230: lload         5\n       232: invokedynamic #104,  0            // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n       237: invokevirtual #96                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       240: return\n\n  private static void lambda$main$0(int);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: ldc           #102                // int 200000\n         5: if_icmpge     29\n         8: getstatic     #33                 // Field ITEMS:[Ljava/lang/String;\n        11: iload_1\n        12: iload_0\n        13: iadd\n        14: getstatic     #33                 // Field ITEMS:[Ljava/lang/String;\n        17: arraylength\n        18: irem\n        19: aaload\n        20: invokestatic  #107                // Method addSale:(Ljava/lang/String;)V\n        23: iinc          1, 1\n        26: goto          2\n        29: return\n\n  static {};\n    Code:\n         0: bipush        8\n         2: anewarray     #110                // class java/lang/String\n         5: dup\n         6: iconst_0\n         7: ldc           #112                // String apple\n         9: aastore\n        10: dup\n        11: iconst_1\n        12: ldc           #114                // String milk\n        14: aastore\n        15: dup\n        16: iconst_2\n        17: ldc           #116                // String bread\n        19: aastore\n        20: dup\n        21: iconst_3\n        22: ldc           #118                // String egg\n        24: aastore\n        25: dup\n        26: iconst_4\n        27: ldc           #120                // String rice\n        29: aastore\n        30: dup\n        31: iconst_5\n        32: ldc           #122                // String tea\n        34: aastore\n        35: dup\n        36: bipush        6\n        38: ldc           #124                // String soap\n        40: aastore\n        41: dup\n        42: bipush        7\n        44: ldc           #126                // String juice\n        46: aastore\n        47: putstatic     #33                 // Field ITEMS:[Ljava/lang/String;\n        50: new           #24                 // class java/util/concurrent/ConcurrentHashMap\n        53: dup\n        54: invokespecial #128                // Method java/util/concurrent/ConcurrentHashMap.\"\u003cinit>\":()V\n        57: putstatic     #7                  // Field sales:Ljava/util/concurrent/ConcurrentHashMap;\n        60: return\n}"}},"env":{"runtime":"JDK 25.0.4","cores":32,"os":"win32 10.0.26200","date":"2026-11-14"}}}},"slides":[{"beat":"open","title":"今天讲什么：容器安全了，业务就安全吗？","blocks":[{"t":"text","md":"前两节摆平了单个数字的并发：`AtomicInteger`、`CAS` 和 `synchronized`。今天进到装一排数字的 `Map`。","say":"前两节你已经能守住一个计数器、一个库存数了。可真实业务里总要按商品名分开记一排数，很多人一上手就把 HashMap 换成线程安全的 ConcurrentHashMap，今天我们亲手验证它管不管用。"}]},{"beat":"open","title":"开始前，翻一翻前两节","bridge":"今天这节专门顺着前两节那条线往下走，先花一分钟把前两节手里的三样武器点热。","blocks":[{"t":"recall","say":"三道小题都来自前两节学过的内容，点一个答案，当场帮你核对。记得它们，等会儿很快就会在销量表里看见熟悉的影子。","items":[{"have":"读、改、写三步","q":"为什么简简单单一句 `count++` 会丢数？","options":["编译器算错乘法了","拆成读、加、写三步，中间被插队","线程自己忘记保存"],"answer":1,"why":"一句 `count++` 背后其实是读、加一、写回三步，两步之间没人拦着，后写的就会把先写的盖掉。"},{"have":"单次调用原子","q":"为什么换了 `AtomicInteger`，先查再减还是会超卖？","options":["AtomicInteger 没锁住自己","单次调用原子，合在一起的两步不原子","线程数超过两个才安全"],"answer":1,"why":"`get()` 和 `decrementAndGet()` 各自都守住了自己那一步，可它们是两次独立调用，看和减之间照样有缝。"},{"have":"前两节的防线","q":"改动如果依赖刚才看到的值，前两节靠什么修对？","options":["只加上 volatile","加锁包整段，或用 CAS 合成一步","把循环次数减半"],"answer":1,"why":"要么请锁把多步关进同一间屋，要么靠 `CAS` 把核对旧值和写新值合成不可打断的一步。"}]}]},{"beat":"open","title":"先想象一个场景","bridge":"热身完毕。现在从货架前一块总库存牌，走进超市后台一本按商品名分页记销量的公用账本。","blocks":[{"t":"scene","picture":{"kind":"share","actors":["收银台 A","收银台 B"],"shared":{"name":"apple格","value":"5"}},"story":"八样商品提前在公用销量表里占好了格子，初始销量全写 `0`。几个收银台同时卖出苹果，每人先翻到 **apple** 这一格看旧数，心里加 1，再写回去。","say":"留意一个特意做的安排：八个商品名在线程启动前就全写进表里了，线程途中不添新商品也不删格子，只往已有格子里改数字。下面把画面里的角色和程序对上号。","map":[{"scene":"两个同时收银的人","on":"actors","tag":"线程","code":"多条 `Thread`","say":"每个收银台对应一条线程，大家同时跑进记账方法里，谁也不等谁。"},{"scene":"提前填好格子的账本","on":"shared","tag":"sales Map","code":"静态 `sales` 表","say":"公用账本就是 `Map\u003cString, Integer>`，里面提前放好了 `apple`、`milk` 等 8 个商品键。"},{"scene":"翻开表格看一眼","on":"action","tag":"sales.get","code":"`sales.get(item)`","say":"卖出商品第一步是按商品名查出当前旧销量，这一步只读出来，表里的数还没涨。"},{"scene":"算加一再抄回格里","on":"action","tag":"sales.put","code":"`sales.put(item, n + 1)`","say":"把拿到的 `n` 在手里加 1，再写回同一格。从看到算再到写回去，跟前两节是不是像极了？"}]}]},{"beat":"hook","title":"按商品记账，总数能对上吗","bridge":"前两节只盯着一个数字加减，这次变成按商品名分别记进一张表里。更关键的是，有人很快就会想到把普通表换成「线程安全的表」。","blocks":[{"t":"text","md":"八样商品提前写好键，几个线程各自轮流卖出 **20 万次**。总销量真的等于卖出的总件数吗？","say":"这就是今天唯一要搞透的事。先把最普通、显然没防备的 HashMap 版本写出来当照妖镜，再看大家最容易想错的那一步「只换安全容器」的改法到底行不行。"}]},{"beat":"code","title":"把记账台写成程序","bridge":"不到四十行 Java 代码就能把这家小店的记账搬上电脑，我只带你抓三处关键地方。","blocks":[{"t":"code","of":"tally.Plain","say":"还是和前两节一样，带虚线的词没见过随时点开看解释。先点步骤走完三处重点，留意为什么提前把八个商品先放进了表里。","walk":[{"focus":["static final String[] ITEMS","static final Map\u003cString, Integer> sales = new HashMap\u003c>();"],"key":"八个商品名固定放好，不扩容也不改结构","say":"第一处是共享账本：`ITEMS` 一共 8 样商品，后面主方法一开头就把它们全 `put` 成 0。`HashMap` 默认装 12 个才扩容，8 个永远不会半路挪窝，所以这次既不会报错也不会卡死。","focusLines":[7,8]},{"focus":["Integer n = sales.get(item);","sales.put(item, n + 1);"],"say":"第二处就是今天的主角 `addSale`：就两行，先按商品名 `get` 出旧销量 `n`，再把 `n + 1` 用 `put` 写回去。所有漏洞都藏在这两行之间。","focusLines":[12,13]},{"focus":["for (String item : ITEMS) sales.put(item, 0);","for (int count : sales.values()) total += count;"],"say":"第三处是启线程前先把 8 个键放进去，每个线程跑 `200_000` 次 `addSale`，最后把 8 样商品的销量加起来写成 `total`，跟应记总数 `expected` 对账。","focusLines":[18,33]}],"source":"package lab.tally;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class Plain {\n    static final String[] ITEMS = {\"apple\", \"milk\", \"bread\", \"egg\", \"rice\", \"tea\", \"soap\", \"juice\"};\n    static final Map\u003cString, Integer> sales = new HashMap\u003c>();\n    static final int ROUNDS = 200_000;\n\n    static void addSale(String item) {\n        Integer n = sales.get(item);\n        sales.put(item, n + 1);\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        for (String item : ITEMS) sales.put(item, 0);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int offset = t;\n            workers[t] = new Thread(() -> {\n                for (int i = 0; i \u003c ROUNDS; i++) {\n                    addSale(ITEMS[(i + offset) % ITEMS.length]);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        int total = 0;\n        for (int count : sales.values()) total += count;\n        System.out.println(\"total=\" + total);\n        System.out.println(\"expected=\" + (threads * ROUNDS));\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/tally/Plain.java","lang":"java","focusLines":[]}]},{"beat":"predict","title":"先猜：普通 HashMap 会发生什么","bridge":"因为我们已经特意把 8 个商品名预先填好了，线程只更新已有格子的数字，不用扩容也不用挪链表。先押一注跑起来会怎样。","blocks":[{"t":"predict","id":"plain","q":"4 个线程用 `Plain` 各记 20 万件，最后统计 `total` 会怎样？","options":["正好 800,000，因为 key 都提前放好了","明显少于 800,000，悄悄丢了销量","肯定直接抛出并发异常崩掉","只会多记，不会少记"],"answer":1,"say":"凭直觉先押一个。提前把 key 填好能躲开扩容崩溃和死循环，却躲不开另一件事——想想第 1 节 BlackBoard 上的黑板擦写。"}]},{"beat":"run","title":"一次一次看普通 HashMap 的真实结果","bridge":"猜完不废话，直接看你这台电脑上真跑出来的 20 轮记录。点下面的按钮，一轮一轮放出来对账。","blocks":[{"t":"experiment","lab":"tally","show":["Plain"],"knob":false,"hand":true,"focus":["sales.put(item, n + 1);"],"say":"点「看第 1 次运行」，瞅瞅实际记账跟该记的 800,000 差多少；再点一次看看是不是每次数字都漂着不一样，看够了就把剩下的全部放出来。","focusLines":[13]},{"t":"reveal","of":"plain","key":"不扩容不报错，照样安安静静少了一大截","say":"没有抛一次异常，也没卡死，可每一轮都静悄悄地少记了二十多万件。跟第 1 节 `count++` 如出一辙：多出来的更新被后写的人不动声色抹掉了。"}]},{"beat":"run","title":"只开一个线程，还会少记吗","bridge":"普通 HashMap 每次都少记，先照老习惯把「只开 1 个线程」当成对照组验一下，证明逻辑本身没写歪。","blocks":[{"t":"experiment","lab":"tally","show":["Plain"],"say":"还是 `Plain` 这份程序，上面多了线程数拨盘。1、2、4、8 全都在这台电脑上各跑了 20 次。","focusLines":[]},{"t":"try","key":"一个线程全对；只要 2 个以上就次次出错","say":"动手拨滑块：调到 1 时点全落在虚线上，一次不错；再拨回 2、4、8，看看少掉的比例是不是随着线程增多越来越吓人。"}]},{"beat":"run","title":"丢更新是从哪两行开始的","bridge":"一个线程稳稳全对，多个线程就次次掉坑。回到源码里，亲自把把「查」和「改」劈成两半的那两行点出来。","blocks":[{"t":"spot","of":"tally.Plain","say":"直接点源码里负责读取旧值并写回新值的那两行，选错了会给提示。","q":"每个线程都会调用，又把「取旧销量」和「写新销量」拆成两趟的是哪两行？","answer":["Integer n = sales.get(item);","sales.put(item, n + 1);"],"hint":"提示：找 `addSale` 方法大括号里面那两句对 `sales` 动手的代码。","found":"抓准了！第 1 行先 `get` 出旧销量 `n`，第 2 行在手里算出 `n + 1` 后再调用 `put` 放回——门开关了两趟，算加一站在门外做。","source":"package lab.tally;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class Plain {\n    static final String[] ITEMS = {\"apple\", \"milk\", \"bread\", \"egg\", \"rice\", \"tea\", \"soap\", \"juice\"};\n    static final Map\u003cString, Integer> sales = new HashMap\u003c>();\n    static final int ROUNDS = 200_000;\n\n    static void addSale(String item) {\n        Integer n = sales.get(item);\n        sales.put(item, n + 1);\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        for (String item : ITEMS) sales.put(item, 0);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int offset = t;\n            workers[t] = new Thread(() -> {\n                for (int i = 0; i \u003c ROUNDS; i++) {\n                    addSale(ITEMS[(i + offset) % ITEMS.length]);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        int total = 0;\n        for (int count : sales.values()) total += count;\n        System.out.println(\"total=\" + total);\n        System.out.println(\"expected=\" + (threads * ROUNDS));\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/tally/Plain.java","lang":"java","answerLines":[12,13]}]},{"beat":"why","title":"机器眼里的 `get` 再 `put`","bridge":"刚才点出了源码里的两行。老规矩，不靠猜，我们直接用 `javap` 拆开你电脑里刚刚编译出来的字节码，看机器怎么干完 `addSale`。","blocks":[{"t":"inside","of":"tally.Plain","within":"addSale","from":"getstatic","to":"return","say":"下面是从 `Plain.class` 里真实反编译出来的 `addSale` 指令片段。点步骤一步步往下走，盯着看中间那条 `iadd` 到底落在谁手里。","walk":[{"focus":["Map.get"],"label":"第 1 趟：get 取值","say":"这里用 `invokeinterface` 调 `Map.get` 把值取回来，存进当前线程自己的局部变量表里。这一趟只是把数借出来看。","focusLines":[3]},{"focus":["iadd"],"label":"第 2 步：iadd","say":"中间这行 `iadd` 把旧值加 1。它在当前线程自己的操作数栈上算，跟外头的 `sales` 账本一点关系都没有。","focusLines":[11]},{"focus":["Map.put"],"label":"第 3 趟：put 写回","key":"取、算、写三截在字节码里清清楚楚分家","say":"最后再用 `invokeinterface` 调 `Map.put` 把新数字写回表里。跟第一节的黑板一模一样，从读到写之间大敞着门。","focusLines":[13]}],"source":" 0: getstatic     #7                  // Field sales:Ljava/util/Map;\n 3: aload_0\n 4: invokeinterface #13,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n 9: checkcast     #19                 // class java/lang/Integer\n12: astore_1\n13: getstatic     #7                  // Field sales:Ljava/util/Map;\n16: aload_0\n17: aload_1\n18: invokevirtual #21                 // Method java/lang/Integer.intValue:()I\n21: iconst_1\n22: iadd\n23: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n26: invokeinterface #29,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n31: pop\n32: return","command":"javap -c -p -cp out lab.tally.Plain"}]},{"beat":"why","title":"两个收银台是怎么在表前撞车的","bridge":"字节码里是分开的三截。回到收银台画面，看看台 A 和台 B 只要稍微交叉半步，苹果那格的账怎么就少了一件。","blocks":[{"t":"lanes","expr":"sales.put(k, sales.get(k) + 1)","parts":{"read":"get 看旧值","calc":"手里算出 6","write":"put 写回 6"},"lanes":["收银台 A","收银台 B"],"shared":{"name":"apple","start":"5"},"say":"现在公用表里 `apple` 记着 5，台 A 和台 B 各自卖出一颗苹果。往下点「走一步」，中间我会停下来先问你一步。","steps":[{"lane":0,"op":"read","text":"查 apple=5","say":"台 A 先翻表调 `get`，看见 `apple` 是 5。注意它刚取走数，还没算完更没写回。","ask":{"q":"这时台 B 也翻表调 `get`，它会读到几？","options":["5","6"],"answer":0}},{"lane":1,"op":"read","text":"也查到 5","say":"表里根本没改，所以台 B 一样读到 5。两个收银台手里拿着同一张过期的 5。"},{"lane":0,"op":"calc","text":"心里算 5+1","say":"台 A 在自己手里算出 `5 + 1 = 6`，账本上依然是 5。"},{"lane":1,"op":"calc","text":"也算出 5+1","say":"台 B 同样按自己记着的 5 算出 6。"},{"lane":0,"op":"write","value":"6","text":"写回 6","say":"台 A 先进去调 `put` 写回 6，卖出一颗算记上了。"},{"lane":1,"op":"write","value":"6","text":"再写回 6","say":"台 B 跟着调 `put` 把自己手里的 6 也盖上去。表里还是 6，另 1 颗苹果彻底没了。"}],"verdict":"卖了两件苹果，账本上只从 5 涨到 ==6==。","verdictSay":"原因一点都不新鲜：还是「读、改、写回」三步之间被人插了队。只要不把这三步连成一体，谁来记都可能互相抹平。","verdictKey":"读、算、写回之间被插队，是同一条老病根"}]},{"beat":"why","title":"你自己排一排：故意撞出一次丢更新","bridge":"看完老师给你放的慢镜头，现在调度权交给你。左右两边的步骤你自己点，亲手把 6 和 7 两种结局都排出来。","blocks":[{"t":"schedule","lanes":["台 A","台 B"],"shared":{"name":"apple","start":5},"delta":1,"goals":[{"value":6,"label":"让台 A 和台 B 撞车丢 1 次（apple = 6）"},{"value":7,"label":"让台 A 做完再让台 B 上手（apple = 7）"}],"done":"两个目标都排出来了！只要一方在写回前另一方就先读走了旧数，丢更新就一定发生；先做完一整套再轮到下一个人，才能保住 7。","say":"不用背步骤，自己点左边「查 apple」、右边「查 apple」试一遍就会体会到，缝隙全卡在两趟之间。"}]},{"beat":"fix","title":"大家都以为能行的改法：换成安全 Map","bridge":"好，病根摸透了。现在到了真实工程里最常见、也最坑人的一步：很多人一看报错或丢数，第一反应不是改代码逻辑，而是「把 HashMap 换成线程安全的 ConcurrentHashMap」。","blocks":[{"t":"predict","id":"safemap","q":"换成 `ConcurrentHashMap` 仍先 `get` 再 `put` 会怎样？","options":["一件不丢，因为换了线程安全的 Map","照样丢销量，甚至可能跑得比普通 Map 慢","只有 8 线程才丢，2 和 4 线程全对","会直接抛异常停住"],"answer":1,"say":"代码就改了一个类名：表换成了 ConcurrentHashMap，方法里先 get 再 put 一字没动。回想第 2 节用 AtomicInteger 为什么照样超卖，先押一注。"}]},{"beat":"fix","title":"实测打脸：换上安全容器还是次次少","bridge":"押完注，直接把 `SafeMap` 放进同一批实验里，和 `Plain` 并排摆在一起跑给它看。","blocks":[{"t":"experiment","lab":"tally","show":["Plain","SafeMap"],"select":"SafeMap","say":"点开对照左边的标记行，它只换了容器名，里面的先取后放一个标点都没动。现在看点是不是真飞上了虚线。","focusLines":[]},{"t":"reveal","of":"safemap","key":"容器自己安全，合起来先取后放照样次次错","say":"一个都没落到虚线上，错的次数和普通 HashMap 一模一样，全军覆没！而且在多线程下，它花的时间比普通 HashMap 还长了一大截——白白付了安全容器的代价，却连对错都没保住。"},{"t":"try","say":"把线程数拨到 1：它和普通 Map 都不错，耗时也差不多。再拨到 2、4、8：换安全 Map 一样回回少记一大截，耗时还一路反超普通 Map。"}]},{"beat":"fix","title":"安全 Map 版本，机器眼里到底干了啥","bridge":"名字都叫「并发安全 Map」了，凭什么还丢、还跑得更慢？老办法，再用 `javap` 看 `SafeMap.class` 的字节码，一帧一帧比给它看。","blocks":[{"t":"inside","of":"tally.SafeMap","within":"addSale","from":"getstatic","to":"return","say":"留意两条灰底的高亮线：刚刚是 `invokeinterface`，现在因为字段直接写了安全表类型，编成了两次 `invokevirtual`。","walk":[{"focus":["ConcurrentHashMap.get"],"label":"安全进门取旧数","say":"第一下 `invokevirtual` 叫 `ConcurrentHashMap.get`：安全容器保证这一步拿出来的数一定干净、不会破坏表结构——可拿完门就松开了。","focusLines":[3]},{"focus":["iadd"],"label":"栈里自己跑 iadd","say":"接着回到线程自己的栈里执行 `iadd` 加 1。安全表根本看不见你在外头拿旧值做了什么计算。","focusLines":[11]},{"focus":["ConcurrentHashMap.put"],"label":"安全再进门写回","key":"每扇门都有保镖，可惜两道门中间的走廊没人管","say":"最后再 `invokevirtual` 叫一次安全 `put`。进一次门掏一份安检开销，两道安检门中间的空当却照样能让别人钻进来写旧数。","focusLines":[13]}],"source":" 0: getstatic     #7                  // Field sales:Ljava/util/concurrent/ConcurrentHashMap;\n 3: aload_0\n 4: invokevirtual #13                 // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n 7: checkcast     #19                 // class java/lang/Integer\n10: astore_1\n11: getstatic     #7                  // Field sales:Ljava/util/concurrent/ConcurrentHashMap;\n14: aload_0\n15: aload_1\n16: invokevirtual #21                 // Method java/lang/Integer.intValue:()I\n19: iconst_1\n20: iadd\n21: invokestatic  #25                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n24: invokevirtual #29                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n27: pop\n28: return","command":"javap -c -p -cp out lab.tally.SafeMap"}]},{"beat":"fix","title":"两种真正修好的写法：加锁 vs merge","bridge":"光换容器堵不住中间的走廊，怎么才能把「取、算、写」真正焊死？今天给两招真正能过的：`synchronized` 锁整段，或者用容器自带的 `merge`（同理还有 `compute`）。","blocks":[{"t":"experiment","lab":"tally","show":["Plain","SafeMap","Sync","Merge"],"select":"Sync","say":"四个写法全上台了。点到「加锁整段」，只是在 `addSale` 方法前面添了个 `synchronized`；点到「merge 一步」，整段两行合成了一句 `sales.merge(item, 1, Integer::sum)`。","focusLines":[]},{"t":"try","say":"动手检验：从 1 拨到 2、4、8，「加锁整段」和「merge 一步」是不是每一轮都牢牢贴在「该记」的虚线上？记住这个 0 出错，再去下一页看快慢。"}]},{"beat":"fix","title":"一条线一条线看：四条耗时曲线长啥样","bridge":"修对的两个版本每次都能算准。接下来看真实代价：把四个方案在 1、2、4、8 线程下的耗时中位数连成折线。实心点代表全对，空心点代表至少错过一次。","blocks":[{"t":"chart","of":"tally","say":"先看纵轴高度（越低越快），再盯着实心点和空心点。我们一条一条走着看。","walk":[{"focus":"Plain","say":"「普通 Map」在 1 线程是实心点；一旦到 2、4、8 线程全变成空心点，数量越大错得越离谱，只快不用也没资格上桌。"},{"focus":"SafeMap","say":"「换安全 Map」从 2 到 8 线程同样全是空心点，而且整条线爬到了最上面——又错得彻底又跑得最慢，证明这步改法最亏。"},{"focus":"Sync","key":"集中撞少数几个热门 key 时，一把整段锁也不输","say":"「加锁整段」1 到 8 线程全是实心点！注意一个小意外：在这张只有 8 个热门商品、所有线程挤一起碰撞的小表里，4 和 8 线程下整段加锁的线反而压在 merge 下方。"},{"focus":"Merge","key":"别死背分段锁一定最快，高冲突热键要看实测曲线","say":"「merge 一步」同样 1 到 8 线程全是实心点：2 线程时略低于加锁，4 和 8 线程反而走到了加锁上头。因为只有 8 个格、八个线程猛撞同一个格子，每次进箱加格锁加调求和函数的开销，反而赶超了一把干脆的整段锁。"}]}]},{"beat":"fix","title":"加锁凭什么护住两趟调用","bridge":"曲线看完了，再进两条赛道看清楚那两个全对的方案到底怎么挡住插队。先看老熟人 `synchronized`。","blocks":[{"t":"lanes","expr":"synchronized addSale(item)","parts":{"read":"get 看 5","calc":"算成 6","write":"put 写 6"},"lanes":["收银台 A","收银台 B"],"shared":{"name":"apple","start":"5"},"say":"里面还是最普通的 `HashMap`，只在 `addSale` 门口挂了一把锁。注意看 B 什么时候才能走进来。","steps":[{"lane":0,"op":"note","tone":"ok","text":"A 拿到锁","say":"台 A 先抢到整份账本的门锁，把走廊一并关进屋。"},{"lane":1,"op":"note","tone":"wait","text":"B 门口排队","say":"台 B 也想来记一笔，但门锁在 A 手里，只能在门外干等。"},{"lane":0,"op":"read","text":"查得 5","say":"台 A 屋里安全读出 5。"},{"lane":0,"op":"calc","text":"算出 6","say":"台 A 屋里算出 `5 + 1 = 6`。"},{"lane":0,"op":"write","value":"6","text":"写回 6","say":"台 A 把 6 写回账本。"},{"lane":0,"op":"note","text":"A 放开锁","say":"台 A 一整套干完出门松开锁，这时候门外排队的 B 终于进去了。","ask":{"q":"台 B 这会儿进门查 `apple`，看见的是几？","options":["5，还没改","6，A 写好了"],"answer":1}},{"lane":1,"op":"read","text":"查得 6","say":"台 B 清清楚楚看到 6，接着算完写回 7，两笔全保住了。"},{"lane":1,"op":"write","value":"7","text":"写回 7","say":"台 B 写入 7 后出门放锁。"}],"verdict":"两件全记上了，代价是 B 哪怕卖的是香蕉也要跟苹果排同一队。","verdictSay":"整段加锁什么都护得住，不管是查完算、还是改好几个商品；缺点就是同一时间只让一个人翻这本账。"}]},{"beat":"fix","title":"`merge` 怎么在容器里自己合成一步","bridge":"整段加锁是全屋拉门闸；`ConcurrentHashMap.merge` 的聪明之处，是只锁住 `apple` 那一小格，把「查、算、写」全打包进格子里面完成。","blocks":[{"t":"lanes","expr":"sales.merge(k, 1, Integer::sum)","parts":{"read":"格内取旧 5","calc":"算 5+1=6","write":"写回 6 放锁"},"lanes":["收银台 A","收银台 B"],"shared":{"name":"apple","start":"5"},"say":"两个人都不用自己写 `synchronized`，直接把初始增量 `1` 和加法规则 `Integer::sum` 塞给 `merge`，让容器自己挑时间找好那一格后一口气算完。","steps":[{"lane":0,"op":"read","text":"锁 apple 格","say":"A 叫一声 `merge`：容器自动锁住 `apple` 所在的这一格，当场读出 5。"},{"lane":1,"op":"note","tone":"wait","text":"等 apple 格","say":"B 恰好也卖苹果，发现 `apple` 这格正在被锁，只在这一格门口等。"},{"lane":0,"op":"calc","text":"格内算成 6","say":"容器没放锁，直接就在桶里调用 `Integer::sum(5, 1)` 算出 6。"},{"lane":0,"op":"write","value":"6","text":"写 6 放格锁","say":"写入 6 才解开这格的锁——算账和写回一秒没拆出容器外！","ask":{"q":"如果 B 同时要记的是 `milk`（另一格），B 需要等 A 写完苹果吗？","options":["需要，全表同一把锁","不需要，各自锁各自那一格"],"answer":1}},{"lane":1,"op":"read","text":"拿最新 6","say":"B 拿到 `apple` 这格的锁，直接拿到的就是最新的 6。"},{"lane":1,"op":"write","value":"7","text":"写回 7","say":"B 同样格内算出 7 并写回放锁，两件精准记牢。"}],"verdict":"单键内「取、算、写」==锁在桶里一气呵成==，不同商品还能各算各的。","verdictSay":"如果逻辑更复杂不只是加 1，同家族还有 `compute(k, (key, oldVal) -> ...)`，道理完全一样，都是容器锁定这一格后帮你跑完括号里的计算。"}]},{"beat":"choose","title":"前三节的工具，这会儿怎么共存、怎么选","bridge":"学完前三节，手边已经站了五位主力：`HashMap`、`AtomicInteger`、`CAS`、`merge/compute` 和 `synchronized`。把它们摆在真实项目桌面上一起对齐。","blocks":[{"t":"choose","say":"先看今天表上的耗时对比，记清不要迷信「无锁或安全容器一定快」，更重要的是看清每件工具到底各自守住哪一摊。","options":[{"name":"安全 Map 单步","solves":"不依赖旧值的单个读写，或不撞同键的新增查询","cost":"4 线程错跑成 107 ms，还守不住先读后算","when":"纯覆盖写入最新配置、直接读状态，不看旧数计算新数","say":"只要不依赖刚才看到的旧值，直接 `ConcurrentHashMap` 的 `put`/`get` 就安全；可一旦顺手拿旧值算出新值再 `put`，马上翻车。"},{"name":"merge / compute","solves":"多线程按单个 key 依赖旧值累加或更新","cost":"4 线程跑全对耗时 90 ms；千百键分散更好，护不住两格联动","when":"报表统计、词频/销量累加等「只盯单个 key 算新值」的场景","say":"在 Map 里按单键做「读-算-写」，直接交 `merge` 或 `compute` 一步进门办完，绝不再外面自己算。"},{"name":"synchronized","solves":"多变量、多 key、多步业务绑定成原子一整块","cost":"4 线程全记对耗时 70 ms；少数热键更快，代价是并发多键得排队","when":"需要「减 A 库存同时加 B 销量」等跨多个键或带多步条件判断的操作","say":"跟第 1、2 节完全一脉相承：单个数字找 `Atomic`/`CAS`，单键进表找 `merge`/`compute`，一旦跨越多个变量或多个格，立刻请回 `synchronized`。"}],"rule":"不靠旧值用安全单步；靠旧值时单数找 CAS，单键找 merge，多变量用锁。","ruleSay":"把第二节那句「改动依不依赖刚才看到的值」接着往下拉长一根树枝：依赖旧值时再问一句，是一格还是几件事？","ruleKey":"先问依不依赖旧值，再问是一格还是多步联动"}]},{"beat":"choose","title":"四个项目场景，你来挑趁手工具","layout":"split","bridge":"规矩串成了一整棵树，现在把三节课的真实场景混在一起，考考你能不能一眼对号入座。","blocks":[{"t":"decide","q":"改动依赖旧值吗？涉及几处？","branches":[{"when":"只单线程自己用，不共享","pick":"普通 HashMap","eg":"单请求局部拼接结果"},{"when":"多线程直写覆盖，不靠旧值","pick":"ConcurrentHashMap","eg":"刷新商品最新标价"},{"when":"按单键或单数靠旧值算新值","pick":"merge / CAS","eg":"按品累销量或减单一库存"},{"when":"跨多个键或绑定多步业务","pick":"synchronized","eg":"减库存再记入销量表"}],"say":"这棵选择树把第一、二、三节学过的工具全部排好了座次。每答完一道场景题，看对应哪一枝亮起来。"},{"t":"cases","tools":["普通 HashMap","ConcurrentHashMap","merge / CAS","synchronized"],"say":"每个场景选一个最贴切的工具。别背书名，照着选择树的两步提问顺下来，选完马上给理由。","items":[{"text":"接口在单次请求内部建个 Map 统计几条订单，方法一完就扔掉。","answer":0,"why":"根本不跨线程共享，用最轻的 `普通 HashMap` 就够，多余的锁和检查都是浪费。"},{"text":"后台多个推送线程拿到各仓最新状态后，直接 `put(warehouseId, status)` 覆盖写进共享表。","answer":1,"why":"直接覆盖写，根本没读旧值再计算，`ConcurrentHashMap` 的单次 `put` 本身就已经安全。"},{"text":"上百个接口线程按不同 `userId` 在一张共同的统计表里各自把错误次数加 1。","answer":2,"why":"按单个 key 依赖旧值加 1，交给 `merge`（若是单个数字则用 `CAS`/`Atomic`）一步搞定。"},{"text":"下单既要扣减某件商品库存 `stock`，又要往 `sales` 表加 1，要求两处严丝合缝不能差一半。","answer":3,"why":"单步 `CAS` 和单键 `merge` 都只能管住各自那一小点；把两处绑在一起变整体，还得请 `synchronized` 锁整段。"}]}]},{"beat":"name","title":"起个名字：容器安全 vs 复合操作原子性","bridge":"现象跑过了，反编译字节码也盯过了，新老五样武器也排了队。今天收尾起两个在面试和源码注释里最常碰到的词。","blocks":[{"t":"name","term":"复合操作先取后放","alias":"单方法线程安全 ≠ 复合操作原子 · read-modify-write","oneLine":"容器说的「线程安全」，只保住单个方法各自干完不散架；两句连着依赖旧值去改写，中间照样是==没有合拢的缝==。","asked":["ConcurrentHashMap 是线程安全的吗？怎么还会丢？","统计词频或销量表怎么写才不会丢？","merge 和 compute 什么时候比不过加锁？"],"say":"记住这句比名言更好用的大白话：「容器只护得住你每次进出它的那一瞬间，护不住你捧着它给的数走去外面兜一圈再放回来的那条走廊。」"}]},{"beat":"check","title":"检查一下：容器名换了，缝还在不在","bridge":"术语起好了，来做三道小题收尾。第一道专门挑代码审查里最常见的一段假「安全写法」。","blocks":[{"t":"quiz","q":"代码用安全表先 get(k) 再 put(k, old + 1)，哪里还有并发漏洞？","options":[{"text":"没有漏洞，因为 ConcurrentHashMap 已经线程安全了","ok":false,"why":"安全的是单次 `get` 和单次 `put`，两行拼成的读改写中间依然可能被别的线程插队覆盖。"},{"text":"有漏洞：读、算、写拆成两趟调用，要改成 merge 或整段加锁","ok":true,"why":"精准！一定要把取旧值、算加 1、写回合成容器内一步（或整段加锁）。"},{"text":"把 `old + 1` 改成 `++old` 就能变原子","ok":false,"why":"局部变量 `old` 再怎么加，写回的 `m.put` 照样在外面另跑一趟。"}],"say":"对着刚才看过的 SafeMap 字节码想一想，三选一点出来。"}]},{"beat":"check","title":"只错在高并发吗","bridge":"第二道考一个小陷阱：有人把代码拿到自己电脑上单线程自测全对，就敢拍胸脯说这段 ConcurrentHashMap 没毛病。","blocks":[{"t":"quiz","q":"为什么「单线程测试全对，2 线程次次少记」不能推给线程太多？","options":[{"text":"因为缝一直就在 get 和 put 之间，1 线程只是没人来插队","ok":true,"why":"对！漏洞跟线程数量无关，只跟步骤间有没有被锁或合成一步有关。"},{"text":"因为 ConcurrentHashMap 设计规定只支持 1 个线程写入","ok":false,"why":"它本来就是为多线程设计的，错的是拆成 get+put 的用法，直接用 `merge` 多线程一样全对。"},{"text":"只要把 key 放进 HashMap 前提前填满就能多线程安全","ok":false,"why":"提前填满只能防止扩容崩坏和死链，护不住同一个 key 的值相互覆盖。"}],"say":"回忆刚才实测台把旋钮调到 1 和调到 2 的对照结果。"}]},{"beat":"check","title":"既然有了 merge，还要锁干什么","bridge":"最后一道，检验你分不分得清「按单键算新值」和「多变量联动」的边界。","blocks":[{"t":"quiz","q":"下面哪个场景只靠 `ConcurrentHashMap.merge` 拦不住并发问题？","options":[{"text":"10 个收银台给同一个商品销量表按商品名加 1","ok":false,"why":"这只依赖这一个键的旧值，`merge` 一步正合身。"},{"text":"一次操作既要把「苹果」格减 1，又要把「礼盒销量」格加 1","ok":true,"why":"对！`merge` 每次只锁单个键的那一格；两格之间必须像同一套动作生效，需要整段加锁。"},{"text":"不同线程根据最新通知直接 `put(k, newText)` 写入","ok":false,"why":"单次覆盖写入连 `merge` 都不用，`put` 本身就已经安全。"}],"say":"找找哪一件事情超出了「一格」的边界。"}]},{"beat":"say","title":"合上代码，讲给自己听","bridge":"能挑对答案还不够，真去面试时对面就丢出一句「为什么用了 ConcurrentHashMap 还是不安全」。现在合上页面自己顺一遍。","blocks":[{"t":"say","prompt":"用了 ConcurrentHashMap，先 get 再加一 put 回去，还会丢吗？怎么修，怎么选？","points":["会丢：容器只保住单次 get 和 put 各自安全","先读、在外面算加一再写回，两趟中间仍会被插队覆盖","修法：单键依赖旧值用 merge/compute 合成一步；多步联动用锁","连着前两节：单数找 Atomic/CAS，单键表找 merge，多变量用锁"],"model":"还是会丢。ConcurrentHashMap 只保证单次 get、单次 put 各自执行时不把内部结构搞坏；你写成先 get 出旧值、自己算完加 1 再 put 回去，其实是两趟独立调用的复合操作，两个线程一样可能读到同一个旧数互相覆盖。修法要么用 merge 或 compute 把取、算、写封在容器锁住那一格时一次做完；如果还要顺带跨多个键或绑定库存扣减等逻辑，就和前两节一样用 synchronized 把整段围起来。","say":"试着不看屏幕，照下面四个提示词嘴上顺两遍，确保每一句都用大白话连得起来。"}]},{"beat":"take","title":"带走三张卡","bridge":"今天的三句话收进口袋。加上前两节的积木，你手里已经有一整套能打的单机并发底座了。","blocks":[{"t":"cards","items":[{"q":"ConcurrentHashMap 线程安全，为什么 get+put 还是会丢？","a":"安全的是单个方法内部，不包你写的连续两步。先 get 拿到旧数、外头算完再 put 回去，中间照样会被别人覆盖。"},{"q":"安全的按键计数 / 累加在 Map 里怎么写对？","a":"用 `merge(key, 1, Integer::sum)` 或 `compute(...)`，把找旧值、算新值、写回合成容器格子内不可拆的一步。"},{"q":"前三节学完，手头五样工具一句话怎么选？","a":"单线程用 `HashMap`；直写用安全容器；靠旧值时，单数找 `Atomic/CAS`、单键找 `merge`、多变量多步找锁。"}],"say":"这三张小卡连着前两节一起存着。下一节我们就要看看，如果问题不是加 1，而是「没有的时候才初始化一次放进去」，只换个方法叫 putIfAbsent 会不会也有坑？"}]}],"beats":[{"id":"open","label":"开场"},{"id":"hook","label":"问题"},{"id":"code","label":"代码"},{"id":"predict","label":"先猜"},{"id":"run","label":"跑一跑"},{"id":"why","label":"为什么"},{"id":"fix","label":"改一处"},{"id":"choose","label":"怎么选"},{"id":"name","label":"名字"},{"id":"check","label":"小测"},{"id":"say","label":"开口讲"},{"id":"take","label":"带走"}]}</script>
+<script>
+/* Shared pieces of the lesson page: element building, inline marks, Java colouring, the code view, a line diff, saved state.
+   Text always goes in as text nodes; nothing a lesson writes is parsed as HTML. */
+(function () {
+  "use strict";
+  const L = (window.Lesson = { blocks: {} });
+
+  /** h("div.a.b", { text, on: { click }, attr: {…} }, child, child…) */
+  L.h = function (spec, props, ...kids) {
+    const [tag, ...classes] = spec.split(".");
+    const el = document.createElement(tag || "div");
+    if (classes.length) el.className = classes.join(" ");
+    if (props) {
+      if (props.text !== undefined) el.textContent = props.text;
+      for (const [name, value] of Object.entries(props.attr || {})) el.setAttribute(name, value);
+      for (const [name, fn] of Object.entries(props.on || {})) el.addEventListener(name, fn);
+    }
+    for (const kid of kids.flat()) if (kid) el.append(kid);
+    return el;
+  };
+
+  L.num = (value) => Number(value).toLocaleString("en-US");
+
+  /** **bold**, `code` and ==mark== inside a sentence. */
+  L.md = function (text) {
+    const out = document.createDocumentFragment();
+    const pattern = /\*\*([^*]+)\*\*|`([^`]+)`|==([^=]+)==/g;
+    let last = 0;
+    for (let hit = pattern.exec(text); hit; hit = pattern.exec(text)) {
+      out.append(text.slice(last, hit.index));
+      out.append(hit[1] ? L.h("b", { text: hit[1] }) : hit[2] ? L.term(hit[2], L.h("code", { text: hit[2] })) : L.h("mark", { text: hit[3] }));
+      last = pattern.lastIndex;
+    }
+    out.append(text.slice(last));
+    return out;
+  };
+
+  const JAVA = new Set("abstract boolean break byte case catch char class continue default do double else enum extends final finally float for if implements import instanceof int interface long new null package private protected public record return short static super switch synchronized this throw throws try var void volatile while true false".split(" "));
+  const PYTHON = new Set("and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield True False None".split(" "));
+  const LANGS = { java: { words: JAVA, comment: "//" }, python: { words: PYTHON, comment: "#" }, text: { words: new Set(), comment: "\n" } };
+  const TOKEN = /(\/\/.*$|#.*$)|("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)')|\b(\d[\d_]*(?:\.\d+)?[LlFfDd]?)\b|\b([A-Za-z_]\w*)\b/g;
+
+  /** One line of code as coloured spans. */
+  L.colour = function (line, lang) {
+    const { words, comment } = LANGS[lang] || LANGS.text;
+    const out = document.createDocumentFragment();
+    let last = 0;
+    TOKEN.lastIndex = 0;
+    for (let hit = TOKEN.exec(line); hit; hit = TOKEN.exec(line)) {
+      const kind = hit[1] ? (hit[1].startsWith(comment) ? "c" : "") : hit[2] || hit[3] ? "s" : hit[4] ? "n" : words.has(hit[5]) ? "k" : "";
+      out.append(line.slice(last, hit.index));
+      out.append(kind ? L.h(`span.tk-${kind}`, { text: hit[0] }) : hit[0]);
+      last = TOKEN.lastIndex;
+    }
+    out.append(line.slice(last));
+    return out;
+  };
+
+  /* Reminders at the moment of need: a word the learner may not know is explained where it stands, on hover, focus or tap. */
+  L.glossary = {};
+  const tip = L.h("div.tip", { attr: { role: "tooltip", id: "lesson-tip", hidden: "" } });
+  let tipFor = null, tipTimer = 0;
+  function showTip(anchor, word) {
+    clearTimeout(tipTimer);
+    tipFor = anchor;
+    tip.replaceChildren(L.h("b.mono", { text: word }), L.h("span", null, L.md(L.glossary[word])));
+    tip.hidden = false;
+    if (!tip.isConnected) document.body.append(tip);
+    const box = anchor.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
+    tip.style.left = `${Math.max(8, Math.min(window.innerWidth - width - 8, box.left + box.width / 2 - width / 2))}px`;
+    tip.style.top = `${box.bottom + height + 14 > window.innerHeight ? box.top - height - 8 : box.bottom + 8}px`;
+  }
+  L.hideTip = function () { clearTimeout(tipTimer); tip.hidden = true; tipFor = null; };
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") L.hideTip(); });
+  document.addEventListener("click", (event) => { if (tipFor && !tipFor.contains(event.target)) L.hideTip(); });
+
+  /** Wraps `content` as an explainable word when the glossary knows it; otherwise returns the content unchanged. */
+  L.term = function (word, content) {
+    if (!L.glossary[word]) return content;
+    return L.h("span.term", {
+      attr: { tabindex: "0", role: "button", "aria-describedby": "lesson-tip" },
+      on: {
+        mouseenter(event) { const anchor = event.currentTarget; tipTimer = setTimeout(() => showTip(anchor, word), 140); },
+        mouseleave: L.hideTip,
+        focus(event) { showTip(event.currentTarget, word); },
+        blur: L.hideTip,
+        click(event) { event.stopPropagation(); if (tipFor === event.currentTarget) L.hideTip(); else showTip(event.currentTarget, word); },
+      },
+    }, content);
+  };
+
+  /** A line of code with the glossary's words made explainable (longest word first; nothing inside a comment). */
+  L.codeLine = function (line, lang) {
+    const words = Object.keys(L.glossary).sort((a, b) => b.length - a.length);
+    const comment = line.indexOf((LANGS[lang] || LANGS.text).comment);
+    const limit = comment < 0 ? line.length : comment;
+    const out = document.createDocumentFragment();
+    let from = 0;
+    for (let at = 0; at < limit;) {
+      const word = words.find((candidate) => line.startsWith(candidate, at)
+        && !(/\w/.test(candidate[0]) && /\w/.test(line[at - 1] || ""))
+        && !(/\w/.test(candidate.at(-1)) && /\w/.test(line[at + candidate.length] || "")));
+      if (!word) { at++; continue; }
+      out.append(L.colour(line.slice(from, at), lang), L.term(word, L.h("span", null, L.colour(word, lang))));
+      at += word.length;
+      from = at;
+    }
+    out.append(L.colour(line.slice(from), lang));
+    return out;
+  };
+
+  /** The 1-based numbers of the lines of `other` that are not in `base` (longest common subsequence). */
+  L.changedLines = function (base, other) {
+    const a = base.split("\n"), b = other.split("\n");
+    const table = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+    for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
+    const changed = [];
+    for (let i = 0, j = 0; j < b.length;) {
+      if (i < a.length && a[i] === b[j]) { i++; j++; } else if (i < a.length && table[i + 1][j] >= table[i][j + 1]) i++; else changed.push(++j);
+    }
+    return changed;
+  };
+
+  /** A source file with line numbers. show(source, { focus, changed }) redraws it and scrolls the first marked line into view. */
+  L.codeView = function () {
+    const scroll = L.h("div.code__scroll", { attr: { tabindex: "0" } });
+    const label = L.h("div.code__path");
+    const el = L.h("div.code", null, label, scroll);
+    return {
+      el,
+      /** Calls fn(lineNumber) when the learner presses a line. */
+      onLine(fn) { scroll.addEventListener("click", (event) => { const row = event.target.closest(".code__line"); if (row) fn([...scroll.children].indexOf(row) + 1); }); },
+      show(source, { path = "", lang = "text", focus = [], changed = [], wrong = [], tags = {} } = {}) {
+        label.textContent = path;
+        el.classList.toggle("has-focus", focus.length > 0);
+        scroll.replaceChildren(...source.split("\n").map((line, i) => {
+          const state = changed.includes(i + 1) ? ".is-changed" : focus.includes(i + 1) ? ".is-focus" : wrong.includes(i + 1) ? ".is-wrong" : "";
+          return L.h(`div.code__line${state}`, null, L.h("span.code__no", { text: String(i + 1) }), L.h("span", null, L.codeLine(line, lang)), tags[i + 1] ? L.h("span.code__tag", { text: tags[i + 1] }) : null);
+        }));
+        const place = () => {
+          const first = scroll.querySelector(".is-changed, .is-focus");
+          if (first) scroll.scrollTop = Math.max(0, first.offsetTop - scroll.offsetTop - scroll.clientHeight / 3);
+        };
+        place();
+        requestAnimationFrame(place); // a view built before it is on the page has no size yet
+      },
+    };
+  };
+
+  /** A row of mutually exclusive choices. `options` are { id, label }. */
+  L.segmented = function (label, options, selected, onPick) {
+    const buttons = options.map((option) => L.h("button", { text: option.label, attr: { type: "button", "aria-pressed": String(option.id === selected) }, on: { click() { pick(option.id); onPick(option.id); } } }));
+    function pick(id) { buttons.forEach((button, i) => button.setAttribute("aria-pressed", String(options[i].id === id))); }
+    return { el: L.h("div.seg", null, label ? L.h("span", { text: label }) : null, L.h("div.seg__set", { attr: { role: "group", "aria-label": label || "选择" } }, buttons)), pick };
+  };
+
+  /** What the learner did, kept across reloads; quietly does nothing where storage is unavailable. */
+  L.memory = function (key) {
+    let data = {};
+    try { data = JSON.parse(localStorage.getItem(key) || "{}"); } catch { data = {}; }
+    return {
+      get: (name, fallback) => (name in data ? data[name] : fallback),
+      set(name, value) { data[name] = value; try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* private window */ } },
+    };
+  };
+})();
+
+</script>
+<script>
+/* The plain blocks of a lesson. Each maker takes (block, ctx) and returns { el, steps?, set?, ready?, refresh? }:
+   steps = teacher sentences for moments inside the block after it has appeared; set(k) shows it as of step k;
+   ready() false means the learner still has to act before the lesson moves on; refresh() runs each time the block is revealed. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const KEYS = "ABCD";
+
+  L.blocks.text = (block) => ({ el: h("p.text", null, L.md(block.md)) });
+
+  /** A row of small answer buttons. paint(picked, right) locks them once an answer is in and marks the right and the wrong one. */
+  function picks(labels, onPick, extra = "") {
+    const buttons = labels.map((text, i) => h(`button.pick${extra}`, { attr: { type: "button" }, on: { click: () => onPick(i) } }, L.md(text)));
+    return {
+      el: h("div.picks", null, buttons),
+      paint(picked, right) {
+        buttons.forEach((button, i) => {
+          button.disabled = picked !== undefined;
+          button.classList.toggle("is-right", picked !== undefined && i === right);
+          button.classList.toggle("is-wrong", picked === i && i !== right);
+        });
+      },
+    };
+  }
+
+  /** Several small questions answered on the spot. make(item, i) gives each row's content; the answers survive a reload. */
+  function answered(block, ctx, name, make, sum) {
+    const key = `${name}:${block.items.length}:${block.items[0].q || block.items[0].text}`;
+    const answers = ctx.memory.get(key, {});
+    const score = h(`p.${name}__score`, { attr: { "aria-live": "polite" } });
+    const rows = block.items.map((item, i) => {
+      const why = h(`p.${name}__why`, { attr: { hidden: "" } }, L.md(item.why));
+      const row = make(item, (j) => { answers[i] = j; ctx.memory.set(key, answers); paint(); (done() ? score : why).scrollIntoView({ block: "nearest", behavior: "smooth" }); });
+      return { item, why, pick: row.pick, el: h(`div.${name}__item`, null, row.head, row.pick.el, why) };
+    });
+    const done = () => rows.every((row, i) => answers[i] !== undefined);
+    function paint() {
+      rows.forEach((row, i) => { row.pick.paint(answers[i], row.item.answer); row.why.hidden = answers[i] === undefined; });
+      score.textContent = done() ? sum(rows.filter((row, i) => answers[i] === row.item.answer).length, rows.length) : "";
+    }
+    paint();
+    return { el: h(`div.${name}`, null, rows.map((row) => row.el), score), ready: done, waitSay: "先把这几道都点一下再往下。点错没关系；实在想跳过，再按一次。" };
+  }
+
+  /** "You have met these before": a quick question per thing the lesson builds on, with the one sentence needed if it has faded. */
+  L.blocks.recall = (block, ctx) => answered(block, ctx, "recall",
+    (item, onPick) => ({ head: [h("span.recall__have", null, L.md(item.have)), h("p.recall__q", null, L.md(item.q))], pick: picks(item.options, onPick) }),
+    (right, total) => (right === total ? `${total} 样都记得，可以开始了。` : `${total} 样里记得 ${right} 样。没记住的，把它下面那句话再看一眼，这节课够用了。`));
+
+  /** Apply the rule just learned: for each situation, pick the tool. */
+  L.blocks.cases = (block, ctx) => answered(block, ctx, "cases",
+    (item, onPick) => ({ head: [h("p.cases__text", null, L.md(item.text))], pick: picks(block.tools, (j) => { onPick(j); document.dispatchEvent(new CustomEvent("lesson:picked", { detail: { name: block.tools[item.answer] } })); }, ".pick--tool") }),
+    (right, total) => (right === total ? `${total} 个场景都选对了。这条规则是你的了。` : `${total} 个里选对 ${right} 个。看一眼没选对的那条理由，再回想那句规则。`));
+
+  /** A picture to hang the lesson on: a short everyday story, then what each thing in it is called in the program. */
+  L.blocks.scene = (block) => {
+    const rows = block.map.map((pair) => h("div.scene__row", null, h("span", null, L.md(pair.scene)), h("span.scene__arrow", { text: "→" }), h("span.scene__to", null, L.md(pair.code))));
+    const table = h("div.scene__map", null, h("div.scene__head", null, h("span", { text: "场景里" }), h("span"), h("span", { text: "程序里" })), rows);
+    const picture = block.picture ? L.sharePicture({ actors: block.picture.actors, shared: block.picture.shared.name, hands: false }) : null;
+    /* The picture starts as the everyday scene; each row that is reached pins the program's word onto the part it names. */
+    const draw = (k) => {
+      const tags = { actors: [], shared: [], action: "" };
+      block.map.slice(0, k).forEach((pair) => { if (pair.on === "action") tags.action = pair.tag; else if (pair.on) tags[pair.on].push(pair.tag); });
+      picture.set({ value: block.picture.shared.value, tags, hot: k ? block.map[k - 1].on || null : null });
+    };
+    const set = (k) => { table.classList.toggle("is-waiting", k === 0); rows.forEach((row, i) => { row.classList.toggle("is-waiting", i >= k); row.classList.toggle("is-now", i === k - 1); }); if (picture) draw(k); };
+    set(0);
+    return { el: h("div.scene", null, h("p.scene__story", null, L.md(block.story)), h(`div.scene__body${picture ? ".has-picture" : ""}`, null, table, picture?.el)), steps: block.map.map((pair) => ({ say: pair.say })), set };
+  };
+
+  /** "Which line is it?" The learner presses the line they suspect, on the real source. */
+  L.blocks.spot = (block, ctx) => {
+    const key = `spot:${block.of}:${block.answerLines.join("-")}`;
+    const view = L.codeView();
+    const out = h("p.spot__out", { attr: { "aria-live": "polite" } });
+    let found = ctx.memory.get(key, false), wrong = [];
+    function paint() {
+      view.show(block.source, { path: block.path, lang: block.lang, focus: found ? block.answerLines : [], wrong });
+      view.el.classList.toggle("is-pickable", !found);
+      out.className = `spot__out${found ? ".is-ok" : wrong.length ? ".is-miss" : ""}`.replace(/\./g, " ");
+      out.replaceChildren(found ? L.md(block.found) : wrong.length ? L.md(block.hint) : "");
+    }
+    view.onLine((n) => {
+      if (found) return;
+      if (block.answerLines.includes(n)) { found = true; wrong = []; ctx.memory.set(key, true); } else wrong = [n];
+      paint();
+    });
+    paint();
+    return {
+      el: h("div.spot", null, h("p.spot__q", null, L.md(block.q)), view.el, h("div.spot__side", null, h("p.spot__how", { text: "在左边的代码上，点你怀疑的那一行。" }), out)),
+      ready: () => found,
+      waitSay: "先在代码上点一行你怀疑的。点错会有提示；实在想跳过，再按一次。",
+      pass() { found = true; wrong = []; paint(); },
+    };
+  };
+
+  /** Evidence: what the built program looks like inside, as the lab's inspect command printed it. Labels are added as the teacher names each part. */
+  L.blocks.inside = (block) => {
+    const view = L.codeView();
+    const show = (k) => view.show(block.source, {
+      path: block.command, lang: "text", focus: k ? block.walk[k - 1].focusLines : [],
+      tags: Object.fromEntries(block.walk.slice(0, k).map((step) => [step.focusLines.at(-1), step.label])),
+    });
+    show(0);
+    return { el: h("div.inside", null, h("p.inside__what", { text: "这是工具打印出来的真实输出，不是示意图。" }), view.el), steps: block.walk.map((step) => ({ say: step.say, key: step.key })), set: show };
+  };
+
+  /** The teacher hands over the controls: nothing new appears, the switches of the experiment on this slide light up once. */
+  L.blocks.try = () => {
+    const el = h("span.try");
+    return {
+      el,
+      refresh() {
+        for (const exp of el.closest(".slide").querySelectorAll(".exp")) { exp.classList.remove("is-invited"); void exp.offsetWidth; exp.classList.add("is-invited"); }
+      },
+    };
+  };
+
+  L.blocks.points = (block) => ({ el: h("ul.points", null, block.items.map((item) => h("li", null, h("span", null, L.md(item))))) });
+
+  L.blocks.callout = (block) => ({ el: h(`div.callout.callout--${block.tone}`, null, h("h4", { text: block.title }), h("p", null, L.md(block.md))) });
+
+  L.blocks.code = (block) => {
+    const view = L.codeView();
+    const walk = block.walk || [];
+    const show = (focus) => view.show(block.source, { path: block.path, lang: block.lang, focus });
+    show(block.focusLines);
+    return { el: view.el, steps: walk.map((step) => ({ say: step.say, key: step.key })), set(k) { show(k ? walk[k - 1].focusLines : block.focusLines); } };
+  };
+
+  function option(index, text, onPick) {
+    const tag = h("span.opt__tag");
+    const el = h("button.opt", { attr: { type: "button" }, on: { click: () => onPick(index) } }, h("span.opt__key", { text: KEYS[index] }), h("span", null, L.md(text)), tag);
+    return { el, tag };
+  }
+
+  /** Guess first. Nothing is confirmed here: the answer comes from the run, in the matching reveal block. */
+  L.blocks.predict = (block, ctx) => {
+    const key = `predict:${block.id}`;
+    const options = block.options.map((text, i) => option(i, text, pick));
+    function paint() {
+      const picked = ctx.memory.get(key);
+      options.forEach((item, i) => { item.el.classList.toggle("is-picked", i === picked); item.tag.textContent = i === picked ? "你的猜测" : ""; });
+    }
+    function pick(index) { ctx.memory.set(key, index); paint(); }
+    paint();
+    return { el: h("div.predict", null, h("p.predict__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => ctx.memory.get(key) !== undefined };
+  };
+
+  /** After the run: the learner's guess beside what really happened. The explaining is the teacher's job, not this block's. */
+  L.blocks.reveal = (block, ctx) => {
+    const predict = ctx.predicts[block.of];
+    const guess = h("dd");
+    return {
+      el: h("div.reveal", null, h("dl", null, h("dt", { text: "你猜的" }), guess), h("dl", null, h("dt", { text: "实际" }), h("dd.is-ok", null, L.md(predict.options[predict.answer])))),
+      refresh() {
+        const picked = ctx.memory.get(`predict:${block.of}`);
+        guess.className = picked === undefined ? "" : picked === predict.answer ? "is-ok" : "is-miss";
+        guess.replaceChildren(picked === undefined ? "刚才没猜" : L.md(predict.options[picked]));
+      },
+    };
+  };
+
+  /** Several tools side by side: what each solves, what it costs, when to reach for it. The teacher goes through them one row at a
+      time, and the rule to choose by comes last, after every row has been talked through. */
+  L.blocks.choose = (block) => {
+    const rows = block.options.map((option) => h("div.choose__row", null,
+      h("span.choose__name", null, L.term(option.name, h("span", { text: option.name }))),
+      h("span", { attr: { "data-label": "解决什么" } }, L.md(option.solves)),
+      h("span", { attr: { "data-label": "代价" } }, L.md(option.cost)),
+      h("span", { attr: { "data-label": "什么时候用" } }, L.md(option.when))));
+    const rule = h("p.choose__rule", null, L.md(block.rule));
+    const el = h("div.choose", null,
+      h("div.choose__head", null, h("span"), h("span", { text: "解决什么" }), h("span", { text: "代价" }), h("span", { text: "什么时候用" })), rows, rule);
+    const set = (k) => {
+      const walking = k >= 1 && k <= rows.length;
+      el.classList.toggle("is-walking", walking);
+      rows.forEach((row, i) => row.classList.toggle("is-now", walking && i === k - 1));
+      rule.classList.toggle("is-waiting", k <= rows.length);
+    };
+    set(0);
+    return { el, steps: block.options.map((option) => ({ say: option.say })).concat({ say: block.ruleSay, key: block.ruleKey }), set };
+  };
+
+  L.blocks.name = (block) => ({
+    el: h("div.name", null,
+      h("h2.name__term", { text: block.term }),
+      block.alias ? h("p.name__alias", { text: block.alias }) : null,
+      h("p.name__line", null, L.md(block.oneLine)),
+      h("div.name__asked", null, h("h4", { text: "面试里它长这样" }), h("ul", null, block.asked.map((question) => h("li", { text: `「${question}」` })))),
+    ),
+  });
+
+  /** Answered on the spot: the picked option and the right one both show why. */
+  L.blocks.quiz = (block) => {
+    let done = false;
+    const options = block.options.map((item, i) => option(i, item.text, pick));
+    function pick(index) {
+      if (done) return;
+      done = true;
+      block.options.forEach((item, i) => {
+        if (i !== index && !item.ok) return;
+        options[i].el.classList.add(item.ok ? "is-right" : "is-wrong");
+        options[i].tag.textContent = item.ok ? "对" : "不对";
+        options[i].el.append(h("span.opt__why", null, L.md(item.why)));
+      });
+    }
+    return { el: h("div.quiz", null, h("p.quiz__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => done };
+  };
+
+  /** Say it aloud against a clock, then tick off what you covered. The points stay hidden until the learner has spoken. */
+  L.blocks.say = (block) => {
+    const total = block.seconds || 120;
+    let left = total, timer = 0;
+    const clock = h("span.say__clock");
+    const score = h("p.say__score");
+    const boxes = block.points.map((point) => h("input", { attr: { type: "checkbox" }, on: { change: count } }));
+    const points = h("ul.say__points", { attr: { hidden: "" } }, block.points.map((point, i) => h("li", null, h("label", null, boxes[i], h("span", null, L.md(point))))), score);
+    const start = h("button.btn", { text: "开始讲", attr: { type: "button" }, on: { click: toggle } });
+    const model = h("p.say__model", { attr: { hidden: "" } }, L.md(block.model));
+    const showModel = h("button.btn", { text: "看一份参考回答", attr: { type: "button", hidden: "" }, on: { click() { model.hidden = !model.hidden; showModel.textContent = model.hidden ? "看一份参考回答" : "收起参考回答"; if (!model.hidden) model.scrollIntoView({ block: "nearest", behavior: "smooth" }); } } });
+    const check = h("button.btn.btn--primary", { text: "讲完了，对要点", attr: { type: "button" }, on: { click() { stop(); points.hidden = false; check.hidden = true; showModel.hidden = false; count(); } } });
+    function draw() { clock.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`; }
+    function stop() { clearInterval(timer); timer = 0; start.textContent = left === total ? "开始讲" : "接着讲"; }
+    function toggle() {
+      if (timer) return stop();
+      if (left === 0) left = total;
+      start.textContent = "暂停";
+      timer = setInterval(() => { left -= 1; draw(); if (left === 0) stop(); }, 1000);
+      draw();
+    }
+    function count() { score.textContent = `${block.points.length} 个要点，你讲到了 ${boxes.filter((box) => box.checked).length} 个。没讲到的，回到对应那一页再看一遍。`; }
+    draw();
+    return { el: h("div.say", null, h("p.say__prompt", null, L.md(block.prompt)), h("div.say__row", null, clock, start, check, showModel), points, model) };
+  };
+
+  L.blocks.cards = (block) => ({
+    el: h("div.cards", null, block.items.map((card) => {
+      const answer = h("p.card__a", { attr: { hidden: "" } }, L.md(card.a));
+      const button = h("button.btn.btn--quiet", { text: "看答案", attr: { type: "button" }, on: { click() { answer.hidden = !answer.hidden; button.textContent = answer.hidden ? "看答案" : "收起"; } } });
+      return h("div.card", null, h("p.card__q", null, L.md(card.q)), button, answer);
+    })),
+  });
+})();
+
+</script>
+<script>
+/* Things that are drawn instead of described. Three of them:
+   - the shared-thing picture: two actors, what each holds in hand, and the one thing they share. A scene uses it to show the
+     everyday story; `lanes` puts the same picture beside its rows, so every step is also seen in space, not only in time;
+   - `chart`: the recorded runs as lines, one per way of writing the code, along the experiment's knob;
+   - `decide`: the rule for choosing, drawn as a small tree.
+   Every number in a chart is read from the recorded runs. Colour names a series and nothing else; right or wrong is the marker's shape. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const NS = "http://www.w3.org/2000/svg";
+  const s = (tag, attrs, ...kids) => {
+    const el = document.createElementNS(NS, tag);
+    for (const [name, value] of Object.entries(attrs || {})) el.setAttribute(name, value);
+    el.append(...kids.flat().filter(Boolean));
+    return el;
+  };
+
+  /* ---------- two actors and the thing they share ---------- */
+
+  const PIC = { width: 300, height: 300 };
+  const FIGURE = () => s("svg", { viewBox: "0 0 44 40", class: "pic__figure", "aria-hidden": "true" },
+    s("circle", { cx: 22, cy: 10, r: 8.5 }), s("path", { d: "M4 40v-4a18 14 0 0 1 36 0v4" }));
+
+  /** A straight arrow from (x1, y1) to (x2, y2), stopping a little short at both ends. */
+  function arrow(x1, y1, x2, y2) {
+    const length = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / length, uy = (y2 - y1) / length;
+    const tipX = x2 - ux * 3, tipY = y2 - uy * 3, backX = tipX - ux * 9, backY = tipY - uy * 9;
+    return s("g", { class: "pic__arrow" },
+      s("line", { x1: x1 + ux * 3, y1: y1 + uy * 3, x2: backX, y2: backY }),
+      s("polygon", { points: `${tipX},${tipY} ${backX - uy * 4.5},${backY + ux * 4.5} ${backX + uy * 4.5},${backY - ux * 4.5}` }));
+  }
+
+  /** actors: two names; shared: its name; hands: whether each actor holds a value (the scene's story has no need of it). */
+  L.sharePicture = function ({ actors, shared, hands = true }) {
+    const side = ["a", "b"];
+    const value = h("b.pic__value");
+    const boardTags = h("div.pic__tags");
+    const board = h("div.pic__board", null, value);
+    const boardName = h("div.pic__over", null, h("span.pic__name", { text: shared }), boardTags);
+    const action = h("span.pic__action");
+    const people = actors.map((name, i) => {
+      const tags = h("div.pic__tags");
+      const note = h("span.pic__note");
+      const held = h("b");
+      return {
+        tags, note, held,
+        el: h(`div.pic__actor.pic__actor--${side[i]}`, null, FIGURE(), h("span.pic__name", { text: name }), tags, note),
+        hand: hands ? h(`div.pic__hand.pic__hand--${side[i]}`, null, h("small", { text: "手里" }), held) : null,
+      };
+    });
+    /* With hands the arrows run between the board and a hand; without, between an actor and the board. */
+    const ends = hands ? [[124, 110, 104, 144], [176, 110, 196, 144]] : [[122, 110, 62, 192], [178, 110, 238, 192]];
+    const arrows = ends.map(([bx, by, px, py]) => ({ in: arrow(bx, by, px, py), out: arrow(px, py, bx, by) }));
+    const lines = s("svg", { viewBox: `0 0 ${PIC.width} ${PIC.height}`, class: "pic__lines", "aria-hidden": "true" }, arrows.flatMap((pair) => [pair.in, pair.out]));
+    const el = h(`div.pic${hands ? "" : ".pic--plain"}`, { attr: { role: "img" } }, lines, boardName, board, action, people.flatMap((person) => [person.hand, person.el]));
+
+    const fill = (box, texts) => box.replaceChildren(...(texts || []).map((text) => h("span", { text })));
+    return {
+      el,
+      /** state: { value, hands: [text|null ×2], notes: [{ text, tone }|null ×2], move: { lane, op }|null,
+          tags: { actors: [], shared: [], action: text }, hot: "actors"|"shared"|"action"|null } */
+      set(state) {
+        const move = state.move, tags = state.tags || {};
+        value.textContent = String(state.value);
+        board.classList.toggle("is-now", move?.op === "write" || state.hot === "shared");
+        fill(boardTags, tags.shared);
+        action.textContent = tags.action || "";
+        action.classList.toggle("is-now", state.hot === "action");
+        people.forEach((person, i) => {
+          const mine = move?.lane === i;
+          if (person.hand) {
+            const text = state.hands?.[i];
+            person.held.textContent = text ?? "";
+            person.hand.classList.toggle("is-empty", text === null || text === undefined);
+            person.hand.classList.toggle("is-now", mine && (move.op === "read" || move.op === "calc"));
+          }
+          const note = state.notes?.[i];
+          person.note.textContent = note?.text || "";
+          person.note.className = `pic__note${note?.tone ? ` pic__note--${note.tone}` : ""}${mine && move.op === "note" ? " is-now" : ""}`;
+          person.el.classList.toggle("is-now", state.hot === "actors" || (mine && move.op === "note"));
+          fill(person.tags, tags.actors);
+          arrows[i].in.classList.toggle("is-on", mine && move.op === "read");
+          arrows[i].out.classList.toggle("is-on", (mine && move.op === "write") || Boolean(tags.action));
+        });
+        const holding = (state.hands || []).map((text, i) => (text === null || text === undefined ? "" : `${actors[i]}手里是 ${text}`)).filter(Boolean).join("，");
+        el.setAttribute("aria-label", `${actors.join("和")}共用${shared}，现在是 ${state.value}${holding ? `；${holding}` : ""}`);
+      },
+    };
+  };
+
+  /** What the picture shows after each step of a `lanes` walk: frame 0 is the start, frame k is after step k. */
+  L.shareFrames = function (steps, start) {
+    const frames = [{ value: start, hands: [null, null], notes: [null, null], move: null }];
+    for (const step of steps) {
+      const last = frames.at(-1);
+      const frame = { value: last.value, hands: [...last.hands], notes: last.notes.map((note) => (note?.tone === "fail" ? null : note)), move: { lane: step.lane, op: step.op } };
+      if (step.op === "read") frame.hands[step.lane] = String(frame.value);
+      else if (step.op === "calc") frame.hands[step.lane] = step.text.includes("=") ? step.text.split("=").pop().trim() : step.text;
+      else if (step.op === "write") { frame.value = step.value; frame.hands[step.lane] = null; }
+      else frame.notes[step.lane] = { text: step.text, tone: step.tone };
+      frames.push(frame);
+    }
+    return frames.concat({ ...frames.at(-1), move: null });
+  };
+
+  /* ---------- the recorded runs as a line chart ---------- */
+
+  const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+  const VIEW = { width: 640, height: 300, left: 44, right: 178, top: 14, bottom: 34, inset: 18, labelGap: 19 };
+
+  function step(max, ticks = 4) {
+    const raw = max / ticks, power = 10 ** Math.floor(Math.log10(raw));
+    return [1, 2, 5, 10].find((unit) => unit * power >= raw) * power;
+  }
+
+  /** Label heights that keep the order of `wanted` but never sit closer than `gap`, inside [top, bottom]. */
+  function spread(wanted, gap, top, bottom) {
+    const order = wanted.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y);
+    order.forEach((item, n) => { item.y = Math.max(item.y, n ? order[n - 1].y + gap : top); });
+    for (let n = order.length - 1; n >= 0; n--) order[n].y = Math.min(order[n].y, n === order.length - 1 ? bottom : order[n + 1].y - gap);
+    const out = [];
+    order.forEach((item) => { out[item.i] = item.y; });
+    return out;
+  }
+
+  L.blocks.chart = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.of];
+    const y = { label: "耗时", ...(block.y || exp.time) };
+    const xs = exp.knob.values;
+    const base = exp.variants[0];
+    const series = exp.variants.filter((variant) => !block.show || block.show.includes(variant.id)).slice(0, 4).map((variant) => ({
+      variant,
+      slot: exp.variants.indexOf(variant) + 1, // colour follows the way of writing, not its place in this chart
+      points: xs.map((x) => {
+        const runs = exp.results.variants[variant.id].runs[x];
+        return { x, value: median(runs.map((run) => run[y.key])), wrong: runs.filter((run) => run[exp.metric.key] !== run[exp.metric.expectKey]).length, total: runs.length };
+      }),
+    }));
+    const tick = step(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))));
+    const top = tick * Math.ceil(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))) / tick);
+    const plot = { width: VIEW.width - VIEW.left - VIEW.right, height: VIEW.height - VIEW.top - VIEW.bottom };
+    const px = (i) => VIEW.left + VIEW.inset + (i * (plot.width - 2 * VIEW.inset)) / (xs.length - 1);
+    const py = (value) => VIEW.top + plot.height - (value / top) * plot.height;
+    const verdict = (point) => (point.wrong === 0 ? `${point.total} 次全对` : point.wrong === point.total ? `${point.total} 次全错` : `错了 ${point.wrong} 次`);
+    let focus = null;
+
+    const grid = [];
+    for (let value = 0; value <= top; value += tick) {
+      grid.push(s("line", { class: value ? "chart__grid" : "chart__base", x1: VIEW.left, x2: VIEW.left + plot.width, y1: py(value), y2: py(value) }));
+      grid.push(s("text", { class: "chart__tick", x: VIEW.left - 8, y: py(value) + 4, "text-anchor": "end" }, String(value)));
+    }
+    const xLabels = xs.map((x, i) => s("text", { class: "chart__tick", x: px(i), y: VIEW.height - 14, "text-anchor": "middle" }, String(x)));
+    const xTitle = s("text", { class: "chart__tick", x: VIEW.left + plot.width + 12, y: VIEW.height - 14 }, exp.knob.label);
+    const labelY = spread(series.map((one) => py(one.points.at(-1).value)), VIEW.labelGap, VIEW.top + 6, VIEW.top + plot.height);
+    const endX = px(xs.length - 1);
+
+    series.forEach((one, n) => {
+      const last = one.points.at(-1);
+      one.el = s("g", { class: `chart__series chart__series--${one.slot}` },
+        s("polyline", { class: "chart__line", points: one.points.map((point, i) => `${px(i)},${py(point.value)}`).join(" ") }),
+        s("polyline", { class: "chart__lead", points: `${endX + 8},${py(last.value)} ${endX + 20},${labelY[n]} ${endX + 30},${labelY[n]}` }),
+        one.points.map((point, i) => s("circle", { class: `chart__dot${point.wrong ? " is-wrong" : ""}`, cx: px(i), cy: py(point.value), r: 5 })),
+        s("text", { class: "chart__name", x: endX + 35, y: labelY[n] + 4 }, s("tspan", { class: "chart__label" }, `${one.variant.label} `), s("tspan", { class: "chart__end" }, String(last.value))));
+    });
+
+    const cross = s("line", { class: "chart__cross", y1: VIEW.top, y2: VIEW.top + plot.height });
+    const tip = h("div.chart__tip", { attr: { hidden: "" } });
+    function point(i) {
+      cross.setAttribute("x1", px(i)); cross.setAttribute("x2", px(i));
+      cross.classList.add("is-on");
+      tip.replaceChildren(h("b", { text: `${exp.knob.label} ${xs[i]}` }), ...[...series].sort((a, b) => b.points[i].value - a.points[i].value).map((one) => h(`div.chart__row${focus && focus !== one.variant.id ? ".is-dim" : ""}`, null,
+        h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label }), h("span.num", { text: `${one.points[i].value} ${y.unit}` }), h(`span${one.points[i].wrong ? ".is-wrong" : ""}`, { text: verdict(one.points[i]) }))));
+      tip.hidden = false;
+      const half = i >= xs.length / 2;
+      tip.style.left = half ? "" : `${((px(i) + 14) / VIEW.width) * 100}%`;
+      tip.style.right = half ? `${100 - ((px(i) - 14) / VIEW.width) * 100}%` : "";
+    }
+    function leave() { cross.classList.remove("is-on"); tip.hidden = true; }
+    const width = (plot.width - 2 * VIEW.inset) / (xs.length - 1);
+    const hits = xs.map((x, i) => {
+      const hit = s("rect", { class: "chart__hit", x: px(i) - width / 2, y: VIEW.top, width, height: plot.height + VIEW.bottom, tabindex: 0, role: "button", "aria-label": `${exp.knob.label} ${x}，读这一列` });
+      for (const name of ["pointerenter", "focus", "click"]) hit.addEventListener(name, () => point(i));
+      hit.addEventListener("blur", leave);
+      return hit;
+    });
+    const svg = s("svg", { viewBox: `0 0 ${VIEW.width} ${VIEW.height}`, class: "chart__svg", role: "img", "aria-label": `${y.label}随${exp.knob.label}的变化，${series.length} 种写法，数据在下面的表里` },
+      grid, xLabels, xTitle, cross, series.map((one) => one.el), hits);
+    svg.addEventListener("pointerleave", leave);
+
+    const read = h("p.chart__read", { attr: { "aria-live": "polite" } });
+    const buttons = series.map((one) => h("button.chart__pick", { attr: { type: "button", "aria-pressed": "false" }, on: { click: () => look(focus === one.variant.id ? null : one.variant.id) } },
+      h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label })));
+    function look(id) {
+      focus = id;
+      series.forEach((one, n) => { one.el.classList.toggle("is-dim", Boolean(id) && one.variant.id !== id); one.el.classList.toggle("is-on", one.variant.id === id); buttons[n].setAttribute("aria-pressed", String(one.variant.id === id)); });
+      const one = series.find((candidate) => candidate.variant.id === id);
+      if (!one) return read.replaceChildren("点上面的写法名，只看那一条线；把鼠标移到图上（手机上点一下），读那一列的每个数。");
+      const last = one.points.at(-1), first = one.points[0];
+      const basePoint = exp.results.variants[base.id].runs[last.x];
+      const ratio = one.variant.id === base.id ? "" : `，是「${base.label}」的 ${(last.value / median(basePoint.map((run) => run[y.key]))).toFixed(1)} 倍`;
+      const wrongAt = one.points.filter((item) => item.wrong).map((item) => item.x);
+      read.replaceChildren(L.md(`${one.variant.label}：${exp.knob.label} ${first.x} 时 **${first.value} ${y.unit}**，到 ${last.x} 时 **${last.value} ${y.unit}**${ratio}。${wrongAt.length ? `==${exp.knob.label}为 ${wrongAt.join("、")} 时结果有错==。` : "每一组结果都对。"}`));
+    }
+    look(null);
+
+    const table = h("details.chart__table", null, h("summary", { text: "看数据表" }), h("table", null,
+      h("thead", null, h("tr", null, h("th", { text: `${exp.knob.label} →` }), xs.map((x) => h("th", { text: String(x) })))),
+      h("tbody", null, series.map((one) => h("tr", null, h("th", { text: one.variant.label }), one.points.map((item) => h("td", { text: `${item.value} ${y.unit}${item.wrong ? "（有错）" : ""}` })))))));
+
+    return {
+      el: h("figure.chart", null,
+        h("figcaption.chart__cap", null, h("b", { text: `${y.label}（${y.unit}）` }), h("span", { text: `每个点是 ${exp.repeat} 次真实运行的中位数` }),
+          h("span.chart__marks", null, h("i.chart__mark"), "这一组结果全对", h("i.chart__mark.is-wrong"), "有错")),
+        h("div.chart__plot", null, svg, tip),
+        h("div.chart__side", null, h("div.chart__picks", { attr: { role: "group", "aria-label": "只看一种写法" } }, buttons), read, table)),
+      steps: block.walk.map((item) => ({ say: item.say, key: item.key })),
+      set(k) { look(k ? block.walk[k - 1].focus : null); },
+    };
+  };
+
+  /* ---------- the rule for choosing, as a tree ---------- */
+
+  L.blocks.decide = (block) => {
+    const branches = block.branches.map((branch) => ({
+      pick: branch.pick,
+      el: h("li.decide__branch", null,
+        h("span.decide__when", null, L.md(branch.when)),
+        h("span.decide__pick", null, L.term(branch.pick, h("span", { text: branch.pick }))),
+        branch.eg ? h("small.decide__eg", { text: `比如：${branch.eg}` }) : null),
+    }));
+    /* When the learner answers a `cases` item on the same slide, the branch that item belongs to lights up. */
+    const onPicked = (event) => {
+      const hit = branches.find((branch) => branch.pick === event.detail.name);
+      if (!hit || !hit.el.isConnected) return;
+      branches.forEach((branch) => branch.el.classList.remove("is-hit"));
+      void hit.el.offsetWidth; // restart the flash when the same branch is hit twice
+      hit.el.classList.add("is-hit", "is-used");
+    };
+    document.addEventListener("lesson:picked", onPicked);
+    return { el: h("div.decide", null, h("p.decide__q", null, L.md(block.q)), h("ul.decide__list", null, branches.map((branch) => branch.el))) };
+  };
+})();
+
+</script>
+<script>
+/* The experiment block: the code on the left (switch what was changed), what really happened on the right.
+   Every dot is one recorded run on the learner's own machine; the page never invents a number. Switching the code or the knob
+   moves the same dots, so the learner sees the effect of one change as data. Touch a dot to read that single run. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const AXIS_ROOM = 1.04, BIN = 1.2, DROP_MS = 45;
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  const median = (values) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.floor(sorted.length / 2)]; };
+
+  /** worst: the largest miss of the target, signed (negative = came out too low, positive = too high). */
+  function summary(runs, metric) {
+    const misses = runs.map((run) => run[metric.key] - run[metric.expectKey]);
+    return { wrong: misses.filter(Boolean).length, total: runs.length, worst: misses.reduce((far, miss) => (Math.abs(miss) > Math.abs(far) ? miss : far), 0), expected: runs[0][metric.expectKey] };
+  }
+  const missed = (miss) => `${miss > 0 ? "多了" : "少了"} ${L.num(Math.abs(miss))}`;
+
+  L.blocks.experiment = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.lab];
+    const shown = exp.variants.filter((variant) => block.show.includes(variant.id));
+    const base = exp.variants[0];
+    const metric = exp.metric, time = exp.time;
+    let variant = block.select || shown[0].id;
+    let knob = block.at || (exp.knob ? exp.knob.default : "-");
+    let played = false;
+    let seen = block.hand ? 0 : exp.repeat; // hand: the learner lets the recorded runs out one press at a time
+
+    const runsOf = (id) => exp.results.variants[id].runs[knob];
+    const view = L.codeView();
+    const note = h("p.exp__note");
+    const question = h("p.exp__q");
+    const finding = h("p.exp__finding", { attr: { "aria-live": "polite" } });
+    const probe = h("span.exp__probe");
+    const command = h("code.cmd");
+    const ticks = h("div.plot__ticks", null, h("span", { text: "0" }), h("span.is-expect"));
+
+    const rows = shown.map((item) => {
+      const dots = Array.from({ length: exp.repeat }, (unused, i) => h("i.dot.is-waiting", { on: { mouseenter: () => read(item, i), click: () => read(item, i) } }));
+      const sum = h("span.plot__sum");
+      const label = h("button.plot__label", { text: item.label, attr: { type: "button" }, on: { click: () => choose(item.id) } });
+      return { item, dots, sum, track: h("div.plot__track", null, dots), el: null, label };
+    });
+    rows.forEach((row) => { row.el = h("div.plot__row", null, row.label, row.track, row.sum); });
+
+    function read(item, i) {
+      const run = runsOf(item.id)[i];
+      probe.textContent = `${item.label} · 第 ${i + 1} 次：${metric.key} = ${L.num(run[metric.key])}${time ? `，${run[time.key]} ${time.unit}` : ""}`;
+    }
+
+    /* The far end of the axis: the largest result or target among everything this block can show. */
+    const reachable = exp.knob && block.knob !== false ? exp.knob.values : [knob];
+    const axisTop = AXIS_ROOM * Math.max(...shown.flatMap((item) => reachable.flatMap((value) => exp.results.variants[item.id].runs[value].flatMap((run) => [run[metric.key], run[metric.expectKey]]))));
+
+    function place(row) {
+      const runs = runsOf(row.item.id);
+      const info = summary(runs, metric);
+      const bins = new Map();
+      row.track.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      runs.forEach((run, i) => {
+        const percent = (run[metric.key] / axisTop) * 100;
+        const bin = Math.round(percent / BIN);
+        const seat = bins.get(bin) || 0;
+        bins.set(bin, seat + 1);
+        row.dots[i].style.left = `${percent}%`;
+        row.dots[i].style.transform = `translate(${-Math.floor(seat / 3) * 7}px, ${[0, -11, 11][seat % 3]}px)`;
+        row.dots[i].classList.toggle("is-ok", run[metric.key] === run[metric.expectKey]);
+      });
+      row.sum.replaceChildren(
+        h(`b${info.wrong ? "" : ".is-ok"}`, { text: info.wrong === 0 ? `${info.total} 次全对` : info.wrong === info.total ? `${info.total} 次全错` : `错了 ${info.wrong} 次` }),
+        time ? h("span.num", { text: `中位 ${median(runs.map((run) => run[time.key]))} ${time.unit}` }) : null,
+      );
+      row.el.classList.toggle("is-on", row.item.id === variant);
+      return info;
+    }
+
+    function tell(info, item) {
+      const runs = runsOf(item.id);
+      const speed = time ? `中位耗时 **${median(runs.map((run) => run[time.key]))} ${time.unit}**` : "";
+      if (info.wrong === 0) {
+        const slower = time && item.id !== base.id ? `，${base.label}是 ${median(runsOf(base.id).map((run) => run[time.key]))} ${time.unit}` : "";
+        return `${item.label}：${info.total} 次==全对==。${speed}${slower}。`;
+      }
+      const share = Math.round((Math.abs(info.worst) / info.expected) * 100);
+      return `${item.label}：${info.total} 次里 ==${info.wrong} 次不对==。${info.worst > 0 ? "最多到了" : "最少只到"} **${L.num(info.expected + info.worst)}**，${missed(info.worst)}${share ? `（${share}%）` : ""}。${speed}。`;
+    }
+
+    function draw() {
+      const item = exp.variants.find((candidate) => candidate.id === variant);
+      const source = exp.sources[variant];
+      view.show(source, { path: exp.paths[variant], lang: exp.lang, changed: variant === base.id ? [] : L.changedLines(exp.sources[base.id], source), focus: variant === base.id ? block.focusLines || [] : [] });
+      note.textContent = item.note || "";
+      let info = null;
+      for (const row of rows) { const result = place(row); if (row.item.id === variant) info = result; }
+      ticks.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      ticks.lastChild.textContent = `应该是 ${L.num(info.expected)}`;
+      question.replaceChildren(L.md(`每种写法跑 **${exp.repeat} 次**，一个点是一次的「${metric.label}」。`));
+      finding.replaceChildren(L.md(tell(info, item)));
+      command.textContent = `${exp.shown[variant]}${knob === "-" ? "" : ` ${knob}`}`;
+      probe.textContent = "";
+      if (block.hand) paintHand();
+    }
+
+    /* Hand mode: nothing is summed up until every run has been seen, so the surprise is the learner's own. */
+    const more = h("button.btn.btn--primary", { attr: { type: "button" }, on: { click: () => letOut(1) } });
+    const rest = h("button.btn", { attr: { type: "button" }, on: { click: () => letOut(exp.repeat) } });
+    const hand = block.hand ? h("div.exp__hand", null, more, rest) : null;
+    function paintHand() {
+      const row = rows[0], runs = runsOf(row.item.id), pending = seen < exp.repeat;
+      row.dots.forEach((dot, i) => dot.classList.toggle("is-waiting", i >= seen));
+      row.sum.classList.toggle("is-held", pending);
+      hand.hidden = !pending;
+      if (!pending) return;
+      more.textContent = seen === 0 ? "看第 1 次运行" : "再看一次";
+      rest.textContent = `把剩下的 ${exp.repeat - seen} 次一起放出来`;
+      rest.hidden = seen < 2;
+      if (seen === 0) return finding.replaceChildren("还一次都没看。点下面的按钮，看第 1 次跑出了多少。");
+      const last = runs[seen - 1], value = last[metric.key], expected = last[metric.expectKey];
+      const same = seen > 1 && runs[seen - 2][metric.key] === value;
+      finding.replaceChildren(L.md(`第 ${seen} 次：**${L.num(value)}**。${value === expected ? "和应该的一样。" : `应该是 ${L.num(expected)}，==${missed(value - expected)}==。`}${seen > 1 ? (same ? "和上一次一样。" : "和上一次还不一样。") : ""}`));
+    }
+    function letOut(n) {
+      const from = seen;
+      seen = Math.min(exp.repeat, seen + n);
+      draw();
+      if (seen - from > 1 && !still.matches) rows[0].dots.forEach((dot, i) => { if (i >= from) { dot.classList.add("is-waiting"); setTimeout(() => dot.classList.remove("is-waiting"), 80 + (i - from) * DROP_MS); } });
+    }
+
+    function play() {
+      played = true;
+      if (seen < exp.repeat) return;
+      const all = rows.flatMap((row) => row.dots);
+      all.forEach((dot) => dot.classList.add("is-waiting"));
+      if (still.matches) return all.forEach((dot) => dot.classList.remove("is-waiting"));
+      rows.forEach((row) => row.dots.forEach((dot, i) => setTimeout(() => dot.classList.remove("is-waiting"), 260 + i * DROP_MS)));
+    }
+
+    function choose(id) { variant = id; tabs?.pick(id); draw(); }
+    const tabs = shown.length > 1 ? L.segmented("写法", shown.map((item) => ({ id: item.id, label: item.label })), variant, choose) : null;
+    const dial = exp.knob && block.knob !== false ? L.segmented(exp.knob.label, exp.knob.values.map((value) => ({ id: value, label: value })), knob, (value) => { knob = value; draw(); }) : null;
+    const copy = h("button.btn.btn--quiet", { text: "复制", attr: { type: "button" }, on: { click() { navigator.clipboard?.writeText(command.textContent).then(() => { copy.textContent = "已复制"; }, () => {}); } } });
+    const env = exp.results.env;
+
+    draw();
+    return {
+      el: h("div.exp", null,
+        tabs || dial ? h("div.exp__bar", null, tabs?.el, dial?.el) : null,
+        h("div.exp__body", null,
+          h("div", null, view.el, note),
+          h("div.exp__data", null, question, h("div.plot", null, rows.map((row) => row.el), h("div.plot__axis", null, h("span"), ticks, h("span"))), finding, hand,
+            h("div.exp__foot", null,
+              h("span", { text: `真实记录 · 这台电脑 · ${env.runtime} · ${env.cores} 个逻辑核 · ${env.date}` }),
+              h("button.btn.btn--quiet", { text: "再放一遍", attr: { type: "button" }, on: { click: play } }),
+              h("span", null, "自己跑：", command), copy, probe))),
+      ),
+      refresh() { if (!played) play(); },
+      waitSay: "先自己看：点「看第 1 次运行」，一次一次把结果放出来。实在想跳过，再按一次。",
+      ready: () => seen >= exp.repeat,
+      pass() { if (seen < exp.repeat) letOut(exp.repeat); },
+    };
+  };
+})();
+
+</script>
+<script>
+/* Two actors and the one thing they share, with time running downward.
+   `lanes` is the teacher's walk through one fixed order of steps; a step may end in a question the learner answers before the next
+   step shows what really happens. `schedule` hands the order to the learner: they press which actor moves next and watch what the
+   shared value becomes, with a lock they can switch on. Both draw rows the same way. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const OPS = ["read", "calc", "write"];
+
+  /** One row: a step in its actor's lane, an arrow to or from the shared value when the step touches it.
+      A `note` step touches nothing: the actor waits, gives up, takes or releases something. */
+  function row(step, shared) {
+    const touches = step.op === "read" || step.op === "write";
+    const inward = step.op === "write";
+    const arrow = h(`span.arrow.arrow--${!touches ? "none" : (step.lane === 0) === inward ? "right" : "left"}`);
+    const chip = h(`span.chip${step.op === "note" && step.tone ? `.chip--${step.tone}` : ""}`, { text: step.text });
+    const cells = [h("div.lcell.lcell--a"), h("div.lcell.lcell--mid"), h("div.lcell.lcell--b")];
+    cells[step.lane === 0 ? 0 : 2].append(...(step.lane === 0 ? [chip, arrow] : [arrow, chip]));
+    if (touches) cells[1].append(h(`span.val${inward ? ".val--write" : ""}`, { text: String(shared) }));
+    return h("div.lrow", null, cells);
+  }
+
+  function grid(names, sharedName, rows) {
+    return h("div.lanes__grid", null,
+      h("div.lanes__head.lanes__head--a", { text: names[0] }), h("div.lanes__head.lanes__head--mid", { text: sharedName }), h("div.lanes__head.lanes__head--b", { text: names[1] }),
+      rows);
+  }
+
+  L.blocks.lanes = (block, ctx) => {
+    let shared = block.shared.start, now = 0;
+    const key = `lanes:${block.expr}:${block.steps.length}`;
+    const answers = ctx.memory.get(key, {});
+    const parts = OPS.map((op) => h("span.part", { text: block.parts[op] }));
+    const rows = block.steps.map((step) => { if (step.op === "write") shared = step.value; return row(step, shared); });
+    const verdict = h("p.lanes__verdict.is-waiting", null, L.md(block.verdict));
+    const askBox = h("div.lanes__ask", { attr: { hidden: "" } });
+    const askNow = () => (now >= 1 && now <= rows.length ? block.steps[now - 1].ask : null);
+    /* The same steps seen in space: who holds what, and what the shared thing is right now. */
+    const picture = L.sharePicture({ actors: block.lanes, shared: block.shared.name });
+    const frames = L.shareFrames(block.steps, block.shared.start);
+
+    /* The question that closes a step: what will the next step do? Answered here, shown for real by the next press. */
+    function paintAsk() {
+      const ask = askNow();
+      askBox.hidden = !ask;
+      if (!ask) return;
+      const picked = answers[now - 1];
+      const buttons = ask.options.map((text, i) => {
+        const button = h("button.pick", { attr: { type: "button" }, on: { click() { answers[now - 1] = i; ctx.memory.set(key, answers); paintAsk(); } } }, L.md(text));
+        button.disabled = picked !== undefined;
+        if (picked !== undefined && i === ask.answer) button.classList.add("is-right");
+        if (picked === i && i !== ask.answer) button.classList.add("is-wrong");
+        return button;
+      });
+      const out = picked === undefined ? "" : picked === ask.answer ? "对。按下一步，看它是怎么发生的。" : "不是这个。按下一步，看实际发生了什么。";
+      askBox.replaceChildren(h("p", null, L.md(ask.q)), h("div.picks", null, buttons), h("p.ask__out", { text: out }));
+    }
+
+    return {
+      el: h(`div.lanes${rows.length > 7 ? ".lanes--long" : ""}`, null,
+        h("div.lanes__main", null,
+          h("div.lanes__expr", null, h("code.lanes__code", { text: block.expr }), h("div.lanes__parts", null, parts[0], "→", parts[1], "→", parts[2])),
+          grid(block.lanes, block.shared.name, rows), askBox, verdict),
+        h("div.lanes__side", null, h("p.lanes__now", { text: "此刻" }), picture.el)),
+      steps: block.steps.map((step) => ({ say: step.say, key: step.key })).concat({ say: block.verdictSay, key: block.verdictKey }),
+      waitSay: "先猜一下再往下：点一个你觉得会发生的。实在想跳过，再按一次。",
+      ready: () => !askNow() || answers[now - 1] !== undefined,
+      set(k) {
+        now = k;
+        rows.forEach((el, i) => { el.classList.toggle("is-waiting", i >= k); el.classList.toggle("is-now", i === k - 1); });
+        const op = k >= 1 && k <= rows.length ? block.steps[k - 1].op : null;
+        parts.forEach((part, i) => part.classList.toggle("is-now", OPS[i] === op));
+        verdict.classList.toggle("is-waiting", k <= rows.length);
+        picture.set(frames[Math.min(k, frames.length - 1)]);
+        paintAsk();
+      },
+      /** The part that just changed, so a long walk keeps its newest row on screen. */
+      spot: () => (now > rows.length ? verdict : askNow() ? askBox : rows[now - 1]?.firstChild),
+    };
+  };
+
+  L.blocks.schedule = (block) => {
+    const name = block.shared.name;
+    const hint = { read: `读 ${name}`, calc: "算出新值", write: `写回 ${name}` };
+    const reached = new Set();
+    let shared, actors, owner, locked = false;
+
+    const rows = h("div.lrow-list");
+    const value = h("span.val");
+    const buttons = [0, 1].map((lane) => h("button.btn", { attr: { type: "button" }, on: { click: () => move(lane) } }));
+    const result = h("p.sched__result", { attr: { "aria-live": "polite" } });
+    const goals = block.goals.map((goal) => h("li.goal", { text: goal.label }));
+    const lock = block.lock ? L.segmented("", [{ id: "off", label: "不加锁" }, { id: "on", label: block.lock.label }], "off", (id) => { locked = id === "on"; reset(); }) : null;
+    const allReached = () => block.goals.every((goal) => reached.has(goal.value));
+
+    function paint() {
+      value.textContent = String(shared);
+      buttons.forEach((button, lane) => {
+        const actor = actors[lane];
+        const waits = locked && owner !== null && owner !== lane;
+        button.disabled = actor.pc === OPS.length || waits;
+        button.textContent = actor.pc === OPS.length ? `${block.lanes[lane]} 走完了` : waits ? `${block.lanes[lane]} 在等锁` : `${block.lanes[lane]} 走一步：${hint[OPS[actor.pc]]}`;
+      });
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      if (actors.some((actor) => actor.pc < OPS.length)) { result.textContent = ""; return; }
+      reached.add(shared);
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      const lost = (block.shared.start + 2 * block.delta - shared) / block.delta;
+      const outcome = `两边都走完了：${name} = ${shared}。${lost ? `有 ${lost} 次白加了。` : "一次都没丢。"}`;
+      result.replaceChildren(L.md(allReached() ? `${outcome}${block.done}` : `${outcome}点「重来」，换一种顺序试试。`));
+    }
+
+    function move(lane) {
+      const actor = actors[lane], op = OPS[actor.pc];
+      let text;
+      if (op === "read") { actor.local = shared; owner = lane; text = `读到 ${shared}`; }
+      else if (op === "calc") { text = `${actor.local} ${block.delta < 0 ? "−" : "+"} ${Math.abs(block.delta)} = ${actor.local + block.delta}`; actor.local += block.delta; }
+      else { shared = actor.local; owner = null; text = `写回 ${shared}`; }
+      actor.pc += 1;
+      rows.append(row({ lane, op, text }, shared));
+      rows.lastChild.scrollIntoView({ block: "nearest" });
+      paint();
+    }
+
+    function reset() {
+      shared = block.shared.start;
+      actors = [{ pc: 0, local: null }, { pc: 0, local: null }];
+      owner = null;
+      rows.replaceChildren();
+      paint();
+    }
+
+    reset();
+    return {
+      el: h("div.sched", null,
+        h("div.sched__bar", null, h("ul.goals", null, goals), lock?.el, h("button.btn.btn--quiet", { text: "重来", attr: { type: "button" }, on: { click: reset } })),
+        grid(block.lanes, name, [rows,
+          h("div.lrow.lrow--controls", null, h("div.lcell.lcell--a", null, buttons[0]), h("div.lcell.lcell--mid", null, value), h("div.lcell.lcell--b", null, buttons[1]))]),
+        result),
+      waitSay: "先自己排一排：点两边的按钮，把上面几种结果都排出来。实在想跳过，再按一次。",
+      ready: allReached,
+    };
+  };
+})();
+
+</script>
+<script>
+/* The lesson as a sequence of moments. A moment is one teacher sentence plus one visible change: a block appearing, or one step
+   inside a block. → / space goes to the next moment, ← back; the track at the top shows where the lesson is in its arc.
+   A block that waits for the learner (a guess, a quiz) holds the lesson once, then lets a second press pass.
+   Deep link: #4 opens slide 4, #4.end opens it with every moment shown. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const lesson = JSON.parse(document.getElementById("lesson-data").textContent);
+  const memory = L.memory(`lesson:${lesson.id}`);
+  const predicts = {};
+  for (const slide of lesson.slides) for (const block of slide.blocks) if (block.t === "predict") predicts[block.id] = block;
+  const ctx = { lesson, memory, predicts };
+  L.glossary = lesson.terms || {};
+
+  const $ = (id) => document.getElementById(id);
+  const stage = $("stage"), line = $("line"), keyLine = $("key"), prev = $("prev"), next = $("next"), count = $("count"), notes = $("notes"), notesList = $("notes-list");
+  const beats = lesson.beats.map((beat) => h("button.beat", { text: beat.label, attr: { type: "button" }, on: { click: () => go(lesson.slides.findIndex((slide) => slide.beat === beat.id), 0) } }));
+  $("beats").append(...beats);
+  $("title").textContent = `${lesson.course} · ${lesson.title}`;
+
+  let at = { s: 0, m: 0 }, current = null, nudged = false;
+
+  function build(index) {
+    const slide = lesson.slides[index];
+    const items = slide.blocks.map((block) => { const made = L.blocks[block.t](block, ctx); return { block, made, wrap: h("div.block.is-waiting", null, made.el), seen: false }; });
+    const moments = slide.bridge ? [{ b: -1, k: 0, say: slide.bridge }] : [];
+    items.forEach((item, b) => {
+      moments.push({ b, k: 0, say: item.block.say, key: item.block.key });
+      (item.made.steps || []).forEach((step, i) => moments.push({ b, k: i + 1, say: step.say ?? step, key: step.key }));
+    });
+    const hook = index === 0;
+    const meta = hook ? h("div.hook__meta", null,
+      h("div", null, h("h3", { text: "需要先会" }), h("ul", null, lesson.needs.map((item) => h("li", { text: item })))),
+      h("div", null, h("h3", { text: `学完你能（约 ${lesson.minutes} 分钟）` }), h("ul", null, lesson.after.map((item) => h("li", { text: item }))))) : null;
+    const el = h(`section.slide${hook ? ".slide--hook" : ""}${slide.layout === "split" ? ".slide--split" : ""}`, null,
+      h("h1.slide__title", { text: slide.title }), h("div.slide__blocks", null, items.map((item) => item.wrap)), meta);
+    return { index, items, moments, el };
+  }
+
+  function remember(key) {
+    const keys = memory.get("keys", []);
+    if (keys.includes(key)) return;
+    memory.set("keys", keys.concat(key));
+    notes.classList.remove("is-flash");
+    void notes.offsetWidth;
+    notes.classList.add("is-flash");
+  }
+
+  function paintNotes() {
+    const keys = memory.get("keys", []);
+    notes.textContent = `要点 ${keys.length}`;
+    notesList.replaceChildren(...(keys.length ? keys.map((key) => h("li", { text: key })) : [h("li.is-empty", { text: "讲到关键结论时，会自动记在这里。" })]));
+  }
+
+  function show(spoken) {
+    L.hideTip();
+    if (!current || current.index !== at.s) { current = build(at.s); stage.replaceChildren(current.el); stage.scrollTop = 0; }
+    at.m = Math.min(at.m, current.moments.length - 1);
+    const now = current.moments[at.m];
+    current.items.forEach((item, b) => {
+      const reached = current.moments.filter((moment, i) => i <= at.m && moment.b === b);
+      item.wrap.classList.toggle("is-waiting", reached.length === 0);
+      if (!reached.length) { item.seen = false; return; }
+      item.made.set?.(reached.at(-1).k);
+      if (!item.seen) { item.seen = true; item.made.refresh?.(); }
+    });
+    line.replaceChildren(h("span", null, L.md(spoken || now.say)));
+    line.classList.remove("is-fresh");
+    void line.offsetWidth;
+    line.classList.add("is-fresh");
+    keyLine.hidden = !now.key || Boolean(spoken);
+    if (now.key && !spoken) { keyLine.textContent = `已记入要点：${now.key}`; remember(now.key); }
+    paintNotes();
+    // keep what just changed in view: the block says which part of it that is, or it is the block itself
+    const changed = current.items[now.b];
+    if (at.m > 0 && changed) (changed.made.spot?.() || changed.wrap).scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const beat = lesson.beats.findIndex((item) => item.id === lesson.slides[at.s].beat);
+    beats.forEach((el, i) => { el.classList.toggle("is-now", i === beat); el.classList.toggle("is-done", i < beat); el.setAttribute("aria-current", i === beat ? "step" : "false"); });
+    count.textContent = `${at.s + 1} / ${lesson.slides.length}`;
+    const last = at.s === lesson.slides.length - 1 && at.m === current.moments.length - 1;
+    prev.disabled = at.s === 0 && at.m === 0;
+    next.disabled = last;
+    memory.set("at", at);
+  }
+
+  function go(s, m) { if (s < 0) return; at = { s, m }; nudged = false; show(); }
+
+  function forward() {
+    const item = current.items[current.moments[at.m].b];
+    if (item?.made.ready && !item.made.ready()) {
+      if (!nudged) { nudged = true; return show(item.made.waitSay || "先选一个再往下。猜错没关系；实在想跳过，再按一次。"); }
+      item.made.pass?.(); // the learner chose to skip: the block shows what it was holding back
+    }
+    if (at.m < current.moments.length - 1) return go(at.s, at.m + 1);
+    if (at.s < lesson.slides.length - 1) go(at.s + 1, 0);
+  }
+
+  function back() {
+    if (at.m > 0) return go(at.s, at.m - 1);
+    if (at.s > 0) go(at.s - 1, Number.MAX_SAFE_INTEGER);
+  }
+
+  next.addEventListener("click", forward);
+  prev.addEventListener("click", back);
+  document.addEventListener("keydown", (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const typing = event.target.closest?.("button, input, [role=button], .code__scroll");
+    if (event.key === "ArrowRight" || event.key === "PageDown" || (event.key === " " && !typing)) { event.preventDefault(); forward(); }
+    else if (event.key === "ArrowLeft" || event.key === "PageUp") { event.preventDefault(); back(); }
+  });
+
+  notes.addEventListener("click", (event) => { event.stopPropagation(); notesList.hidden = !notesList.hidden; });
+  document.addEventListener("click", (event) => { if (!notesList.contains(event.target)) notesList.hidden = true; });
+
+  const root = document.documentElement, themeButton = $("theme");
+  const dark = () => (root.dataset.theme ? root.dataset.theme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const paintTheme = () => { themeButton.textContent = dark() ? "浅色" : "深色"; };
+  themeButton.addEventListener("click", () => { root.dataset.theme = dark() ? "light" : "dark"; try { localStorage.setItem("lesson-theme", root.dataset.theme); } catch { /* private window */ } paintTheme(); });
+  paintTheme();
+
+  const link = /^#(\d+)(\.end)?$/.exec(location.hash);
+  const saved = memory.get("at", { s: 0, m: 0 });
+  if (link) go(Math.min(Number(link[1]), lesson.slides.length) - 1, link[2] ? Number.MAX_SAFE_INTEGER : 0);
+  else go(Math.min(saved.s, lesson.slides.length - 1), saved.m);
+})();
+
+</script>
+</body>
+</html>

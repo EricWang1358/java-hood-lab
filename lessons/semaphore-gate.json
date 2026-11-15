@@ -1,0 +1,835 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "semaphore-gate",
+  "course": "Java 并发",
+  "title": "Semaphore：同时只放 2 个线程",
+  "lead": "下游最多扛 2 并发，先查再加照样打超，互斥锁又只放 1 个，用 Semaphore 精准卡在 2。",
+  "minutes": 15,
+  "needs": [
+    "先检查再改会失效",
+    "synchronized 互斥只进 1 个"
+  ],
+  "after": [
+    "能用 Semaphore(n) 把并发精确限在 n 个",
+    "讲清它和 AtomicInteger 先查再加、互斥锁的差别",
+    "学会用 try-finally 兜底归还 permit 防泄露"
+  ],
+  "experiments": {
+    "semgate": {
+      "runner": "java",
+      "home": "lab.semgate",
+      "variants": [
+        { "id": "Plain", "label": "普通int检查", "code": "Plain.java" },
+        { "id": "AtomicCheck", "label": "原子先查再加", "code": "AtomicCheck.java" },
+        { "id": "SyncOne", "label": "互斥锁串行", "code": "SyncOne.java" },
+        { "id": "SemGate", "label": "信号量放2个", "code": "SemGate.java" }
+      ],
+      "knob": {
+        "name": "threads",
+        "label": "几个线程调下游",
+        "values": ["2", "4", "8", "12"],
+        "default": "8"
+      },
+      "repeat": 20,
+      "metric": { "key": "okCalls", "expectKey": "expected", "label": "合规调用数" },
+      "time": { "key": "ms", "unit": "ms" }
+    }
+  },
+  "terms": {
+    "Semaphore": "计数信号量，管一叠共 n 张通行证，拿不到就等，放回就唤醒别人",
+    "permit": "信号量里的通行证，有多少张就允许多少个线程同时进门",
+    "acquire": "向 Semaphore 领一张通行证，当前余数为 0 时阻塞等待",
+    "release": "把通行证还回 Semaphore，余数加 1 并唤醒等待中的线程",
+    "AtomicInteger": "支持单个操作原子的整数类，但把它的 get 和自增拆两步就不原子",
+    "Thread.yield": "提示调度器让出当前 CPU，让同优先级其他线程先跑一轮",
+    "synchronized": "Java 互斥关键字，同一时刻只让 1 个线程进入受保护代码块",
+    "getstatic": "字节码指令：从类静态字段读取对象引用并压上操作数栈",
+    "invokevirtual": "字节码指令：调用对象实例方法，每次调用都是独立执行点",
+    "iconst_2": "字节码指令：把常量整数 2 压上操作数栈，准备与当前值比较",
+    "if_icmpge": "字节码指令：比较栈顶两整数，若前值大于等于后值则跳转出分支",
+    "finally": "异常安全收尾块，不管下游调成或抛错都保证执行归还动作",
+    "CyclicBarrier": "循环栅栏，让几条并发测试线程到齐后再同一声令下冲出去",
+    "LockSupport.parkNanos": "把当前线程挂起指定纳秒，模拟下游接口短暂处理耗时"
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "脆弱的风控接口，最多扛两个",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "下游风控与支付接口一次最多扛 **2 个**并发请求；一旦第 3 个同时挤进去，下游直接报错拒单。",
+          "say": "这课解决的不是让所有线程排单队，而是把并发精准卡在上限 2 个。",
+          "key": "并发精确卡死在上限 2 个"
+        },
+        {
+          "t": "text",
+          "md": "写代码的人常先查当前在途人数不到 2 再自增放行，可为什么还是会打超？",
+          "say": "顺便看清大家常用的原子类先查再加和互斥锁各差在哪里。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先拉回三件旧工具对比一下",
+      "bridge": "上手写网关限流前，先把第 1、2 课和第 14 课摸过的三个规律拉回来。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "快速回忆三个旧结论：检查再改的缝、原子只保单步、互斥锁只放 1 人。",
+          "items": [
+            {
+              "have": "第 2 课：库存检查",
+              "q": "线程 A 刚查完有余量，切线程 B 又查一遍，会怎样？",
+              "options": [
+                "两个都通过，最后超卖",
+                "后来的自动排队等前一个",
+                "JVM 自动报错拦截"
+              ],
+              "answer": 0,
+              "why": "先查再改分两步，切走瞬间别人也能看见旧余量，两个人一起冲进去。"
+            },
+            {
+              "have": "第 14 课：限流上限",
+              "q": "为何只把单次加一换成原子类，还拦不住超上限？",
+              "options": [
+                "原子只保一步，查加间仍有缝",
+                "原子类根本不支持多线程",
+                "原子类只能在单核 CPU 用"
+              ],
+              "answer": 0,
+              "why": "第 14 课见过，单个方法原子不等于整段检查加扣减原子，缝里还会挤进人。"
+            },
+            {
+              "have": "第 1、8 课：互斥锁",
+              "q": "用一把 synchronized 锁护住下游，能卡住几个并发？",
+              "options": [
+                "每次只能进 1 个，2 个也拦",
+                "刚好同时放 2 个线程",
+                "按 CPU 核数自动放行"
+              ],
+              "answer": 0,
+              "why": "互斥锁只认 1 个持有者，能防超限，但白白把 2 个名额腰斩成 1 个。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "想象地铁只有两个闸机口",
+      "bridge": "把风控接口换成地铁站闸机，看看只靠门卫抬头数人头为什么会挤爆。",
+      "blocks": [
+        {
+          "t": "scene",
+          "story": "下游通道窄，最多同时走 2 位乘客。两个门卫同时抬头看牌子上的在途人数为 1，各自放自己面前的乘客进门后再去改牌子，结果瞬间挤进 3 个人。",
+          "say": "两个动作一拆开，门卫乙在门卫甲改牌前抬头，两人看到的就都是旧数字。",
+          "picture": {
+            "kind": "share",
+            "actors": ["门卫甲", "门卫乙"],
+            "shared": { "name": "在途数", "value": "1/2" }
+          },
+          "map": [
+            {
+              "scene": "走廊最多容 2 人",
+              "code": "LIMIT = 2",
+              "say": "定死下游最多同时扛两个请求，第 3 个进来就超载。",
+              "on": "shared",
+              "tag": "上限值 2"
+            },
+            {
+              "scene": "门口挂一块数字牌",
+              "code": "active = 0",
+              "say": "记录此刻已经放进去几个线程，没走出来前不减掉。",
+              "on": "shared",
+              "tag": "共享在途数"
+            },
+            {
+              "scene": "两个门卫各自放行",
+              "code": "Thread 0 / 1",
+              "say": "多个请求线程在门口同时抢名额，看谁先抬手看牌子。",
+              "on": "actors",
+              "tag": "并发请求"
+            },
+            {
+              "scene": "看一眼未满就放人",
+              "code": "if (active < 2) active++",
+              "say": "看牌子和改牌子中间有空档，两人同看 1 就一起放行。",
+              "on": "action",
+              "tag": "检查再进入"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "先把普通计数放上去试试",
+      "bridge": "把场景落回代码里，先运行最直觉的普通 int 计数看它会漏多少单。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "semgate",
+          "show": ["Plain"],
+          "at": "8",
+          "knob": false,
+          "say": "8 条线程同时起跑 12 轮，一共要做 96 次合规下游调用才算过关。"
+        },
+        {
+          "t": "try",
+          "say": "点开运行看 20 轮测试，注意在 8 个线程抢名额时合规数是否次次掉队。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看普通版的拦截长什么样",
+      "bridge": "看清楚刚才为什么一跑就漏单，先把门口代码和下游检测拆开盯一遍。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "semgate.Plain",
+          "focus": ["LIMIT = 2", "if (active < LIMIT)"],
+          "say": "逐行盯住门口逻辑：判断不到 2、自增进门、结束再在收尾块里减 1。",
+          "walk": [
+            {
+              "focus": ["LIMIT = 2"],
+              "say": "定死下游安全红线是 2 个并发，只要同时在里面超过 2 个就判超限。"
+            },
+            {
+              "focus": ["if (active < LIMIT)", "active++;"],
+              "say": "门口先判断当前人数不够 2，再自己加 1 后放行，最后在 finally 减 1。"
+            },
+            {
+              "focus": ["int cur = inFlight.incrementAndGet();", "cur <= LIMIT"],
+              "say": "下游入口拿原子计数抓现行，只要任意一次峰值冲破 2，合规调用就追不上期望。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "换 AtomicInteger 能修好吗",
+      "bridge": "很多人第一反应是把普通变量换成原子类，看看这一步改动到底够不够。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "semgate.AtomicCheck",
+          "focus": ["AtomicInteger active", "active.get() < LIMIT"],
+          "say": "只换掉在途计数类型，把普通加减变成原子类方法，其余门卫流程原封不动。",
+          "walk": [
+            {
+              "focus": ["AtomicInteger active"],
+              "say": "把门口的数字牌换成 `AtomicInteger`，每一步读写都自带内存可见性与单步原子。"
+            },
+            {
+              "focus": ["active.get() < LIMIT", "active.incrementAndGet();"],
+              "say": "先用 get 读出在途数小于 2，再调 incrementAndGet 加 1，看起来已经无懈可击。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先别点运行，猜猜这次错几轮",
+      "bridge": "普通 int 会算丢、也会不可见，那换成原子类以后还会在 8 线程下超限吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "atomic-8",
+          "q": "把 active 换成 AtomicInteger 后，8 线程跑 20 轮会怎样？",
+          "say": "先押一注你觉得换上原子计数后，下游到底还超不超上限。",
+          "options": [
+            "照样次次把下游打超，几乎全错",
+            "偶尔超 1 到 2 轮，大部分稳过",
+            "彻底修好，20 轮稳拿 0 错",
+            "全卡死在门外一个都进不去"
+          ],
+          "answer": 0
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "直接跑一次看预测对不对",
+      "bridge": "先不换锁，切到 8 线程只跑原子类版本，拿 20 轮实测结果对照刚才的判断。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "semgate",
+          "show": ["AtomicCheck"],
+          "at": "8",
+          "knob": false,
+          "hand": true,
+          "say": "按着跑完 20 轮，盯着错误轮数和合规调用数，看原子类是不是挡住了第 3 个线程。"
+        },
+        {
+          "t": "reveal",
+          "of": "atomic-8",
+          "say": "就算把计数全换成原子类，在 8 线程抢进门时还是会一轮轮把下游冲爆，根本靠不住。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "换不同线程数试试边界条件",
+      "bridge": "高并发下挤门口都会冲爆，可只放 2 个线程会怎样？切旋钮亲自跑一遍。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "semgate",
+          "show": ["Plain", "AtomicCheck"],
+          "select": "AtomicCheck",
+          "say": "切 2、4、8、12 四档线程各跑一次，留意低并发怎样把 Bug 藏起来。"
+        },
+        {
+          "t": "try",
+          "say": "把上方线程旋钮分别拨到 2、4、8、12 运行，看哪一档永远不超限、哪几档一跑就漏。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "到代码里点出那两行罪魁祸首",
+      "bridge": "4 线程以上一冲就超限，但 2 线程又全对——问题到底藏在门卫代码的哪两行？",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "semgate.AtomicCheck",
+          "q": "点出 AtomicCheck 里导致多线程同时挤破 2 个名额的两行。",
+          "say": "在代码里点选出那组先看人数、再改人数的分步动作。",
+          "answer": [
+            "if (active.get() < LIMIT) {",
+            "active.incrementAndGet();"
+          ],
+          "hint": "别只看变量类型，盯住 enterGate 里先把人放过去、再回头改牌子的那两句。",
+          "found": "就是这两句：get 判小于 2 和自增占坑是两条独立调用，各自原子也管不住跨步。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "拆开字节码看它到底拆成几步",
+      "bridge": "口头上写在一对大括号里，机器跑的时候真的是绑在一起吗？直接看真实字节码切片。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "semgate.AtomicCheck",
+          "within": "static void enterGate();",
+          "from": "0: getstatic",
+          "to": "17: invokestatic",
+          "say": "这段真实字节码切片把两步之间的空隙拆得清清楚楚，没有一条原子指令能同时包住判断和加一。",
+          "walk": [
+            {
+              "focus": ["getstatic", "AtomicInteger.get:()I"],
+              "label": "1. 读出当前数",
+              "say": "先执行 `getstatic` 拿到对象，再靠 `invokevirtual` 调一次 get 读出当前在途数。"
+            },
+            {
+              "focus": ["iconst_2", "if_icmpge"],
+              "label": "2. 比是否小于2",
+              "say": "`iconst_2` 把上限 2 压栈，`if_icmpge` 只负责比较跳转，过了判断并不会锁住门。"
+            },
+            {
+              "focus": ["AtomicInteger.incrementAndGet:()I"],
+              "label": "3. 第二次才加一",
+              "say": "隔了好几条指令才第二次 `invokevirtual` 调自增，两条方法调用之间随时能被抢占。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条线程怎么一起钻过安检门",
+      "bridge": "看清字节码是两次独立调用，再把时间轴拉慢，看两条刚排队的线程如何同时撞进去。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "if (active.get() < 2) active.inc()",
+          "parts": {
+            "read": "get()<2",
+            "calc": "过门不占坑",
+            "write": "inc()+1"
+          },
+          "lanes": ["线程 A", "线程 B"],
+          "shared": { "name": "active", "start": 1 },
+          "say": "门里本就已经有 1 个请求在跑（active=1），外面的线程 A 和线程 B 同时抢最后一个空位。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "读 active=1",
+              "say": "门里已占 1 个名额，线程 A 调 get 读到 1。"
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "读 active=1",
+              "say": "此时线程 A 还没自增，线程 B 也调 get 读到了 1。"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "1<2 放行",
+              "say": "线程 A 比较 1 小于 2 成立，安检门对它放行。"
+            },
+            {
+              "lane": 1,
+              "op": "calc",
+              "text": "1<2 也放行",
+              "say": "线程 B 同样拿自己读到的 1 比小于 2 成立，也被安检门放行。"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "value": 2,
+              "text": "自增成 2",
+              "say": "线程 A 先调用 incrementAndGet 把在途数改成 2，看起来刚好满员。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "value": 3,
+              "text": "自增冲到 3",
+              "say": "早就过门的线程 B 接着调用 incrementAndGet 再加 1。",
+              "ask": {
+                "q": "线程 A 刚把 active 加到 2，线程 B 也已过门槛，它加 1 后是多少？",
+                "options": ["直接冲到 3", "自动退回 2", "报异常停住"],
+                "answer": 0,
+                "say": "线程 B 早就越过小于 2 的判断，只能继续执行自增，在途数直接变成 3！"
+              }
+            },
+            {
+              "lane": 1,
+              "op": "note",
+              "tone": "fail",
+              "text": "在途峰值=3！",
+              "say": "算上原本在里面跑的那 1 个，下游此刻同时挤进 3 条线程，当场打超。"
+            }
+          ],
+          "verdict": "两条线程同过检查再先后自增，峰值冲到 3",
+          "verdictSay": "先查再加哪怕每步都是原子操作，门里只剩 1 个空位时还是会被几个人同时抢到，根本锁不住名额。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "为何 2 线程不超、4 线程必崩",
+      "bridge": "这就解释了旋钮拨到不同档位时的反差：为什么人数刚够 2 看不出毛病，人一多就次次炸？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "当总线程只有 2 条时，就算两人都挤进来最多也才 2 个在途；从 4 线程起门外总有等待者同时抢那一个释放出来的空位，峰值必然冲破 2。",
+          "say": "这也提醒我们：并发缺陷常在低并发测试时完全隐身，一上压力才把隐患全暴露出来。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "第一反应上 synchronized 锁？",
+      "bridge": "既然判断和占坑不能分两步，最省事的念头就是拿一把互斥锁整个包起来。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "semgate.SyncOne",
+          "focus": ["synchronized (LOCK)"],
+          "say": "对比普通版，这一版用一把全局互斥锁整块包住下游调用，彻底消灭门卫空档。",
+          "walk": [
+            {
+              "focus": ["Object LOCK"],
+              "say": "准备一把全局锁对象，所有想进下游的线程都得先来抢同一把钥匙。"
+            },
+            {
+              "focus": ["synchronized (LOCK)"],
+              "say": "进入和退出自动绑成原子块，绝不会同时漏放超 2 个——但也因为只有 1 把钥匙，一次只进 1 个。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "想要稳稳放 2 个：上 Semaphore",
+      "bridge": "能进 2 个却硬被互斥锁压成 1 个，耗时白白翻倍；怎么把通行名额精确发成两张？",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "semgate.SemGate",
+          "focus": ["new Semaphore(LIMIT)", "sem.acquire();", "sem.release();"],
+          "say": "把全局互斥锁换成发 2 张通行证的信号量，进门领证、异常也归还。",
+          "walk": [
+            {
+              "focus": ["new Semaphore(LIMIT)"],
+              "say": "初始化 `Semaphore` 时传入许可数 2，相当于门口柜台放好两张通行证。"
+            },
+            {
+              "focus": ["sem.acquire();"],
+              "say": "每次进下游前先调 `acquire` 领证：拿得到就减一放行，柜台空了就在门外安心挂起等待。"
+            },
+            {
+              "focus": ["finally {", "sem.release();"],
+              "say": "不管下游成功还是抛异常，都在 `finally` 里调 `release` 把通行证还回去，防名额越用越少。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四套写法放一起实测对比",
+      "bridge": "现在把前两个出错写法和后两个稳健写法同台跑满 20 轮，看错误率和耗时各自走哪边。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "semgate",
+          "show": ["Plain", "AtomicCheck", "SyncOne", "SemGate"],
+          "say": "四套实现一起上线对比：4 线程起前两个都会超限扣分，后两个全程零错里看谁耗时近乎减半。"
+        },
+        {
+          "t": "try",
+          "say": "依次切换 2、4、8、12 线程点运行，对照下方耗时，重点比较两个零错版本谁更快。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "从耗时图看清两倍吞吐差",
+      "bridge": "错误率清零之后，看同一档并发下互斥锁和信号量到底差了多少时间。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "semgate",
+          "say": "在保证合规全过的前提下，信号量吃满两条并行通道，每一档耗时都几乎减半。",
+          "walk": [
+            {
+              "focus": "AtomicCheck",
+              "say": "不加锁强行抢进门虽然快，但只要超过 2 个线程就把下游打超，合规数达不到预期。"
+            },
+            {
+              "focus": "SyncOne",
+              "say": "互斥锁全程 0 错守住底线，但 2 个名额只敢用 1 个，高并发下线程只能挨个排单队。"
+            },
+            {
+              "focus": "SemGate",
+              "say": "同样全程 0 错，因为放开两条通道并行干活，各档并发耗时都只有互斥锁的约一半。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "看看 Semaphore 怎么发牌收牌",
+      "bridge": "为什么信号量既不超载又不卡死成单线？再看一眼它内部把通行证当成原子门栓的过程。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "sem.acquire() / sem.release()",
+          "parts": {
+            "read": "抢 1 张证",
+            "calc": "余 0 就等",
+            "write": "归还+1"
+          },
+          "lanes": ["线程 A", "线程 B"],
+          "shared": { "name": "permits", "start": 2 },
+          "say": "柜台初始有 2 张通行证，线程 A 和 B 各领一张同时进下游，第 3 个来只能排队等归还。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "write",
+              "value": 1,
+              "text": "领证进门(余1)",
+              "say": "线程 A 调 acquire，检查并扣减在一步里原子完成，余下 1 张。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "value": 0,
+              "text": "领证进门(余0)",
+              "say": "线程 B 调 acquire 领走最后 1 张，余证变成 0。"
+            },
+            {
+              "lane": 0,
+              "op": "note",
+              "tone": "ok",
+              "text": "双通道并发中",
+              "say": "A 与 B 同时在下游里执行，恰好吃满允许的 2 路并发。"
+            },
+            {
+              "lane": 1,
+              "op": "note",
+              "tone": "wait",
+              "text": "若来C则余0等",
+              "say": "此时就算再来第 3 条线程 C，看见余 0 也只能原地挂起等。"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "value": 1,
+              "text": "finally归还",
+              "say": "线程 A 完成调用后进入收尾块，调 release 把通行证还回柜台（余 1）。"
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "value": 2,
+              "text": "双双安全还证",
+              "say": "线程 B 随后也调 release 归还，通行证稳稳回到 2 张。"
+            }
+          ],
+          "verdict": "判断余量和扣减在信号量里原子完成，最多稳进 2 人",
+          "verdictSay": "它不是在门外先看再进，而是内部用原子状态一气呵成抢走 `permit`，没拿到就直接入队挂起，把并发稳稳卡在 2。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "四种写法放在一起怎么选",
+      "bridge": "原理摸清了，把四份代码按守住上限、吞吐成本和适用场合排一张账单。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "把四套写法摊开比成本与正确性：唯一既零错又吃满双并发的就是信号量。",
+          "options": [
+            {
+              "name": "普通 int 检查",
+              "solves": "不解决，低并发看似没事高并发就失守",
+              "cost": "8 线程下 {ms:semgate.Plain} ms",
+              "when": "绝不用于限流门，只能当反面教材",
+              "say": "无同步读写加非原子计数，并发一上来要么算漏要么同时放行破限。"
+            },
+            {
+              "name": "原子类先查再加",
+              "solves": "只保单步原子，仍保不住复合检查进门",
+              "cost": "8 线程下 {ms:semgate.AtomicCheck} ms",
+              "when": "不要拿它当并发限流阀使用",
+              "say": "读计数与加一分两步仍有缝，多条线程一齐过闸立刻挤爆下游。"
+            },
+            {
+              "name": "synchronized 互斥锁",
+              "solves": "守住不超过上限，且写法简单不易漏还",
+              "cost": "8 线程下 {ms:semgate.SyncOne} ms",
+              "when": "下游每次真的只能进 1 个并发时选用",
+              "say": "只发 1 把钥匙，保护绝对严密，可一旦下游能抗多并发就会白白丢掉一半吞吐。"
+            },
+            {
+              "name": "Semaphore 信号量",
+              "solves": "把并发稳卡在上限 N，同时吃满 N 路并行",
+              "cost": "8 线程下 {ms:semgate.SemGate} ms",
+              "when": "连接池、下游接口允许固定 N 并发时用",
+              "say": "按允许名额发通行证，既不超载又能满编并发跑，记得配 finally 归还。"
+            }
+          ],
+          "rule": "只需进 1 个用互斥锁；要卡死在 N 个并行，用 Semaphore(N)。",
+          "ruleSay": "先分清资源到底允许同时进 1 个还是 N 个，再挑对应门栓；永远别用先查再自增手搓限流器。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "layout": "split",
+      "title": "遇上真实限流场景你挑哪把尺",
+      "bridge": "账单看完了，试着按右侧的判定标尺，给左边三个线上的常见场景各选对一把门锁。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "最大允许并发数是多少？",
+          "say": "先定清资源一次能进 1 个、进 N 个，还是压根不限制同时进来几个。",
+          "branches": [
+            {
+              "when": "只能进 1 个（独占）",
+              "pick": "synchronized",
+              "eg": "写本地同一份文件"
+            },
+            {
+              "when": "最多进 N 个（N > 1）",
+              "pick": "Semaphore(N)",
+              "eg": "风控接口、连接池上限"
+            },
+            {
+              "when": "只需要计数统计总量",
+              "pick": "AtomicInteger",
+              "eg": "统计总请求次数"
+            }
+          ]
+        },
+        {
+          "t": "cases",
+          "say": "给左边三道真实需求各配对一件工具，看自己能不能一眼分清。",
+          "tools": ["synchronized", "Semaphore(N)", "AtomicInteger"],
+          "items": [
+            {
+              "text": "第三方短信通道限制同一账号最多 5 条并发推送，再多就报 429 限流。",
+              "answer": 1,
+              "why": "上限 N=5 既要卡死不能到 6，又要让 5 路一起发提升吞吐，正好上 Semaphore(5)。"
+            },
+            {
+              "text": "内存里的共享配置账本一次只能由一条线程修改，不能有任何并行写入。",
+              "answer": 0,
+              "why": "要求严格独占（N=1），用 synchronized 最简洁，进出大括号自动释放。"
+            },
+            {
+              "text": "网关每收到一条请求就把当天访问总量加 1，并不限制下游同时跑几条。",
+              "answer": 2,
+              "why": "这里不需要卡在途并发人数，只是单纯累加计数，单步原子自增就够了。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给今天的主角正式挂上名牌",
+      "bridge": "把跑出两倍速度差还守住上限的工具原理浓缩成一句话，记住它真正的名字和常见问法。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Semaphore 信号量",
+          "alias": "计数信号量 / 并发通行证闸门",
+          "oneLine": "用一组共 N 张通行证控制同时访问资源的线程上限为 N。",
+          "say": "下次遇到限制并发数、连接池借还或流量闸门问题，脑子里直接浮现这个词。",
+          "asked": [
+            "为何先 get() < N 再自增防不住超限？",
+            "Semaphore 和 synchronized 的核心区别？",
+            "忘写 finally release() 会出什么事故？"
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂测 1：原子类错在哪",
+      "bridge": "合上刚才的实验图和字节码，检验一下有没有真看穿先查再加的陷阱。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "把在途数从 int 换成 AtomicInteger，为何仍会让超过 2 个线程进下游？",
+          "say": "回想 enterGate 里那两条独立的方法调用，挑出唯一说到点子上的解释。",
+          "options": [
+            {
+              "text": "get() 和自增分成两步，中间有空档",
+              "ok": true,
+              "why": "单步原子挡不住跨步插队，几个线程一起读到小于 2 后再先后加 1 照样冲爆。"
+            },
+            {
+              "text": "AtomicInteger 的自增操作也会算丢",
+              "ok": false,
+              "why": "单次自增本身通过 CAS 是原子的，不会算丢，坏在它前面的判断是另外一步。"
+            },
+            {
+              "text": "AtomicInteger 只能把上限设为 1",
+              "ok": false,
+              "why": "它只是个原子整数容器，根本没有限制并行人数上限的作用。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂测 2：锁和信号量差在哪",
+      "bridge": "再考一题辨析：同样在实验里跑出 0 错，互斥锁和信号量在能力上有何不同？",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "下游最多允许 2 个并发，用 synchronized 和 Semaphore(2) 差在哪？",
+          "say": "想想它们各自能同时放几个线程进下游，以及耗时为什么差一倍。",
+          "options": [
+            {
+              "text": "互斥锁只放 1 个，Semaphore(2) 能放 2 个并行",
+              "ok": true,
+              "why": "互斥锁把并行度强行压成 1，信号量按许可数发牌，把两个并行槽位吃满。"
+            },
+            {
+              "text": "Semaphore(2) 报错不释放，比锁更慢",
+              "ok": false,
+              "why": "恰恰相反，允许双通道并行时它耗时大约减半；只要放进 finally 就能确保归还。"
+            },
+            {
+              "text": "两者耗时一样，只是 Semaphore 写法更短",
+              "ok": false,
+              "why": "并发能力从 1 翻倍到 2，吞吐和总耗时立刻拉开接近两倍的差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂测 3：漏写归还会怎样",
+      "bridge": "最后查一查最容易踩坑的线上事故点：发出去的通行证如果忘了还回柜台会怎样？",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果在 SemGate 里去掉 finally，只在正常返回后调 release() 会怎样？",
+          "say": "想象下游偶发超时抛了运行期异常，没走最后一行归还会留下什么后果。",
+          "options": [
+            {
+              "text": "一旦下游抛异常，可用许可永久少 1，最终全卡死",
+              "ok": true,
+              "why": "异常跳出时来不及还证，两张通行证漏完后所有后续请求都会无限阻塞。"
+            },
+            {
+              "text": "Java GC 会自动帮线程把通行证收回来",
+              "ok": false,
+              "why": "信号量只计数不管谁借的，只要没调 release()，这张证就永远补不回来。"
+            },
+            {
+              "text": "顶多当前线程多等一会，其他线程不受影响",
+              "ok": false,
+              "why": "通行证是全局共享的，前人漏还 1 张，整个接口的并发上限就永久少 1。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "用 30 秒向面试官讲清这事",
+      "bridge": "题目全过关后，把整节课压缩成面试官最想听的一段口述，按这 4 个要点连起来说。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "下游接口限并发 2，你会怎么实现？为什么不用先判断再加或普通锁？",
+          "say": "照这 4 步先讲坑、再讲互斥锁退化、再点出信号量与兜底释放，半分钟稳稳拿下。",
+          "points": [
+            "先用 get 判小于 2 再自增仍非复合原子，多路过检照样打超",
+            "用 synchronized 能兜底不超限，但把并发度压成 1，耗时翻倍",
+            "改用 Semaphore(2) 管两张通行证，拿不到证就阻塞排队",
+            "务必把 release 放进 finally 块，防止异常导致通行证泄露"
+          ],
+          "model": "我用 Semaphore(2) 控制并发上限。自己写 if (active.get() < 2) 再 incrementAndGet() 看似用了原子类，其实判断和占坑是两条独立调用，多线程同时读到小于 2 再先后自增照样打爆下游；直接上 synchronized 虽安全却只放 1 条进门、浪费一半吞吐。Semaphore(2) 把拿证判断与扣减做成原子同步，既卡死上限 2 又跑满双并行，再用 try-finally 调 release() 兜底防异常漏还。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张随手翻的记忆卡",
+      "bridge": "最后把本课最关键的三句结论压进卡片，以后写限流网关和准备面试直接拿出来用。",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "把这三组问答存进记忆卡，出门前再翻一遍就能把整课串起来。",
+          "items": [
+            {
+              "q": "为什么 AtomicInteger 先查再加拦不住并发上限？",
+              "a": "get() 和自增是两次独立调用，并发线程会同时越过判断再先后自增冲破上限。"
+            },
+            {
+              "q": "Semaphore(2) 比 synchronized 强在什么地方？",
+              "a": "互斥锁每次只放 1 个；Semaphore(2) 用两张通行证把在途数卡死在 2，高并发耗时几乎减半。"
+            },
+            {
+              "q": "用 Semaphore 必须守住哪条代码纪律？",
+              "a": "acquire() 成功后立刻接 try-finally，在 finally 里调 release()，防止异常漏还许可卡死服务。"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

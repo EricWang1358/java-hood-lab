@@ -1,0 +1,1644 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>热点库存分片：16 桶为何还超卖</title>
+<script>try{var t=localStorage.getItem("lesson-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>
+/* Lesson page. One stage, one teacher line at the bottom: every press brings one sentence and one visible change.
+   Colours follow StudyHub's paper tokens (ui/tokens.css). The accent means "look here, now" and nothing else;
+   green = came out as it should, plum = did not. No shadows beyond a hairline, no gradients, no decoration. */
+:root {
+  --canvas: #f1ede6; --surface: #faf8f4; --raised: #ffffff; --sunken: #e8e3da;
+  --ink: #1e1a15; --ink-2: #453e35; --muted: #635b51; --faint: #7b7368;
+  --rule: #2a1c0e24; --rule-strong: #2a1c0e52;
+  --accent: #c03a1f; --accent-text: #ad4025; --accent-ink: #fffaf5; --accent-wash: #c03a1f14;
+  --ok: #1c6c48; --ok-wash: #1c6c4817; --bad: #a23461; --bad-wash: #a2346114; --info: #346287; --ochre: #8a5a10;
+  --code-k: #8a3b1f;
+  --s1: #1c5cab; --s2: #e0703a; --s3: #16a37a; --s4: #8a5a10;
+  --font: "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --display: "Segoe UI Variable Display", "SF Pro Display", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Microsoft YaHei UI", monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { font-size: clamp(16px, .5vw + 10.5px, 19px); -webkit-text-size-adjust: 100%; }
+body { margin: 0; height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden;
+  background: var(--canvas); color: var(--ink); font-family: var(--font); line-height: 1.6; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--mono); }
+p code, li code, .opt code, .voice code { font-size: .9em; background: var(--sunken); padding: .08em .36em; border-radius: 5px; }
+mark { background: none; color: inherit; box-shadow: inset 0 -.5em 0 var(--accent-wash); font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* top: where this lesson is going */
+.top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 1rem; padding: .55rem 1.4rem; border-bottom: 1px solid var(--rule); }
+.top__title { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top__tools { display: flex; justify-content: flex-end; align-items: center; gap: .8rem; font-size: .8rem; color: var(--muted); }
+.beats { display: flex; align-items: center; }
+.beat { display: flex; align-items: center; gap: .4rem; padding: .3rem .55rem; border: 0; background: none; border-radius: 8px; font-size: .78rem; color: var(--faint); cursor: pointer; white-space: nowrap; }
+.beat::before { content: ""; width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid currentColor; }
+.beat:hover { color: var(--ink); }
+.beat.is-done { color: var(--muted); }
+.beat.is-done::before { background: currentColor; }
+.beat.is-now { color: var(--ink); font-weight: 650; }
+.beat.is-now::before { background: var(--accent); border-color: var(--accent); }
+.tool { border: 1px solid var(--rule); background: none; border-radius: 8px; padding: .25rem .6rem; cursor: pointer; }
+.tool:hover { border-color: var(--rule-strong); color: var(--ink); }
+
+/* stage */
+/* no top padding on the scroller itself: a sticky bar inside it must be able to reach the very top */
+.stage { overflow-x: hidden; overflow-y: auto; padding: 0 clamp(1rem, 4vw, 3.4rem) 2rem; }
+.slide { width: 100%; max-width: 68rem; margin: 0 auto; padding-top: clamp(1.4rem, 4vh, 2.8rem); }
+.slide__title { font-family: var(--display); font-size: clamp(1.5rem, 2.6vw, 2.3rem); line-height: 1.22; font-weight: 680; letter-spacing: -.01em; margin: 0 0 1.3rem; text-wrap: balance; }
+.slide__blocks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+.slide--split .slide__blocks { grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); column-gap: 2.4rem; align-items: start; }
+.slide--split .block:first-child { grid-row: 1 / span 4; }
+.block { transition: opacity .28s var(--ease), transform .28s var(--ease); }
+.block.is-waiting { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+.slide--hook .slide__title { font-size: clamp(2.2rem, 5vw, 4rem); line-height: 1.12; font-weight: 720; letter-spacing: -.02em; max-width: 13em; margin-top: clamp(.5rem, 7vh, 4.5rem); margin-bottom: 1.6rem; }
+.hook__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.4rem; margin-top: 2.4rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); max-width: 52rem; }
+.hook__meta h3 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .5rem; }
+.hook__meta ul { margin: 0; padding: 0; list-style: none; font-size: .92rem; color: var(--ink-2); }
+.hook__meta li { padding: .14rem 0; }
+
+.text { font-size: 1.18rem; line-height: 1.65; color: var(--ink-2); margin: 0; max-width: 34em; }
+.slide--hook .text { font-size: 1.4rem; color: var(--ink); }
+.points { margin: 0; padding: 0; list-style: none; display: grid; gap: .7rem; font-size: 1.08rem; line-height: 1.55; }
+.points li { display: grid; grid-template-columns: 1.1rem 1fr; }
+.points li::before { content: ""; width: 6px; height: 6px; margin-top: .62em; background: var(--ink-2); }
+.callout { border-left: 3px solid var(--info); padding: .1rem 0 .1rem 1rem; max-width: 36em; }
+.callout--pitfall { border-left-color: var(--bad); }
+.callout h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.callout p { margin: 0; color: var(--ink-2); }
+
+/* code */
+.code { background: var(--raised); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+.code__path { padding: .55rem 1rem .5rem; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: .68rem; color: var(--faint); }
+.code__scroll { overflow: auto; max-height: min(58vh, 31rem); padding: .5rem 0 .8rem; scrollbar-width: thin; }
+.code__line { display: grid; grid-template-columns: 3em minmax(0, 1fr); font-family: var(--mono); font-size: .78rem; line-height: 1.68; white-space: pre; padding-right: 1rem; border-left: 3px solid transparent; transition: opacity .3s, background-color .3s; }
+.code__no { text-align: right; padding-right: 1em; color: var(--faint); opacity: .7; user-select: none; }
+.code.has-focus .code__line { opacity: .4; }
+.code.has-focus .code__line.is-focus { opacity: 1; background: var(--accent-wash); border-left-color: var(--accent); }
+.code .code__line.is-changed { opacity: 1; background: var(--ok-wash); border-left-color: var(--ok); }
+.tk-k { color: var(--code-k); font-weight: 600; }
+.tk-s { color: var(--ok); }
+.tk-n { color: var(--info); }
+.tk-c { color: var(--faint); font-style: italic; }
+
+/* buttons and segmented choices */
+.btn { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 10px; padding: .5rem 1rem; cursor: pointer; }
+.btn:hover { border-color: var(--ink-2); }
+.btn--primary { background: var(--ink); border-color: var(--ink); color: var(--canvas); font-weight: 600; }
+.btn--primary:hover { border-color: var(--ink); opacity: .86; }
+.btn--quiet { border-color: transparent; background: none; color: var(--muted); padding: .2rem .5rem; font-size: .78rem; }
+.btn--quiet:hover { color: var(--ink); border-color: var(--rule); }
+.btn:disabled { opacity: .4; cursor: default; }
+.seg { display: inline-flex; align-items: center; gap: .6rem; font-size: .82rem; color: var(--muted); }
+.seg__set { display: inline-flex; padding: 3px; background: var(--sunken); border-radius: 10px; }
+.seg__set button { border: 0; background: none; padding: .32rem .8rem; border-radius: 8px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.seg__set button:hover { color: var(--ink); }
+.seg__set button[aria-pressed="true"] { background: var(--raised); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--rule), 0 1px 2px #0000001a; }
+
+/* experiment: the code on the left, what really happened on the right */
+.exp__bar { display: flex; justify-content: space-between; align-items: center; gap: .8rem 1.5rem; flex-wrap: wrap; margin-bottom: .4rem; padding: .5rem 0; position: sticky; top: 0; z-index: 2; background: var(--canvas); }
+.exp__body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 1.6rem; align-items: start; }
+.exp .code__scroll { max-height: min(34vh, 22rem); }
+.block:has(> .try) { display: none; }
+.exp.is-invited .seg__set { animation: invite 2.4s var(--ease); }
+@keyframes invite { 0%, 70% { box-shadow: 0 0 0 2px var(--accent); } }
+.exp__q { margin: .1rem 0 .7rem; font-size: .92rem; color: var(--ink-2); }
+.plot__row { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; align-items: center; gap: .8rem; width: 100%; padding: 0; border: 0; border-top: 1px solid var(--rule); background: none; text-align: left; cursor: pointer; }
+.plot__row[disabled] { cursor: default; }
+.plot__label { font-size: .86rem; color: var(--muted); }
+.plot__row.is-on .plot__label { color: var(--ink); font-weight: 650; }
+.plot__track { position: relative; height: 3.3rem; }
+.plot__track::before { content: ""; position: absolute; inset: 50% 0 auto 0; border-top: 1px solid var(--rule); }
+.plot__track::after { content: ""; position: absolute; top: 0; bottom: 0; left: var(--expect); border-left: 1.5px dashed var(--ok); opacity: .7; }
+.dot { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--bad); z-index: 1;
+  transition: left .55s var(--ease), transform .55s var(--ease), opacity .3s, background-color .3s; }
+.dot.is-ok { background: var(--ok); }
+.dot.is-waiting { opacity: 0; pointer-events: none; }
+.plot__row:not(.is-on) .dot { opacity: .5; }
+.plot__row:not(.is-on) .dot.is-waiting { opacity: 0; }
+.plot__sum { text-align: right; font-size: .8rem; color: var(--muted); line-height: 1.35; }
+.plot__sum b { display: block; font-size: .9rem; color: var(--bad); }
+.plot__sum b.is-ok { color: var(--ok); }
+.plot__axis { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; gap: .8rem; border-top: 1px solid var(--rule); font-size: .72rem; color: var(--faint); }
+.plot__ticks { position: relative; height: 1.6rem; }
+.plot__ticks span { position: absolute; top: .3rem; white-space: nowrap; }
+.plot__ticks .is-expect { left: var(--expect); transform: translateX(-100%); padding-right: .4rem; color: var(--ok); font-weight: 600; }
+.exp__finding { margin: .9rem 0 0; font-size: 1.04rem; line-height: 1.55; min-height: 3.2em; }
+.exp__finding b { font-variant-numeric: tabular-nums; }
+.exp__foot { margin-top: .5rem; display: flex; align-items: center; gap: .3rem .9rem; flex-wrap: wrap; font-size: .72rem; color: var(--faint); }
+.cmd { font-family: var(--mono); background: var(--sunken); color: var(--ink-2); padding: .15rem .5rem; border-radius: 6px; }
+
+/* lanes: two threads and the one thing they share; time runs downward */
+.lanes__expr { display: flex; align-items: center; gap: .6rem 1.4rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.lanes__code { font-family: var(--mono); font-size: 1.5rem; font-weight: 650; }
+.lanes__parts { display: flex; align-items: center; gap: .45rem; font-size: .84rem; color: var(--faint); }
+.part { padding: .2rem .7rem; border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); transition: color .25s, border-color .25s, background-color .25s; }
+.part.is-now { color: var(--accent-text); border-color: var(--accent); background: var(--accent-wash); font-weight: 600; }
+.lanes__grid { display: grid; grid-template-columns: minmax(0, 1fr) 5.4rem minmax(0, 1fr); max-width: 46rem; margin: 0; }
+.lanes__head { font-size: .82rem; color: var(--muted); padding-bottom: .5rem; border-bottom: 1px solid var(--rule); }
+.lanes__head--a { text-align: right; padding-right: 3.6rem; }
+.lanes__head--b { padding-left: 3.6rem; }
+.lanes__head--mid { text-align: center; font-family: var(--mono); color: var(--ink); font-weight: 600; }
+.lcell { min-height: 2.9rem; display: flex; align-items: center; transition: opacity .3s var(--ease); }
+.lcell--a { justify-content: flex-end; }
+.lcell--mid { justify-content: center; position: relative; }
+.lcell--mid::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid var(--rule-strong); }
+.lrow { display: contents; }
+.lrow.is-waiting .lcell > * { opacity: 0; }
+.lcell > * { transition: opacity .3s var(--ease); }
+.chip { font-size: .92rem; padding: .32rem .8rem; border-radius: 8px; background: var(--raised); border: 1px solid var(--rule); white-space: nowrap; }
+.lrow.is-now .chip { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.arrow { flex: 0 0 3rem; height: 0; border-top: 1.5px solid var(--ink-2); position: relative; margin: 0 .3rem; }
+.arrow::after { content: ""; position: absolute; top: -5px; border: 4.25px solid transparent; }
+.arrow--right::after { right: -2px; border-left: 7px solid var(--ink-2); border-right: 0; }
+.arrow--left::after { left: -2px; border-right: 7px solid var(--ink-2); border-left: 0; }
+.arrow--none { border-top-color: transparent; }
+.arrow--none::after { display: none; }
+.val { position: relative; z-index: 1; min-width: 2.7rem; text-align: center; font-family: var(--mono); font-size: .98rem; font-weight: 650; padding: .2rem .6rem; border-radius: 8px; background: var(--canvas); border: 1.5px solid var(--ink-2); }
+.val--write { border-color: var(--accent); color: var(--accent-text); }
+.lanes__verdict { max-width: 46rem; margin: .9rem 0 0; padding-top: .9rem; border-top: 1px solid var(--rule); font-size: 1.15rem; font-weight: 650; transition: opacity .3s; }
+.lanes__verdict.is-waiting { opacity: 0; }
+
+/* guess, then see */
+.predict__q, .quiz__q { font-size: 1.3rem; font-weight: 650; line-height: 1.4; margin: 0 0 1rem; }
+.opts { display: grid; gap: .55rem; max-width: 40rem; }
+.opt { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto; align-items: center; gap: .6rem; width: 100%; text-align: left; padding: .75rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--raised); cursor: pointer; font-size: 1.02rem; }
+.opt:hover { border-color: var(--ink-2); }
+.opt__key { font-family: var(--mono); font-size: .82rem; color: var(--faint); }
+.opt__tag { font-size: .74rem; font-weight: 600; }
+.opt.is-picked { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.opt.is-picked .opt__tag { color: var(--ink-2); }
+.opt.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); }
+.opt.is-right .opt__tag { color: var(--ok); }
+.opt.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
+.opt.is-wrong .opt__tag { color: var(--bad); }
+.opt__why { grid-column: 2 / -1; font-size: .88rem; color: var(--ink-2); }
+.reveal { display: flex; gap: .5rem 2.6rem; flex-wrap: wrap; padding-top: .8rem; border-top: 1px solid var(--rule); max-width: 46rem; }
+.reveal dl { margin: 0; }
+.reveal dt { font-size: .76rem; color: var(--muted); }
+.reveal dd { margin: .1rem 0 0; font-size: 1.02rem; font-weight: 600; }
+.reveal .is-ok { color: var(--ok); }
+.reveal .is-miss { color: var(--bad); }
+
+/* the name comes last */
+.name__term { font-family: var(--display); font-size: clamp(2.4rem, 5.4vw, 4.2rem); line-height: 1.1; font-weight: 720; letter-spacing: -.02em; margin: 0; }
+.name__alias { font-family: var(--mono); font-size: .92rem; color: var(--muted); margin: .5rem 0 0; }
+.name__line { font-size: 1.28rem; line-height: 1.55; margin: 1.1rem 0 0; max-width: 30em; }
+.name__asked { margin: 1.8rem 0 0; padding-top: 1rem; border-top: 1px solid var(--rule); max-width: 40rem; }
+.name__asked h4 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .4rem; }
+.name__asked ul { margin: 0; padding: 0; list-style: none; font-size: 1.02rem; color: var(--ink-2); }
+.name__asked li { padding: .2rem 0; }
+
+/* say it aloud, take three cards */
+.say__prompt { font-size: 1.5rem; font-weight: 650; line-height: 1.4; margin: 0 0 1.2rem; max-width: 26em; text-wrap: balance; }
+.say__row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.say__clock { font-family: var(--mono); font-size: 1.7rem; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 3.4em; }
+.say__points { margin: 1.4rem 0 0; padding: 1rem 0 0; border-top: 1px solid var(--rule); list-style: none; display: grid; gap: .5rem; max-width: 40rem; }
+.say__points label { display: grid; grid-template-columns: 1.4rem 1fr; gap: .5rem; align-items: start; cursor: pointer; font-size: 1.02rem; }
+.say__points input { width: 1.05rem; height: 1.05rem; margin-top: .32rem; accent-color: var(--ok); }
+.say__score { margin: .8rem 0 0; font-size: .92rem; color: var(--muted); }
+.cards { display: grid; gap: 0; max-width: 44rem; border-bottom: 1px solid var(--rule); }
+.card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem 1rem; align-items: baseline; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.card__q { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.card__a { grid-column: 1 / -1; margin: 0; color: var(--ink-2); }
+
+/* the teacher: what a person standing next to you would say right now. It leads; the stage shows. */
+.voice { border-top: 1px solid var(--rule); padding: 1rem clamp(1rem, 4vw, 3.4rem) 1.1rem; }
+.voice__inner { max-width: 68rem; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.6rem; align-items: end; }
+.voice__line { margin: 0; font-size: 1.2rem; line-height: 1.62; min-height: 4.86em; max-width: 43em; }
+.voice__line > span { display: block; }
+.voice__line.is-fresh > span { animation: line-in .32s var(--ease); }
+.voice__nav { display: flex; gap: .5rem; }
+@keyframes line-in { from { opacity: 0; transform: translateY(5px); } }
+
+.voice__key { margin: .4rem 0 0; font-size: .8rem; color: var(--muted); animation: line-in .32s var(--ease); }
+.tool.is-flash { animation: flash 1.2s var(--ease); }
+@keyframes flash { 0%, 40% { background: var(--accent-wash); border-color: var(--accent); color: var(--ink); } }
+
+/* reminders at the moment of need */
+.term { border-bottom: 1.5px dotted var(--ochre); cursor: help; border-radius: 2px; }
+.term:hover, .term:focus-visible { background: var(--accent-wash); }
+.tip { position: fixed; z-index: 20; max-width: 22rem; padding: .6rem .8rem; border-radius: 10px; background: var(--ink); color: var(--canvas); font-size: .86rem; line-height: 1.5; box-shadow: 0 8px 24px -10px #000000a0; }
+.tip b { display: block; font-size: .8rem; opacity: .75; margin-bottom: .1rem; }
+.tip code { background: none; padding: 0; }
+.notes { position: relative; }
+.notes__list { position: absolute; right: 0; top: calc(100% + .5rem); z-index: 15; width: min(22rem, 86vw); margin: 0; padding: .7rem 1rem .7rem 2rem; background: var(--raised); border: 1px solid var(--rule-strong); border-radius: 12px; font-size: .88rem; color: var(--ink); line-height: 1.5; box-shadow: 0 14px 34px -20px #000000a0; }
+.notes__list li { padding: .15rem 0; }
+.notes__list .is-empty { list-style: none; margin-left: -1rem; color: var(--muted); }
+
+.exp__note { margin: .5rem 0 0; font-size: .84rem; color: var(--muted); min-height: 1.4em; }
+button.plot__label { border: 0; background: none; padding: .3rem 0; text-align: left; cursor: pointer; line-height: 1.3; }
+button.plot__label:hover { color: var(--ink); }
+.plot__row { cursor: default; }
+.dot { cursor: pointer; }
+.dot::after { content: ""; position: absolute; inset: -5px; }
+.dot:hover { box-shadow: 0 0 0 3px var(--canvas), 0 0 0 4.5px currentColor; color: var(--ink-2); }
+.exp__probe { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.lrow-list { display: contents; }
+.lrow--controls .lcell { padding-top: .7rem; }
+.lrow--controls .lcell--a { padding-right: .8rem; }
+.lrow--controls .lcell--b { padding-left: .8rem; }
+.sched__bar { display: flex; align-items: center; justify-content: flex-start; gap: .6rem 1.2rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.goals { display: flex; gap: .5rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; font-size: .86rem; }
+.goal { display: flex; align-items: center; gap: .4rem; padding: .22rem .7rem; border: 1px solid var(--rule-strong); border-radius: 999px; color: var(--ink-2); }
+.goal::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid currentColor; }
+.goal.is-done { color: var(--ok); border-color: var(--ok); font-weight: 600; }
+.goal.is-done::before { background: var(--ok); border-color: var(--ok); }
+.sched__result { max-width: 46rem; margin: .9rem 0 0; min-height: 3.2em; font-size: 1.05rem; }
+
+.block > .code { max-width: 46rem; }
+.lrow--controls .btn { border-color: var(--ink-2); font-weight: 600; }
+.lrow--controls .btn:disabled { border-color: var(--rule-strong); font-weight: 400; }
+
+/* small answer buttons, shared by the warm-up, the lanes question and the cases */
+.picks { display: flex; gap: .45rem; flex-wrap: wrap; }
+.pick { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 9px; padding: .36rem .85rem; font-size: .95rem; cursor: pointer; }
+.pick:hover:not(:disabled) { border-color: var(--ink-2); }
+.pick:disabled { cursor: default; color: var(--muted); }
+.pick.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); color: var(--ok); font-weight: 600; }
+.pick.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); color: var(--bad); }
+.pick--tool { font-family: var(--mono); font-size: .86rem; }
+
+/* opening: what you already have, then a picture to hang the lesson on */
+.recall, .cases { max-width: 50rem; }
+.recall__item { display: grid; grid-template-columns: 7.4rem minmax(0, 1fr); gap: .4rem 1.2rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.recall__have { grid-row: 1 / span 3; font-size: .82rem; color: var(--muted); padding-top: .2rem; }
+.recall__q, .cases__text { margin: 0; font-size: 1.08rem; font-weight: 600; line-height: 1.5; }
+.recall__why, .cases__why { margin: 0; font-size: .92rem; color: var(--ink-2); }
+.recall__score, .cases__score { margin: 0; padding-top: .8rem; border-top: 1px solid var(--rule); font-size: .92rem; color: var(--muted); min-height: 2.4em; }
+.cases__item { display: grid; gap: .5rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.cases__text { font-weight: 400; }
+.scene__story { margin: 0 0 1.4rem; font-size: 1.28rem; line-height: 1.7; max-width: 33em; }
+.scene__map { max-width: 44rem; transition: opacity .3s var(--ease); }
+.scene__map.is-waiting, .scene__row.is-waiting { opacity: 0; }
+.scene__head, .scene__row { display: grid; grid-template-columns: minmax(0, 1fr) 2.6rem minmax(0, 1.1fr); align-items: center; }
+.scene__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; border-bottom: 1px solid var(--rule); }
+.scene__row { padding: .58rem 0; border-bottom: 1px solid var(--rule); font-size: 1.04rem; transition: opacity .3s var(--ease); }
+.scene__arrow { color: var(--faint); }
+.scene__row.is-now .scene__arrow { color: var(--accent); }
+.scene__to { font-weight: 600; }
+
+/* find the line; look inside */
+.inside { max-width: 46rem; }
+.spot { display: grid; grid-template-columns: minmax(0, 46rem) minmax(13rem, 19rem); gap: 0 2rem; align-items: start; }
+.spot__q { grid-column: 1 / -1; }
+.spot__how { margin: .2rem 0 .8rem; font-size: .92rem; color: var(--muted); }
+.spot__q { margin: 0 0 .8rem; font-size: 1.18rem; font-weight: 650; line-height: 1.45; }
+.spot .code__scroll { max-height: max(12rem, calc(100vh - 21.5rem)); }
+.code.is-pickable .code__line { cursor: pointer; }
+.code.is-pickable .code__line:hover { background: var(--sunken); }
+.code__line.is-wrong { background: var(--bad-wash); border-left-color: var(--bad); }
+.spot__out { margin: 0; font-size: 1rem; line-height: 1.7; color: var(--ink-2); }
+.spot__out.is-ok { color: var(--ok); font-weight: 600; }
+.inside__what { margin: 0 0 .6rem; font-size: .86rem; color: var(--muted); }
+.inside .code__line { position: relative; font-size: .88rem; line-height: 2.2; }
+.code__tag { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); font-family: var(--font); font-size: .78rem; font-weight: 600; line-height: 1.7; padding: 0 .7rem; border-radius: 999px; background: var(--raised); border: 1px solid var(--rule-strong); }
+.code__line.is-focus .code__tag { border-color: var(--accent); color: var(--accent-text); }
+
+/* lanes: a question between two steps; steps that touch nothing */
+.lanes--long .lcell { min-height: 2.5rem; }
+.chip--wait { border-style: dashed; color: var(--muted); }
+.chip--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.chip--ok { border-color: var(--ok); color: var(--ok); }
+.lanes__ask { max-width: 46rem; margin-top: .8rem; padding: .8rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--surface); display: grid; gap: .5rem; }
+.lanes__ask[hidden] { display: none; }
+.lanes__ask p { margin: 0; font-weight: 600; }
+.lanes__ask .ask__out { font-weight: 400; font-size: .9rem; color: var(--muted); min-height: 1.5em; }
+
+/* runs let out by hand; a reference answer after speaking */
+.exp__hand { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; }
+.exp__hand[hidden] { display: none; }
+.plot__sum.is-held > * { visibility: hidden; }
+.say__model { margin: 1rem 0 0; padding: .9rem 1.1rem; border-left: 3px solid var(--rule-strong); background: var(--surface); font-size: 1rem; line-height: 1.8; max-width: 42rem; }
+
+/* how to choose between the tools just met */
+.choose { max-width: 62rem; }
+.choose__head, .choose__row { display: grid; grid-template-columns: 9.6rem repeat(3, minmax(0, 1fr)); gap: 0 1.6rem; }
+.choose__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; }
+.choose__row { padding: .8rem 0; border-top: 1px solid var(--rule); font-size: .98rem; line-height: 1.5; color: var(--ink-2); }
+.choose__row { transition: opacity .3s var(--ease); }
+.choose.is-walking .choose__row:not(.is-now) { opacity: .42; }
+.choose__name { font-family: var(--mono); font-weight: 650; color: var(--ink); }
+.choose__rule.is-waiting { visibility: hidden; }
+.choose__rule { margin: 0; padding-top: .9rem; border-top: 1px solid var(--rule-strong); font-size: 1.12rem; font-weight: 600; }
+
+/* pictures: two actors and the thing they share. Drawn at a fixed size so every part has a known place. */
+.pic { position: relative; width: 300px; height: 300px; flex: none; font-size: 16px; line-height: 1.3; }
+.pic__lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.pic__arrow { opacity: 0; transition: opacity .25s var(--ease); }
+.pic__arrow.is-on { opacity: 1; }
+.pic__arrow line { stroke: var(--accent); stroke-width: 1.75; }
+.pic__arrow polygon { fill: var(--accent); }
+.pic--plain .pic__arrow line { stroke: var(--ink-2); }
+.pic--plain .pic__arrow polygon { fill: var(--ink-2); }
+.pic__over { position: absolute; left: 0; right: 0; bottom: calc(100% - 38px); display: grid; justify-items: center; gap: 3px; }
+.pic__name { font-size: 13px; color: var(--muted); }
+.pic__tags { display: grid; justify-items: center; gap: 3px; }
+.pic__tags span { font-family: var(--mono); font-size: 12.5px; font-weight: 650; color: var(--ink); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--rule-strong); background: var(--surface); white-space: nowrap; }
+.pic__board { position: absolute; left: 90px; top: 44px; width: 120px; height: 62px; display: grid; place-items: center; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .25s, box-shadow .25s; }
+.pic__board.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__value { font-family: var(--mono); font-size: 28px; font-weight: 650; line-height: 1; }
+.pic__board.is-now .pic__value { color: var(--accent-text); }
+.pic__hand { position: absolute; top: 146px; width: 64px; height: 38px; display: grid; place-items: center; border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--raised); font-family: var(--mono); font-size: 16px; transition: border-color .25s, box-shadow .25s; }
+.pic__hand--a { left: 50px; }
+.pic__hand--b { left: 186px; }
+.pic__hand small { position: absolute; left: 0; right: 0; top: -18px; text-align: center; font-family: var(--font); font-size: 11px; color: var(--faint); }
+.pic__hand.is-empty { border-style: dashed; background: none; }
+.pic__hand.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__actor { position: absolute; top: 196px; width: 110px; display: grid; justify-items: center; gap: 3px; }
+.pic__actor--a { left: 0; }
+.pic__actor--b { left: 190px; }
+.pic__figure { width: 44px; height: 40px; fill: var(--raised); stroke: var(--ink-2); stroke-width: 1.5; transition: stroke .25s; }
+.pic__actor.is-now .pic__figure { stroke: var(--accent); }
+.pic__note { font-size: 12.5px; padding: 2px 8px; border-radius: 7px; border: 1px solid var(--rule-strong); background: var(--raised); white-space: nowrap; }
+.pic__note:empty { display: none; }
+.pic__note--wait { border-style: dashed; color: var(--muted); }
+.pic__note--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.pic__note--ok { border-color: var(--ok); color: var(--ok); }
+.pic__note.is-now { box-shadow: 0 0 0 1px currentColor; }
+.pic__action { position: absolute; left: 0; right: 0; top: 138px; text-align: center; font-family: var(--mono); font-weight: 650; font-size: 14px; color: var(--ink); }
+.pic__action.is-now { color: var(--accent-text); }
+.pic__action:empty { display: none; }
+.scene__body.has-picture { display: grid; grid-template-columns: minmax(0, 44rem) 300px; gap: 0 2.4rem; align-items: start; }
+.lanes { display: grid; grid-template-columns: minmax(0, 46rem) 300px; gap: 0 2rem; align-items: start; }
+.lanes__side { position: sticky; top: .6rem; }
+.lanes__now { margin: 0 0 .1rem; font-size: .76rem; color: var(--muted); text-align: center; }
+@media (max-width: 1220px) { .lanes { grid-template-columns: minmax(0, 1fr); } .lanes__side { display: none; } }
+
+/* chart: the recorded runs as lines. Colour names the way of writing; a hollow point means that group came out wrong. */
+.chart { margin: 0; display: grid; grid-template-columns: minmax(0, 44rem) minmax(13rem, 1fr); gap: 0 2rem; align-items: start; }
+.chart__cap { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem 1rem; font-size: .84rem; color: var(--muted); margin-bottom: .5rem; }
+.chart__cap b { font-size: 1rem; color: var(--ink); }
+.chart__marks { display: inline-flex; align-items: center; gap: .4rem; }
+.chart__mark { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--ink-2); border: 2px solid var(--ink-2); }
+.chart__mark.is-wrong { background: transparent; margin-left: .7rem; }
+.chart__picks { display: grid; justify-items: start; gap: .4rem; margin-bottom: 1rem; }
+.chart__pick { display: inline-flex; align-items: center; gap: .5rem; padding: .26rem .75rem; border: 1px solid var(--rule-strong); border-radius: 999px; background: none; font-size: .86rem; color: var(--ink-2); cursor: pointer; }
+.chart__pick:hover { border-color: var(--ink-2); }
+.chart__pick[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); font-weight: 600; background: var(--raised); }
+.chart__key { flex: none; width: 18px; height: 0; border-top: 3px solid var(--s, var(--ink-2)); border-radius: 2px; }
+.chart__key--1, .chart__series--1 { --s: var(--s1); }
+.chart__key--2, .chart__series--2 { --s: var(--s2); }
+.chart__key--3, .chart__series--3 { --s: var(--s3); }
+.chart__key--4, .chart__series--4 { --s: var(--s4); }
+.chart__plot { position: relative; }
+.chart__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart__grid { stroke: var(--rule); stroke-width: 1; }
+.chart__base { stroke: var(--rule-strong); stroke-width: 1; }
+.chart__tick { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.chart__series { transition: opacity .25s var(--ease); }
+.chart__series.is-dim { opacity: .2; }
+.chart__line { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; transition: stroke-width .2s; }
+.chart__series.is-on .chart__line { stroke-width: 3.2; }
+.chart__lead { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 1; opacity: .55; }
+.chart__dot { fill: var(--s, var(--ink-2)); stroke: var(--canvas); stroke-width: 2; }
+.chart__dot.is-wrong { fill: var(--canvas); stroke: var(--s, var(--ink-2)); }
+.chart__name { font-size: 11.5px; fill: var(--ink-2); }
+.chart__end { font-weight: 650; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.chart__cross { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+.chart__cross.is-on { opacity: .7; }
+.chart__hit { fill: transparent; cursor: crosshair; outline: none; }
+.chart__hit:focus-visible { stroke: var(--ink-2); stroke-dasharray: 2 3; }
+.chart__tip { position: absolute; top: 4%; z-index: 2; min-width: 16rem; padding: .55rem .7rem; border-radius: 10px; background: var(--raised); border: 1px solid var(--rule-strong); box-shadow: 0 8px 22px -14px #000000a0; font-size: .8rem; display: grid; gap: .25rem; pointer-events: none; }
+.chart__tip[hidden] { display: none; }
+.chart__row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto 4.8em; gap: .5rem; align-items: center; }
+.chart__row.is-dim { opacity: .45; }
+.chart__row span:last-child { color: var(--muted); text-align: right; }
+.chart__row span.is-wrong { color: var(--bad); }
+.chart__read { margin: 0 0 .8rem; min-height: 6.4em; font-size: .98rem; line-height: 1.65; color: var(--ink-2); }
+.chart__table { font-size: .8rem; color: var(--muted); }
+.chart__table summary { cursor: pointer; width: max-content; }
+.chart__table table { border-collapse: collapse; margin-top: .4rem; font-variant-numeric: tabular-nums; }
+.chart__table th, .chart__table td { padding: .22rem .5rem; border-bottom: 1px solid var(--rule); text-align: right; font-weight: 400; white-space: nowrap; }
+.chart__table th:first-child { text-align: left; }
+
+/* decide: the rule for choosing, as a small tree */
+.decide { max-width: 19rem; padding: 1rem 1.1rem; border: 1px solid var(--rule-strong); border-radius: 12px; background: var(--surface); }
+.decide__q { margin: 0; font-weight: 650; font-size: 1.02rem; }
+.decide__list { list-style: none; margin: 0; padding: .5rem 0 0 .5rem; }
+.decide__branch { position: relative; display: grid; gap: .2rem; padding: .5rem 0 .6rem 1.4rem; border-left: 1.5px solid var(--ink-2); }
+.decide__branch:last-child { border-left-color: transparent; }
+.decide__branch::before { content: ""; position: absolute; left: -1.5px; top: 0; width: 1rem; height: 1.2rem; border-left: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2); border-bottom-left-radius: 9px; }
+.decide__when { font-size: .92rem; color: var(--ink-2); }
+.decide__pick { justify-self: start; font-family: var(--mono); font-weight: 650; font-size: .92rem; padding: .18rem .6rem; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .3s, color .3s; }
+.decide__eg { font-size: .78rem; color: var(--muted); }
+.decide__branch.is-used .decide__pick { border-color: var(--ok); color: var(--ok); }
+.decide__branch.is-hit .decide__pick { animation: hit 1.6s var(--ease); }
+@keyframes hit { 0%, 55% { box-shadow: 0 0 0 5px var(--ok-wash), 0 0 0 1.5px var(--ok); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr) 19rem; }
+.slide--split .block:has(> .decide) { grid-column: 2; position: sticky; top: .6rem; }
+.slide--split .block:has(> .decide) ~ .block { grid-column: 1; grid-row: 1; }
+
+@media (max-width: 860px) {
+  .top { grid-template-columns: minmax(0, 1fr) auto; padding: .5rem .9rem; }
+  .top__title, #count { display: none; }
+  .beat:not(.is-now) { font-size: 0; gap: 0; padding: .3rem .22rem; }
+  .stage { padding: 0 .9rem 1.4rem; }
+  .slide { padding-top: 1rem; }
+  .exp__bar { position: static; }
+  .slide--split .slide__blocks, .exp__body, .hook__meta { grid-template-columns: minmax(0, 1fr); }
+  .hook__meta { gap: 1.2rem; }
+  .slide--split .block:first-child { grid-row: auto; }
+  .code__scroll, .exp .code__scroll { max-height: 15rem; }
+  .seg, .seg__set { flex-wrap: wrap; }
+  .plot__label { font-size: .72rem; overflow-wrap: anywhere; }
+  .plot__sum { font-size: .72rem; }
+  .plot__sum b { font-size: .8rem; }
+  .lrow--controls .btn { padding: .45rem .5rem; font-size: .8rem; }
+  .lrow--controls .lcell--a { padding-right: .3rem; } .lrow--controls .lcell--b { padding-left: .3rem; }
+  .plot__row, .plot__axis { grid-template-columns: 5.8em minmax(0, 1fr) 4.4em; gap: .4rem; }
+  .lanes__grid { grid-template-columns: minmax(0, 1fr) 3.4rem minmax(0, 1fr); }
+  .lanes__head--a { padding-right: 1.4rem; } .lanes__head--b { padding-left: 1.4rem; }
+  .arrow { flex-basis: 1rem; margin: 0 .15rem; }
+  .chip { font-size: .78rem; padding: .28rem .45rem; }
+  .val { min-width: 2.2rem; padding: .2rem .3rem; font-size: .88rem; }
+  .voice { padding: .7rem .9rem .8rem; }
+  .voice__inner { gap: .7rem; }
+  .voice__line { font-size: 1rem; line-height: 1.55; min-height: 0; }
+  .exp__body > :first-child { order: 2; }
+  .choose__head { display: none; }
+  .recall__item { grid-template-columns: minmax(0, 1fr); }
+  .spot { grid-template-columns: minmax(0, 1fr); }
+  .spot .code__scroll { max-height: 46vh; }
+  .spot__side { margin-top: .7rem; }
+  .spot__how { display: none; }
+  .recall__have { grid-row: auto; }
+  .scene__body.has-picture, .chart { grid-template-columns: minmax(0, 1fr); }
+  .scene__body .pic { order: -1; justify-self: center; margin-bottom: .6rem; }
+  .chart__picks { display: flex; flex-wrap: wrap; margin: .6rem 0; }
+  .chart__pick { font-size: .8rem; padding: .22rem .6rem; }
+  .chart__tick, .chart__name { font-size: 19px; }
+  .chart__label { display: none; }
+  .chart__dot { r: 7px; }
+  .chart__line { stroke-width: 3; }
+  .scene__head, .scene__row { column-gap: .4rem; }
+  .chart__read { min-height: 0; }
+  .chart__tip { min-width: 13rem; }
+  .slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr); }
+  .slide--split .block:has(> .decide), .slide--split .block:has(> .decide) ~ .block { grid-column: auto; grid-row: auto; position: static; }
+  .decide { max-width: none; }
+  .code__tag { position: static; transform: none; grid-column: 2; justify-self: start; margin-bottom: .3rem; }
+  .choose__row { grid-template-columns: minmax(0, 1fr); gap: .2rem; }
+  .choose__row > [data-label]::before { content: attr(data-label) "："; color: var(--muted); font-size: .82em; }
+  .voice__nav .btn { padding: .5rem .7rem; }
+  .btn__label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+@media print { body { height: auto; overflow: visible; display: block; } .voice__nav, .top__tools { display: none; } }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top__title" id="title"></div>
+  <nav class="beats" id="beats" aria-label="这节课走到哪了"></nav>
+  <div class="top__tools">
+    <span class="num" id="count"></span>
+    <div class="notes"><button class="tool" id="notes" type="button">要点 0</button><ul class="notes__list" id="notes-list" hidden></ul></div>
+    <button class="tool" id="theme" type="button">深色</button>
+  </div>
+</header>
+<main class="stage" id="stage"></main>
+<footer class="voice" aria-label="老师的讲解">
+  <div class="voice__inner">
+    <div><p class="voice__line" id="line" aria-live="polite"></p><p class="voice__key" id="key" hidden></p></div>
+    <div class="voice__nav">
+      <button class="btn" id="prev" type="button" aria-label="上一步">←</button>
+      <button class="btn btn--primary" id="next" type="button"><span class="btn__label">下一步 </span>→</button>
+    </div>
+  </div>
+</footer>
+<script type="application/json" id="lesson-data">{"format":"studyhub-lesson/1","template":"experiment","id":"sharded-stock","course":"Java 并发实战","title":"热点库存分片：16 桶为何还超卖","lead":"爆品秒杀挤死一把全局锁，有人把库存拆进 16 个普通桶却照样卖超；改用分段 CAS 加顺延探测才稳。","minutes":20,"needs":["看懂 if 检查再减为何会竞态","理解 CAS 比较并交换与重试","分清全局锁排队与无锁争用"],"after":["拆穿「分桶就能防超卖」的并发误区","用分段 CAS 数组把热点打散到 16 桶","用顺延环形探测兜底，零超卖且吃光尾货"],"terms":{"shards":"长度为 16 的库存分桶数组，把一件爆品的总库存拆成 16 份","buyOne":"单次抢购扣减函数，决定去哪只桶扣减及空桶时怎么顺延","AtomicIntegerArray":"JDK 原子整型数组，支持对每个槽位单独做硬件级原子更新","compareAndSet":"比较并交换指令封装：仅当槽位仍是旧值时才原子改成 cur - 1","synchronized":"单库存全局互斥锁，并发升高时请求排队等锁拖慢整体耗时","getstatic":"JVM 取静态字段指令，把 shards 数组引用加载到操作数栈","iaload":"JVM 读数组指令，把 shards[idx] 当前余量取上栈","ifle":"JVM 条件跳转指令，判断取出的桶库存是否小于等于 0","isub":"JVM 整数减法指令，只对栈顶数值减 1 而不带并发保护","iastore":"JVM 写回数组指令，与前次读之间没锁，撞桶就会覆盖写"},"experiments":{"shardstock":{"runner":"java","home":"lab.shardstock","repeat":20,"knob":{"label":"抢购线程数","values":["1","2","4","8"],"default":"4"},"metric":{"key":"sold","expectKey":"expected","label":"总售出件数"},"time":{"key":"ms","label":"耗时","unit":"ms"},"variants":[{"id":"Plain","label":"单int无锁","code":"Plain.java"},{"id":"PlainShards","label":"16桶int误区","code":"PlainShards.java"},{"id":"SingleSync","label":"单库存全局锁","code":"SingleSync.java"},{"id":"ShardedCas","label":"16桶分段CAS","code":"ShardedCas.java"}],"lang":"java","sources":{"Plain":"package lab.shardstock;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class Plain {\n    static final int WAVES_PER_THREAD = 60;\n    static final int STOCK = 800;\n    static int stock = STOCK;\n    static final AtomicLong sold = new AtomicLong();\n    static volatile long sink;\n\n    static long verify(int reqId) {\n        long h = reqId * 31L + 7;\n        for (int i = 0; i \u003c 240; i++) h = (h * 31 + i) ^ (h >>> 5);\n        return h | 1L;\n    }\n\n    static long buyOne(int reqId) {\n        if (stock > 0) {\n            stock--;\n            return verify(reqId);\n        }\n        return 0L;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        int waves = WAVES_PER_THREAD * threads;\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> stock = STOCK);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int startReq = t;\n            workers[t] = new Thread(() -> {\n                try {\n                    long mine = 0, sum = 0;\n                    int req = startReq;\n                    for (int w = 0; w \u003c waves; w++) {\n                        barrier.await();\n                        long code;\n                        while ((code = buyOne(req++)) != 0L) {\n                            mine++;\n                            sum += code;\n                        }\n                    }\n                    sold.addAndGet(mine);\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"sold=\" + sold.get());\n        System.out.println(\"expected=\" + ((long) waves * STOCK));\n        System.out.println(\"ms=\" + ms);\n    }\n}","PlainShards":"package lab.shardstock;\n\nimport java.util.Arrays;\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class PlainShards {\n    static final int WAVES_PER_THREAD = 60;\n    static final int SHARDS = 16;\n    static final int PER_SHARD = 50;\n    static final int STOCK = SHARDS * PER_SHARD;\n    static final int[] shards = new int[SHARDS];\n    static final AtomicLong sold = new AtomicLong();\n    static volatile long sink;\n\n    static long verify(int reqId) {\n        long h = reqId * 31L + 7;\n        for (int i = 0; i \u003c 240; i++) h = (h * 31 + i) ^ (h >>> 5);\n        return h | 1L;\n    }\n\n    static long buyOne(int reqId) {\n        int start = reqId & (SHARDS - 1);\n        for (int i = 0; i \u003c SHARDS; i++) {\n            int idx = (start + i) & (SHARDS - 1);\n            if (shards[idx] > 0) {\n                shards[idx]--;\n                return verify(reqId);\n            }\n        }\n        return 0L;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        int waves = WAVES_PER_THREAD * threads;\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> Arrays.fill(shards, PER_SHARD));\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int startReq = t;\n            workers[t] = new Thread(() -> {\n                try {\n                    long mine = 0, sum = 0;\n                    int req = startReq;\n                    for (int w = 0; w \u003c waves; w++) {\n                        barrier.await();\n                        long code;\n                        while ((code = buyOne(req++)) != 0L) {\n                            mine++;\n                            sum += code;\n                        }\n                    }\n                    sold.addAndGet(mine);\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"sold=\" + sold.get());\n        System.out.println(\"expected=\" + ((long) waves * STOCK));\n        System.out.println(\"ms=\" + ms);\n    }\n}","SingleSync":"package lab.shardstock;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class SingleSync {\n    static final int WAVES_PER_THREAD = 60;\n    static final int STOCK = 800;\n    static int stock = STOCK;\n    static final AtomicLong sold = new AtomicLong();\n    static volatile long sink;\n\n    static long verify(int reqId) {\n        long h = reqId * 31L + 7;\n        for (int i = 0; i \u003c 240; i++) h = (h * 31 + i) ^ (h >>> 5);\n        return h | 1L;\n    }\n\n    static synchronized long buyOne(int reqId) {\n        if (stock > 0) {\n            stock--;\n            return verify(reqId);\n        }\n        return 0L;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        int waves = WAVES_PER_THREAD * threads;\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> stock = STOCK);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int startReq = t;\n            workers[t] = new Thread(() -> {\n                try {\n                    long mine = 0, sum = 0;\n                    int req = startReq;\n                    for (int w = 0; w \u003c waves; w++) {\n                        barrier.await();\n                        long code;\n                        while ((code = buyOne(req++)) != 0L) {\n                            mine++;\n                            sum += code;\n                        }\n                    }\n                    sold.addAndGet(mine);\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"sold=\" + sold.get());\n        System.out.println(\"expected=\" + ((long) waves * STOCK));\n        System.out.println(\"ms=\" + ms);\n    }\n}","ShardedCas":"package lab.shardstock;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicIntegerArray;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class ShardedCas {\n    static final int WAVES_PER_THREAD = 60;\n    static final int SHARDS = 16;\n    static final int PER_SHARD = 50;\n    static final int STOCK = SHARDS * PER_SHARD;\n    static final AtomicIntegerArray shards = new AtomicIntegerArray(SHARDS);\n    static final AtomicLong sold = new AtomicLong();\n    static volatile long sink;\n\n    static long verify(int reqId) {\n        long h = reqId * 31L + 7;\n        for (int i = 0; i \u003c 240; i++) h = (h * 31 + i) ^ (h >>> 5);\n        return h | 1L;\n    }\n\n    static long buyOne(int reqId) {\n        int start = reqId & (SHARDS - 1);\n        for (int i = 0; i \u003c SHARDS; i++) {\n            int idx = (start + i) & (SHARDS - 1);\n            while (true) {\n                int cur = shards.get(idx);\n                if (cur \u003c= 0) break;\n                if (shards.compareAndSet(idx, cur, cur - 1)) {\n                    return verify(reqId);\n                }\n            }\n        }\n        return 0L;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        int waves = WAVES_PER_THREAD * threads;\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> {\n            for (int i = 0; i \u003c SHARDS; i++) shards.set(i, PER_SHARD);\n        });\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int startReq = t;\n            workers[t] = new Thread(() -> {\n                try {\n                    long mine = 0, sum = 0;\n                    int req = startReq;\n                    for (int w = 0; w \u003c waves; w++) {\n                        barrier.await();\n                        long code;\n                        while ((code = buyOne(req++)) != 0L) {\n                            mine++;\n                            sum += code;\n                        }\n                    }\n                    sold.addAndGet(mine);\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"sold=\" + sold.get());\n        System.out.println(\"expected=\" + ((long) waves * STOCK));\n        System.out.println(\"ms=\" + ms);\n    }\n}"},"paths":{"Plain":"src/lab/shardstock/Plain.java","PlainShards":"src/lab/shardstock/PlainShards.java","SingleSync":"src/lab/shardstock/SingleSync.java","ShardedCas":"src/lab/shardstock/ShardedCas.java"},"shown":{"Plain":"java -cp out lab.shardstock.Plain","PlainShards":"java -cp out lab.shardstock.PlainShards","SingleSync":"java -cp out lab.shardstock.SingleSync","ShardedCas":"java -cp out lab.shardstock.ShardedCas"},"results":{"id":"shardstock","variants":{"Plain":{"hash":"0fa7653599b0f2b8","repeat":20,"runs":{"1":[{"sold":48000,"expected":48000,"ms":15},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":15},{"sold":48000,"expected":48000,"ms":15},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":18},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":18},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":15},{"sold":48000,"expected":48000,"ms":15}],"2":[{"sold":122858,"expected":96000,"ms":24},{"sold":122638,"expected":96000,"ms":25},{"sold":122454,"expected":96000,"ms":23},{"sold":119729,"expected":96000,"ms":22},{"sold":122668,"expected":96000,"ms":24},{"sold":122789,"expected":96000,"ms":24},{"sold":123618,"expected":96000,"ms":25},{"sold":122636,"expected":96000,"ms":25},{"sold":125523,"expected":96000,"ms":27},{"sold":124034,"expected":96000,"ms":23},{"sold":121596,"expected":96000,"ms":23},{"sold":124819,"expected":96000,"ms":25},{"sold":120435,"expected":96000,"ms":23},{"sold":122435,"expected":96000,"ms":23},{"sold":128709,"expected":96000,"ms":24},{"sold":125966,"expected":96000,"ms":24},{"sold":120727,"expected":96000,"ms":24},{"sold":122616,"expected":96000,"ms":25},{"sold":123739,"expected":96000,"ms":25},{"sold":120335,"expected":96000,"ms":22}],"4":[{"sold":512203,"expected":192000,"ms":55},{"sold":538088,"expected":192000,"ms":60},{"sold":534379,"expected":192000,"ms":61},{"sold":529143,"expected":192000,"ms":62},{"sold":527327,"expected":192000,"ms":56},{"sold":499703,"expected":192000,"ms":49},{"sold":528230,"expected":192000,"ms":55},{"sold":529939,"expected":192000,"ms":53},{"sold":585209,"expected":192000,"ms":59},{"sold":583977,"expected":192000,"ms":64},{"sold":586462,"expected":192000,"ms":61},{"sold":611797,"expected":192000,"ms":73},{"sold":625139,"expected":192000,"ms":78},{"sold":583022,"expected":192000,"ms":67},{"sold":588917,"expected":192000,"ms":66},{"sold":503576,"expected":192000,"ms":50},{"sold":565753,"expected":192000,"ms":61},{"sold":590059,"expected":192000,"ms":67},{"sold":566208,"expected":192000,"ms":59},{"sold":599061,"expected":192000,"ms":67}],"8":[{"sold":2307570,"expected":384000,"ms":161},{"sold":2276306,"expected":384000,"ms":158},{"sold":2279487,"expected":384000,"ms":162},{"sold":2244770,"expected":384000,"ms":167},{"sold":2286584,"expected":384000,"ms":148},{"sold":2341406,"expected":384000,"ms":171},{"sold":2288109,"expected":384000,"ms":155},{"sold":2282519,"expected":384000,"ms":154},{"sold":2214930,"expected":384000,"ms":198},{"sold":2282988,"expected":384000,"ms":168},{"sold":2276028,"expected":384000,"ms":174},{"sold":2236054,"expected":384000,"ms":165},{"sold":2327289,"expected":384000,"ms":183},{"sold":2338835,"expected":384000,"ms":173},{"sold":2404398,"expected":384000,"ms":192},{"sold":2291356,"expected":384000,"ms":185},{"sold":2285154,"expected":384000,"ms":182},{"sold":2360859,"expected":384000,"ms":184},{"sold":2300047,"expected":384000,"ms":184},{"sold":2407591,"expected":384000,"ms":203}]},"inside":"Compiled from \"Plain.java\"\npublic class lab.shardstock.Plain {\n  static final int WAVES_PER_THREAD;\n\n  static final int STOCK;\n\n  static int stock;\n\n  static final java.util.concurrent.atomic.AtomicLong sold;\n\n  static volatile long sink;\n\n  public lab.shardstock.Plain();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static long verify(int);\n    Code:\n         0: iload_0\n         1: i2l\n         2: ldc2_w        #7                  // long 31l\n         5: lmul\n         6: ldc2_w        #9                  // long 7l\n         9: ladd\n        10: lstore_1\n        11: iconst_0\n        12: istore_3\n        13: iload_3\n        14: sipush        240\n        17: if_icmpge     39\n        20: lload_1\n        21: ldc2_w        #7                  // long 31l\n        24: lmul\n        25: iload_3\n        26: i2l\n        27: ladd\n        28: lload_1\n        29: iconst_5\n        30: lushr\n        31: lxor\n        32: lstore_1\n        33: iinc          3, 1\n        36: goto          13\n        39: lload_1\n        40: lconst_1\n        41: lor\n        42: lreturn\n\n  static long buyOne(int);\n    Code:\n         0: getstatic     #11                 // Field stock:I\n         3: ifle          19\n         6: getstatic     #11                 // Field stock:I\n         9: iconst_1\n        10: isub\n        11: putstatic     #11                 // Field stock:I\n        14: iload_0\n        15: invokestatic  #17                 // Method verify:(I)J\n        18: lreturn\n        19: lconst_0\n        20: lreturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #21                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: bipush        60\n         9: iload_1\n        10: imul\n        11: istore_2\n        12: new           #27                 // class java/util/concurrent/CyclicBarrier\n        15: dup\n        16: iload_1\n        17: invokedynamic #29,  0             // InvokeDynamic #0:run:()Ljava/lang/Runnable;\n        22: invokespecial #33                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(ILjava/lang/Runnable;)V\n        25: astore_3\n        26: iload_1\n        27: anewarray     #36                 // class java/lang/Thread\n        30: astore        4\n        32: invokestatic  #38                 // Method java/lang/System.nanoTime:()J\n        35: lstore        5\n        37: iconst_0\n        38: istore        7\n        40: iload         7\n        42: iload_1\n        43: if_icmpge     85\n        46: iload         7\n        48: istore        8\n        50: aload         4\n        52: iload         7\n        54: new           #36                 // class java/lang/Thread\n        57: dup\n        58: iload         8\n        60: iload_2\n        61: aload_3\n        62: invokedynamic #44,  0             // InvokeDynamic #1:run:(IILjava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n        67: invokespecial #47                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        70: aastore\n        71: aload         4\n        73: iload         7\n        75: aaload\n        76: invokevirtual #50                 // Method java/lang/Thread.start:()V\n        79: iinc          7, 1\n        82: goto          40\n        85: aload         4\n        87: astore        7\n        89: aload         7\n        91: arraylength\n        92: istore        8\n        94: iconst_0\n        95: istore        9\n        97: iload         9\n        99: iload         8\n       101: if_icmpge     122\n       104: aload         7\n       106: iload         9\n       108: aaload\n       109: astore        10\n       111: aload         10\n       113: invokevirtual #53                 // Method java/lang/Thread.join:()V\n       116: iinc          9, 1\n       119: goto          97\n       122: invokestatic  #38                 // Method java/lang/System.nanoTime:()J\n       125: lload         5\n       127: lsub\n       128: ldc2_w        #56                 // long 1000000l\n       131: ldiv\n       132: lstore        7\n       134: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       137: getstatic     #62                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n       140: invokevirtual #66                 // Method java/util/concurrent/atomic/AtomicLong.get:()J\n       143: invokedynamic #71,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n       148: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       151: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       154: iload_2\n       155: i2l\n       156: ldc2_w        #81                 // long 800l\n       159: lmul\n       160: invokedynamic #83,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       165: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       168: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       171: lload         7\n       173: invokedynamic #84,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n       178: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       181: return\n\n  private static void lambda$main$1(int, int, java.util.concurrent.CyclicBarrier);\n    Code:\n         0: lconst_0\n         1: lstore_3\n         2: lconst_0\n         3: lstore        5\n         5: iload_0\n         6: istore        7\n         8: iconst_0\n         9: istore        8\n        11: iload         8\n        13: iload_1\n        14: if_icmpge     58\n        17: aload_2\n        18: invokevirtual #85                 // Method java/util/concurrent/CyclicBarrier.await:()I\n        21: pop\n        22: iload         7\n        24: iinc          7, 1\n        27: invokestatic  #89                 // Method buyOne:(I)J\n        30: dup2\n        31: lstore        9\n        33: lconst_0\n        34: lcmp\n        35: ifeq          52\n        38: lload_3\n        39: lconst_1\n        40: ladd\n        41: lstore_3\n        42: lload         5\n        44: lload         9\n        46: ladd\n        47: lstore        5\n        49: goto          22\n        52: iinc          8, 1\n        55: goto          11\n        58: getstatic     #62                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n        61: lload_3\n        62: invokevirtual #92                 // Method java/util/concurrent/atomic/AtomicLong.addAndGet:(J)J\n        65: pop2\n        66: lload         5\n        68: putstatic     #96                 // Field sink:J\n        71: goto          84\n        74: astore_3\n        75: new           #102                // class java/lang/RuntimeException\n        78: dup\n        79: aload_3\n        80: invokespecial #104                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        83: athrow\n        84: return\n      Exception table:\n         from    to  target type\n             0    71    74   Class java/lang/Exception\n\n  private static void lambda$main$0();\n    Code:\n         0: sipush        800\n         3: putstatic     #11                 // Field stock:I\n         6: return\n\n  static {};\n    Code:\n         0: sipush        800\n         3: putstatic     #11                 // Field stock:I\n         6: new           #67                 // class java/util/concurrent/atomic/AtomicLong\n         9: dup\n        10: invokespecial #107                // Method java/util/concurrent/atomic/AtomicLong.\"\u003cinit>\":()V\n        13: putstatic     #62                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n        16: return\n}"},"PlainShards":{"hash":"ba355a1db430cddf","repeat":20,"runs":{"1":[{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":18},{"sold":48000,"expected":48000,"ms":18},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":19},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":18}],"2":[{"sold":102256,"expected":96000,"ms":21},{"sold":103306,"expected":96000,"ms":22},{"sold":102346,"expected":96000,"ms":21},{"sold":103362,"expected":96000,"ms":22},{"sold":104281,"expected":96000,"ms":21},{"sold":106749,"expected":96000,"ms":22},{"sold":102883,"expected":96000,"ms":23},{"sold":103223,"expected":96000,"ms":23},{"sold":101201,"expected":96000,"ms":21},{"sold":105313,"expected":96000,"ms":21},{"sold":101521,"expected":96000,"ms":20},{"sold":103965,"expected":96000,"ms":20},{"sold":104740,"expected":96000,"ms":21},{"sold":103652,"expected":96000,"ms":22},{"sold":104356,"expected":96000,"ms":23},{"sold":103906,"expected":96000,"ms":23},{"sold":106829,"expected":96000,"ms":25},{"sold":104847,"expected":96000,"ms":21},{"sold":105996,"expected":96000,"ms":21},{"sold":102635,"expected":96000,"ms":21}],"4":[{"sold":232249,"expected":192000,"ms":33},{"sold":228182,"expected":192000,"ms":32},{"sold":226218,"expected":192000,"ms":30},{"sold":227163,"expected":192000,"ms":32},{"sold":226599,"expected":192000,"ms":32},{"sold":231649,"expected":192000,"ms":30},{"sold":228895,"expected":192000,"ms":29},{"sold":228613,"expected":192000,"ms":31},{"sold":226094,"expected":192000,"ms":35},{"sold":223801,"expected":192000,"ms":37},{"sold":225286,"expected":192000,"ms":30},{"sold":222309,"expected":192000,"ms":46},{"sold":219862,"expected":192000,"ms":41},{"sold":221768,"expected":192000,"ms":45},{"sold":230201,"expected":192000,"ms":47},{"sold":226064,"expected":192000,"ms":30},{"sold":224174,"expected":192000,"ms":35},{"sold":224481,"expected":192000,"ms":31},{"sold":224551,"expected":192000,"ms":31},{"sold":226956,"expected":192000,"ms":31}],"8":[{"sold":492446,"expected":384000,"ms":65},{"sold":487147,"expected":384000,"ms":73},{"sold":489706,"expected":384000,"ms":71},{"sold":492076,"expected":384000,"ms":66},{"sold":491090,"expected":384000,"ms":65},{"sold":487674,"expected":384000,"ms":67},{"sold":489843,"expected":384000,"ms":68},{"sold":490594,"expected":384000,"ms":61},{"sold":488646,"expected":384000,"ms":70},{"sold":493741,"expected":384000,"ms":70},{"sold":495300,"expected":384000,"ms":64},{"sold":488512,"expected":384000,"ms":74},{"sold":484212,"expected":384000,"ms":68},{"sold":490459,"expected":384000,"ms":72},{"sold":488905,"expected":384000,"ms":69},{"sold":491301,"expected":384000,"ms":69},{"sold":491156,"expected":384000,"ms":61},{"sold":499087,"expected":384000,"ms":65},{"sold":489937,"expected":384000,"ms":68},{"sold":486108,"expected":384000,"ms":67}]},"inside":"Compiled from \"PlainShards.java\"\npublic class lab.shardstock.PlainShards {\n  static final int WAVES_PER_THREAD;\n\n  static final int SHARDS;\n\n  static final int PER_SHARD;\n\n  static final int STOCK;\n\n  static final int[] shards;\n\n  static final java.util.concurrent.atomic.AtomicLong sold;\n\n  static volatile long sink;\n\n  public lab.shardstock.PlainShards();\n    Code:\n         0: aload_0\n         1: invokespecial #3                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static long verify(int);\n    Code:\n         0: iload_0\n         1: i2l\n         2: ldc2_w        #9                  // long 31l\n         5: lmul\n         6: ldc2_w        #11                 // long 7l\n         9: ladd\n        10: lstore_1\n        11: iconst_0\n        12: istore_3\n        13: iload_3\n        14: sipush        240\n        17: if_icmpge     39\n        20: lload_1\n        21: ldc2_w        #9                  // long 31l\n        24: lmul\n        25: iload_3\n        26: i2l\n        27: ladd\n        28: lload_1\n        29: iconst_5\n        30: lushr\n        31: lxor\n        32: lstore_1\n        33: iinc          3, 1\n        36: goto          13\n        39: lload_1\n        40: lconst_1\n        41: lor\n        42: lreturn\n\n  static long buyOne(int);\n    Code:\n         0: iload_0\n         1: bipush        15\n         3: iand\n         4: istore_1\n         5: iconst_0\n         6: istore_2\n         7: iload_2\n         8: bipush        16\n        10: if_icmpge     48\n        13: iload_1\n        14: iload_2\n        15: iadd\n        16: bipush        15\n        18: iand\n        19: istore_3\n        20: getstatic     #13                 // Field shards:[I\n        23: iload_3\n        24: iaload\n        25: ifle          42\n        28: getstatic     #13                 // Field shards:[I\n        31: iload_3\n        32: dup2\n        33: iaload\n        34: iconst_1\n        35: isub\n        36: iastore\n        37: iload_0\n        38: invokestatic  #17                 // Method verify:(I)J\n        41: lreturn\n        42: iinc          2, 1\n        45: goto          7\n        48: lconst_0\n        49: lreturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #21                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: bipush        60\n         9: iload_1\n        10: imul\n        11: istore_2\n        12: new           #27                 // class java/util/concurrent/CyclicBarrier\n        15: dup\n        16: iload_1\n        17: invokedynamic #29,  0             // InvokeDynamic #0:run:()Ljava/lang/Runnable;\n        22: invokespecial #33                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(ILjava/lang/Runnable;)V\n        25: astore_3\n        26: iload_1\n        27: anewarray     #36                 // class java/lang/Thread\n        30: astore        4\n        32: invokestatic  #38                 // Method java/lang/System.nanoTime:()J\n        35: lstore        5\n        37: iconst_0\n        38: istore        7\n        40: iload         7\n        42: iload_1\n        43: if_icmpge     85\n        46: iload         7\n        48: istore        8\n        50: aload         4\n        52: iload         7\n        54: new           #36                 // class java/lang/Thread\n        57: dup\n        58: iload         8\n        60: iload_2\n        61: aload_3\n        62: invokedynamic #44,  0             // InvokeDynamic #1:run:(IILjava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n        67: invokespecial #47                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        70: aastore\n        71: aload         4\n        73: iload         7\n        75: aaload\n        76: invokevirtual #50                 // Method java/lang/Thread.start:()V\n        79: iinc          7, 1\n        82: goto          40\n        85: aload         4\n        87: astore        7\n        89: aload         7\n        91: arraylength\n        92: istore        8\n        94: iconst_0\n        95: istore        9\n        97: iload         9\n        99: iload         8\n       101: if_icmpge     122\n       104: aload         7\n       106: iload         9\n       108: aaload\n       109: astore        10\n       111: aload         10\n       113: invokevirtual #53                 // Method java/lang/Thread.join:()V\n       116: iinc          9, 1\n       119: goto          97\n       122: invokestatic  #38                 // Method java/lang/System.nanoTime:()J\n       125: lload         5\n       127: lsub\n       128: ldc2_w        #56                 // long 1000000l\n       131: ldiv\n       132: lstore        7\n       134: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       137: getstatic     #62                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n       140: invokevirtual #66                 // Method java/util/concurrent/atomic/AtomicLong.get:()J\n       143: invokedynamic #71,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n       148: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       151: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       154: iload_2\n       155: i2l\n       156: ldc2_w        #81                 // long 800l\n       159: lmul\n       160: invokedynamic #83,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       165: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       168: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       171: lload         7\n       173: invokedynamic #84,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n       178: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       181: return\n\n  private static void lambda$main$1(int, int, java.util.concurrent.CyclicBarrier);\n    Code:\n         0: lconst_0\n         1: lstore_3\n         2: lconst_0\n         3: lstore        5\n         5: iload_0\n         6: istore        7\n         8: iconst_0\n         9: istore        8\n        11: iload         8\n        13: iload_1\n        14: if_icmpge     58\n        17: aload_2\n        18: invokevirtual #85                 // Method java/util/concurrent/CyclicBarrier.await:()I\n        21: pop\n        22: iload         7\n        24: iinc          7, 1\n        27: invokestatic  #89                 // Method buyOne:(I)J\n        30: dup2\n        31: lstore        9\n        33: lconst_0\n        34: lcmp\n        35: ifeq          52\n        38: lload_3\n        39: lconst_1\n        40: ladd\n        41: lstore_3\n        42: lload         5\n        44: lload         9\n        46: ladd\n        47: lstore        5\n        49: goto          22\n        52: iinc          8, 1\n        55: goto          11\n        58: getstatic     #62                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n        61: lload_3\n        62: invokevirtual #92                 // Method java/util/concurrent/atomic/AtomicLong.addAndGet:(J)J\n        65: pop2\n        66: lload         5\n        68: putstatic     #96                 // Field sink:J\n        71: goto          84\n        74: astore_3\n        75: new           #102                // class java/lang/RuntimeException\n        78: dup\n        79: aload_3\n        80: invokespecial #104                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        83: athrow\n        84: return\n      Exception table:\n         from    to  target type\n             0    71    74   Class java/lang/Exception\n\n  private static void lambda$main$0();\n    Code:\n         0: getstatic     #13                 // Field shards:[I\n         3: bipush        50\n         5: invokestatic  #107                // Method java/util/Arrays.fill:([II)V\n         8: return\n\n  static {};\n    Code:\n         0: bipush        16\n         2: newarray       int\n         4: putstatic     #13                 // Field shards:[I\n         7: new           #67                 // class java/util/concurrent/atomic/AtomicLong\n        10: dup\n        11: invokespecial #113                // Method java/util/concurrent/atomic/AtomicLong.\"\u003cinit>\":()V\n        14: putstatic     #62                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n        17: return\n}"},"SingleSync":{"hash":"34d53ac6a8ec90ff","repeat":20,"runs":{"1":[{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":17}],"2":[{"sold":96000,"expected":96000,"ms":37},{"sold":96000,"expected":96000,"ms":36},{"sold":96000,"expected":96000,"ms":39},{"sold":96000,"expected":96000,"ms":38},{"sold":96000,"expected":96000,"ms":36},{"sold":96000,"expected":96000,"ms":35},{"sold":96000,"expected":96000,"ms":36},{"sold":96000,"expected":96000,"ms":36},{"sold":96000,"expected":96000,"ms":37},{"sold":96000,"expected":96000,"ms":38},{"sold":96000,"expected":96000,"ms":36},{"sold":96000,"expected":96000,"ms":38},{"sold":96000,"expected":96000,"ms":38},{"sold":96000,"expected":96000,"ms":36},{"sold":96000,"expected":96000,"ms":38},{"sold":96000,"expected":96000,"ms":37},{"sold":96000,"expected":96000,"ms":37},{"sold":96000,"expected":96000,"ms":39},{"sold":96000,"expected":96000,"ms":37},{"sold":96000,"expected":96000,"ms":41}],"4":[{"sold":192000,"expected":192000,"ms":80},{"sold":192000,"expected":192000,"ms":114},{"sold":192000,"expected":192000,"ms":109},{"sold":192000,"expected":192000,"ms":95},{"sold":192000,"expected":192000,"ms":99},{"sold":192000,"expected":192000,"ms":96},{"sold":192000,"expected":192000,"ms":93},{"sold":192000,"expected":192000,"ms":81},{"sold":192000,"expected":192000,"ms":85},{"sold":192000,"expected":192000,"ms":85},{"sold":192000,"expected":192000,"ms":86},{"sold":192000,"expected":192000,"ms":96},{"sold":192000,"expected":192000,"ms":85},{"sold":192000,"expected":192000,"ms":89},{"sold":192000,"expected":192000,"ms":94},{"sold":192000,"expected":192000,"ms":101},{"sold":192000,"expected":192000,"ms":102},{"sold":192000,"expected":192000,"ms":98},{"sold":192000,"expected":192000,"ms":87},{"sold":192000,"expected":192000,"ms":83}],"8":[{"sold":384000,"expected":384000,"ms":219},{"sold":384000,"expected":384000,"ms":185},{"sold":384000,"expected":384000,"ms":190},{"sold":384000,"expected":384000,"ms":190},{"sold":384000,"expected":384000,"ms":191},{"sold":384000,"expected":384000,"ms":193},{"sold":384000,"expected":384000,"ms":213},{"sold":384000,"expected":384000,"ms":223},{"sold":384000,"expected":384000,"ms":187},{"sold":384000,"expected":384000,"ms":196},{"sold":384000,"expected":384000,"ms":191},{"sold":384000,"expected":384000,"ms":183},{"sold":384000,"expected":384000,"ms":183},{"sold":384000,"expected":384000,"ms":183},{"sold":384000,"expected":384000,"ms":178},{"sold":384000,"expected":384000,"ms":179},{"sold":384000,"expected":384000,"ms":177},{"sold":384000,"expected":384000,"ms":174},{"sold":384000,"expected":384000,"ms":176},{"sold":384000,"expected":384000,"ms":177}]},"inside":"Compiled from \"SingleSync.java\"\npublic class lab.shardstock.SingleSync {\n  static final int WAVES_PER_THREAD;\n\n  static final int STOCK;\n\n  static int stock;\n\n  static final java.util.concurrent.atomic.AtomicLong sold;\n\n  static volatile long sink;\n\n  public lab.shardstock.SingleSync();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static long verify(int);\n    Code:\n         0: iload_0\n         1: i2l\n         2: ldc2_w        #7                  // long 31l\n         5: lmul\n         6: ldc2_w        #9                  // long 7l\n         9: ladd\n        10: lstore_1\n        11: iconst_0\n        12: istore_3\n        13: iload_3\n        14: sipush        240\n        17: if_icmpge     39\n        20: lload_1\n        21: ldc2_w        #7                  // long 31l\n        24: lmul\n        25: iload_3\n        26: i2l\n        27: ladd\n        28: lload_1\n        29: iconst_5\n        30: lushr\n        31: lxor\n        32: lstore_1\n        33: iinc          3, 1\n        36: goto          13\n        39: lload_1\n        40: lconst_1\n        41: lor\n        42: lreturn\n\n  static synchronized long buyOne(int);\n    Code:\n         0: getstatic     #11                 // Field stock:I\n         3: ifle          19\n         6: getstatic     #11                 // Field stock:I\n         9: iconst_1\n        10: isub\n        11: putstatic     #11                 // Field stock:I\n        14: iload_0\n        15: invokestatic  #17                 // Method verify:(I)J\n        18: lreturn\n        19: lconst_0\n        20: lreturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #21                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: bipush        60\n         9: iload_1\n        10: imul\n        11: istore_2\n        12: new           #27                 // class java/util/concurrent/CyclicBarrier\n        15: dup\n        16: iload_1\n        17: invokedynamic #29,  0             // InvokeDynamic #0:run:()Ljava/lang/Runnable;\n        22: invokespecial #33                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(ILjava/lang/Runnable;)V\n        25: astore_3\n        26: iload_1\n        27: anewarray     #36                 // class java/lang/Thread\n        30: astore        4\n        32: invokestatic  #38                 // Method java/lang/System.nanoTime:()J\n        35: lstore        5\n        37: iconst_0\n        38: istore        7\n        40: iload         7\n        42: iload_1\n        43: if_icmpge     85\n        46: iload         7\n        48: istore        8\n        50: aload         4\n        52: iload         7\n        54: new           #36                 // class java/lang/Thread\n        57: dup\n        58: iload         8\n        60: iload_2\n        61: aload_3\n        62: invokedynamic #44,  0             // InvokeDynamic #1:run:(IILjava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n        67: invokespecial #47                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        70: aastore\n        71: aload         4\n        73: iload         7\n        75: aaload\n        76: invokevirtual #50                 // Method java/lang/Thread.start:()V\n        79: iinc          7, 1\n        82: goto          40\n        85: aload         4\n        87: astore        7\n        89: aload         7\n        91: arraylength\n        92: istore        8\n        94: iconst_0\n        95: istore        9\n        97: iload         9\n        99: iload         8\n       101: if_icmpge     122\n       104: aload         7\n       106: iload         9\n       108: aaload\n       109: astore        10\n       111: aload         10\n       113: invokevirtual #53                 // Method java/lang/Thread.join:()V\n       116: iinc          9, 1\n       119: goto          97\n       122: invokestatic  #38                 // Method java/lang/System.nanoTime:()J\n       125: lload         5\n       127: lsub\n       128: ldc2_w        #56                 // long 1000000l\n       131: ldiv\n       132: lstore        7\n       134: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       137: getstatic     #62                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n       140: invokevirtual #66                 // Method java/util/concurrent/atomic/AtomicLong.get:()J\n       143: invokedynamic #71,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n       148: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       151: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       154: iload_2\n       155: i2l\n       156: ldc2_w        #81                 // long 800l\n       159: lmul\n       160: invokedynamic #83,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       165: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       168: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       171: lload         7\n       173: invokedynamic #84,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n       178: invokevirtual #75                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       181: return\n\n  private static void lambda$main$1(int, int, java.util.concurrent.CyclicBarrier);\n    Code:\n         0: lconst_0\n         1: lstore_3\n         2: lconst_0\n         3: lstore        5\n         5: iload_0\n         6: istore        7\n         8: iconst_0\n         9: istore        8\n        11: iload         8\n        13: iload_1\n        14: if_icmpge     58\n        17: aload_2\n        18: invokevirtual #85                 // Method java/util/concurrent/CyclicBarrier.await:()I\n        21: pop\n        22: iload         7\n        24: iinc          7, 1\n        27: invokestatic  #89                 // Method buyOne:(I)J\n        30: dup2\n        31: lstore        9\n        33: lconst_0\n        34: lcmp\n        35: ifeq          52\n        38: lload_3\n        39: lconst_1\n        40: ladd\n        41: lstore_3\n        42: lload         5\n        44: lload         9\n        46: ladd\n        47: lstore        5\n        49: goto          22\n        52: iinc          8, 1\n        55: goto          11\n        58: getstatic     #62                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n        61: lload_3\n        62: invokevirtual #92                 // Method java/util/concurrent/atomic/AtomicLong.addAndGet:(J)J\n        65: pop2\n        66: lload         5\n        68: putstatic     #96                 // Field sink:J\n        71: goto          84\n        74: astore_3\n        75: new           #102                // class java/lang/RuntimeException\n        78: dup\n        79: aload_3\n        80: invokespecial #104                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        83: athrow\n        84: return\n      Exception table:\n         from    to  target type\n             0    71    74   Class java/lang/Exception\n\n  private static void lambda$main$0();\n    Code:\n         0: sipush        800\n         3: putstatic     #11                 // Field stock:I\n         6: return\n\n  static {};\n    Code:\n         0: sipush        800\n         3: putstatic     #11                 // Field stock:I\n         6: new           #67                 // class java/util/concurrent/atomic/AtomicLong\n         9: dup\n        10: invokespecial #107                // Method java/util/concurrent/atomic/AtomicLong.\"\u003cinit>\":()V\n        13: putstatic     #62                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n        16: return\n}"},"ShardedCas":{"hash":"554b7fdbb91acba4","repeat":20,"runs":{"1":[{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":16},{"sold":48000,"expected":48000,"ms":17},{"sold":48000,"expected":48000,"ms":18},{"sold":48000,"expected":48000,"ms":18},{"sold":48000,"expected":48000,"ms":18},{"sold":48000,"expected":48000,"ms":18},{"sold":48000,"expected":48000,"ms":21},{"sold":48000,"expected":48000,"ms":21}],"2":[{"sold":96000,"expected":96000,"ms":33},{"sold":96000,"expected":96000,"ms":28},{"sold":96000,"expected":96000,"ms":23},{"sold":96000,"expected":96000,"ms":21},{"sold":96000,"expected":96000,"ms":22},{"sold":96000,"expected":96000,"ms":23},{"sold":96000,"expected":96000,"ms":21},{"sold":96000,"expected":96000,"ms":23},{"sold":96000,"expected":96000,"ms":22},{"sold":96000,"expected":96000,"ms":22},{"sold":96000,"expected":96000,"ms":23},{"sold":96000,"expected":96000,"ms":20},{"sold":96000,"expected":96000,"ms":21},{"sold":96000,"expected":96000,"ms":21},{"sold":96000,"expected":96000,"ms":20},{"sold":96000,"expected":96000,"ms":21},{"sold":96000,"expected":96000,"ms":22},{"sold":96000,"expected":96000,"ms":21},{"sold":96000,"expected":96000,"ms":23},{"sold":96000,"expected":96000,"ms":21}],"4":[{"sold":192000,"expected":192000,"ms":29},{"sold":192000,"expected":192000,"ms":29},{"sold":192000,"expected":192000,"ms":34},{"sold":192000,"expected":192000,"ms":36},{"sold":192000,"expected":192000,"ms":30},{"sold":192000,"expected":192000,"ms":29},{"sold":192000,"expected":192000,"ms":30},{"sold":192000,"expected":192000,"ms":30},{"sold":192000,"expected":192000,"ms":30},{"sold":192000,"expected":192000,"ms":30},{"sold":192000,"expected":192000,"ms":30},{"sold":192000,"expected":192000,"ms":43},{"sold":192000,"expected":192000,"ms":42},{"sold":192000,"expected":192000,"ms":44},{"sold":192000,"expected":192000,"ms":49},{"sold":192000,"expected":192000,"ms":44},{"sold":192000,"expected":192000,"ms":36},{"sold":192000,"expected":192000,"ms":35},{"sold":192000,"expected":192000,"ms":34},{"sold":192000,"expected":192000,"ms":32}],"8":[{"sold":384000,"expected":384000,"ms":62},{"sold":384000,"expected":384000,"ms":65},{"sold":384000,"expected":384000,"ms":61},{"sold":384000,"expected":384000,"ms":59},{"sold":384000,"expected":384000,"ms":66},{"sold":384000,"expected":384000,"ms":56},{"sold":384000,"expected":384000,"ms":67},{"sold":384000,"expected":384000,"ms":67},{"sold":384000,"expected":384000,"ms":65},{"sold":384000,"expected":384000,"ms":63},{"sold":384000,"expected":384000,"ms":64},{"sold":384000,"expected":384000,"ms":59},{"sold":384000,"expected":384000,"ms":61},{"sold":384000,"expected":384000,"ms":58},{"sold":384000,"expected":384000,"ms":61},{"sold":384000,"expected":384000,"ms":65},{"sold":384000,"expected":384000,"ms":61},{"sold":384000,"expected":384000,"ms":55},{"sold":384000,"expected":384000,"ms":63},{"sold":384000,"expected":384000,"ms":67}]},"inside":"Compiled from \"ShardedCas.java\"\npublic class lab.shardstock.ShardedCas {\n  static final int WAVES_PER_THREAD;\n\n  static final int SHARDS;\n\n  static final int PER_SHARD;\n\n  static final int STOCK;\n\n  static final java.util.concurrent.atomic.AtomicIntegerArray shards;\n\n  static final java.util.concurrent.atomic.AtomicLong sold;\n\n  static volatile long sink;\n\n  public lab.shardstock.ShardedCas();\n    Code:\n         0: aload_0\n         1: invokespecial #3                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static long verify(int);\n    Code:\n         0: iload_0\n         1: i2l\n         2: ldc2_w        #9                  // long 31l\n         5: lmul\n         6: ldc2_w        #11                 // long 7l\n         9: ladd\n        10: lstore_1\n        11: iconst_0\n        12: istore_3\n        13: iload_3\n        14: sipush        240\n        17: if_icmpge     39\n        20: lload_1\n        21: ldc2_w        #9                  // long 31l\n        24: lmul\n        25: iload_3\n        26: i2l\n        27: ladd\n        28: lload_1\n        29: iconst_5\n        30: lushr\n        31: lxor\n        32: lstore_1\n        33: iinc          3, 1\n        36: goto          13\n        39: lload_1\n        40: lconst_1\n        41: lor\n        42: lreturn\n\n  static long buyOne(int);\n    Code:\n         0: iload_0\n         1: bipush        15\n         3: iand\n         4: istore_1\n         5: iconst_0\n         6: istore_2\n         7: iload_2\n         8: bipush        16\n        10: if_icmpge     67\n        13: iload_1\n        14: iload_2\n        15: iadd\n        16: bipush        15\n        18: iand\n        19: istore_3\n        20: getstatic     #13                 // Field shards:Ljava/util/concurrent/atomic/AtomicIntegerArray;\n        23: iload_3\n        24: invokevirtual #17                 // Method java/util/concurrent/atomic/AtomicIntegerArray.get:(I)I\n        27: istore        4\n        29: iload         4\n        31: ifgt          37\n        34: goto          61\n        37: getstatic     #13                 // Field shards:Ljava/util/concurrent/atomic/AtomicIntegerArray;\n        40: iload_3\n        41: iload         4\n        43: iload         4\n        45: iconst_1\n        46: isub\n        47: invokevirtual #23                 // Method java/util/concurrent/atomic/AtomicIntegerArray.compareAndSet:(III)Z\n        50: ifeq          58\n        53: iload_0\n        54: invokestatic  #27                 // Method verify:(I)J\n        57: lreturn\n        58: goto          20\n        61: iinc          2, 1\n        64: goto          7\n        67: lconst_0\n        68: lreturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #31                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: bipush        60\n         9: iload_1\n        10: imul\n        11: istore_2\n        12: new           #37                 // class java/util/concurrent/CyclicBarrier\n        15: dup\n        16: iload_1\n        17: invokedynamic #39,  0             // InvokeDynamic #0:run:()Ljava/lang/Runnable;\n        22: invokespecial #43                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(ILjava/lang/Runnable;)V\n        25: astore_3\n        26: iload_1\n        27: anewarray     #46                 // class java/lang/Thread\n        30: astore        4\n        32: invokestatic  #48                 // Method java/lang/System.nanoTime:()J\n        35: lstore        5\n        37: iconst_0\n        38: istore        7\n        40: iload         7\n        42: iload_1\n        43: if_icmpge     85\n        46: iload         7\n        48: istore        8\n        50: aload         4\n        52: iload         7\n        54: new           #46                 // class java/lang/Thread\n        57: dup\n        58: iload         8\n        60: iload_2\n        61: aload_3\n        62: invokedynamic #54,  0             // InvokeDynamic #1:run:(IILjava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n        67: invokespecial #57                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        70: aastore\n        71: aload         4\n        73: iload         7\n        75: aaload\n        76: invokevirtual #60                 // Method java/lang/Thread.start:()V\n        79: iinc          7, 1\n        82: goto          40\n        85: aload         4\n        87: astore        7\n        89: aload         7\n        91: arraylength\n        92: istore        8\n        94: iconst_0\n        95: istore        9\n        97: iload         9\n        99: iload         8\n       101: if_icmpge     122\n       104: aload         7\n       106: iload         9\n       108: aaload\n       109: astore        10\n       111: aload         10\n       113: invokevirtual #63                 // Method java/lang/Thread.join:()V\n       116: iinc          9, 1\n       119: goto          97\n       122: invokestatic  #48                 // Method java/lang/System.nanoTime:()J\n       125: lload         5\n       127: lsub\n       128: ldc2_w        #66                 // long 1000000l\n       131: ldiv\n       132: lstore        7\n       134: getstatic     #68                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       137: getstatic     #72                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n       140: invokevirtual #76                 // Method java/util/concurrent/atomic/AtomicLong.get:()J\n       143: invokedynamic #80,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n       148: invokevirtual #84                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       151: getstatic     #68                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       154: iload_2\n       155: i2l\n       156: ldc2_w        #90                 // long 800l\n       159: lmul\n       160: invokedynamic #92,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       165: invokevirtual #84                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       168: getstatic     #68                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       171: lload         7\n       173: invokedynamic #93,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n       178: invokevirtual #84                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       181: return\n\n  private static void lambda$main$1(int, int, java.util.concurrent.CyclicBarrier);\n    Code:\n         0: lconst_0\n         1: lstore_3\n         2: lconst_0\n         3: lstore        5\n         5: iload_0\n         6: istore        7\n         8: iconst_0\n         9: istore        8\n        11: iload         8\n        13: iload_1\n        14: if_icmpge     58\n        17: aload_2\n        18: invokevirtual #94                 // Method java/util/concurrent/CyclicBarrier.await:()I\n        21: pop\n        22: iload         7\n        24: iinc          7, 1\n        27: invokestatic  #98                 // Method buyOne:(I)J\n        30: dup2\n        31: lstore        9\n        33: lconst_0\n        34: lcmp\n        35: ifeq          52\n        38: lload_3\n        39: lconst_1\n        40: ladd\n        41: lstore_3\n        42: lload         5\n        44: lload         9\n        46: ladd\n        47: lstore        5\n        49: goto          22\n        52: iinc          8, 1\n        55: goto          11\n        58: getstatic     #72                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n        61: lload_3\n        62: invokevirtual #101                // Method java/util/concurrent/atomic/AtomicLong.addAndGet:(J)J\n        65: pop2\n        66: lload         5\n        68: putstatic     #105                // Field sink:J\n        71: goto          84\n        74: astore_3\n        75: new           #111                // class java/lang/RuntimeException\n        78: dup\n        79: aload_3\n        80: invokespecial #113                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        83: athrow\n        84: return\n      Exception table:\n         from    to  target type\n             0    71    74   Class java/lang/Exception\n\n  private static void lambda$main$0();\n    Code:\n         0: iconst_0\n         1: istore_0\n         2: iload_0\n         3: bipush        16\n         5: if_icmpge     23\n         8: getstatic     #13                 // Field shards:Ljava/util/concurrent/atomic/AtomicIntegerArray;\n        11: iload_0\n        12: bipush        50\n        14: invokevirtual #116                // Method java/util/concurrent/atomic/AtomicIntegerArray.set:(II)V\n        17: iinc          0, 1\n        20: goto          2\n        23: return\n\n  static {};\n    Code:\n         0: new           #18                 // class java/util/concurrent/atomic/AtomicIntegerArray\n         3: dup\n         4: bipush        16\n         6: invokespecial #120                // Method java/util/concurrent/atomic/AtomicIntegerArray.\"\u003cinit>\":(I)V\n         9: putstatic     #13                 // Field shards:Ljava/util/concurrent/atomic/AtomicIntegerArray;\n        12: new           #77                 // class java/util/concurrent/atomic/AtomicLong\n        15: dup\n        16: invokespecial #123                // Method java/util/concurrent/atomic/AtomicLong.\"\u003cinit>\":()V\n        19: putstatic     #72                 // Field sold:Ljava/util/concurrent/atomic/AtomicLong;\n        22: return\n}"}},"env":{"runtime":"JDK 25.0.4","cores":32,"os":"win32 10.0.26200","date":"2026-11-15"}}}},"slides":[{"beat":"open","title":"先唤起三条旧经验：原子、分段与拆锁","blocks":[{"t":"recall","say":"把前面三课拼起来，今天专攻更难的一题：所有人抢同一件爆品时，怎么分段才不超卖。","key":"单 CAS 护正确、LongAdder 无硬上限、拆锁散争用","items":[{"have":"第 2 课单库存 CAS","q":"单库存扣减时，先判 stock > 0 再 stock-- 为何超卖，靠什么修？","options":["改用单变量 CAS 循环扣减","把 stock 改用 float 存"],"answer":0,"why":"检查与扣减是两步，改用 CAS 循环比较再减才能保住单库不透支。"},{"have":"第14课LongAdder","q":"LongAdder 也把热点计数拆成了多段，能直接用它当库存限额吗？","options":["能，sum() 天然卡死上限","不能，各段独立累加难卡上限"],"answer":1,"why":"它只管各段分别累加，读 sum() 不是原子快照，挡不住超卖。"},{"have":"第 23 课按 key 拆锁","q":"多请求挤同一把全局锁太慢时，按业务 key 把锁打散有什么用？","options":["让不同 key 请求并行推进","让所有请求彻底不用同步"],"answer":0,"why":"按 userId 之类 key 打散后，互不干涉的请求能各自并行，吞吐不再堵死。"}]}]},{"beat":"open","title":"同一件爆品，多线程挤死在单库存门口","bridge":"不同用户的业务能按用户 key 散开；可爆品大促全网同抢一份 800 件库存，没法按用户隔离。","blocks":[{"t":"scene","picture":{"kind":"share","actors":["买家线程 A","买家线程 B"],"shared":{"name":"爆品库存","value":"800"}},"story":"大促开抢，每波放出 **800 件**爆品、每个线程连抢 **60 波**。如果只放成一份共享库存，所有抢购线程全得扑向同一块数字。","say":"每个线程发起 60 波抢购，每波卖光 800 件即停；多线程同时开抢，所有请求都在同一块内存门口撞作一团。","key":"所有请求共抢同一份爆品总量","map":[{"scene":"同时下单的抢购线程","on":"actors","tag":"并发线程","code":"Thread","say":"每个抢购工作线程不断领到递增的 reqId 发起下单。"},{"scene":"共享的那份库存数字","on":"shared","tag":"库存数组","code":"`shards[idx]`","say":"不论放成一个 int 还是拆成 16 个 int 桶，底层都是共享数组。"},{"scene":"看有货就扣减一件","on":"action","tag":"扣减库存","code":"`shards[idx]--`","say":"抢购核心就是判断还有货就减一，每轮卖光全部 800 件收手。"}]}]},{"beat":"hook","title":"直觉误区：拆成 16 个普通桶不就不撞了？","bridge":"一把全局锁高并发太慢，单无锁又会超卖；开发常见第一反应是：干脆把库存拆进 16 个普通 int 桶。","blocks":[{"t":"text","md":"把 800 件拆进 **16 个普通** `int` **桶**（每桶 50 件），按 `reqId & 15` 分散进去扣，够用吗？","say":"有人算过一笔概率账：16 个桶分流后冲突少得多，桶里直接用普通 if 判断再减一应该安全了吧？先别信直觉，上实验验一验。"}]},{"beat":"code","title":"对照组 Plain：单个 int 无锁扣减","bridge":"先把四种写法都搬上台，从最裸奔的单个普通 int 版本看起。","blocks":[{"t":"code","of":"shardstock.Plain","from":"static long buyOne(int reqId)","to":"return 0L;","say":"单线程跑时无人争抢正好卖完；一旦多于一个线程开抢，判空和减一就会互相踩踏。","walk":[{"focus":["if (stock > 0)"],"say":"先读一次 `stock` 检查是否大于 0，没锁保护时两个线程都能同时跨过这一行。","focusLines":[20]},{"focus":["stock--;"],"say":"放行后各自把 `stock` 减一并返回发券校验值 `verify(reqId)`。","key":"先判再减之间全无并发保护","focusLines":[21]}],"source":"package lab.shardstock;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class Plain {\n    static final int WAVES_PER_THREAD = 60;\n    static final int STOCK = 800;\n    static int stock = STOCK;\n    static final AtomicLong sold = new AtomicLong();\n    static volatile long sink;\n\n    static long verify(int reqId) {\n        long h = reqId * 31L + 7;\n        for (int i = 0; i \u003c 240; i++) h = (h * 31 + i) ^ (h >>> 5);\n        return h | 1L;\n    }\n\n    static long buyOne(int reqId) {\n        if (stock > 0) {\n            stock--;\n            return verify(reqId);\n        }\n        return 0L;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        int waves = WAVES_PER_THREAD * threads;\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> stock = STOCK);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int startReq = t;\n            workers[t] = new Thread(() -> {\n                try {\n                    long mine = 0, sum = 0;\n                    int req = startReq;\n                    for (int w = 0; w \u003c waves; w++) {\n                        barrier.await();\n                        long code;\n                        while ((code = buyOne(req++)) != 0L) {\n                            mine++;\n                            sum += code;\n                        }\n                    }\n                    sold.addAndGet(mine);\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"sold=\" + sold.get());\n        System.out.println(\"expected=\" + ((long) waves * STOCK));\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/shardstock/Plain.java","lang":"java","focusLines":[]}]},{"beat":"code","title":"误区 PlainShards：16桶int探测","bridge":"再看最容易骗过代码评审的改法：把 800 件拆成 16 个普通 int 桶，按 reqId 选起点。","blocks":[{"t":"code","of":"shardstock.PlainShards","from":"static long buyOne(int reqId)","to":"return 0L;","say":"先定位起始桶，遇空桶就环形顺延扫满 16 个桶；可每只桶里照旧是普通 if 判完再减一。","walk":[{"focus":["int start = reqId & (SHARDS - 1);"],"say":"用请求号最低四位取模 16，把流量散到不同起点，避免大家都堵 0 号桶。","focusLines":[23]},{"focus":["if (shards[idx] > 0) {"],"say":"这一步还是普通读取判断，只要两个请求落到同一个 `idx`，照样一起放行。","focusLines":[26]},{"focus":["shards[idx]--;"],"say":"进了门再对 `shards[idx]` 做非原子减一，这就是误区的病根所在。","key":"拆 16 桶不等于消除同桶竞态","focusLines":[27]}],"source":"package lab.shardstock;\n\nimport java.util.Arrays;\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class PlainShards {\n    static final int WAVES_PER_THREAD = 60;\n    static final int SHARDS = 16;\n    static final int PER_SHARD = 50;\n    static final int STOCK = SHARDS * PER_SHARD;\n    static final int[] shards = new int[SHARDS];\n    static final AtomicLong sold = new AtomicLong();\n    static volatile long sink;\n\n    static long verify(int reqId) {\n        long h = reqId * 31L + 7;\n        for (int i = 0; i \u003c 240; i++) h = (h * 31 + i) ^ (h >>> 5);\n        return h | 1L;\n    }\n\n    static long buyOne(int reqId) {\n        int start = reqId & (SHARDS - 1);\n        for (int i = 0; i \u003c SHARDS; i++) {\n            int idx = (start + i) & (SHARDS - 1);\n            if (shards[idx] > 0) {\n                shards[idx]--;\n                return verify(reqId);\n            }\n        }\n        return 0L;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        int waves = WAVES_PER_THREAD * threads;\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> Arrays.fill(shards, PER_SHARD));\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int startReq = t;\n            workers[t] = new Thread(() -> {\n                try {\n                    long mine = 0, sum = 0;\n                    int req = startReq;\n                    for (int w = 0; w \u003c waves; w++) {\n                        barrier.await();\n                        long code;\n                        while ((code = buyOne(req++)) != 0L) {\n                            mine++;\n                            sum += code;\n                        }\n                    }\n                    sold.addAndGet(mine);\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"sold=\" + sold.get());\n        System.out.println(\"expected=\" + ((long) waves * STOCK));\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/shardstock/PlainShards.java","lang":"java","focusLines":[]}]},{"beat":"code","title":"SingleSync：单库存全局锁配校验","bridge":"如果不拆桶，干脆一把全局 synchronized 锁把 buyOne 全包死，代价有多重？","blocks":[{"t":"code","of":"shardstock.SingleSync","from":"static synchronized long buyOne(int reqId)","to":"return 0L;","say":"锁内顺带算几十步模拟发券校验 verify；单线程快如闪电，多线程全堵在门外排队。","walk":[{"focus":["static synchronized long buyOne"],"say":"全局互斥锁把整个扣减连同 `verify` 都锁住，任何时刻只放一个线程进门。","focusLines":[19]},{"focus":["return verify(reqId);"],"say":"哪怕算核验只需微秒级小计算，只要挤在一把锁里就会把并发扩核优势吃光。","key":"全局锁绝对零超卖但严重阻塞并发","focusLines":[22]}],"source":"package lab.shardstock;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class SingleSync {\n    static final int WAVES_PER_THREAD = 60;\n    static final int STOCK = 800;\n    static int stock = STOCK;\n    static final AtomicLong sold = new AtomicLong();\n    static volatile long sink;\n\n    static long verify(int reqId) {\n        long h = reqId * 31L + 7;\n        for (int i = 0; i \u003c 240; i++) h = (h * 31 + i) ^ (h >>> 5);\n        return h | 1L;\n    }\n\n    static synchronized long buyOne(int reqId) {\n        if (stock > 0) {\n            stock--;\n            return verify(reqId);\n        }\n        return 0L;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        int waves = WAVES_PER_THREAD * threads;\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> stock = STOCK);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int startReq = t;\n            workers[t] = new Thread(() -> {\n                try {\n                    long mine = 0, sum = 0;\n                    int req = startReq;\n                    for (int w = 0; w \u003c waves; w++) {\n                        barrier.await();\n                        long code;\n                        while ((code = buyOne(req++)) != 0L) {\n                            mine++;\n                            sum += code;\n                        }\n                    }\n                    sold.addAndGet(mine);\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"sold=\" + sold.get());\n        System.out.println(\"expected=\" + ((long) waves * STOCK));\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/shardstock/SingleSync.java","lang":"java","focusLines":[]}]},{"beat":"code","title":"正解 ShardedCas：16 桶 CAS 加顺延","bridge":"既要不堵单锁又要零超卖，把数组升级为分段原子数组，用循环自旋抢扣加空桶顺延。","blocks":[{"t":"code","of":"shardstock.ShardedCas","from":"static long buyOne(int reqId)","to":"return 0L;","say":"每只桶单独用 `CAS` 抢减一，发现桶真见底才顺延跳到下一只，直到 16 桶全卖光。","walk":[{"focus":["int cur = shards.get(idx);"],"say":"在当前桶里先读快照余量 `cur`。","focusLines":[27]},{"focus":["if (cur \u003c= 0) break;"],"say":"确定本桶真卖光了才 `break` 跳出内层，外层顺延探测下一个桶。","focusLines":[28]},{"focus":["shards.compareAndSet(idx, cur, cur - 1)"],"say":"只靠单槽位硬件原子交换把 `cur` 改成 `cur - 1`；若撞车只原地重试当前桶。","key":"单槽 CAS 原地重试，空桶再环形顺延","focusLines":[29]}],"source":"package lab.shardstock;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicIntegerArray;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class ShardedCas {\n    static final int WAVES_PER_THREAD = 60;\n    static final int SHARDS = 16;\n    static final int PER_SHARD = 50;\n    static final int STOCK = SHARDS * PER_SHARD;\n    static final AtomicIntegerArray shards = new AtomicIntegerArray(SHARDS);\n    static final AtomicLong sold = new AtomicLong();\n    static volatile long sink;\n\n    static long verify(int reqId) {\n        long h = reqId * 31L + 7;\n        for (int i = 0; i \u003c 240; i++) h = (h * 31 + i) ^ (h >>> 5);\n        return h | 1L;\n    }\n\n    static long buyOne(int reqId) {\n        int start = reqId & (SHARDS - 1);\n        for (int i = 0; i \u003c SHARDS; i++) {\n            int idx = (start + i) & (SHARDS - 1);\n            while (true) {\n                int cur = shards.get(idx);\n                if (cur \u003c= 0) break;\n                if (shards.compareAndSet(idx, cur, cur - 1)) {\n                    return verify(reqId);\n                }\n            }\n        }\n        return 0L;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        int waves = WAVES_PER_THREAD * threads;\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> {\n            for (int i = 0; i \u003c SHARDS; i++) shards.set(i, PER_SHARD);\n        });\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            int startReq = t;\n            workers[t] = new Thread(() -> {\n                try {\n                    long mine = 0, sum = 0;\n                    int req = startReq;\n                    for (int w = 0; w \u003c waves; w++) {\n                        barrier.await();\n                        long code;\n                        while ((code = buyOne(req++)) != 0L) {\n                            mine++;\n                            sum += code;\n                        }\n                    }\n                    sold.addAndGet(mine);\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"sold=\" + sold.get());\n        System.out.println(\"expected=\" + ((long) waves * STOCK));\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/shardstock/ShardedCas.java","lang":"java","focusLines":[]}]},{"beat":"predict","title":"开跑前先押注：16 桶普通 int 会超卖吗？","bridge":"四份代码摆在眼前，先别急着点运行，押一注 2、4、8 线程下 PlainShards 的命运。","blocks":[{"t":"predict","id":"shards","q":"当抢购线程数调到 2、4、8 时，16 桶普通 int（PlainShards）总售出件数会怎样？","options":["16 个桶够散了，跑完都能刚好卡住总数","概率低到只有个别轮次会多卖出几件","多线程下依然轮轮稳定超卖，照样卖超基准线","比单锁耗时还长，因为循环扫 16 桶"],"answer":2,"say":"每个线程几十波跑下来也有数万到数十万次抢购，只要有两个请求落进同桶，概率再低也会必然超卖。","key":"高总量下低概率冲突也会变成必现超卖"}]},{"beat":"run","title":"实跑揭晓：16 桶普通 int 也会超卖","bridge":"真金不怕火炼，先把最让人抱有幻想的 16 桶普通 int 版本在四线程下一次一次放出来。","blocks":[{"t":"experiment","lab":"shardstock","show":["PlainShards"],"knob":false,"hand":true,"focus":["shards[idx]--;"],"say":"点「看第 1 次运行」逐轮放出来：四线程下每一轮都稳稳飘在基准线上方，分 16 桶照样把把卖出多余库存。","key":"分 16 桶普通 int 在四线程下把把超卖","focusLines":[]},{"t":"reveal","of":"shards","say":"只要开到 2 个以上线程，分桶并不能挡住超卖；16 桶普通 int 与单 int 一样每轮都在透支库存。","key":"分桶降的是碰撞几率，治不了非原子超卖"}]},{"beat":"run","title":"拨动线程数开关：只开 1 个线程呢？","bridge":"确认一下是不是代码写歪了——把旋钮拨到 1 线程看会不会卖超，再拨到 2、4、8 对比。","blocks":[{"t":"experiment","lab":"shardstock","show":["Plain","PlainShards"],"say":"1 线程无人争抢时两组全都是实心准点；一拨过 1 线程，两个版本立刻同时破线超卖。","focusLines":[]},{"t":"try","say":"自己动手切一遍 1、2、4、8 四个档：你会看到 1 线程次次精准，2 线程起步就次次超卖。","key":"单线程无错，多于一线程同桶冲突必爆"}]},{"beat":"why","title":"时间线：两位买家同时撞进 3 号桶","bridge":"分桶之后各自忙各自的好像很安全？放大 3 号桶还剩最后 1 件库存的瞬间就懂了。","blocks":[{"t":"lanes","expr":"if (s[3] > 0) s[3]--;","parts":{"read":"读判 >0","calc":"算减一","write":"写回桶"},"lanes":["买家A","买家B"],"shared":{"name":"3号桶","start":"1"},"say":"买家 A 编号 3、买家 B 编号 19，取模 16 都落在 3 号桶；两人先后只差一步，看着桶里扣成负数。","steps":[{"lane":0,"op":"read","text":"判3号桶=1","say":"买家 A（req=3）进来检查 `shards[3] > 0`，读到剩 1 件，放行进门。","ask":{"q":"买家 A 还没来得及减一，买家 B（req=19）也查 3 号桶，读到几？","options":["0，直接跳过","1，照样放行"],"answer":1}},{"lane":1,"op":"read","text":"判3号桶=1","say":"B 同样落进 3 号桶，读到 1 > 0 也放行了——最后 1 件已被两个线程同时认领。"},{"lane":0,"op":"calc","text":"1 - 1 = 0","say":"A 准备动手减一，算出 0。"},{"lane":0,"op":"write","value":"0","text":"写回 0","say":"A 先把 `shards[3]` 写回 0，那唯一 1 件已经卖给 A 了。"},{"lane":1,"op":"read","text":"重读3号桶=0","say":"可 B 早就跨过了 if 大门！B 执行减一时再次 `iaload`，读到的已是 0。","ask":{"q":"已经跨进 if 的 B 接着减 1 写回，3 号桶变成几？","options":["-1，超卖成负数","自动拦成 0"],"answer":0}},{"lane":1,"op":"calc","text":"0 - 1 = -1","say":"减一指令没有复查职责，老老实实算出 0 减 1 等于 -1。"},{"lane":1,"op":"write","value":"-1","text":"写回 -1","say":"B 用 `iastore` 把 -1 写回 3 号桶；1 件库存双双放行，硬生生扣出负库存。"}],"verdict":"两人都进了 3 号桶的门，最后 1 件卖了两回，桶变 ==-1==。","verdictSay":"只要两个请求在同桶同时过掉 if 检查，哪怕分成 16 桶、64 桶，照样能把这只桶扣穿成负数。","verdictKey":"同桶先判后减照样会把库存扣成负数"}]},{"beat":"why","title":"字节码拆穿：读判断与写回分了家","bridge":"再退一步看 JVM 反汇编，看清楚 javac 怎么把那两句数组判断和减一拆成四段操作。","blocks":[{"t":"inside","of":"shardstock.PlainShards","within":"buyOne","from":"20: getstatic","to":"36: iastore","say":"反汇编显示：`getstatic` 取数组后，`iaload` 判 `ifle` 是一趟，后面还要重读再 `isub`、`iastore` 写回。","walk":[{"focus":["24: iaload"],"label":"读桶判条件","say":"先 `getstatic` 取数组再 `iaload` 读 `shards[idx]`，拿去给 if 判断。","focusLines":[3]},{"focus":["25: ifle"],"label":"放行不护门","say":"`ifle` 只判断 \u003c= 0 就跳走，一旦大于 0 放行，没有任何锁拦截其他线程。","focusLines":[4]},{"focus":["33: iaload","35: isub"],"label":"重读后减 1","say":"过门后居然还重读一次 `iaload` 再做 `isub` 减一，完全可能拿别人改过的值继续减。","focusLines":[8,10]},{"focus":["36: iastore"],"label":"裸写回数组","say":"最后 `iastore` 直接覆写回数组，全程无任何原子比较保护，撞桶必把桶扣穿。","key":"iaload 判空与 iastore 写回之间全无屏障","focusLines":[11]}],"source":"20: getstatic     #13                 // Field shards:[I\n23: iload_3\n24: iaload\n25: ifle          42\n28: getstatic     #13                 // Field shards:[I\n31: iload_3\n32: dup2\n33: iaload\n34: iconst_1\n35: isub\n36: iastore","command":"javap -c -p -cp out lab.shardstock.PlainShards"}]},{"beat":"why","title":"雪上加霜：尾货顺延会把并发重新赶回一处","bridge":"有人问：16 桶撞进同一只的概率也才十六分之一，为什么会每轮都超卖这么多？","blocks":[{"t":"text","md":"前几个桶率先卖成 `0` 之后，所有新请求按规则**往后顺延扫描**，结果全涌向仅剩的有货桶。","say":"每波尾货只剩两三只桶有余量时，全部核的顺延扫尾同时挤进同一只桶里撞车，超卖窗口直接放大数倍。"}]},{"beat":"fix","title":"那为何不干脆用 SingleSync 单锁兜底？","bridge":"普通数组无论拆几桶都不保险，退回去一把全局 synchronized 锁不就稳稳零超卖了？","blocks":[{"t":"text","md":"全局锁确实零超卖，但**锁内顺带还要执行发券校验**，多线程并发时所有核全排在一条队伍后等锁。","say":"单核自己跑时不觉得 SingleSync 慢；可核数翻到 4、8 时，原本能并行的校验计算全被单锁串成死排队。"}]},{"beat":"fix","title":"深挖 ShardedCas：单桶CAS防超卖","bridge":"再看正解的底层指令流：为什么每个桶内部也要套自旋重试，不能 CAS 失败就立刻换下一桶？","blocks":[{"t":"inside","of":"shardstock.ShardedCas","within":"buyOne","from":"37: getstatic","to":"58: goto","say":"这段字节码先把单个桶里的 `cur` 用硬件原子交换改成 `cur - 1`，没抢赢就原地回跳重读当前桶。","walk":[{"focus":["compareAndSet"],"label":"原子改当前桶","say":"调用 `compareAndSet`，仅当桶内值仍是读出的 `cur` 时才一口气改成 `cur - 1`。","focusLines":[7]},{"focus":["50: ifeq"],"label":"失败不跳桶","say":"失败只说明同桶刚被队友买走一件、桶里未必真空，不能草率跳过。","focusLines":[8]},{"focus":["58: goto"],"label":"回跳重读再试","say":"直接跳回重试直到真正读到 `cur \u003c= 0`，才交给外层顺延扫下一只桶，不超卖也不浪费尾货。","key":"CAS 败只原地重读，真见底再顺延","focusLines":[12]}],"source":"37: getstatic     #13                 // Field shards:Ljava/util/concurrent/atomic/AtomicIntegerArray;\n40: iload_3\n41: iload         4\n43: iload         4\n45: iconst_1\n46: isub\n47: invokevirtual #23                 // Method java/util/concurrent/atomic/AtomicIntegerArray.compareAndSet:(III)Z\n50: ifeq          58\n53: iload_0\n54: invokestatic  #27                 // Method verify:(I)J\n57: lreturn\n58: goto          20","command":"javap -c -p -cp out lab.shardstock.ShardedCas"}]},{"beat":"fix","title":"四版同台：分段 CAS 同时保准又保快","bridge":"现在把四份实现全部摆在一起，拉动线程数旋钮直接比出高下。","blocks":[{"t":"experiment","lab":"shardstock","show":["Plain","PlainShards","SingleSync","ShardedCas"],"select":"ShardedCas","say":"2、4、8 线程下前两组空心狂超卖；后两组全都实心零超卖，而且分段 CAS 比单全局锁明显省时。","focusLines":[]},{"t":"try","say":"把旋钮从 1 一路推到 8，盯住单库存全局锁和 16 桶分段 CAS 两行的耗时差是如何越拉越大的。","key":"两版全零超卖，分段 CAS 甩开单锁排队"}]},{"beat":"fix","title":"扩展对比：单锁陡升，分桶 CAS 平缓扩张","bridge":"把 1、2、4、8 线程的真实耗时连成曲线，看清楚多核并发压力下谁扛得住。","blocks":[{"t":"chart","of":"shardstock","say":"实心点代表该档全轮零超卖，空心点代表出现过超卖；四条线把并发扩展的代价亮得明明白白。","walk":[{"focus":"Plain","say":"2 线程起全是空心超卖点；多线程乱写多卖了数倍虚空库存，耗时跟着飙升，既错又不快。"},{"focus":"PlainShards","say":"16 桶普通 int 耗时压下来不少，但 2 线程以上依然全空心超卖，没原子锁门等于白拆。"},{"focus":"SingleSync","say":"单库存全局锁虽然全程实心零超卖，但随着线程增加一路陡升，多核全部白等排队。","key":"单锁越并发越慢，多核优势被串行吞掉"},{"focus":"ShardedCas","say":"16 桶分段 CAS 全程实心零超卖，各核打散并行抢扣与校验，4 核和 8 核明显低于单锁线。"}]}]},{"beat":"choose","title":"四套方案选型账本：实测代价一览","bridge":"把默认四线程下的真实中位耗时和适用范围摆在一张对照表里。","blocks":[{"t":"choose","say":"选型账算得很清楚：既要绝对卡住总量，又不想把高并发堵在一把锁门口，就得上分段分桶。","options":[{"name":"Plain · 单int无锁","solves":"不排队也无分桶代码，单线程能跑","cost":"61 ms｜无锁直减，多线程必超卖","when":"只做反面教学对照，严禁上生产","say":"单线程看似正常，一旦真有并发就是灾难。"},{"name":"PlainShards · 误区","solves":"把起点路由到了 16 个不同槽位","cost":"32 ms｜同桶撞车，照样稳定超卖","when":"典型的半吊子并发改法，任何并发下都不要写","say":"错在以为分散进 16 只桶就不需要原子指令保护。"},{"name":"SingleSync · 全局锁","solves":"整段扣减加校验彻底互斥，绝对零超卖","cost":"94 ms｜零超卖但单锁排队慢","when":"每秒几笔的低并发后台扣减，简单省心","say":"低并发最省代码，可高并发热品全卡死在这一把锁上。"},{"name":"ShardedCas · 分桶","solves":"16 桶独立硬件原子抢扣 + 空桶顺延吃光尾货","cost":"34 ms｜零超卖且多核扩展平缓","when":"高并发热品抢购、单 SKU 硬限额扣减","say":"热点拆进 16 槽位，靠 CAS 守住单桶不透支、顺延吃净尾货。"}],"rule":"同抢单品限量且并发高，用分段 CAS 数组加顺延；并发很低再退回单锁。","ruleSay":"以后做爆品库存设计先问两句：并发撞不撞同槽、总量要卡多死，别被「分桶降低冲突率」骗过去。","ruleKey":"热点限量选分段 CAS 加顺延探测"}]},{"beat":"choose","layout":"split","title":"并发扣减决策卡：四个线上场景怎么挑","bridge":"把今天这招放回前面学过的武器库里，遇上不同业务一眼挑对工具。","blocks":[{"t":"decide","q":"请求抢同一份硬限量吗？","branches":[{"when":"抢同一件爆品且并发高","pick":"16桶分段CAS顺延","eg":"万核热品秒杀、限量神券"},{"when":"只统计总量不卡硬上限","pick":"LongAdder分段统计","eg":"页面点击、QPS 埋点计数"},{"when":"按用户 ID 各自隔离","pick":"按key分段加锁","eg":"每账号每日限领一次"},{"when":"低并发想写得最简单","pick":"单库存全局锁","eg":"低频运营额度修改"}],"say":"顺着是否共享同一份硬上限、并发冲突烈度两问往下走，四张工具不会拿混。"},{"t":"cases","tools":["16桶分段CAS顺延","LongAdder分段统计","按key分段加锁","单库存全局锁"],"say":"对照决断规则，为这四个线上真实需求选出各自最合身的一套。","items":[{"text":"零点开抢 800 张同一单品神券，高并发请求涌来，绝不允许发超第 801 张。","answer":0,"why":"全部请求同抢一个共享总限量，必须靠分段 `AtomicIntegerArray` CAS 分摊热点加顺延保不浪费。"},{"text":"接口监控每分钟累加全站请求总次数，写性能第一，偶尔读总数允许几毫秒差。","answer":1,"why":"没有扣到 0 停手的硬上限约束，用 `LongAdder` 分段累加最干脆。"},{"text":"每个用户每天只能签到领 1 次奖励，不同用户之间的数据完全独立。","answer":2,"why":"天然能按 userId 分段上锁，各自领各自的互不阻塞。"},{"text":"内部后台每分钟才调几次的总盘配额开关，还要联立更新多张状态表。","answer":3,"why":"并发几乎为零且要包一段逻辑，一把全局互斥锁简单可靠。"}]}]},{"beat":"name","title":"定名：热点库存分段分片（分桶 CAS）","bridge":"方法跑通、证据也凑齐了，现在给它记下正式名字与面试考题。","blocks":[{"t":"name","term":"热点库存分段分片","alias":"Sharded Stock · 常称「分桶 CAS」","oneLine":"把单个热点限额拆进定长 `AtomicIntegerArray` 桶数组，==起始路由分散 + 单桶 CAS 自旋 + 卖空环形顺延==。","asked":["单品秒杀库存全打在一把锁上扛不住，内存扣减怎么拆？","把库存分 16 个普通 int 桶按线程取模扣，为啥还会超卖？","库存拆桶之后某个桶先卖光了，怎么保证不提前报售罄？"],"say":"把分片、单桶 CAS 和环形顺延三件套挂在嘴边，既解热点争用，也堵死假售罄与负库存。"}]},{"beat":"check","title":"随堂检验 1：拆成 16 个普通桶到底漏在哪？","bridge":"做三道小题确认自己真的过了「概率错觉」那一关。","blocks":[{"t":"quiz","q":"把 800 件库存拆进 16 个普通 `int` 桶按 `reqId & 15` 扣减，为何多线程仍稳定超卖？","options":[{"text":"因为 & 15 偶尔会算出负数下标导致数组越界","ok":false,"why":"任何整数按位与 15 的结果都稳稳落在 0 到 15 之间，不会越界。"},{"text":"因为同桶撞车和尾货顺延集中时，普通 `iaload` 判断与 `iastore` 写回并非原子","ok":true,"why":"拆桶只是降低单次撞桶频率；一旦俩线程同时进同一个桶，照样双双通过 if 扣成负数。"},{"text":"因为每只桶只有 50 件太少，JIT 编译器直接删掉判断","ok":false,"why":"JIT 不会改变程序对单线程语义的判断逻辑，错出在多线程交错写回。"}],"say":"拆桶只降冲突率，绝对不能代替桶内的原子读改写。"}]},{"beat":"check","title":"随堂检验 2：单桶 CAS 失败为啥不立刻换下一桶？","bridge":"第二题直击 ShardedCas 里最容易被误删的那层内循环。","blocks":[{"t":"quiz","q":"在 `ShardedCas` 里，单桶 `compareAndSet` 失败后为啥要原地重读重试，直到 `cur \u003c= 0` 才换桶？","options":[{"text":"CAS 失败往往只是队友刚扣走 1 件、桶内还有余量，直接跳桶会放大顺延扫桶甚至漏卖","ok":true,"why":"只要 `cur` 还大于 0 就说明本桶仍有货，原地重读新 `cur` 再抢最省扫桶；真读到 \u003c= 0 再顺延。"},{"text":"因为 AtomicIntegerArray 语法强制要求套死循环","ok":false,"why":"外层已经是循环，内层自旋重试是为了区别「抢输一次」和「桶真卖空」。"},{"text":"为了故意拉长单核运行时间使曲线更好看","ok":false,"why":"原地重试正好避免盲目扫 16 只桶浪费总线带宽。"}],"say":"区分清楚：CAS 失败 = 桶里还有货但被抢先，cur \u003c= 0 = 真见底该顺延。"}]},{"beat":"check","title":"随堂检验 3：分清三种「分段」的适用边界","bridge":"最后把今天新学的分桶 CAS 与第 14 课、第 23 课摆在一起做终极辨析。","blocks":[{"t":"quiz","q":"同为打散热点，第 14 课 `LongAdder` 与本课分段 CAS 扣库存最大的结构区别是什么？","options":[{"text":"`LongAdder` 只分段累加不设上限；分段 CAS 每桶守住非负上限且空桶可顺延","ok":true,"why":"统计总数允许各段自增且读 sum 非快照；扣库存则要守住每桶 >= 0、总量绝不突破上限。"},{"text":"`LongAdder` 底层用全局 `synchronized`，分段 CAS 用锁分段","ok":false,"why":"`LongAdder` 内部也是 Cell 数组加 CAS，但它面向只增不扣的累加计数场景。"},{"text":"秒杀限额也可以直接用 `LongAdder.decrement()` 代替 16 桶数组","ok":false,"why":"`LongAdder` 单次调用无法原子检查「扣完是否已归零」，照样拦不住并发扣超。"}],"say":"无硬上限计数找 LongAdder，按用户独立隔离找按 key 分锁，同抢一份有限库存用分段 CAS 顺延。"}]},{"beat":"say","title":"面试一分钟口述：爆品抢购怎么拆桶又不超卖","bridge":"题目真正抛过来时，按「打假错解 + 拆清核心三步 + 说出尾货兜底」一口气讲完。","blocks":[{"t":"say","prompt":"面试官问：热卖单品全挤在一把库存锁上很慢，如果拆成 16 个分桶怎么设计才能不超卖也不漏卖？","points":["单锁会把发券检验等业务一起堵成串行，多核扩不开","拆成 16 个普通 int 桶照样超卖：同桶碰撞或尾货顺延仍非原子","改用 AtomicIntegerArray(16) 按请求哈希路由起始桶，打散热点","单桶内 CAS 自旋扣减；读到 \u003c= 0 才环形顺延扫余下桶，零超卖吃光尾货"],"model":"如果全部抢购挤在单个全局锁上，哪怕锁里只有很少业务计算，高并发也会把多核全堵成单队。常见误区是把库存拆进 16 个普通 int 桶按请求取模扣，但只要两个请求同时进同一只桶、或者前几个桶卖空后大家一起顺延扫尾货，普通先判再减的非原子指令照样把桶扣成负数。正解是改用 `AtomicIntegerArray(16)`，按 `reqId & 15` 路由起始桶分散热点；单桶内用 `compareAndSet` 自旋重试直到读到余量 `\u003c= 0`，再环形顺延扫余下 15 桶。这样既零超卖不浪费尾货，高并发下也不用全核排队等同一把锁。","say":"合上代码口述一遍：先点破「拆普通桶降概率却照样超卖」，再顺出分段数组、原地 CAS 与顺延扫尾。"}]},{"beat":"take","title":"带走三张卡，高并发热点分桶不踩坑","bridge":"课程收尾，把今天这三道硬边界叠成卡片放进口袋。","blocks":[{"t":"cards","items":[{"q":"把爆品库存拆成 16 个普通 `int` 桶，还用不用加原子保护？","a":"必须加！分桶只降低单次撞桶概率，只要同桶撞车或尾货顺延集中，先判再减的两条指令照样把桶扣穿。"},{"q":"单桶 `CAS` 抢扣失败了，该原地重读还是立刻跳去下一桶？","a":"原地重读重试！失败通常只是同桶刚被队友买走一件、桶内还有货；只有明确读到 `cur \u003c= 0` 才顺延扫下一只桶。"},{"q":"单锁 `SingleSync` 与 16 桶分段 CAS 怎么取舍？","a":"并发低或跨多字段逻辑直接全局锁最省心；热品单限额并发高时，用分段 CAS 分散槽位争用并顺延吃光尾货，吞吐显著更稳。"}],"say":"记住「拆桶降争用、CAS 保单桶、顺延清尾货」，以后碰到任何高并发热点扣减都能对答如流。"}]}],"beats":[{"id":"open","label":"开场"},{"id":"hook","label":"问题"},{"id":"code","label":"代码"},{"id":"predict","label":"先猜"},{"id":"run","label":"跑一跑"},{"id":"why","label":"为什么"},{"id":"fix","label":"改一处"},{"id":"choose","label":"怎么选"},{"id":"name","label":"名字"},{"id":"check","label":"小测"},{"id":"say","label":"开口讲"},{"id":"take","label":"带走"}]}</script>
+<script>
+/* Shared pieces of the lesson page: element building, inline marks, Java colouring, the code view, a line diff, saved state.
+   Text always goes in as text nodes; nothing a lesson writes is parsed as HTML. */
+(function () {
+  "use strict";
+  const L = (window.Lesson = { blocks: {} });
+
+  /** h("div.a.b", { text, on: { click }, attr: {…} }, child, child…) */
+  L.h = function (spec, props, ...kids) {
+    const [tag, ...classes] = spec.split(".");
+    const el = document.createElement(tag || "div");
+    if (classes.length) el.className = classes.join(" ");
+    if (props) {
+      if (props.text !== undefined) el.textContent = props.text;
+      for (const [name, value] of Object.entries(props.attr || {})) el.setAttribute(name, value);
+      for (const [name, fn] of Object.entries(props.on || {})) el.addEventListener(name, fn);
+    }
+    for (const kid of kids.flat()) if (kid) el.append(kid);
+    return el;
+  };
+
+  L.num = (value) => Number(value).toLocaleString("en-US");
+
+  /** **bold**, `code` and ==mark== inside a sentence. */
+  L.md = function (text) {
+    const out = document.createDocumentFragment();
+    const pattern = /\*\*([^*]+)\*\*|`([^`]+)`|==([^=]+)==/g;
+    let last = 0;
+    for (let hit = pattern.exec(text); hit; hit = pattern.exec(text)) {
+      out.append(text.slice(last, hit.index));
+      out.append(hit[1] ? L.h("b", { text: hit[1] }) : hit[2] ? L.term(hit[2], L.h("code", { text: hit[2] })) : L.h("mark", { text: hit[3] }));
+      last = pattern.lastIndex;
+    }
+    out.append(text.slice(last));
+    return out;
+  };
+
+  const JAVA = new Set("abstract boolean break byte case catch char class continue default do double else enum extends final finally float for if implements import instanceof int interface long new null package private protected public record return short static super switch synchronized this throw throws try var void volatile while true false".split(" "));
+  const PYTHON = new Set("and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield True False None".split(" "));
+  const LANGS = { java: { words: JAVA, comment: "//" }, python: { words: PYTHON, comment: "#" }, text: { words: new Set(), comment: "\n" } };
+  const TOKEN = /(\/\/.*$|#.*$)|("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)')|\b(\d[\d_]*(?:\.\d+)?[LlFfDd]?)\b|\b([A-Za-z_]\w*)\b/g;
+
+  /** One line of code as coloured spans. */
+  L.colour = function (line, lang) {
+    const { words, comment } = LANGS[lang] || LANGS.text;
+    const out = document.createDocumentFragment();
+    let last = 0;
+    TOKEN.lastIndex = 0;
+    for (let hit = TOKEN.exec(line); hit; hit = TOKEN.exec(line)) {
+      const kind = hit[1] ? (hit[1].startsWith(comment) ? "c" : "") : hit[2] || hit[3] ? "s" : hit[4] ? "n" : words.has(hit[5]) ? "k" : "";
+      out.append(line.slice(last, hit.index));
+      out.append(kind ? L.h(`span.tk-${kind}`, { text: hit[0] }) : hit[0]);
+      last = TOKEN.lastIndex;
+    }
+    out.append(line.slice(last));
+    return out;
+  };
+
+  /* Reminders at the moment of need: a word the learner may not know is explained where it stands, on hover, focus or tap. */
+  L.glossary = {};
+  const tip = L.h("div.tip", { attr: { role: "tooltip", id: "lesson-tip", hidden: "" } });
+  let tipFor = null, tipTimer = 0;
+  function showTip(anchor, word) {
+    clearTimeout(tipTimer);
+    tipFor = anchor;
+    tip.replaceChildren(L.h("b.mono", { text: word }), L.h("span", null, L.md(L.glossary[word])));
+    tip.hidden = false;
+    if (!tip.isConnected) document.body.append(tip);
+    const box = anchor.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
+    tip.style.left = `${Math.max(8, Math.min(window.innerWidth - width - 8, box.left + box.width / 2 - width / 2))}px`;
+    tip.style.top = `${box.bottom + height + 14 > window.innerHeight ? box.top - height - 8 : box.bottom + 8}px`;
+  }
+  L.hideTip = function () { clearTimeout(tipTimer); tip.hidden = true; tipFor = null; };
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") L.hideTip(); });
+  document.addEventListener("click", (event) => { if (tipFor && !tipFor.contains(event.target)) L.hideTip(); });
+
+  /** Wraps `content` as an explainable word when the glossary knows it; otherwise returns the content unchanged. */
+  L.term = function (word, content) {
+    if (!L.glossary[word]) return content;
+    return L.h("span.term", {
+      attr: { tabindex: "0", role: "button", "aria-describedby": "lesson-tip" },
+      on: {
+        mouseenter(event) { const anchor = event.currentTarget; tipTimer = setTimeout(() => showTip(anchor, word), 140); },
+        mouseleave: L.hideTip,
+        focus(event) { showTip(event.currentTarget, word); },
+        blur: L.hideTip,
+        click(event) { event.stopPropagation(); if (tipFor === event.currentTarget) L.hideTip(); else showTip(event.currentTarget, word); },
+      },
+    }, content);
+  };
+
+  /** A line of code with the glossary's words made explainable (longest word first; nothing inside a comment). */
+  L.codeLine = function (line, lang) {
+    const words = Object.keys(L.glossary).sort((a, b) => b.length - a.length);
+    const comment = line.indexOf((LANGS[lang] || LANGS.text).comment);
+    const limit = comment < 0 ? line.length : comment;
+    const out = document.createDocumentFragment();
+    let from = 0;
+    for (let at = 0; at < limit;) {
+      const word = words.find((candidate) => line.startsWith(candidate, at)
+        && !(/\w/.test(candidate[0]) && /\w/.test(line[at - 1] || ""))
+        && !(/\w/.test(candidate.at(-1)) && /\w/.test(line[at + candidate.length] || "")));
+      if (!word) { at++; continue; }
+      out.append(L.colour(line.slice(from, at), lang), L.term(word, L.h("span", null, L.colour(word, lang))));
+      at += word.length;
+      from = at;
+    }
+    out.append(L.colour(line.slice(from), lang));
+    return out;
+  };
+
+  /** The 1-based numbers of the lines of `other` that are not in `base` (longest common subsequence). */
+  L.changedLines = function (base, other) {
+    const a = base.split("\n"), b = other.split("\n");
+    const table = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+    for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
+    const changed = [];
+    for (let i = 0, j = 0; j < b.length;) {
+      if (i < a.length && a[i] === b[j]) { i++; j++; } else if (i < a.length && table[i + 1][j] >= table[i][j + 1]) i++; else changed.push(++j);
+    }
+    return changed;
+  };
+
+  /** A source file with line numbers. show(source, { focus, changed }) redraws it and scrolls the first marked line into view. */
+  L.codeView = function () {
+    const scroll = L.h("div.code__scroll", { attr: { tabindex: "0" } });
+    const label = L.h("div.code__path");
+    const el = L.h("div.code", null, label, scroll);
+    return {
+      el,
+      /** Calls fn(lineNumber) when the learner presses a line. */
+      onLine(fn) { scroll.addEventListener("click", (event) => { const row = event.target.closest(".code__line"); if (row) fn([...scroll.children].indexOf(row) + 1); }); },
+      show(source, { path = "", lang = "text", focus = [], changed = [], wrong = [], tags = {} } = {}) {
+        label.textContent = path;
+        el.classList.toggle("has-focus", focus.length > 0);
+        scroll.replaceChildren(...source.split("\n").map((line, i) => {
+          const state = changed.includes(i + 1) ? ".is-changed" : focus.includes(i + 1) ? ".is-focus" : wrong.includes(i + 1) ? ".is-wrong" : "";
+          return L.h(`div.code__line${state}`, null, L.h("span.code__no", { text: String(i + 1) }), L.h("span", null, L.codeLine(line, lang)), tags[i + 1] ? L.h("span.code__tag", { text: tags[i + 1] }) : null);
+        }));
+        const place = () => {
+          const first = scroll.querySelector(".is-changed, .is-focus");
+          if (first) scroll.scrollTop = Math.max(0, first.offsetTop - scroll.offsetTop - scroll.clientHeight / 3);
+        };
+        place();
+        requestAnimationFrame(place); // a view built before it is on the page has no size yet
+      },
+    };
+  };
+
+  /** A row of mutually exclusive choices. `options` are { id, label }. */
+  L.segmented = function (label, options, selected, onPick) {
+    const buttons = options.map((option) => L.h("button", { text: option.label, attr: { type: "button", "aria-pressed": String(option.id === selected) }, on: { click() { pick(option.id); onPick(option.id); } } }));
+    function pick(id) { buttons.forEach((button, i) => button.setAttribute("aria-pressed", String(options[i].id === id))); }
+    return { el: L.h("div.seg", null, label ? L.h("span", { text: label }) : null, L.h("div.seg__set", { attr: { role: "group", "aria-label": label || "选择" } }, buttons)), pick };
+  };
+
+  /** What the learner did, kept across reloads; quietly does nothing where storage is unavailable. */
+  L.memory = function (key) {
+    let data = {};
+    try { data = JSON.parse(localStorage.getItem(key) || "{}"); } catch { data = {}; }
+    return {
+      get: (name, fallback) => (name in data ? data[name] : fallback),
+      set(name, value) { data[name] = value; try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* private window */ } },
+    };
+  };
+})();
+
+</script>
+<script>
+/* The plain blocks of a lesson. Each maker takes (block, ctx) and returns { el, steps?, set?, ready?, refresh? }:
+   steps = teacher sentences for moments inside the block after it has appeared; set(k) shows it as of step k;
+   ready() false means the learner still has to act before the lesson moves on; refresh() runs each time the block is revealed. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const KEYS = "ABCD";
+
+  L.blocks.text = (block) => ({ el: h("p.text", null, L.md(block.md)) });
+
+  /** A row of small answer buttons. paint(picked, right) locks them once an answer is in and marks the right and the wrong one. */
+  function picks(labels, onPick, extra = "") {
+    const buttons = labels.map((text, i) => h(`button.pick${extra}`, { attr: { type: "button" }, on: { click: () => onPick(i) } }, L.md(text)));
+    return {
+      el: h("div.picks", null, buttons),
+      paint(picked, right) {
+        buttons.forEach((button, i) => {
+          button.disabled = picked !== undefined;
+          button.classList.toggle("is-right", picked !== undefined && i === right);
+          button.classList.toggle("is-wrong", picked === i && i !== right);
+        });
+      },
+    };
+  }
+
+  /** Several small questions answered on the spot. make(item, i) gives each row's content; the answers survive a reload. */
+  function answered(block, ctx, name, make, sum) {
+    const key = `${name}:${block.items.length}:${block.items[0].q || block.items[0].text}`;
+    const answers = ctx.memory.get(key, {});
+    const score = h(`p.${name}__score`, { attr: { "aria-live": "polite" } });
+    const rows = block.items.map((item, i) => {
+      const why = h(`p.${name}__why`, { attr: { hidden: "" } }, L.md(item.why));
+      const row = make(item, (j) => { answers[i] = j; ctx.memory.set(key, answers); paint(); (done() ? score : why).scrollIntoView({ block: "nearest", behavior: "smooth" }); });
+      return { item, why, pick: row.pick, el: h(`div.${name}__item`, null, row.head, row.pick.el, why) };
+    });
+    const done = () => rows.every((row, i) => answers[i] !== undefined);
+    function paint() {
+      rows.forEach((row, i) => { row.pick.paint(answers[i], row.item.answer); row.why.hidden = answers[i] === undefined; });
+      score.textContent = done() ? sum(rows.filter((row, i) => answers[i] === row.item.answer).length, rows.length) : "";
+    }
+    paint();
+    return { el: h(`div.${name}`, null, rows.map((row) => row.el), score), ready: done, waitSay: "先把这几道都点一下再往下。点错没关系；实在想跳过，再按一次。" };
+  }
+
+  /** "You have met these before": a quick question per thing the lesson builds on, with the one sentence needed if it has faded. */
+  L.blocks.recall = (block, ctx) => answered(block, ctx, "recall",
+    (item, onPick) => ({ head: [h("span.recall__have", null, L.md(item.have)), h("p.recall__q", null, L.md(item.q))], pick: picks(item.options, onPick) }),
+    (right, total) => (right === total ? `${total} 样都记得，可以开始了。` : `${total} 样里记得 ${right} 样。没记住的，把它下面那句话再看一眼，这节课够用了。`));
+
+  /** Apply the rule just learned: for each situation, pick the tool. */
+  L.blocks.cases = (block, ctx) => answered(block, ctx, "cases",
+    (item, onPick) => ({ head: [h("p.cases__text", null, L.md(item.text))], pick: picks(block.tools, (j) => { onPick(j); document.dispatchEvent(new CustomEvent("lesson:picked", { detail: { name: block.tools[item.answer] } })); }, ".pick--tool") }),
+    (right, total) => (right === total ? `${total} 个场景都选对了。这条规则是你的了。` : `${total} 个里选对 ${right} 个。看一眼没选对的那条理由，再回想那句规则。`));
+
+  /** A picture to hang the lesson on: a short everyday story, then what each thing in it is called in the program. */
+  L.blocks.scene = (block) => {
+    const rows = block.map.map((pair) => h("div.scene__row", null, h("span", null, L.md(pair.scene)), h("span.scene__arrow", { text: "→" }), h("span.scene__to", null, L.md(pair.code))));
+    const table = h("div.scene__map", null, h("div.scene__head", null, h("span", { text: "场景里" }), h("span"), h("span", { text: "程序里" })), rows);
+    const picture = block.picture ? L.sharePicture({ actors: block.picture.actors, shared: block.picture.shared.name, hands: false }) : null;
+    /* The picture starts as the everyday scene; each row that is reached pins the program's word onto the part it names. */
+    const draw = (k) => {
+      const tags = { actors: [], shared: [], action: "" };
+      block.map.slice(0, k).forEach((pair) => { if (pair.on === "action") tags.action = pair.tag; else if (pair.on) tags[pair.on].push(pair.tag); });
+      picture.set({ value: block.picture.shared.value, tags, hot: k ? block.map[k - 1].on || null : null });
+    };
+    const set = (k) => { table.classList.toggle("is-waiting", k === 0); rows.forEach((row, i) => { row.classList.toggle("is-waiting", i >= k); row.classList.toggle("is-now", i === k - 1); }); if (picture) draw(k); };
+    set(0);
+    return { el: h("div.scene", null, h("p.scene__story", null, L.md(block.story)), h(`div.scene__body${picture ? ".has-picture" : ""}`, null, table, picture?.el)), steps: block.map.map((pair) => ({ say: pair.say })), set };
+  };
+
+  /** "Which line is it?" The learner presses the line they suspect, on the real source. */
+  L.blocks.spot = (block, ctx) => {
+    const key = `spot:${block.of}:${block.answerLines.join("-")}`;
+    const view = L.codeView();
+    const out = h("p.spot__out", { attr: { "aria-live": "polite" } });
+    let found = ctx.memory.get(key, false), wrong = [];
+    function paint() {
+      view.show(block.source, { path: block.path, lang: block.lang, focus: found ? block.answerLines : [], wrong });
+      view.el.classList.toggle("is-pickable", !found);
+      out.className = `spot__out${found ? ".is-ok" : wrong.length ? ".is-miss" : ""}`.replace(/\./g, " ");
+      out.replaceChildren(found ? L.md(block.found) : wrong.length ? L.md(block.hint) : "");
+    }
+    view.onLine((n) => {
+      if (found) return;
+      if (block.answerLines.includes(n)) { found = true; wrong = []; ctx.memory.set(key, true); } else wrong = [n];
+      paint();
+    });
+    paint();
+    return {
+      el: h("div.spot", null, h("p.spot__q", null, L.md(block.q)), view.el, h("div.spot__side", null, h("p.spot__how", { text: "在左边的代码上，点你怀疑的那一行。" }), out)),
+      ready: () => found,
+      waitSay: "先在代码上点一行你怀疑的。点错会有提示；实在想跳过，再按一次。",
+      pass() { found = true; wrong = []; paint(); },
+    };
+  };
+
+  /** Evidence: what the built program looks like inside, as the lab's inspect command printed it. Labels are added as the teacher names each part. */
+  L.blocks.inside = (block) => {
+    const view = L.codeView();
+    const show = (k) => view.show(block.source, {
+      path: block.command, lang: "text", focus: k ? block.walk[k - 1].focusLines : [],
+      tags: Object.fromEntries(block.walk.slice(0, k).map((step) => [step.focusLines.at(-1), step.label])),
+    });
+    show(0);
+    return { el: h("div.inside", null, h("p.inside__what", { text: "这是工具打印出来的真实输出，不是示意图。" }), view.el), steps: block.walk.map((step) => ({ say: step.say, key: step.key })), set: show };
+  };
+
+  /** The teacher hands over the controls: nothing new appears, the switches of the experiment on this slide light up once. */
+  L.blocks.try = () => {
+    const el = h("span.try");
+    return {
+      el,
+      refresh() {
+        for (const exp of el.closest(".slide").querySelectorAll(".exp")) { exp.classList.remove("is-invited"); void exp.offsetWidth; exp.classList.add("is-invited"); }
+      },
+    };
+  };
+
+  L.blocks.points = (block) => ({ el: h("ul.points", null, block.items.map((item) => h("li", null, h("span", null, L.md(item))))) });
+
+  L.blocks.callout = (block) => ({ el: h(`div.callout.callout--${block.tone}`, null, h("h4", { text: block.title }), h("p", null, L.md(block.md))) });
+
+  L.blocks.code = (block) => {
+    const view = L.codeView();
+    const walk = block.walk || [];
+    const show = (focus) => view.show(block.source, { path: block.path, lang: block.lang, focus });
+    show(block.focusLines);
+    return { el: view.el, steps: walk.map((step) => ({ say: step.say, key: step.key })), set(k) { show(k ? walk[k - 1].focusLines : block.focusLines); } };
+  };
+
+  function option(index, text, onPick) {
+    const tag = h("span.opt__tag");
+    const el = h("button.opt", { attr: { type: "button" }, on: { click: () => onPick(index) } }, h("span.opt__key", { text: KEYS[index] }), h("span", null, L.md(text)), tag);
+    return { el, tag };
+  }
+
+  /** Guess first. Nothing is confirmed here: the answer comes from the run, in the matching reveal block. */
+  L.blocks.predict = (block, ctx) => {
+    const key = `predict:${block.id}`;
+    const options = block.options.map((text, i) => option(i, text, pick));
+    function paint() {
+      const picked = ctx.memory.get(key);
+      options.forEach((item, i) => { item.el.classList.toggle("is-picked", i === picked); item.tag.textContent = i === picked ? "你的猜测" : ""; });
+    }
+    function pick(index) { ctx.memory.set(key, index); paint(); }
+    paint();
+    return { el: h("div.predict", null, h("p.predict__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => ctx.memory.get(key) !== undefined };
+  };
+
+  /** After the run: the learner's guess beside what really happened. The explaining is the teacher's job, not this block's. */
+  L.blocks.reveal = (block, ctx) => {
+    const predict = ctx.predicts[block.of];
+    const guess = h("dd");
+    return {
+      el: h("div.reveal", null, h("dl", null, h("dt", { text: "你猜的" }), guess), h("dl", null, h("dt", { text: "实际" }), h("dd.is-ok", null, L.md(predict.options[predict.answer])))),
+      refresh() {
+        const picked = ctx.memory.get(`predict:${block.of}`);
+        guess.className = picked === undefined ? "" : picked === predict.answer ? "is-ok" : "is-miss";
+        guess.replaceChildren(picked === undefined ? "刚才没猜" : L.md(predict.options[picked]));
+      },
+    };
+  };
+
+  /** Several tools side by side: what each solves, what it costs, when to reach for it. The teacher goes through them one row at a
+      time, and the rule to choose by comes last, after every row has been talked through. */
+  L.blocks.choose = (block) => {
+    const rows = block.options.map((option) => h("div.choose__row", null,
+      h("span.choose__name", null, L.term(option.name, h("span", { text: option.name }))),
+      h("span", { attr: { "data-label": "解决什么" } }, L.md(option.solves)),
+      h("span", { attr: { "data-label": "代价" } }, L.md(option.cost)),
+      h("span", { attr: { "data-label": "什么时候用" } }, L.md(option.when))));
+    const rule = h("p.choose__rule", null, L.md(block.rule));
+    const el = h("div.choose", null,
+      h("div.choose__head", null, h("span"), h("span", { text: "解决什么" }), h("span", { text: "代价" }), h("span", { text: "什么时候用" })), rows, rule);
+    const set = (k) => {
+      const walking = k >= 1 && k <= rows.length;
+      el.classList.toggle("is-walking", walking);
+      rows.forEach((row, i) => row.classList.toggle("is-now", walking && i === k - 1));
+      rule.classList.toggle("is-waiting", k <= rows.length);
+    };
+    set(0);
+    return { el, steps: block.options.map((option) => ({ say: option.say })).concat({ say: block.ruleSay, key: block.ruleKey }), set };
+  };
+
+  L.blocks.name = (block) => ({
+    el: h("div.name", null,
+      h("h2.name__term", { text: block.term }),
+      block.alias ? h("p.name__alias", { text: block.alias }) : null,
+      h("p.name__line", null, L.md(block.oneLine)),
+      h("div.name__asked", null, h("h4", { text: "面试里它长这样" }), h("ul", null, block.asked.map((question) => h("li", { text: `「${question}」` })))),
+    ),
+  });
+
+  /** Answered on the spot: the picked option and the right one both show why. */
+  L.blocks.quiz = (block) => {
+    let done = false;
+    const options = block.options.map((item, i) => option(i, item.text, pick));
+    function pick(index) {
+      if (done) return;
+      done = true;
+      block.options.forEach((item, i) => {
+        if (i !== index && !item.ok) return;
+        options[i].el.classList.add(item.ok ? "is-right" : "is-wrong");
+        options[i].tag.textContent = item.ok ? "对" : "不对";
+        options[i].el.append(h("span.opt__why", null, L.md(item.why)));
+      });
+    }
+    return { el: h("div.quiz", null, h("p.quiz__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => done };
+  };
+
+  /** Say it aloud against a clock, then tick off what you covered. The points stay hidden until the learner has spoken. */
+  L.blocks.say = (block) => {
+    const total = block.seconds || 120;
+    let left = total, timer = 0;
+    const clock = h("span.say__clock");
+    const score = h("p.say__score");
+    const boxes = block.points.map((point) => h("input", { attr: { type: "checkbox" }, on: { change: count } }));
+    const points = h("ul.say__points", { attr: { hidden: "" } }, block.points.map((point, i) => h("li", null, h("label", null, boxes[i], h("span", null, L.md(point))))), score);
+    const start = h("button.btn", { text: "开始讲", attr: { type: "button" }, on: { click: toggle } });
+    const model = h("p.say__model", { attr: { hidden: "" } }, L.md(block.model));
+    const showModel = h("button.btn", { text: "看一份参考回答", attr: { type: "button", hidden: "" }, on: { click() { model.hidden = !model.hidden; showModel.textContent = model.hidden ? "看一份参考回答" : "收起参考回答"; if (!model.hidden) model.scrollIntoView({ block: "nearest", behavior: "smooth" }); } } });
+    const check = h("button.btn.btn--primary", { text: "讲完了，对要点", attr: { type: "button" }, on: { click() { stop(); points.hidden = false; check.hidden = true; showModel.hidden = false; count(); } } });
+    function draw() { clock.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`; }
+    function stop() { clearInterval(timer); timer = 0; start.textContent = left === total ? "开始讲" : "接着讲"; }
+    function toggle() {
+      if (timer) return stop();
+      if (left === 0) left = total;
+      start.textContent = "暂停";
+      timer = setInterval(() => { left -= 1; draw(); if (left === 0) stop(); }, 1000);
+      draw();
+    }
+    function count() { score.textContent = `${block.points.length} 个要点，你讲到了 ${boxes.filter((box) => box.checked).length} 个。没讲到的，回到对应那一页再看一遍。`; }
+    draw();
+    return { el: h("div.say", null, h("p.say__prompt", null, L.md(block.prompt)), h("div.say__row", null, clock, start, check, showModel), points, model) };
+  };
+
+  L.blocks.cards = (block) => ({
+    el: h("div.cards", null, block.items.map((card) => {
+      const answer = h("p.card__a", { attr: { hidden: "" } }, L.md(card.a));
+      const button = h("button.btn.btn--quiet", { text: "看答案", attr: { type: "button" }, on: { click() { answer.hidden = !answer.hidden; button.textContent = answer.hidden ? "看答案" : "收起"; } } });
+      return h("div.card", null, h("p.card__q", null, L.md(card.q)), button, answer);
+    })),
+  });
+})();
+
+</script>
+<script>
+/* Things that are drawn instead of described. Three of them:
+   - the shared-thing picture: two actors, what each holds in hand, and the one thing they share. A scene uses it to show the
+     everyday story; `lanes` puts the same picture beside its rows, so every step is also seen in space, not only in time;
+   - `chart`: the recorded runs as lines, one per way of writing the code, along the experiment's knob;
+   - `decide`: the rule for choosing, drawn as a small tree.
+   Every number in a chart is read from the recorded runs. Colour names a series and nothing else; right or wrong is the marker's shape. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const NS = "http://www.w3.org/2000/svg";
+  const s = (tag, attrs, ...kids) => {
+    const el = document.createElementNS(NS, tag);
+    for (const [name, value] of Object.entries(attrs || {})) el.setAttribute(name, value);
+    el.append(...kids.flat().filter(Boolean));
+    return el;
+  };
+
+  /* ---------- two actors and the thing they share ---------- */
+
+  const PIC = { width: 300, height: 300 };
+  const FIGURE = () => s("svg", { viewBox: "0 0 44 40", class: "pic__figure", "aria-hidden": "true" },
+    s("circle", { cx: 22, cy: 10, r: 8.5 }), s("path", { d: "M4 40v-4a18 14 0 0 1 36 0v4" }));
+
+  /** A straight arrow from (x1, y1) to (x2, y2), stopping a little short at both ends. */
+  function arrow(x1, y1, x2, y2) {
+    const length = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / length, uy = (y2 - y1) / length;
+    const tipX = x2 - ux * 3, tipY = y2 - uy * 3, backX = tipX - ux * 9, backY = tipY - uy * 9;
+    return s("g", { class: "pic__arrow" },
+      s("line", { x1: x1 + ux * 3, y1: y1 + uy * 3, x2: backX, y2: backY }),
+      s("polygon", { points: `${tipX},${tipY} ${backX - uy * 4.5},${backY + ux * 4.5} ${backX + uy * 4.5},${backY - ux * 4.5}` }));
+  }
+
+  /** actors: two names; shared: its name; hands: whether each actor holds a value (the scene's story has no need of it). */
+  L.sharePicture = function ({ actors, shared, hands = true }) {
+    const side = ["a", "b"];
+    const value = h("b.pic__value");
+    const boardTags = h("div.pic__tags");
+    const board = h("div.pic__board", null, value);
+    const boardName = h("div.pic__over", null, h("span.pic__name", { text: shared }), boardTags);
+    const action = h("span.pic__action");
+    const people = actors.map((name, i) => {
+      const tags = h("div.pic__tags");
+      const note = h("span.pic__note");
+      const held = h("b");
+      return {
+        tags, note, held,
+        el: h(`div.pic__actor.pic__actor--${side[i]}`, null, FIGURE(), h("span.pic__name", { text: name }), tags, note),
+        hand: hands ? h(`div.pic__hand.pic__hand--${side[i]}`, null, h("small", { text: "手里" }), held) : null,
+      };
+    });
+    /* With hands the arrows run between the board and a hand; without, between an actor and the board. */
+    const ends = hands ? [[124, 110, 104, 144], [176, 110, 196, 144]] : [[122, 110, 62, 192], [178, 110, 238, 192]];
+    const arrows = ends.map(([bx, by, px, py]) => ({ in: arrow(bx, by, px, py), out: arrow(px, py, bx, by) }));
+    const lines = s("svg", { viewBox: `0 0 ${PIC.width} ${PIC.height}`, class: "pic__lines", "aria-hidden": "true" }, arrows.flatMap((pair) => [pair.in, pair.out]));
+    const el = h(`div.pic${hands ? "" : ".pic--plain"}`, { attr: { role: "img" } }, lines, boardName, board, action, people.flatMap((person) => [person.hand, person.el]));
+
+    const fill = (box, texts) => box.replaceChildren(...(texts || []).map((text) => h("span", { text })));
+    return {
+      el,
+      /** state: { value, hands: [text|null ×2], notes: [{ text, tone }|null ×2], move: { lane, op }|null,
+          tags: { actors: [], shared: [], action: text }, hot: "actors"|"shared"|"action"|null } */
+      set(state) {
+        const move = state.move, tags = state.tags || {};
+        value.textContent = String(state.value);
+        board.classList.toggle("is-now", move?.op === "write" || state.hot === "shared");
+        fill(boardTags, tags.shared);
+        action.textContent = tags.action || "";
+        action.classList.toggle("is-now", state.hot === "action");
+        people.forEach((person, i) => {
+          const mine = move?.lane === i;
+          if (person.hand) {
+            const text = state.hands?.[i];
+            person.held.textContent = text ?? "";
+            person.hand.classList.toggle("is-empty", text === null || text === undefined);
+            person.hand.classList.toggle("is-now", mine && (move.op === "read" || move.op === "calc"));
+          }
+          const note = state.notes?.[i];
+          person.note.textContent = note?.text || "";
+          person.note.className = `pic__note${note?.tone ? ` pic__note--${note.tone}` : ""}${mine && move.op === "note" ? " is-now" : ""}`;
+          person.el.classList.toggle("is-now", state.hot === "actors" || (mine && move.op === "note"));
+          fill(person.tags, tags.actors);
+          arrows[i].in.classList.toggle("is-on", mine && move.op === "read");
+          arrows[i].out.classList.toggle("is-on", (mine && move.op === "write") || Boolean(tags.action));
+        });
+        const holding = (state.hands || []).map((text, i) => (text === null || text === undefined ? "" : `${actors[i]}手里是 ${text}`)).filter(Boolean).join("，");
+        el.setAttribute("aria-label", `${actors.join("和")}共用${shared}，现在是 ${state.value}${holding ? `；${holding}` : ""}`);
+      },
+    };
+  };
+
+  /** What the picture shows after each step of a `lanes` walk: frame 0 is the start, frame k is after step k. */
+  L.shareFrames = function (steps, start) {
+    const frames = [{ value: start, hands: [null, null], notes: [null, null], move: null }];
+    for (const step of steps) {
+      const last = frames.at(-1);
+      const frame = { value: last.value, hands: [...last.hands], notes: last.notes.map((note) => (note?.tone === "fail" ? null : note)), move: { lane: step.lane, op: step.op } };
+      if (step.op === "read") frame.hands[step.lane] = String(frame.value);
+      else if (step.op === "calc") frame.hands[step.lane] = step.text.includes("=") ? step.text.split("=").pop().trim() : step.text;
+      else if (step.op === "write") { frame.value = step.value; frame.hands[step.lane] = null; }
+      else frame.notes[step.lane] = { text: step.text, tone: step.tone };
+      frames.push(frame);
+    }
+    return frames.concat({ ...frames.at(-1), move: null });
+  };
+
+  /* ---------- the recorded runs as a line chart ---------- */
+
+  const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+  const VIEW = { width: 640, height: 300, left: 44, right: 178, top: 14, bottom: 34, inset: 18, labelGap: 19 };
+
+  function step(max, ticks = 4) {
+    const raw = max / ticks, power = 10 ** Math.floor(Math.log10(raw));
+    return [1, 2, 5, 10].find((unit) => unit * power >= raw) * power;
+  }
+
+  /** Label heights that keep the order of `wanted` but never sit closer than `gap`, inside [top, bottom]. */
+  function spread(wanted, gap, top, bottom) {
+    const order = wanted.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y);
+    order.forEach((item, n) => { item.y = Math.max(item.y, n ? order[n - 1].y + gap : top); });
+    for (let n = order.length - 1; n >= 0; n--) order[n].y = Math.min(order[n].y, n === order.length - 1 ? bottom : order[n + 1].y - gap);
+    const out = [];
+    order.forEach((item) => { out[item.i] = item.y; });
+    return out;
+  }
+
+  L.blocks.chart = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.of];
+    const y = { label: "耗时", ...(block.y || exp.time) };
+    const xs = exp.knob.values;
+    const base = exp.variants[0];
+    const series = exp.variants.filter((variant) => !block.show || block.show.includes(variant.id)).slice(0, 4).map((variant) => ({
+      variant,
+      slot: exp.variants.indexOf(variant) + 1, // colour follows the way of writing, not its place in this chart
+      points: xs.map((x) => {
+        const runs = exp.results.variants[variant.id].runs[x];
+        return { x, value: median(runs.map((run) => run[y.key])), wrong: runs.filter((run) => run[exp.metric.key] !== run[exp.metric.expectKey]).length, total: runs.length };
+      }),
+    }));
+    const tick = step(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))));
+    const top = tick * Math.ceil(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))) / tick);
+    const plot = { width: VIEW.width - VIEW.left - VIEW.right, height: VIEW.height - VIEW.top - VIEW.bottom };
+    const px = (i) => VIEW.left + VIEW.inset + (i * (plot.width - 2 * VIEW.inset)) / (xs.length - 1);
+    const py = (value) => VIEW.top + plot.height - (value / top) * plot.height;
+    const verdict = (point) => (point.wrong === 0 ? `${point.total} 次全对` : point.wrong === point.total ? `${point.total} 次全错` : `错了 ${point.wrong} 次`);
+    let focus = null;
+
+    const grid = [];
+    for (let value = 0; value <= top; value += tick) {
+      grid.push(s("line", { class: value ? "chart__grid" : "chart__base", x1: VIEW.left, x2: VIEW.left + plot.width, y1: py(value), y2: py(value) }));
+      grid.push(s("text", { class: "chart__tick", x: VIEW.left - 8, y: py(value) + 4, "text-anchor": "end" }, String(value)));
+    }
+    const xLabels = xs.map((x, i) => s("text", { class: "chart__tick", x: px(i), y: VIEW.height - 14, "text-anchor": "middle" }, String(x)));
+    const xTitle = s("text", { class: "chart__tick", x: VIEW.left + plot.width + 12, y: VIEW.height - 14 }, exp.knob.label);
+    const labelY = spread(series.map((one) => py(one.points.at(-1).value)), VIEW.labelGap, VIEW.top + 6, VIEW.top + plot.height);
+    const endX = px(xs.length - 1);
+
+    series.forEach((one, n) => {
+      const last = one.points.at(-1);
+      one.el = s("g", { class: `chart__series chart__series--${one.slot}` },
+        s("polyline", { class: "chart__line", points: one.points.map((point, i) => `${px(i)},${py(point.value)}`).join(" ") }),
+        s("polyline", { class: "chart__lead", points: `${endX + 8},${py(last.value)} ${endX + 20},${labelY[n]} ${endX + 30},${labelY[n]}` }),
+        one.points.map((point, i) => s("circle", { class: `chart__dot${point.wrong ? " is-wrong" : ""}`, cx: px(i), cy: py(point.value), r: 5 })),
+        s("text", { class: "chart__name", x: endX + 35, y: labelY[n] + 4 }, s("tspan", { class: "chart__label" }, `${one.variant.label} `), s("tspan", { class: "chart__end" }, String(last.value))));
+    });
+
+    const cross = s("line", { class: "chart__cross", y1: VIEW.top, y2: VIEW.top + plot.height });
+    const tip = h("div.chart__tip", { attr: { hidden: "" } });
+    function point(i) {
+      cross.setAttribute("x1", px(i)); cross.setAttribute("x2", px(i));
+      cross.classList.add("is-on");
+      tip.replaceChildren(h("b", { text: `${exp.knob.label} ${xs[i]}` }), ...[...series].sort((a, b) => b.points[i].value - a.points[i].value).map((one) => h(`div.chart__row${focus && focus !== one.variant.id ? ".is-dim" : ""}`, null,
+        h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label }), h("span.num", { text: `${one.points[i].value} ${y.unit}` }), h(`span${one.points[i].wrong ? ".is-wrong" : ""}`, { text: verdict(one.points[i]) }))));
+      tip.hidden = false;
+      const half = i >= xs.length / 2;
+      tip.style.left = half ? "" : `${((px(i) + 14) / VIEW.width) * 100}%`;
+      tip.style.right = half ? `${100 - ((px(i) - 14) / VIEW.width) * 100}%` : "";
+    }
+    function leave() { cross.classList.remove("is-on"); tip.hidden = true; }
+    const width = (plot.width - 2 * VIEW.inset) / (xs.length - 1);
+    const hits = xs.map((x, i) => {
+      const hit = s("rect", { class: "chart__hit", x: px(i) - width / 2, y: VIEW.top, width, height: plot.height + VIEW.bottom, tabindex: 0, role: "button", "aria-label": `${exp.knob.label} ${x}，读这一列` });
+      for (const name of ["pointerenter", "focus", "click"]) hit.addEventListener(name, () => point(i));
+      hit.addEventListener("blur", leave);
+      return hit;
+    });
+    const svg = s("svg", { viewBox: `0 0 ${VIEW.width} ${VIEW.height}`, class: "chart__svg", role: "img", "aria-label": `${y.label}随${exp.knob.label}的变化，${series.length} 种写法，数据在下面的表里` },
+      grid, xLabels, xTitle, cross, series.map((one) => one.el), hits);
+    svg.addEventListener("pointerleave", leave);
+
+    const read = h("p.chart__read", { attr: { "aria-live": "polite" } });
+    const buttons = series.map((one) => h("button.chart__pick", { attr: { type: "button", "aria-pressed": "false" }, on: { click: () => look(focus === one.variant.id ? null : one.variant.id) } },
+      h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label })));
+    function look(id) {
+      focus = id;
+      series.forEach((one, n) => { one.el.classList.toggle("is-dim", Boolean(id) && one.variant.id !== id); one.el.classList.toggle("is-on", one.variant.id === id); buttons[n].setAttribute("aria-pressed", String(one.variant.id === id)); });
+      const one = series.find((candidate) => candidate.variant.id === id);
+      if (!one) return read.replaceChildren("点上面的写法名，只看那一条线；把鼠标移到图上（手机上点一下），读那一列的每个数。");
+      const last = one.points.at(-1), first = one.points[0];
+      const basePoint = exp.results.variants[base.id].runs[last.x];
+      const ratio = one.variant.id === base.id ? "" : `，是「${base.label}」的 ${(last.value / median(basePoint.map((run) => run[y.key]))).toFixed(1)} 倍`;
+      const wrongAt = one.points.filter((item) => item.wrong).map((item) => item.x);
+      read.replaceChildren(L.md(`${one.variant.label}：${exp.knob.label} ${first.x} 时 **${first.value} ${y.unit}**，到 ${last.x} 时 **${last.value} ${y.unit}**${ratio}。${wrongAt.length ? `==${exp.knob.label}为 ${wrongAt.join("、")} 时结果有错==。` : "每一组结果都对。"}`));
+    }
+    look(null);
+
+    const table = h("details.chart__table", null, h("summary", { text: "看数据表" }), h("table", null,
+      h("thead", null, h("tr", null, h("th", { text: `${exp.knob.label} →` }), xs.map((x) => h("th", { text: String(x) })))),
+      h("tbody", null, series.map((one) => h("tr", null, h("th", { text: one.variant.label }), one.points.map((item) => h("td", { text: `${item.value} ${y.unit}${item.wrong ? "（有错）" : ""}` })))))));
+
+    return {
+      el: h("figure.chart", null,
+        h("figcaption.chart__cap", null, h("b", { text: `${y.label}（${y.unit}）` }), h("span", { text: `每个点是 ${exp.repeat} 次真实运行的中位数` }),
+          h("span.chart__marks", null, h("i.chart__mark"), "这一组结果全对", h("i.chart__mark.is-wrong"), "有错")),
+        h("div.chart__plot", null, svg, tip),
+        h("div.chart__side", null, h("div.chart__picks", { attr: { role: "group", "aria-label": "只看一种写法" } }, buttons), read, table)),
+      steps: block.walk.map((item) => ({ say: item.say, key: item.key })),
+      set(k) { look(k ? block.walk[k - 1].focus : null); },
+    };
+  };
+
+  /* ---------- the rule for choosing, as a tree ---------- */
+
+  L.blocks.decide = (block) => {
+    const branches = block.branches.map((branch) => ({
+      pick: branch.pick,
+      el: h("li.decide__branch", null,
+        h("span.decide__when", null, L.md(branch.when)),
+        h("span.decide__pick", null, L.term(branch.pick, h("span", { text: branch.pick }))),
+        branch.eg ? h("small.decide__eg", { text: `比如：${branch.eg}` }) : null),
+    }));
+    /* When the learner answers a `cases` item on the same slide, the branch that item belongs to lights up. */
+    const onPicked = (event) => {
+      const hit = branches.find((branch) => branch.pick === event.detail.name);
+      if (!hit || !hit.el.isConnected) return;
+      branches.forEach((branch) => branch.el.classList.remove("is-hit"));
+      void hit.el.offsetWidth; // restart the flash when the same branch is hit twice
+      hit.el.classList.add("is-hit", "is-used");
+    };
+    document.addEventListener("lesson:picked", onPicked);
+    return { el: h("div.decide", null, h("p.decide__q", null, L.md(block.q)), h("ul.decide__list", null, branches.map((branch) => branch.el))) };
+  };
+})();
+
+</script>
+<script>
+/* The experiment block: the code on the left (switch what was changed), what really happened on the right.
+   Every dot is one recorded run on the learner's own machine; the page never invents a number. Switching the code or the knob
+   moves the same dots, so the learner sees the effect of one change as data. Touch a dot to read that single run. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const AXIS_ROOM = 1.04, BIN = 1.2, DROP_MS = 45;
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  const median = (values) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.floor(sorted.length / 2)]; };
+
+  /** worst: the largest miss of the target, signed (negative = came out too low, positive = too high). */
+  function summary(runs, metric) {
+    const misses = runs.map((run) => run[metric.key] - run[metric.expectKey]);
+    return { wrong: misses.filter(Boolean).length, total: runs.length, worst: misses.reduce((far, miss) => (Math.abs(miss) > Math.abs(far) ? miss : far), 0), expected: runs[0][metric.expectKey] };
+  }
+  const missed = (miss) => `${miss > 0 ? "多了" : "少了"} ${L.num(Math.abs(miss))}`;
+
+  L.blocks.experiment = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.lab];
+    const shown = exp.variants.filter((variant) => block.show.includes(variant.id));
+    const base = exp.variants[0];
+    const metric = exp.metric, time = exp.time;
+    let variant = block.select || shown[0].id;
+    let knob = block.at || (exp.knob ? exp.knob.default : "-");
+    let played = false;
+    let seen = block.hand ? 0 : exp.repeat; // hand: the learner lets the recorded runs out one press at a time
+
+    const runsOf = (id) => exp.results.variants[id].runs[knob];
+    const view = L.codeView();
+    const note = h("p.exp__note");
+    const question = h("p.exp__q");
+    const finding = h("p.exp__finding", { attr: { "aria-live": "polite" } });
+    const probe = h("span.exp__probe");
+    const command = h("code.cmd");
+    const ticks = h("div.plot__ticks", null, h("span", { text: "0" }), h("span.is-expect"));
+
+    const rows = shown.map((item) => {
+      const dots = Array.from({ length: exp.repeat }, (unused, i) => h("i.dot.is-waiting", { on: { mouseenter: () => read(item, i), click: () => read(item, i) } }));
+      const sum = h("span.plot__sum");
+      const label = h("button.plot__label", { text: item.label, attr: { type: "button" }, on: { click: () => choose(item.id) } });
+      return { item, dots, sum, track: h("div.plot__track", null, dots), el: null, label };
+    });
+    rows.forEach((row) => { row.el = h("div.plot__row", null, row.label, row.track, row.sum); });
+
+    function read(item, i) {
+      const run = runsOf(item.id)[i];
+      probe.textContent = `${item.label} · 第 ${i + 1} 次：${metric.key} = ${L.num(run[metric.key])}${time ? `，${run[time.key]} ${time.unit}` : ""}`;
+    }
+
+    /* The far end of the axis: the largest result or target among everything this block can show. */
+    const reachable = exp.knob && block.knob !== false ? exp.knob.values : [knob];
+    const axisTop = AXIS_ROOM * Math.max(...shown.flatMap((item) => reachable.flatMap((value) => exp.results.variants[item.id].runs[value].flatMap((run) => [run[metric.key], run[metric.expectKey]]))));
+
+    function place(row) {
+      const runs = runsOf(row.item.id);
+      const info = summary(runs, metric);
+      const bins = new Map();
+      row.track.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      runs.forEach((run, i) => {
+        const percent = (run[metric.key] / axisTop) * 100;
+        const bin = Math.round(percent / BIN);
+        const seat = bins.get(bin) || 0;
+        bins.set(bin, seat + 1);
+        row.dots[i].style.left = `${percent}%`;
+        row.dots[i].style.transform = `translate(${-Math.floor(seat / 3) * 7}px, ${[0, -11, 11][seat % 3]}px)`;
+        row.dots[i].classList.toggle("is-ok", run[metric.key] === run[metric.expectKey]);
+      });
+      row.sum.replaceChildren(
+        h(`b${info.wrong ? "" : ".is-ok"}`, { text: info.wrong === 0 ? `${info.total} 次全对` : info.wrong === info.total ? `${info.total} 次全错` : `错了 ${info.wrong} 次` }),
+        time ? h("span.num", { text: `中位 ${median(runs.map((run) => run[time.key]))} ${time.unit}` }) : null,
+      );
+      row.el.classList.toggle("is-on", row.item.id === variant);
+      return info;
+    }
+
+    function tell(info, item) {
+      const runs = runsOf(item.id);
+      const speed = time ? `中位耗时 **${median(runs.map((run) => run[time.key]))} ${time.unit}**` : "";
+      if (info.wrong === 0) {
+        const slower = time && item.id !== base.id ? `，${base.label}是 ${median(runsOf(base.id).map((run) => run[time.key]))} ${time.unit}` : "";
+        return `${item.label}：${info.total} 次==全对==。${speed}${slower}。`;
+      }
+      const share = Math.round((Math.abs(info.worst) / info.expected) * 100);
+      return `${item.label}：${info.total} 次里 ==${info.wrong} 次不对==。${info.worst > 0 ? "最多到了" : "最少只到"} **${L.num(info.expected + info.worst)}**，${missed(info.worst)}${share ? `（${share}%）` : ""}。${speed}。`;
+    }
+
+    function draw() {
+      const item = exp.variants.find((candidate) => candidate.id === variant);
+      const source = exp.sources[variant];
+      view.show(source, { path: exp.paths[variant], lang: exp.lang, changed: variant === base.id ? [] : L.changedLines(exp.sources[base.id], source), focus: variant === base.id ? block.focusLines || [] : [] });
+      note.textContent = item.note || "";
+      let info = null;
+      for (const row of rows) { const result = place(row); if (row.item.id === variant) info = result; }
+      ticks.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      ticks.lastChild.textContent = `应该是 ${L.num(info.expected)}`;
+      question.replaceChildren(L.md(`每种写法跑 **${exp.repeat} 次**，一个点是一次的「${metric.label}」。`));
+      finding.replaceChildren(L.md(tell(info, item)));
+      command.textContent = `${exp.shown[variant]}${knob === "-" ? "" : ` ${knob}`}`;
+      probe.textContent = "";
+      if (block.hand) paintHand();
+    }
+
+    /* Hand mode: nothing is summed up until every run has been seen, so the surprise is the learner's own. */
+    const more = h("button.btn.btn--primary", { attr: { type: "button" }, on: { click: () => letOut(1) } });
+    const rest = h("button.btn", { attr: { type: "button" }, on: { click: () => letOut(exp.repeat) } });
+    const hand = block.hand ? h("div.exp__hand", null, more, rest) : null;
+    function paintHand() {
+      const row = rows[0], runs = runsOf(row.item.id), pending = seen < exp.repeat;
+      row.dots.forEach((dot, i) => dot.classList.toggle("is-waiting", i >= seen));
+      row.sum.classList.toggle("is-held", pending);
+      hand.hidden = !pending;
+      if (!pending) return;
+      more.textContent = seen === 0 ? "看第 1 次运行" : "再看一次";
+      rest.textContent = `把剩下的 ${exp.repeat - seen} 次一起放出来`;
+      rest.hidden = seen < 2;
+      if (seen === 0) return finding.replaceChildren("还一次都没看。点下面的按钮，看第 1 次跑出了多少。");
+      const last = runs[seen - 1], value = last[metric.key], expected = last[metric.expectKey];
+      const same = seen > 1 && runs[seen - 2][metric.key] === value;
+      finding.replaceChildren(L.md(`第 ${seen} 次：**${L.num(value)}**。${value === expected ? "和应该的一样。" : `应该是 ${L.num(expected)}，==${missed(value - expected)}==。`}${seen > 1 ? (same ? "和上一次一样。" : "和上一次还不一样。") : ""}`));
+    }
+    function letOut(n) {
+      const from = seen;
+      seen = Math.min(exp.repeat, seen + n);
+      draw();
+      if (seen - from > 1 && !still.matches) rows[0].dots.forEach((dot, i) => { if (i >= from) { dot.classList.add("is-waiting"); setTimeout(() => dot.classList.remove("is-waiting"), 80 + (i - from) * DROP_MS); } });
+    }
+
+    function play() {
+      played = true;
+      if (seen < exp.repeat) return;
+      const all = rows.flatMap((row) => row.dots);
+      all.forEach((dot) => dot.classList.add("is-waiting"));
+      if (still.matches) return all.forEach((dot) => dot.classList.remove("is-waiting"));
+      rows.forEach((row) => row.dots.forEach((dot, i) => setTimeout(() => dot.classList.remove("is-waiting"), 260 + i * DROP_MS)));
+    }
+
+    function choose(id) { variant = id; tabs?.pick(id); draw(); }
+    const tabs = shown.length > 1 ? L.segmented("写法", shown.map((item) => ({ id: item.id, label: item.label })), variant, choose) : null;
+    const dial = exp.knob && block.knob !== false ? L.segmented(exp.knob.label, exp.knob.values.map((value) => ({ id: value, label: value })), knob, (value) => { knob = value; draw(); }) : null;
+    const copy = h("button.btn.btn--quiet", { text: "复制", attr: { type: "button" }, on: { click() { navigator.clipboard?.writeText(command.textContent).then(() => { copy.textContent = "已复制"; }, () => {}); } } });
+    const env = exp.results.env;
+
+    draw();
+    return {
+      el: h("div.exp", null,
+        tabs || dial ? h("div.exp__bar", null, tabs?.el, dial?.el) : null,
+        h("div.exp__body", null,
+          h("div", null, view.el, note),
+          h("div.exp__data", null, question, h("div.plot", null, rows.map((row) => row.el), h("div.plot__axis", null, h("span"), ticks, h("span"))), finding, hand,
+            h("div.exp__foot", null,
+              h("span", { text: `真实记录 · 这台电脑 · ${env.runtime} · ${env.cores} 个逻辑核 · ${env.date}` }),
+              h("button.btn.btn--quiet", { text: "再放一遍", attr: { type: "button" }, on: { click: play } }),
+              h("span", null, "自己跑：", command), copy, probe))),
+      ),
+      refresh() { if (!played) play(); },
+      waitSay: "先自己看：点「看第 1 次运行」，一次一次把结果放出来。实在想跳过，再按一次。",
+      ready: () => seen >= exp.repeat,
+      pass() { if (seen < exp.repeat) letOut(exp.repeat); },
+    };
+  };
+})();
+
+</script>
+<script>
+/* Two actors and the one thing they share, with time running downward.
+   `lanes` is the teacher's walk through one fixed order of steps; a step may end in a question the learner answers before the next
+   step shows what really happens. `schedule` hands the order to the learner: they press which actor moves next and watch what the
+   shared value becomes, with a lock they can switch on. Both draw rows the same way. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const OPS = ["read", "calc", "write"];
+
+  /** One row: a step in its actor's lane, an arrow to or from the shared value when the step touches it.
+      A `note` step touches nothing: the actor waits, gives up, takes or releases something. */
+  function row(step, shared) {
+    const touches = step.op === "read" || step.op === "write";
+    const inward = step.op === "write";
+    const arrow = h(`span.arrow.arrow--${!touches ? "none" : (step.lane === 0) === inward ? "right" : "left"}`);
+    const chip = h(`span.chip${step.op === "note" && step.tone ? `.chip--${step.tone}` : ""}`, { text: step.text });
+    const cells = [h("div.lcell.lcell--a"), h("div.lcell.lcell--mid"), h("div.lcell.lcell--b")];
+    cells[step.lane === 0 ? 0 : 2].append(...(step.lane === 0 ? [chip, arrow] : [arrow, chip]));
+    if (touches) cells[1].append(h(`span.val${inward ? ".val--write" : ""}`, { text: String(shared) }));
+    return h("div.lrow", null, cells);
+  }
+
+  function grid(names, sharedName, rows) {
+    return h("div.lanes__grid", null,
+      h("div.lanes__head.lanes__head--a", { text: names[0] }), h("div.lanes__head.lanes__head--mid", { text: sharedName }), h("div.lanes__head.lanes__head--b", { text: names[1] }),
+      rows);
+  }
+
+  L.blocks.lanes = (block, ctx) => {
+    let shared = block.shared.start, now = 0;
+    const key = `lanes:${block.expr}:${block.steps.length}`;
+    const answers = ctx.memory.get(key, {});
+    const parts = OPS.map((op) => h("span.part", { text: block.parts[op] }));
+    const rows = block.steps.map((step) => { if (step.op === "write") shared = step.value; return row(step, shared); });
+    const verdict = h("p.lanes__verdict.is-waiting", null, L.md(block.verdict));
+    const askBox = h("div.lanes__ask", { attr: { hidden: "" } });
+    const askNow = () => (now >= 1 && now <= rows.length ? block.steps[now - 1].ask : null);
+    /* The same steps seen in space: who holds what, and what the shared thing is right now. */
+    const picture = L.sharePicture({ actors: block.lanes, shared: block.shared.name });
+    const frames = L.shareFrames(block.steps, block.shared.start);
+
+    /* The question that closes a step: what will the next step do? Answered here, shown for real by the next press. */
+    function paintAsk() {
+      const ask = askNow();
+      askBox.hidden = !ask;
+      if (!ask) return;
+      const picked = answers[now - 1];
+      const buttons = ask.options.map((text, i) => {
+        const button = h("button.pick", { attr: { type: "button" }, on: { click() { answers[now - 1] = i; ctx.memory.set(key, answers); paintAsk(); } } }, L.md(text));
+        button.disabled = picked !== undefined;
+        if (picked !== undefined && i === ask.answer) button.classList.add("is-right");
+        if (picked === i && i !== ask.answer) button.classList.add("is-wrong");
+        return button;
+      });
+      const out = picked === undefined ? "" : picked === ask.answer ? "对。按下一步，看它是怎么发生的。" : "不是这个。按下一步，看实际发生了什么。";
+      askBox.replaceChildren(h("p", null, L.md(ask.q)), h("div.picks", null, buttons), h("p.ask__out", { text: out }));
+    }
+
+    return {
+      el: h(`div.lanes${rows.length > 7 ? ".lanes--long" : ""}`, null,
+        h("div.lanes__main", null,
+          h("div.lanes__expr", null, h("code.lanes__code", { text: block.expr }), h("div.lanes__parts", null, parts[0], "→", parts[1], "→", parts[2])),
+          grid(block.lanes, block.shared.name, rows), askBox, verdict),
+        h("div.lanes__side", null, h("p.lanes__now", { text: "此刻" }), picture.el)),
+      steps: block.steps.map((step) => ({ say: step.say, key: step.key })).concat({ say: block.verdictSay, key: block.verdictKey }),
+      waitSay: "先猜一下再往下：点一个你觉得会发生的。实在想跳过，再按一次。",
+      ready: () => !askNow() || answers[now - 1] !== undefined,
+      set(k) {
+        now = k;
+        rows.forEach((el, i) => { el.classList.toggle("is-waiting", i >= k); el.classList.toggle("is-now", i === k - 1); });
+        const op = k >= 1 && k <= rows.length ? block.steps[k - 1].op : null;
+        parts.forEach((part, i) => part.classList.toggle("is-now", OPS[i] === op));
+        verdict.classList.toggle("is-waiting", k <= rows.length);
+        picture.set(frames[Math.min(k, frames.length - 1)]);
+        paintAsk();
+      },
+      /** The part that just changed, so a long walk keeps its newest row on screen. */
+      spot: () => (now > rows.length ? verdict : askNow() ? askBox : rows[now - 1]?.firstChild),
+    };
+  };
+
+  L.blocks.schedule = (block) => {
+    const name = block.shared.name;
+    const hint = { read: `读 ${name}`, calc: "算出新值", write: `写回 ${name}` };
+    const reached = new Set();
+    let shared, actors, owner, locked = false;
+
+    const rows = h("div.lrow-list");
+    const value = h("span.val");
+    const buttons = [0, 1].map((lane) => h("button.btn", { attr: { type: "button" }, on: { click: () => move(lane) } }));
+    const result = h("p.sched__result", { attr: { "aria-live": "polite" } });
+    const goals = block.goals.map((goal) => h("li.goal", { text: goal.label }));
+    const lock = block.lock ? L.segmented("", [{ id: "off", label: "不加锁" }, { id: "on", label: block.lock.label }], "off", (id) => { locked = id === "on"; reset(); }) : null;
+    const allReached = () => block.goals.every((goal) => reached.has(goal.value));
+
+    function paint() {
+      value.textContent = String(shared);
+      buttons.forEach((button, lane) => {
+        const actor = actors[lane];
+        const waits = locked && owner !== null && owner !== lane;
+        button.disabled = actor.pc === OPS.length || waits;
+        button.textContent = actor.pc === OPS.length ? `${block.lanes[lane]} 走完了` : waits ? `${block.lanes[lane]} 在等锁` : `${block.lanes[lane]} 走一步：${hint[OPS[actor.pc]]}`;
+      });
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      if (actors.some((actor) => actor.pc < OPS.length)) { result.textContent = ""; return; }
+      reached.add(shared);
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      const lost = (block.shared.start + 2 * block.delta - shared) / block.delta;
+      const outcome = `两边都走完了：${name} = ${shared}。${lost ? `有 ${lost} 次白加了。` : "一次都没丢。"}`;
+      result.replaceChildren(L.md(allReached() ? `${outcome}${block.done}` : `${outcome}点「重来」，换一种顺序试试。`));
+    }
+
+    function move(lane) {
+      const actor = actors[lane], op = OPS[actor.pc];
+      let text;
+      if (op === "read") { actor.local = shared; owner = lane; text = `读到 ${shared}`; }
+      else if (op === "calc") { text = `${actor.local} ${block.delta < 0 ? "−" : "+"} ${Math.abs(block.delta)} = ${actor.local + block.delta}`; actor.local += block.delta; }
+      else { shared = actor.local; owner = null; text = `写回 ${shared}`; }
+      actor.pc += 1;
+      rows.append(row({ lane, op, text }, shared));
+      rows.lastChild.scrollIntoView({ block: "nearest" });
+      paint();
+    }
+
+    function reset() {
+      shared = block.shared.start;
+      actors = [{ pc: 0, local: null }, { pc: 0, local: null }];
+      owner = null;
+      rows.replaceChildren();
+      paint();
+    }
+
+    reset();
+    return {
+      el: h("div.sched", null,
+        h("div.sched__bar", null, h("ul.goals", null, goals), lock?.el, h("button.btn.btn--quiet", { text: "重来", attr: { type: "button" }, on: { click: reset } })),
+        grid(block.lanes, name, [rows,
+          h("div.lrow.lrow--controls", null, h("div.lcell.lcell--a", null, buttons[0]), h("div.lcell.lcell--mid", null, value), h("div.lcell.lcell--b", null, buttons[1]))]),
+        result),
+      waitSay: "先自己排一排：点两边的按钮，把上面几种结果都排出来。实在想跳过，再按一次。",
+      ready: allReached,
+    };
+  };
+})();
+
+</script>
+<script>
+/* The lesson as a sequence of moments. A moment is one teacher sentence plus one visible change: a block appearing, or one step
+   inside a block. → / space goes to the next moment, ← back; the track at the top shows where the lesson is in its arc.
+   A block that waits for the learner (a guess, a quiz) holds the lesson once, then lets a second press pass.
+   Deep link: #4 opens slide 4, #4.end opens it with every moment shown. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const lesson = JSON.parse(document.getElementById("lesson-data").textContent);
+  const memory = L.memory(`lesson:${lesson.id}`);
+  const predicts = {};
+  for (const slide of lesson.slides) for (const block of slide.blocks) if (block.t === "predict") predicts[block.id] = block;
+  const ctx = { lesson, memory, predicts };
+  L.glossary = lesson.terms || {};
+
+  const $ = (id) => document.getElementById(id);
+  const stage = $("stage"), line = $("line"), keyLine = $("key"), prev = $("prev"), next = $("next"), count = $("count"), notes = $("notes"), notesList = $("notes-list");
+  const beats = lesson.beats.map((beat) => h("button.beat", { text: beat.label, attr: { type: "button" }, on: { click: () => go(lesson.slides.findIndex((slide) => slide.beat === beat.id), 0) } }));
+  $("beats").append(...beats);
+  $("title").textContent = `${lesson.course} · ${lesson.title}`;
+
+  let at = { s: 0, m: 0 }, current = null, nudged = false;
+
+  function build(index) {
+    const slide = lesson.slides[index];
+    const items = slide.blocks.map((block) => { const made = L.blocks[block.t](block, ctx); return { block, made, wrap: h("div.block.is-waiting", null, made.el), seen: false }; });
+    const moments = slide.bridge ? [{ b: -1, k: 0, say: slide.bridge }] : [];
+    items.forEach((item, b) => {
+      moments.push({ b, k: 0, say: item.block.say, key: item.block.key });
+      (item.made.steps || []).forEach((step, i) => moments.push({ b, k: i + 1, say: step.say ?? step, key: step.key }));
+    });
+    const hook = index === 0;
+    const meta = hook ? h("div.hook__meta", null,
+      h("div", null, h("h3", { text: "需要先会" }), h("ul", null, lesson.needs.map((item) => h("li", { text: item })))),
+      h("div", null, h("h3", { text: `学完你能（约 ${lesson.minutes} 分钟）` }), h("ul", null, lesson.after.map((item) => h("li", { text: item }))))) : null;
+    const el = h(`section.slide${hook ? ".slide--hook" : ""}${slide.layout === "split" ? ".slide--split" : ""}`, null,
+      h("h1.slide__title", { text: slide.title }), h("div.slide__blocks", null, items.map((item) => item.wrap)), meta);
+    return { index, items, moments, el };
+  }
+
+  function remember(key) {
+    const keys = memory.get("keys", []);
+    if (keys.includes(key)) return;
+    memory.set("keys", keys.concat(key));
+    notes.classList.remove("is-flash");
+    void notes.offsetWidth;
+    notes.classList.add("is-flash");
+  }
+
+  function paintNotes() {
+    const keys = memory.get("keys", []);
+    notes.textContent = `要点 ${keys.length}`;
+    notesList.replaceChildren(...(keys.length ? keys.map((key) => h("li", { text: key })) : [h("li.is-empty", { text: "讲到关键结论时，会自动记在这里。" })]));
+  }
+
+  function show(spoken) {
+    L.hideTip();
+    if (!current || current.index !== at.s) { current = build(at.s); stage.replaceChildren(current.el); stage.scrollTop = 0; }
+    at.m = Math.min(at.m, current.moments.length - 1);
+    const now = current.moments[at.m];
+    current.items.forEach((item, b) => {
+      const reached = current.moments.filter((moment, i) => i <= at.m && moment.b === b);
+      item.wrap.classList.toggle("is-waiting", reached.length === 0);
+      if (!reached.length) { item.seen = false; return; }
+      item.made.set?.(reached.at(-1).k);
+      if (!item.seen) { item.seen = true; item.made.refresh?.(); }
+    });
+    line.replaceChildren(h("span", null, L.md(spoken || now.say)));
+    line.classList.remove("is-fresh");
+    void line.offsetWidth;
+    line.classList.add("is-fresh");
+    keyLine.hidden = !now.key || Boolean(spoken);
+    if (now.key && !spoken) { keyLine.textContent = `已记入要点：${now.key}`; remember(now.key); }
+    paintNotes();
+    // keep what just changed in view: the block says which part of it that is, or it is the block itself
+    const changed = current.items[now.b];
+    if (at.m > 0 && changed) (changed.made.spot?.() || changed.wrap).scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const beat = lesson.beats.findIndex((item) => item.id === lesson.slides[at.s].beat);
+    beats.forEach((el, i) => { el.classList.toggle("is-now", i === beat); el.classList.toggle("is-done", i < beat); el.setAttribute("aria-current", i === beat ? "step" : "false"); });
+    count.textContent = `${at.s + 1} / ${lesson.slides.length}`;
+    const last = at.s === lesson.slides.length - 1 && at.m === current.moments.length - 1;
+    prev.disabled = at.s === 0 && at.m === 0;
+    next.disabled = last;
+    memory.set("at", at);
+  }
+
+  function go(s, m) { if (s < 0) return; at = { s, m }; nudged = false; show(); }
+
+  function forward() {
+    const item = current.items[current.moments[at.m].b];
+    if (item?.made.ready && !item.made.ready()) {
+      if (!nudged) { nudged = true; return show(item.made.waitSay || "先选一个再往下。猜错没关系；实在想跳过，再按一次。"); }
+      item.made.pass?.(); // the learner chose to skip: the block shows what it was holding back
+    }
+    if (at.m < current.moments.length - 1) return go(at.s, at.m + 1);
+    if (at.s < lesson.slides.length - 1) go(at.s + 1, 0);
+  }
+
+  function back() {
+    if (at.m > 0) return go(at.s, at.m - 1);
+    if (at.s > 0) go(at.s - 1, Number.MAX_SAFE_INTEGER);
+  }
+
+  next.addEventListener("click", forward);
+  prev.addEventListener("click", back);
+  document.addEventListener("keydown", (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const typing = event.target.closest?.("button, input, [role=button], .code__scroll");
+    if (event.key === "ArrowRight" || event.key === "PageDown" || (event.key === " " && !typing)) { event.preventDefault(); forward(); }
+    else if (event.key === "ArrowLeft" || event.key === "PageUp") { event.preventDefault(); back(); }
+  });
+
+  notes.addEventListener("click", (event) => { event.stopPropagation(); notesList.hidden = !notesList.hidden; });
+  document.addEventListener("click", (event) => { if (!notesList.contains(event.target)) notesList.hidden = true; });
+
+  const root = document.documentElement, themeButton = $("theme");
+  const dark = () => (root.dataset.theme ? root.dataset.theme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const paintTheme = () => { themeButton.textContent = dark() ? "浅色" : "深色"; };
+  themeButton.addEventListener("click", () => { root.dataset.theme = dark() ? "light" : "dark"; try { localStorage.setItem("lesson-theme", root.dataset.theme); } catch { /* private window */ } paintTheme(); });
+  paintTheme();
+
+  const link = /^#(\d+)(\.end)?$/.exec(location.hash);
+  const saved = memory.get("at", { s: 0, m: 0 });
+  if (link) go(Math.min(Number(link[1]), lesson.slides.length) - 1, link[2] ? Number.MAX_SAFE_INTEGER : 0);
+  else go(Math.min(saved.s, lesson.slides.length - 1), saved.m);
+})();
+
+</script>
+</body>
+</html>

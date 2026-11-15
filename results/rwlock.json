@@ -1,0 +1,1671 @@
+{
+ "id": "rwlock",
+ "variants": {
+  "Plain": {
+   "hash": "99ae4433b6925a4c",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 37
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     }
+    ],
+    "2": [
+     {
+      "okReads": 4918,
+      "expected": 5000,
+      "ms": 30
+     },
+     {
+      "okReads": 4923,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 4921,
+      "expected": 5000,
+      "ms": 30
+     },
+     {
+      "okReads": 4925,
+      "expected": 5000,
+      "ms": 29
+     },
+     {
+      "okReads": 4922,
+      "expected": 5000,
+      "ms": 28
+     },
+     {
+      "okReads": 4914,
+      "expected": 5000,
+      "ms": 30
+     },
+     {
+      "okReads": 4917,
+      "expected": 5000,
+      "ms": 29
+     },
+     {
+      "okReads": 4924,
+      "expected": 5000,
+      "ms": 29
+     },
+     {
+      "okReads": 4931,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 4919,
+      "expected": 5000,
+      "ms": 30
+     },
+     {
+      "okReads": 4920,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 4918,
+      "expected": 5000,
+      "ms": 29
+     },
+     {
+      "okReads": 4915,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 4918,
+      "expected": 5000,
+      "ms": 29
+     },
+     {
+      "okReads": 4912,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 4924,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 4916,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 4911,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 4923,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 4909,
+      "expected": 5000,
+      "ms": 33
+     }
+    ],
+    "4": [
+     {
+      "okReads": 14725,
+      "expected": 15000,
+      "ms": 33
+     },
+     {
+      "okReads": 14763,
+      "expected": 15000,
+      "ms": 35
+     },
+     {
+      "okReads": 14730,
+      "expected": 15000,
+      "ms": 35
+     },
+     {
+      "okReads": 14754,
+      "expected": 15000,
+      "ms": 34
+     },
+     {
+      "okReads": 14710,
+      "expected": 15000,
+      "ms": 37
+     },
+     {
+      "okReads": 14743,
+      "expected": 15000,
+      "ms": 30
+     },
+     {
+      "okReads": 14756,
+      "expected": 15000,
+      "ms": 32
+     },
+     {
+      "okReads": 14759,
+      "expected": 15000,
+      "ms": 33
+     },
+     {
+      "okReads": 14745,
+      "expected": 15000,
+      "ms": 36
+     },
+     {
+      "okReads": 14752,
+      "expected": 15000,
+      "ms": 31
+     },
+     {
+      "okReads": 14747,
+      "expected": 15000,
+      "ms": 31
+     },
+     {
+      "okReads": 14751,
+      "expected": 15000,
+      "ms": 31
+     },
+     {
+      "okReads": 14697,
+      "expected": 15000,
+      "ms": 28
+     },
+     {
+      "okReads": 14758,
+      "expected": 15000,
+      "ms": 33
+     },
+     {
+      "okReads": 14770,
+      "expected": 15000,
+      "ms": 31
+     },
+     {
+      "okReads": 14758,
+      "expected": 15000,
+      "ms": 32
+     },
+     {
+      "okReads": 14733,
+      "expected": 15000,
+      "ms": 33
+     },
+     {
+      "okReads": 14752,
+      "expected": 15000,
+      "ms": 29
+     },
+     {
+      "okReads": 14732,
+      "expected": 15000,
+      "ms": 31
+     },
+     {
+      "okReads": 14772,
+      "expected": 15000,
+      "ms": 30
+     }
+    ],
+    "8": [
+     {
+      "okReads": 34446,
+      "expected": 35000,
+      "ms": 36
+     },
+     {
+      "okReads": 34403,
+      "expected": 35000,
+      "ms": 34
+     },
+     {
+      "okReads": 34350,
+      "expected": 35000,
+      "ms": 37
+     },
+     {
+      "okReads": 34423,
+      "expected": 35000,
+      "ms": 36
+     },
+     {
+      "okReads": 34392,
+      "expected": 35000,
+      "ms": 34
+     },
+     {
+      "okReads": 34478,
+      "expected": 35000,
+      "ms": 34
+     },
+     {
+      "okReads": 34442,
+      "expected": 35000,
+      "ms": 55
+     },
+     {
+      "okReads": 34458,
+      "expected": 35000,
+      "ms": 35
+     },
+     {
+      "okReads": 34453,
+      "expected": 35000,
+      "ms": 35
+     },
+     {
+      "okReads": 34464,
+      "expected": 35000,
+      "ms": 39
+     },
+     {
+      "okReads": 34407,
+      "expected": 35000,
+      "ms": 37
+     },
+     {
+      "okReads": 34345,
+      "expected": 35000,
+      "ms": 36
+     },
+     {
+      "okReads": 34440,
+      "expected": 35000,
+      "ms": 37
+     },
+     {
+      "okReads": 34433,
+      "expected": 35000,
+      "ms": 55
+     },
+     {
+      "okReads": 34440,
+      "expected": 35000,
+      "ms": 40
+     },
+     {
+      "okReads": 34412,
+      "expected": 35000,
+      "ms": 37
+     },
+     {
+      "okReads": 34447,
+      "expected": 35000,
+      "ms": 43
+     },
+     {
+      "okReads": 34388,
+      "expected": 35000,
+      "ms": 44
+     },
+     {
+      "okReads": 34450,
+      "expected": 35000,
+      "ms": 42
+     },
+     {
+      "okReads": 34390,
+      "expected": 35000,
+      "ms": 39
+     }
+    ]
+   },
+   "inside": "Compiled from \"Plain.java\"\npublic class lab.rwlock.Plain {\n  static final int READS_PER_THREAD;\n\n  static int basePrice;\n\n  static int discount;\n\n  static volatile int sink;\n\n  public lab.rwlock.Plain();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static int spin(int, int);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iload_2\n         3: iload_1\n         4: if_icmpge     20\n         7: iload_0\n         8: bipush        31\n        10: imul\n        11: iload_2\n        12: iadd\n        13: istore_0\n        14: iinc          2, 1\n        17: goto          2\n        20: iload_0\n        21: ireturn\n\n  static int writePrice(boolean);\n    Code:\n         0: iload_0\n         1: ifeq          10\n         4: sipush        200\n         7: goto          12\n        10: bipush        100\n        12: istore_1\n        13: iload_0\n        14: ifeq          22\n        17: bipush        20\n        19: goto          24\n        22: bipush        10\n        24: istore_2\n        25: iload_1\n        26: putstatic     #7                  // Field basePrice:I\n        29: iload_1\n        30: sipush        2500\n        33: invokestatic  #13                 // Method spin:(II)I\n        36: istore_3\n        37: iload_2\n        38: putstatic     #17                 // Field discount:I\n        41: iload_3\n        42: ireturn\n\n  static boolean readValid(int, int[]);\n    Code:\n         0: getstatic     #7                  // Field basePrice:I\n         3: istore_2\n         4: getstatic     #17                 // Field discount:I\n         7: istore_3\n         8: aload_1\n         9: iconst_0\n        10: dup2\n        11: iaload\n        12: iload_2\n        13: iload_3\n        14: iadd\n        15: iload_0\n        16: iadd\n        17: sipush        6000\n        20: invokestatic  #13                 // Method spin:(II)I\n        23: ixor\n        24: iastore\n        25: iload_2\n        26: iload_3\n        27: bipush        10\n        29: imul\n        30: if_icmpne     37\n        33: iconst_1\n        34: goto          38\n        37: iconst_0\n        38: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #20                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: new           #26                 // class java/util/concurrent/atomic/AtomicInteger\n        10: dup\n        11: invokespecial #28                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n        14: astore_2\n        15: new           #29                 // class java/util/concurrent/atomic/AtomicBoolean\n        18: dup\n        19: iconst_0\n        20: invokespecial #31                 // Method java/util/concurrent/atomic/AtomicBoolean.\"<init>\":(Z)V\n        23: astore_3\n        24: invokestatic  #34                 // Method java/lang/System.nanoTime:()J\n        27: lstore        4\n        29: iload_1\n        30: iconst_1\n        31: if_icmpne     115\n        34: iconst_0\n        35: istore        6\n        37: iconst_1\n        38: newarray       int\n        40: astore        7\n        42: iconst_0\n        43: istore        8\n        45: iload         8\n        47: sipush        5000\n        50: if_icmpge     94\n        53: aload         7\n        55: iconst_0\n        56: dup2\n        57: iaload\n        58: iload         8\n        60: iconst_1\n        61: iand\n        62: ifne          69\n        65: iconst_1\n        66: goto          70\n        69: iconst_0\n        70: invokestatic  #40                 // Method writePrice:(Z)I\n        73: ixor\n        74: iastore\n        75: iload         8\n        77: aload         7\n        79: invokestatic  #44                 // Method readValid:(I[I)Z\n        82: ifeq          88\n        85: iinc          6, 1\n        88: iinc          8, 1\n        91: goto          45\n        94: aload_2\n        95: iload         6\n        97: invokevirtual #48                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n       100: pop\n       101: getstatic     #52                 // Field sink:I\n       104: aload         7\n       106: iconst_0\n       107: iaload\n       108: ixor\n       109: putstatic     #52                 // Field sink:I\n       112: goto          259\n       115: new           #55                 // class java/util/concurrent/CountDownLatch\n       118: dup\n       119: iconst_1\n       120: invokespecial #57                 // Method java/util/concurrent/CountDownLatch.\"<init>\":(I)V\n       123: astore        6\n       125: new           #60                 // class java/lang/Thread\n       128: dup\n       129: aload_3\n       130: aload         6\n       132: invokedynamic #62,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/atomic/AtomicBoolean;Ljava/util/concurrent/CountDownLatch;)Ljava/lang/Runnable;\n       137: invokespecial #66                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n       140: astore        7\n       142: aload         7\n       144: invokevirtual #69                 // Method java/lang/Thread.start:()V\n       147: aload         6\n       149: invokevirtual #72                 // Method java/util/concurrent/CountDownLatch.await:()V\n       152: iload_1\n       153: iconst_1\n       154: isub\n       155: istore        8\n       157: iload         8\n       159: anewarray     #60                 // class java/lang/Thread\n       162: astore        9\n       164: iconst_0\n       165: istore        10\n       167: iload         10\n       169: iload         8\n       171: if_icmpge     212\n       174: iload         10\n       176: istore        11\n       178: aload         9\n       180: iload         10\n       182: new           #60                 // class java/lang/Thread\n       185: dup\n       186: iload         11\n       188: aload_2\n       189: invokedynamic #75,  0             // InvokeDynamic #1:run:(ILjava/util/concurrent/atomic/AtomicInteger;)Ljava/lang/Runnable;\n       194: invokespecial #66                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n       197: aastore\n       198: aload         9\n       200: iload         10\n       202: aaload\n       203: invokevirtual #69                 // Method java/lang/Thread.start:()V\n       206: iinc          10, 1\n       209: goto          167\n       212: aload         9\n       214: astore        10\n       216: aload         10\n       218: arraylength\n       219: istore        11\n       221: iconst_0\n       222: istore        12\n       224: iload         12\n       226: iload         11\n       228: if_icmpge     249\n       231: aload         10\n       233: iload         12\n       235: aaload\n       236: astore        13\n       238: aload         13\n       240: invokevirtual #78                 // Method java/lang/Thread.join:()V\n       243: iinc          12, 1\n       246: goto          224\n       249: aload_3\n       250: iconst_1\n       251: invokevirtual #81                 // Method java/util/concurrent/atomic/AtomicBoolean.set:(Z)V\n       254: aload         7\n       256: invokevirtual #78                 // Method java/lang/Thread.join:()V\n       259: invokestatic  #34                 // Method java/lang/System.nanoTime:()J\n       262: lload         4\n       264: lsub\n       265: ldc2_w        #84                 // long 1000000l\n       268: ldiv\n       269: lstore        6\n       271: iload_1\n       272: iconst_1\n       273: if_icmpne     280\n       276: iconst_1\n       277: goto          283\n       280: iload_1\n       281: iconst_1\n       282: isub\n       283: sipush        5000\n       286: imul\n       287: istore        8\n       289: getstatic     #86                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       292: aload_2\n       293: invokevirtual #90                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       296: invokedynamic #94,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       301: invokevirtual #98                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       304: getstatic     #86                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       307: iload         8\n       309: invokedynamic #104,  0            // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n       314: invokevirtual #98                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       317: getstatic     #86                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       320: lload         6\n       322: invokedynamic #105,  0            // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n       327: invokevirtual #98                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       330: return\n\n  private static void lambda$main$1(int, java.util.concurrent.atomic.AtomicInteger);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iconst_1\n         3: newarray       int\n         5: astore_3\n         6: iconst_0\n         7: istore        4\n         9: iload         4\n        11: sipush        5000\n        14: if_icmpge     37\n        17: iload         4\n        19: iload_0\n        20: iadd\n        21: aload_3\n        22: invokestatic  #44                 // Method readValid:(I[I)Z\n        25: ifeq          31\n        28: iinc          2, 1\n        31: iinc          4, 1\n        34: goto          9\n        37: aload_1\n        38: iload_2\n        39: invokevirtual #48                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n        42: pop\n        43: getstatic     #52                 // Field sink:I\n        46: aload_3\n        47: iconst_0\n        48: iaload\n        49: ixor\n        50: putstatic     #52                 // Field sink:I\n        53: return\n\n  private static void lambda$main$0(java.util.concurrent.atomic.AtomicBoolean, java.util.concurrent.CountDownLatch);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iconst_0\n         3: istore_3\n         4: iconst_1\n         5: istore        4\n         7: aload_0\n         8: invokevirtual #108                // Method java/util/concurrent/atomic/AtomicBoolean.get:()Z\n        11: ifne          55\n        14: iload_3\n        15: ifne          22\n        18: iconst_1\n        19: goto          23\n        22: iconst_0\n        23: istore_3\n        24: iload_2\n        25: iload_3\n        26: invokestatic  #40                 // Method writePrice:(Z)I\n        29: ixor\n        30: istore_2\n        31: iload         4\n        33: ifeq          43\n        36: aload_1\n        37: invokevirtual #111                // Method java/util/concurrent/CountDownLatch.countDown:()V\n        40: iconst_0\n        41: istore        4\n        43: iload_2\n        44: iload_2\n        45: ldc           #114                // int 150000\n        47: invokestatic  #13                 // Method spin:(II)I\n        50: ixor\n        51: istore_2\n        52: goto          7\n        55: getstatic     #52                 // Field sink:I\n        58: iload_2\n        59: ixor\n        60: putstatic     #52                 // Field sink:I\n        63: return\n\n  static {};\n    Code:\n         0: bipush        100\n         2: putstatic     #7                  // Field basePrice:I\n         5: bipush        10\n         7: putstatic     #17                 // Field discount:I\n        10: return\n}"
+  },
+  "TwoVolatile": {
+   "hash": "5adc5b0e6761ceda",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 38
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     }
+    ],
+    "2": [
+     {
+      "okReads": 4921,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 4919,
+      "expected": 5000,
+      "ms": 30
+     },
+     {
+      "okReads": 4915,
+      "expected": 5000,
+      "ms": 30
+     },
+     {
+      "okReads": 4916,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 4916,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 4914,
+      "expected": 5000,
+      "ms": 29
+     },
+     {
+      "okReads": 4921,
+      "expected": 5000,
+      "ms": 29
+     },
+     {
+      "okReads": 4920,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 4919,
+      "expected": 5000,
+      "ms": 30
+     },
+     {
+      "okReads": 4924,
+      "expected": 5000,
+      "ms": 29
+     },
+     {
+      "okReads": 4919,
+      "expected": 5000,
+      "ms": 29
+     },
+     {
+      "okReads": 4918,
+      "expected": 5000,
+      "ms": 29
+     },
+     {
+      "okReads": 4917,
+      "expected": 5000,
+      "ms": 30
+     },
+     {
+      "okReads": 4912,
+      "expected": 5000,
+      "ms": 29
+     },
+     {
+      "okReads": 4917,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 4922,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 4923,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 4920,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 4926,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 4923,
+      "expected": 5000,
+      "ms": 38
+     }
+    ],
+    "4": [
+     {
+      "okReads": 14769,
+      "expected": 15000,
+      "ms": 40
+     },
+     {
+      "okReads": 14755,
+      "expected": 15000,
+      "ms": 35
+     },
+     {
+      "okReads": 14748,
+      "expected": 15000,
+      "ms": 35
+     },
+     {
+      "okReads": 14757,
+      "expected": 15000,
+      "ms": 33
+     },
+     {
+      "okReads": 14750,
+      "expected": 15000,
+      "ms": 32
+     },
+     {
+      "okReads": 14723,
+      "expected": 15000,
+      "ms": 33
+     },
+     {
+      "okReads": 14759,
+      "expected": 15000,
+      "ms": 33
+     },
+     {
+      "okReads": 14758,
+      "expected": 15000,
+      "ms": 31
+     },
+     {
+      "okReads": 14737,
+      "expected": 15000,
+      "ms": 33
+     },
+     {
+      "okReads": 14742,
+      "expected": 15000,
+      "ms": 30
+     },
+     {
+      "okReads": 14750,
+      "expected": 15000,
+      "ms": 29
+     },
+     {
+      "okReads": 14758,
+      "expected": 15000,
+      "ms": 30
+     },
+     {
+      "okReads": 14752,
+      "expected": 15000,
+      "ms": 31
+     },
+     {
+      "okReads": 14752,
+      "expected": 15000,
+      "ms": 30
+     },
+     {
+      "okReads": 14746,
+      "expected": 15000,
+      "ms": 31
+     },
+     {
+      "okReads": 14765,
+      "expected": 15000,
+      "ms": 34
+     },
+     {
+      "okReads": 14744,
+      "expected": 15000,
+      "ms": 31
+     },
+     {
+      "okReads": 14747,
+      "expected": 15000,
+      "ms": 29
+     },
+     {
+      "okReads": 14766,
+      "expected": 15000,
+      "ms": 30
+     },
+     {
+      "okReads": 14757,
+      "expected": 15000,
+      "ms": 32
+     }
+    ],
+    "8": [
+     {
+      "okReads": 34439,
+      "expected": 35000,
+      "ms": 35
+     },
+     {
+      "okReads": 34455,
+      "expected": 35000,
+      "ms": 33
+     },
+     {
+      "okReads": 34282,
+      "expected": 35000,
+      "ms": 36
+     },
+     {
+      "okReads": 34431,
+      "expected": 35000,
+      "ms": 33
+     },
+     {
+      "okReads": 34410,
+      "expected": 35000,
+      "ms": 32
+     },
+     {
+      "okReads": 34395,
+      "expected": 35000,
+      "ms": 35
+     },
+     {
+      "okReads": 34278,
+      "expected": 35000,
+      "ms": 36
+     },
+     {
+      "okReads": 34363,
+      "expected": 35000,
+      "ms": 35
+     },
+     {
+      "okReads": 34438,
+      "expected": 35000,
+      "ms": 38
+     },
+     {
+      "okReads": 34402,
+      "expected": 35000,
+      "ms": 50
+     },
+     {
+      "okReads": 34456,
+      "expected": 35000,
+      "ms": 35
+     },
+     {
+      "okReads": 34418,
+      "expected": 35000,
+      "ms": 35
+     },
+     {
+      "okReads": 34453,
+      "expected": 35000,
+      "ms": 34
+     },
+     {
+      "okReads": 34460,
+      "expected": 35000,
+      "ms": 35
+     },
+     {
+      "okReads": 34364,
+      "expected": 35000,
+      "ms": 55
+     },
+     {
+      "okReads": 34460,
+      "expected": 35000,
+      "ms": 38
+     },
+     {
+      "okReads": 34378,
+      "expected": 35000,
+      "ms": 33
+     },
+     {
+      "okReads": 34390,
+      "expected": 35000,
+      "ms": 37
+     },
+     {
+      "okReads": 34223,
+      "expected": 35000,
+      "ms": 39
+     },
+     {
+      "okReads": 34450,
+      "expected": 35000,
+      "ms": 40
+     }
+    ]
+   },
+   "inside": "Compiled from \"TwoVolatile.java\"\npublic class lab.rwlock.TwoVolatile {\n  static final int READS_PER_THREAD;\n\n  static volatile int basePrice;\n\n  static volatile int discount;\n\n  static volatile int sink;\n\n  public lab.rwlock.TwoVolatile();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static int spin(int, int);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iload_2\n         3: iload_1\n         4: if_icmpge     20\n         7: iload_0\n         8: bipush        31\n        10: imul\n        11: iload_2\n        12: iadd\n        13: istore_0\n        14: iinc          2, 1\n        17: goto          2\n        20: iload_0\n        21: ireturn\n\n  static int writePrice(boolean);\n    Code:\n         0: iload_0\n         1: ifeq          10\n         4: sipush        200\n         7: goto          12\n        10: bipush        100\n        12: istore_1\n        13: iload_0\n        14: ifeq          22\n        17: bipush        20\n        19: goto          24\n        22: bipush        10\n        24: istore_2\n        25: iload_1\n        26: putstatic     #7                  // Field basePrice:I\n        29: iload_1\n        30: sipush        2500\n        33: invokestatic  #13                 // Method spin:(II)I\n        36: istore_3\n        37: iload_2\n        38: putstatic     #17                 // Field discount:I\n        41: iload_3\n        42: ireturn\n\n  static boolean readValid(int, int[]);\n    Code:\n         0: getstatic     #7                  // Field basePrice:I\n         3: istore_2\n         4: getstatic     #17                 // Field discount:I\n         7: istore_3\n         8: aload_1\n         9: iconst_0\n        10: dup2\n        11: iaload\n        12: iload_2\n        13: iload_3\n        14: iadd\n        15: iload_0\n        16: iadd\n        17: sipush        6000\n        20: invokestatic  #13                 // Method spin:(II)I\n        23: ixor\n        24: iastore\n        25: iload_2\n        26: iload_3\n        27: bipush        10\n        29: imul\n        30: if_icmpne     37\n        33: iconst_1\n        34: goto          38\n        37: iconst_0\n        38: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #20                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: new           #26                 // class java/util/concurrent/atomic/AtomicInteger\n        10: dup\n        11: invokespecial #28                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n        14: astore_2\n        15: new           #29                 // class java/util/concurrent/atomic/AtomicBoolean\n        18: dup\n        19: iconst_0\n        20: invokespecial #31                 // Method java/util/concurrent/atomic/AtomicBoolean.\"<init>\":(Z)V\n        23: astore_3\n        24: invokestatic  #34                 // Method java/lang/System.nanoTime:()J\n        27: lstore        4\n        29: iload_1\n        30: iconst_1\n        31: if_icmpne     115\n        34: iconst_0\n        35: istore        6\n        37: iconst_1\n        38: newarray       int\n        40: astore        7\n        42: iconst_0\n        43: istore        8\n        45: iload         8\n        47: sipush        5000\n        50: if_icmpge     94\n        53: aload         7\n        55: iconst_0\n        56: dup2\n        57: iaload\n        58: iload         8\n        60: iconst_1\n        61: iand\n        62: ifne          69\n        65: iconst_1\n        66: goto          70\n        69: iconst_0\n        70: invokestatic  #40                 // Method writePrice:(Z)I\n        73: ixor\n        74: iastore\n        75: iload         8\n        77: aload         7\n        79: invokestatic  #44                 // Method readValid:(I[I)Z\n        82: ifeq          88\n        85: iinc          6, 1\n        88: iinc          8, 1\n        91: goto          45\n        94: aload_2\n        95: iload         6\n        97: invokevirtual #48                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n       100: pop\n       101: getstatic     #52                 // Field sink:I\n       104: aload         7\n       106: iconst_0\n       107: iaload\n       108: ixor\n       109: putstatic     #52                 // Field sink:I\n       112: goto          259\n       115: new           #55                 // class java/util/concurrent/CountDownLatch\n       118: dup\n       119: iconst_1\n       120: invokespecial #57                 // Method java/util/concurrent/CountDownLatch.\"<init>\":(I)V\n       123: astore        6\n       125: new           #60                 // class java/lang/Thread\n       128: dup\n       129: aload_3\n       130: aload         6\n       132: invokedynamic #62,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/atomic/AtomicBoolean;Ljava/util/concurrent/CountDownLatch;)Ljava/lang/Runnable;\n       137: invokespecial #66                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n       140: astore        7\n       142: aload         7\n       144: invokevirtual #69                 // Method java/lang/Thread.start:()V\n       147: aload         6\n       149: invokevirtual #72                 // Method java/util/concurrent/CountDownLatch.await:()V\n       152: iload_1\n       153: iconst_1\n       154: isub\n       155: istore        8\n       157: iload         8\n       159: anewarray     #60                 // class java/lang/Thread\n       162: astore        9\n       164: iconst_0\n       165: istore        10\n       167: iload         10\n       169: iload         8\n       171: if_icmpge     212\n       174: iload         10\n       176: istore        11\n       178: aload         9\n       180: iload         10\n       182: new           #60                 // class java/lang/Thread\n       185: dup\n       186: iload         11\n       188: aload_2\n       189: invokedynamic #75,  0             // InvokeDynamic #1:run:(ILjava/util/concurrent/atomic/AtomicInteger;)Ljava/lang/Runnable;\n       194: invokespecial #66                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n       197: aastore\n       198: aload         9\n       200: iload         10\n       202: aaload\n       203: invokevirtual #69                 // Method java/lang/Thread.start:()V\n       206: iinc          10, 1\n       209: goto          167\n       212: aload         9\n       214: astore        10\n       216: aload         10\n       218: arraylength\n       219: istore        11\n       221: iconst_0\n       222: istore        12\n       224: iload         12\n       226: iload         11\n       228: if_icmpge     249\n       231: aload         10\n       233: iload         12\n       235: aaload\n       236: astore        13\n       238: aload         13\n       240: invokevirtual #78                 // Method java/lang/Thread.join:()V\n       243: iinc          12, 1\n       246: goto          224\n       249: aload_3\n       250: iconst_1\n       251: invokevirtual #81                 // Method java/util/concurrent/atomic/AtomicBoolean.set:(Z)V\n       254: aload         7\n       256: invokevirtual #78                 // Method java/lang/Thread.join:()V\n       259: invokestatic  #34                 // Method java/lang/System.nanoTime:()J\n       262: lload         4\n       264: lsub\n       265: ldc2_w        #84                 // long 1000000l\n       268: ldiv\n       269: lstore        6\n       271: iload_1\n       272: iconst_1\n       273: if_icmpne     280\n       276: iconst_1\n       277: goto          283\n       280: iload_1\n       281: iconst_1\n       282: isub\n       283: sipush        5000\n       286: imul\n       287: istore        8\n       289: getstatic     #86                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       292: aload_2\n       293: invokevirtual #90                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       296: invokedynamic #94,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       301: invokevirtual #98                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       304: getstatic     #86                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       307: iload         8\n       309: invokedynamic #104,  0            // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n       314: invokevirtual #98                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       317: getstatic     #86                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       320: lload         6\n       322: invokedynamic #105,  0            // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n       327: invokevirtual #98                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       330: return\n\n  private static void lambda$main$1(int, java.util.concurrent.atomic.AtomicInteger);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iconst_1\n         3: newarray       int\n         5: astore_3\n         6: iconst_0\n         7: istore        4\n         9: iload         4\n        11: sipush        5000\n        14: if_icmpge     37\n        17: iload         4\n        19: iload_0\n        20: iadd\n        21: aload_3\n        22: invokestatic  #44                 // Method readValid:(I[I)Z\n        25: ifeq          31\n        28: iinc          2, 1\n        31: iinc          4, 1\n        34: goto          9\n        37: aload_1\n        38: iload_2\n        39: invokevirtual #48                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n        42: pop\n        43: getstatic     #52                 // Field sink:I\n        46: aload_3\n        47: iconst_0\n        48: iaload\n        49: ixor\n        50: putstatic     #52                 // Field sink:I\n        53: return\n\n  private static void lambda$main$0(java.util.concurrent.atomic.AtomicBoolean, java.util.concurrent.CountDownLatch);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iconst_0\n         3: istore_3\n         4: iconst_1\n         5: istore        4\n         7: aload_0\n         8: invokevirtual #108                // Method java/util/concurrent/atomic/AtomicBoolean.get:()Z\n        11: ifne          55\n        14: iload_3\n        15: ifne          22\n        18: iconst_1\n        19: goto          23\n        22: iconst_0\n        23: istore_3\n        24: iload_2\n        25: iload_3\n        26: invokestatic  #40                 // Method writePrice:(Z)I\n        29: ixor\n        30: istore_2\n        31: iload         4\n        33: ifeq          43\n        36: aload_1\n        37: invokevirtual #111                // Method java/util/concurrent/CountDownLatch.countDown:()V\n        40: iconst_0\n        41: istore        4\n        43: iload_2\n        44: iload_2\n        45: ldc           #114                // int 150000\n        47: invokestatic  #13                 // Method spin:(II)I\n        50: ixor\n        51: istore_2\n        52: goto          7\n        55: getstatic     #52                 // Field sink:I\n        58: iload_2\n        59: ixor\n        60: putstatic     #52                 // Field sink:I\n        63: return\n\n  static {};\n    Code:\n         0: bipush        100\n         2: putstatic     #7                  // Field basePrice:I\n         5: bipush        10\n         7: putstatic     #17                 // Field discount:I\n        10: return\n}"
+  },
+  "Sync": {
+   "hash": "73fa3804fc6ff761",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 36
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 36
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 37
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 36
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     }
+    ],
+    "2": [
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 37
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 37
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 39
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 39
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 37
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 41
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 40
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 39
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 45
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 40
+     }
+    ],
+    "4": [
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 100
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 94
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 97
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 92
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 94
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 91
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 95
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 95
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 93
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 96
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 97
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 93
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 89
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 86
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 91
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 95
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 95
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 88
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 90
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 93
+     }
+    ],
+    "8": [
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 198
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 197
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 193
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 204
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 212
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 234
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 235
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 205
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 202
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 208
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 205
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 204
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 244
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 229
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 214
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 223
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 202
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 197
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 202
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 207
+     }
+    ]
+   },
+   "inside": "Compiled from \"Sync.java\"\npublic class lab.rwlock.Sync {\n  static final int READS_PER_THREAD;\n\n  static final java.lang.Object LOCK;\n\n  static int basePrice;\n\n  static int discount;\n\n  static volatile int sink;\n\n  public lab.rwlock.Sync();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static int spin(int, int);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iload_2\n         3: iload_1\n         4: if_icmpge     20\n         7: iload_0\n         8: bipush        31\n        10: imul\n        11: iload_2\n        12: iadd\n        13: istore_0\n        14: iinc          2, 1\n        17: goto          2\n        20: iload_0\n        21: ireturn\n\n  static int writePrice(boolean);\n    Code:\n         0: iload_0\n         1: ifeq          10\n         4: sipush        200\n         7: goto          12\n        10: bipush        100\n        12: istore_1\n        13: iload_0\n        14: ifeq          22\n        17: bipush        20\n        19: goto          24\n        22: bipush        10\n        24: istore_2\n        25: getstatic     #7                  // Field LOCK:Ljava/lang/Object;\n        28: dup\n        29: astore_3\n        30: monitorenter\n        31: iload_1\n        32: putstatic     #13                 // Field basePrice:I\n        35: iload_1\n        36: sipush        2500\n        39: invokestatic  #17                 // Method spin:(II)I\n        42: istore        4\n        44: iload_2\n        45: putstatic     #21                 // Field discount:I\n        48: iload         4\n        50: aload_3\n        51: monitorexit\n        52: ireturn\n        53: astore        5\n        55: aload_3\n        56: monitorexit\n        57: aload         5\n        59: athrow\n      Exception table:\n         from    to  target type\n            31    52    53   any\n            53    57    53   any\n\n  static boolean readValid(int, int[]);\n    Code:\n         0: getstatic     #7                  // Field LOCK:Ljava/lang/Object;\n         3: dup\n         4: astore_2\n         5: monitorenter\n         6: getstatic     #13                 // Field basePrice:I\n         9: istore_3\n        10: getstatic     #21                 // Field discount:I\n        13: istore        4\n        15: aload_1\n        16: iconst_0\n        17: dup2\n        18: iaload\n        19: iload_3\n        20: iload         4\n        22: iadd\n        23: iload_0\n        24: iadd\n        25: sipush        6000\n        28: invokestatic  #17                 // Method spin:(II)I\n        31: ixor\n        32: iastore\n        33: iload_3\n        34: iload         4\n        36: bipush        10\n        38: imul\n        39: if_icmpne     46\n        42: iconst_1\n        43: goto          47\n        46: iconst_0\n        47: aload_2\n        48: monitorexit\n        49: ireturn\n        50: astore        5\n        52: aload_2\n        53: monitorexit\n        54: aload         5\n        56: athrow\n      Exception table:\n         from    to  target type\n             6    49    50   any\n            50    54    50   any\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #24                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: new           #30                 // class java/util/concurrent/atomic/AtomicInteger\n        10: dup\n        11: invokespecial #32                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n        14: astore_2\n        15: new           #33                 // class java/util/concurrent/atomic/AtomicBoolean\n        18: dup\n        19: iconst_0\n        20: invokespecial #35                 // Method java/util/concurrent/atomic/AtomicBoolean.\"<init>\":(Z)V\n        23: astore_3\n        24: invokestatic  #38                 // Method java/lang/System.nanoTime:()J\n        27: lstore        4\n        29: iload_1\n        30: iconst_1\n        31: if_icmpne     115\n        34: iconst_0\n        35: istore        6\n        37: iconst_1\n        38: newarray       int\n        40: astore        7\n        42: iconst_0\n        43: istore        8\n        45: iload         8\n        47: sipush        5000\n        50: if_icmpge     94\n        53: aload         7\n        55: iconst_0\n        56: dup2\n        57: iaload\n        58: iload         8\n        60: iconst_1\n        61: iand\n        62: ifne          69\n        65: iconst_1\n        66: goto          70\n        69: iconst_0\n        70: invokestatic  #44                 // Method writePrice:(Z)I\n        73: ixor\n        74: iastore\n        75: iload         8\n        77: aload         7\n        79: invokestatic  #48                 // Method readValid:(I[I)Z\n        82: ifeq          88\n        85: iinc          6, 1\n        88: iinc          8, 1\n        91: goto          45\n        94: aload_2\n        95: iload         6\n        97: invokevirtual #52                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n       100: pop\n       101: getstatic     #56                 // Field sink:I\n       104: aload         7\n       106: iconst_0\n       107: iaload\n       108: ixor\n       109: putstatic     #56                 // Field sink:I\n       112: goto          259\n       115: new           #59                 // class java/util/concurrent/CountDownLatch\n       118: dup\n       119: iconst_1\n       120: invokespecial #61                 // Method java/util/concurrent/CountDownLatch.\"<init>\":(I)V\n       123: astore        6\n       125: new           #64                 // class java/lang/Thread\n       128: dup\n       129: aload_3\n       130: aload         6\n       132: invokedynamic #66,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/atomic/AtomicBoolean;Ljava/util/concurrent/CountDownLatch;)Ljava/lang/Runnable;\n       137: invokespecial #70                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n       140: astore        7\n       142: aload         7\n       144: invokevirtual #73                 // Method java/lang/Thread.start:()V\n       147: aload         6\n       149: invokevirtual #76                 // Method java/util/concurrent/CountDownLatch.await:()V\n       152: iload_1\n       153: iconst_1\n       154: isub\n       155: istore        8\n       157: iload         8\n       159: anewarray     #64                 // class java/lang/Thread\n       162: astore        9\n       164: iconst_0\n       165: istore        10\n       167: iload         10\n       169: iload         8\n       171: if_icmpge     212\n       174: iload         10\n       176: istore        11\n       178: aload         9\n       180: iload         10\n       182: new           #64                 // class java/lang/Thread\n       185: dup\n       186: iload         11\n       188: aload_2\n       189: invokedynamic #79,  0             // InvokeDynamic #1:run:(ILjava/util/concurrent/atomic/AtomicInteger;)Ljava/lang/Runnable;\n       194: invokespecial #70                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n       197: aastore\n       198: aload         9\n       200: iload         10\n       202: aaload\n       203: invokevirtual #73                 // Method java/lang/Thread.start:()V\n       206: iinc          10, 1\n       209: goto          167\n       212: aload         9\n       214: astore        10\n       216: aload         10\n       218: arraylength\n       219: istore        11\n       221: iconst_0\n       222: istore        12\n       224: iload         12\n       226: iload         11\n       228: if_icmpge     249\n       231: aload         10\n       233: iload         12\n       235: aaload\n       236: astore        13\n       238: aload         13\n       240: invokevirtual #82                 // Method java/lang/Thread.join:()V\n       243: iinc          12, 1\n       246: goto          224\n       249: aload_3\n       250: iconst_1\n       251: invokevirtual #85                 // Method java/util/concurrent/atomic/AtomicBoolean.set:(Z)V\n       254: aload         7\n       256: invokevirtual #82                 // Method java/lang/Thread.join:()V\n       259: invokestatic  #38                 // Method java/lang/System.nanoTime:()J\n       262: lload         4\n       264: lsub\n       265: ldc2_w        #88                 // long 1000000l\n       268: ldiv\n       269: lstore        6\n       271: iload_1\n       272: iconst_1\n       273: if_icmpne     280\n       276: iconst_1\n       277: goto          283\n       280: iload_1\n       281: iconst_1\n       282: isub\n       283: sipush        5000\n       286: imul\n       287: istore        8\n       289: getstatic     #90                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       292: aload_2\n       293: invokevirtual #94                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       296: invokedynamic #98,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       301: invokevirtual #102                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       304: getstatic     #90                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       307: iload         8\n       309: invokedynamic #108,  0            // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n       314: invokevirtual #102                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       317: getstatic     #90                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       320: lload         6\n       322: invokedynamic #109,  0            // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n       327: invokevirtual #102                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       330: return\n\n  private static void lambda$main$1(int, java.util.concurrent.atomic.AtomicInteger);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iconst_1\n         3: newarray       int\n         5: astore_3\n         6: iconst_0\n         7: istore        4\n         9: iload         4\n        11: sipush        5000\n        14: if_icmpge     37\n        17: iload         4\n        19: iload_0\n        20: iadd\n        21: aload_3\n        22: invokestatic  #48                 // Method readValid:(I[I)Z\n        25: ifeq          31\n        28: iinc          2, 1\n        31: iinc          4, 1\n        34: goto          9\n        37: aload_1\n        38: iload_2\n        39: invokevirtual #52                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n        42: pop\n        43: getstatic     #56                 // Field sink:I\n        46: aload_3\n        47: iconst_0\n        48: iaload\n        49: ixor\n        50: putstatic     #56                 // Field sink:I\n        53: return\n\n  private static void lambda$main$0(java.util.concurrent.atomic.AtomicBoolean, java.util.concurrent.CountDownLatch);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iconst_0\n         3: istore_3\n         4: iconst_1\n         5: istore        4\n         7: aload_0\n         8: invokevirtual #112                // Method java/util/concurrent/atomic/AtomicBoolean.get:()Z\n        11: ifne          55\n        14: iload_3\n        15: ifne          22\n        18: iconst_1\n        19: goto          23\n        22: iconst_0\n        23: istore_3\n        24: iload_2\n        25: iload_3\n        26: invokestatic  #44                 // Method writePrice:(Z)I\n        29: ixor\n        30: istore_2\n        31: iload         4\n        33: ifeq          43\n        36: aload_1\n        37: invokevirtual #115                // Method java/util/concurrent/CountDownLatch.countDown:()V\n        40: iconst_0\n        41: istore        4\n        43: iload_2\n        44: iload_2\n        45: ldc           #118                // int 150000\n        47: invokestatic  #17                 // Method spin:(II)I\n        50: ixor\n        51: istore_2\n        52: goto          7\n        55: getstatic     #56                 // Field sink:I\n        58: iload_2\n        59: ixor\n        60: putstatic     #56                 // Field sink:I\n        63: return\n\n  static {};\n    Code:\n         0: new           #2                  // class java/lang/Object\n         3: dup\n         4: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         7: putstatic     #7                  // Field LOCK:Ljava/lang/Object;\n        10: bipush        100\n        12: putstatic     #13                 // Field basePrice:I\n        15: bipush        10\n        17: putstatic     #21                 // Field discount:I\n        20: return\n}"
+  },
+  "ReadWrite": {
+   "hash": "d31fe3f7461368fd",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 31
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 32
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 38
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     }
+    ],
+    "2": [
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 41
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 40
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 36
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 36
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 37
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 38
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 37
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 39
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 36
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 34
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 35
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 33
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 38
+     },
+     {
+      "okReads": 5000,
+      "expected": 5000,
+      "ms": 39
+     }
+    ],
+    "4": [
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 63
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 58
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 59
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 48
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 49
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 46
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 52
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 49
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 46
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 52
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 60
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 59
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 58
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 52
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 49
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 47
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 48
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 48
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 54
+     },
+     {
+      "okReads": 15000,
+      "expected": 15000,
+      "ms": 50
+     }
+    ],
+    "8": [
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 69
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 62
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 64
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 66
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 65
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 64
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 66
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 62
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 63
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 62
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 70
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 68
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 62
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 66
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 71
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 64
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 71
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 68
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 74
+     },
+     {
+      "okReads": 35000,
+      "expected": 35000,
+      "ms": 70
+     }
+    ]
+   },
+   "inside": "Compiled from \"ReadWrite.java\"\npublic class lab.rwlock.ReadWrite {\n  static final int READS_PER_THREAD;\n\n  static final java.util.concurrent.locks.ReentrantReadWriteLock rw;\n\n  static int basePrice;\n\n  static int discount;\n\n  static volatile int sink;\n\n  public lab.rwlock.ReadWrite();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static int spin(int, int);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iload_2\n         3: iload_1\n         4: if_icmpge     20\n         7: iload_0\n         8: bipush        31\n        10: imul\n        11: iload_2\n        12: iadd\n        13: istore_0\n        14: iinc          2, 1\n        17: goto          2\n        20: iload_0\n        21: ireturn\n\n  static int writePrice(boolean);\n    Code:\n         0: iload_0\n         1: ifeq          10\n         4: sipush        200\n         7: goto          12\n        10: bipush        100\n        12: istore_1\n        13: iload_0\n        14: ifeq          22\n        17: bipush        20\n        19: goto          24\n        22: bipush        10\n        24: istore_2\n        25: getstatic     #7                  // Field rw:Ljava/util/concurrent/locks/ReentrantReadWriteLock;\n        28: invokevirtual #13                 // Method java/util/concurrent/locks/ReentrantReadWriteLock.writeLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$WriteLock;\n        31: invokevirtual #19                 // Method java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock.lock:()V\n        34: iload_1\n        35: putstatic     #24                 // Field basePrice:I\n        38: iload_1\n        39: sipush        2500\n        42: invokestatic  #28                 // Method spin:(II)I\n        45: istore_3\n        46: iload_2\n        47: putstatic     #32                 // Field discount:I\n        50: iload_3\n        51: istore        4\n        53: getstatic     #7                  // Field rw:Ljava/util/concurrent/locks/ReentrantReadWriteLock;\n        56: invokevirtual #13                 // Method java/util/concurrent/locks/ReentrantReadWriteLock.writeLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$WriteLock;\n        59: invokevirtual #35                 // Method java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock.unlock:()V\n        62: iload         4\n        64: ireturn\n        65: astore        5\n        67: getstatic     #7                  // Field rw:Ljava/util/concurrent/locks/ReentrantReadWriteLock;\n        70: invokevirtual #13                 // Method java/util/concurrent/locks/ReentrantReadWriteLock.writeLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$WriteLock;\n        73: invokevirtual #35                 // Method java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock.unlock:()V\n        76: aload         5\n        78: athrow\n      Exception table:\n         from    to  target type\n            34    53    65   any\n            65    67    65   any\n\n  static boolean readValid(int, int[]);\n    Code:\n         0: getstatic     #7                  // Field rw:Ljava/util/concurrent/locks/ReentrantReadWriteLock;\n         3: invokevirtual #38                 // Method java/util/concurrent/locks/ReentrantReadWriteLock.readLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$ReadLock;\n         6: invokevirtual #42                 // Method java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock.lock:()V\n         9: getstatic     #24                 // Field basePrice:I\n        12: istore_2\n        13: getstatic     #32                 // Field discount:I\n        16: istore_3\n        17: aload_1\n        18: iconst_0\n        19: dup2\n        20: iaload\n        21: iload_2\n        22: iload_3\n        23: iadd\n        24: iload_0\n        25: iadd\n        26: sipush        6000\n        29: invokestatic  #28                 // Method spin:(II)I\n        32: ixor\n        33: iastore\n        34: iload_2\n        35: iload_3\n        36: bipush        10\n        38: imul\n        39: if_icmpne     46\n        42: iconst_1\n        43: goto          47\n        46: iconst_0\n        47: istore        4\n        49: getstatic     #7                  // Field rw:Ljava/util/concurrent/locks/ReentrantReadWriteLock;\n        52: invokevirtual #38                 // Method java/util/concurrent/locks/ReentrantReadWriteLock.readLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$ReadLock;\n        55: invokevirtual #45                 // Method java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock.unlock:()V\n        58: iload         4\n        60: ireturn\n        61: astore        5\n        63: getstatic     #7                  // Field rw:Ljava/util/concurrent/locks/ReentrantReadWriteLock;\n        66: invokevirtual #38                 // Method java/util/concurrent/locks/ReentrantReadWriteLock.readLock:()Ljava/util/concurrent/locks/ReentrantReadWriteLock$ReadLock;\n        69: invokevirtual #45                 // Method java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock.unlock:()V\n        72: aload         5\n        74: athrow\n      Exception table:\n         from    to  target type\n             9    49    61   any\n            61    63    61   any\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #46                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: new           #52                 // class java/util/concurrent/atomic/AtomicInteger\n        10: dup\n        11: invokespecial #54                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n        14: astore_2\n        15: new           #55                 // class java/util/concurrent/atomic/AtomicBoolean\n        18: dup\n        19: iconst_0\n        20: invokespecial #57                 // Method java/util/concurrent/atomic/AtomicBoolean.\"<init>\":(Z)V\n        23: astore_3\n        24: invokestatic  #60                 // Method java/lang/System.nanoTime:()J\n        27: lstore        4\n        29: iload_1\n        30: iconst_1\n        31: if_icmpne     115\n        34: iconst_0\n        35: istore        6\n        37: iconst_1\n        38: newarray       int\n        40: astore        7\n        42: iconst_0\n        43: istore        8\n        45: iload         8\n        47: sipush        5000\n        50: if_icmpge     94\n        53: aload         7\n        55: iconst_0\n        56: dup2\n        57: iaload\n        58: iload         8\n        60: iconst_1\n        61: iand\n        62: ifne          69\n        65: iconst_1\n        66: goto          70\n        69: iconst_0\n        70: invokestatic  #66                 // Method writePrice:(Z)I\n        73: ixor\n        74: iastore\n        75: iload         8\n        77: aload         7\n        79: invokestatic  #70                 // Method readValid:(I[I)Z\n        82: ifeq          88\n        85: iinc          6, 1\n        88: iinc          8, 1\n        91: goto          45\n        94: aload_2\n        95: iload         6\n        97: invokevirtual #74                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n       100: pop\n       101: getstatic     #78                 // Field sink:I\n       104: aload         7\n       106: iconst_0\n       107: iaload\n       108: ixor\n       109: putstatic     #78                 // Field sink:I\n       112: goto          259\n       115: new           #81                 // class java/util/concurrent/CountDownLatch\n       118: dup\n       119: iconst_1\n       120: invokespecial #83                 // Method java/util/concurrent/CountDownLatch.\"<init>\":(I)V\n       123: astore        6\n       125: new           #86                 // class java/lang/Thread\n       128: dup\n       129: aload_3\n       130: aload         6\n       132: invokedynamic #88,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/atomic/AtomicBoolean;Ljava/util/concurrent/CountDownLatch;)Ljava/lang/Runnable;\n       137: invokespecial #92                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n       140: astore        7\n       142: aload         7\n       144: invokevirtual #95                 // Method java/lang/Thread.start:()V\n       147: aload         6\n       149: invokevirtual #98                 // Method java/util/concurrent/CountDownLatch.await:()V\n       152: iload_1\n       153: iconst_1\n       154: isub\n       155: istore        8\n       157: iload         8\n       159: anewarray     #86                 // class java/lang/Thread\n       162: astore        9\n       164: iconst_0\n       165: istore        10\n       167: iload         10\n       169: iload         8\n       171: if_icmpge     212\n       174: iload         10\n       176: istore        11\n       178: aload         9\n       180: iload         10\n       182: new           #86                 // class java/lang/Thread\n       185: dup\n       186: iload         11\n       188: aload_2\n       189: invokedynamic #101,  0            // InvokeDynamic #1:run:(ILjava/util/concurrent/atomic/AtomicInteger;)Ljava/lang/Runnable;\n       194: invokespecial #92                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n       197: aastore\n       198: aload         9\n       200: iload         10\n       202: aaload\n       203: invokevirtual #95                 // Method java/lang/Thread.start:()V\n       206: iinc          10, 1\n       209: goto          167\n       212: aload         9\n       214: astore        10\n       216: aload         10\n       218: arraylength\n       219: istore        11\n       221: iconst_0\n       222: istore        12\n       224: iload         12\n       226: iload         11\n       228: if_icmpge     249\n       231: aload         10\n       233: iload         12\n       235: aaload\n       236: astore        13\n       238: aload         13\n       240: invokevirtual #104                // Method java/lang/Thread.join:()V\n       243: iinc          12, 1\n       246: goto          224\n       249: aload_3\n       250: iconst_1\n       251: invokevirtual #107                // Method java/util/concurrent/atomic/AtomicBoolean.set:(Z)V\n       254: aload         7\n       256: invokevirtual #104                // Method java/lang/Thread.join:()V\n       259: invokestatic  #60                 // Method java/lang/System.nanoTime:()J\n       262: lload         4\n       264: lsub\n       265: ldc2_w        #110                // long 1000000l\n       268: ldiv\n       269: lstore        6\n       271: iload_1\n       272: iconst_1\n       273: if_icmpne     280\n       276: iconst_1\n       277: goto          283\n       280: iload_1\n       281: iconst_1\n       282: isub\n       283: sipush        5000\n       286: imul\n       287: istore        8\n       289: getstatic     #112                // Field java/lang/System.out:Ljava/io/PrintStream;\n       292: aload_2\n       293: invokevirtual #116                // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       296: invokedynamic #120,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       301: invokevirtual #124                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       304: getstatic     #112                // Field java/lang/System.out:Ljava/io/PrintStream;\n       307: iload         8\n       309: invokedynamic #130,  0            // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n       314: invokevirtual #124                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       317: getstatic     #112                // Field java/lang/System.out:Ljava/io/PrintStream;\n       320: lload         6\n       322: invokedynamic #131,  0            // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n       327: invokevirtual #124                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       330: return\n\n  private static void lambda$main$1(int, java.util.concurrent.atomic.AtomicInteger);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iconst_1\n         3: newarray       int\n         5: astore_3\n         6: iconst_0\n         7: istore        4\n         9: iload         4\n        11: sipush        5000\n        14: if_icmpge     37\n        17: iload         4\n        19: iload_0\n        20: iadd\n        21: aload_3\n        22: invokestatic  #70                 // Method readValid:(I[I)Z\n        25: ifeq          31\n        28: iinc          2, 1\n        31: iinc          4, 1\n        34: goto          9\n        37: aload_1\n        38: iload_2\n        39: invokevirtual #74                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n        42: pop\n        43: getstatic     #78                 // Field sink:I\n        46: aload_3\n        47: iconst_0\n        48: iaload\n        49: ixor\n        50: putstatic     #78                 // Field sink:I\n        53: return\n\n  private static void lambda$main$0(java.util.concurrent.atomic.AtomicBoolean, java.util.concurrent.CountDownLatch);\n    Code:\n         0: iconst_0\n         1: istore_2\n         2: iconst_0\n         3: istore_3\n         4: iconst_1\n         5: istore        4\n         7: aload_0\n         8: invokevirtual #134                // Method java/util/concurrent/atomic/AtomicBoolean.get:()Z\n        11: ifne          55\n        14: iload_3\n        15: ifne          22\n        18: iconst_1\n        19: goto          23\n        22: iconst_0\n        23: istore_3\n        24: iload_2\n        25: iload_3\n        26: invokestatic  #66                 // Method writePrice:(Z)I\n        29: ixor\n        30: istore_2\n        31: iload         4\n        33: ifeq          43\n        36: aload_1\n        37: invokevirtual #137                // Method java/util/concurrent/CountDownLatch.countDown:()V\n        40: iconst_0\n        41: istore        4\n        43: iload_2\n        44: iload_2\n        45: ldc           #140                // int 150000\n        47: invokestatic  #28                 // Method spin:(II)I\n        50: ixor\n        51: istore_2\n        52: goto          7\n        55: getstatic     #78                 // Field sink:I\n        58: iload_2\n        59: ixor\n        60: putstatic     #78                 // Field sink:I\n        63: return\n\n  static {};\n    Code:\n         0: new           #14                 // class java/util/concurrent/locks/ReentrantReadWriteLock\n         3: dup\n         4: invokespecial #141                // Method java/util/concurrent/locks/ReentrantReadWriteLock.\"<init>\":()V\n         7: putstatic     #7                  // Field rw:Ljava/util/concurrent/locks/ReentrantReadWriteLock;\n        10: bipush        100\n        12: putstatic     #24                 // Field basePrice:I\n        15: bipush        10\n        17: putstatic     #32                 // Field discount:I\n        20: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 25.0.4",
+  "cores": 32,
+  "os": "win32 10.0.26200",
+  "date": "2026-11-14"
+ }
+}

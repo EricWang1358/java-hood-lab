@@ -1,0 +1,782 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "box-lock",
+  "course": "Java 并发从零",
+  "title": "锁在 static 变量上，怎么照样锁不住？",
+  "lead": "这次锁对象老实写成了 static 全局共享，可只因为把 Integer count 拿去加锁，它竟在眼皮底下被掉包了。",
+  "minutes": 45,
+  "needs": [
+    "线程互斥的前提是抢同一把锁（第七、八节）",
+    "锁对象作用域要盖住共享数据（第八节）",
+    "count++ 不是原子操作（第一节）"
+  ],
+  "after": [
+    "看穿 Integer 自动装箱会不断生成新对象",
+    "用 javap 读出 synchronized(count) 如何偷偷换锁",
+    "学会用永不换引用的 static final 常量当门锁",
+    "初步认识显式可重入锁与 try/finally 解锁规范"
+  ],
+  "terms": {
+    "Integer": "int 基本类型的包装类；与 int 不同，Integer 变量存的是堆里对象的引用。",
+    "static": "属于类本身的静态字段，全程序所有线程访问的都是同一份字段槽位。",
+    "final": "给引用字段加上只读约束：初始化后永远指向同一个对象，不能再改指别处。",
+    "synchronized": "Java 内置互斥锁：只认此刻被传入的那一个内存对象，不认外面的变量名。",
+    "ReentrantLock": "JUC 包里的显式互斥锁：功能更多，但必须手工 lock 并在 try/finally 里 unlock。",
+    "intValue": "Integer 拆箱方法：把包装对象里面的原始 int 数值取出来参与计算。",
+    "Integer.valueOf": "Integer 自动装箱方法：-128 到 127 用缓存，超出范围每次都新建 Integer 对象。",
+    "getstatic": "JVM 字节码指令，把静态字段当前指向的值或引用读到栈上。",
+    "iadd": "JVM 字节码指令，把栈上的两个整数相加得到新数。",
+    "putstatic": "JVM 字节码指令，把新算出来的值或新对象引用写回静态字段。",
+    "monitorenter": "JVM 进门加锁指令，拿走栈顶对象的管程锁。",
+    "monitorexit": "JVM 出门放锁指令，释放当初进去时拿的那同一个对象锁。",
+    "try/finally": "显式锁必须配对的异常处理结构：无论 try 里是否报错，finally 都会执行放锁。",
+    "Thread": "一条独立往下跑代码的执行流。",
+    "join()": "主线程停在这里等所有子线程跑完，再去核对最终结果。"
+  },
+  "experiments": {
+    "boxlock": {
+      "runner": "java",
+      "home": "lab.boxlock",
+      "knob": {
+        "name": "threads",
+        "label": "几个线程同时计数",
+        "values": ["1", "2", "4", "8"],
+        "default": "4"
+      },
+      "metric": {
+        "key": "total",
+        "expectKey": "expected",
+        "label": "实际计数",
+        "expect": "应计"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        { "id": "Plain", "label": "无锁装箱数", "note": "基准写法：static Integer count = 0; 直接执行 count++。" },
+        { "id": "BoxLock", "label": "锁装箱对象", "note": "用 synchronized (count) 锁这个全局 static Integer，可 count++ 会偷偷换掉它。" },
+        { "id": "FinalLock", "label": "锁不变常量", "note": "建一个 static final Object LOCK 专门当门锁，永远不更换引用。" },
+        { "id": "Reentrant", "label": "显式可重入", "note": "改用 static final ReentrantLock，通过 lock() 与 try/finally 里 unlock() 守住临界区。" }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "锁放在 static 上，怎么照样掉数？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "上一节踩过「锁 `this` 护不住 `static`」的坑。这次**一行** `new` **都不写**，把 `static Integer count` 传进 `synchronized (count)` —— 结果照样丢了一大截！",
+          "say": "这回锁对象也写成静态全局变量了，而且循环里根本没有自己去新建实例。那为什么锁着同一个全局字段名，多线程一跑起来还是拦不住彼此？"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：拉出前八节的三条铁律",
+      "bridge": "拆解这个「自己长脚跑掉的锁」之前，先唤醒前八节刚摸熟的三条规律。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道热身题来自第 1 到第 8 节。记住第 8 节刚学会的检验动作：别盯着锁关键字，要看内存里拿的是不是同一个对象。",
+          "items": [
+            {
+              "have": "第一、八节：自增拆解",
+              "q": "无锁执行 `count++` 为什么会少记？",
+              "options": ["加法本身不准", "读取、加一、写回三步之间会插队覆盖", "静态字段不能自增"],
+              "answer": 1,
+              "why": "只要三步没被同一把真锁包成一段，后面读旧数的线程就会把前面的写回覆盖掉。"
+            },
+            {
+              "have": "第七、八节：互斥前提",
+              "q": "JVM 判断两段 `synchronized` 能不能互相挡住，看什么？",
+              "options": ["括号里写的变量名是否相同", "两个线程进入时拿到的是不是同一个对象引用", "是否写在同一个类里面"],
+              "answer": 1,
+              "why": "第八节已经证明：即使同在一个类，只要锁进内存里的对象不是同一个，照样各进各的门。"
+            },
+            {
+              "have": "第八节：锁的定位",
+              "q": "保护全类共享的 `static` 数据时，锁对象必须满足什么条件？",
+              "options": ["每次现造一个最干净", "至少和共享数据一样全局唯一、稳定不换", "只能用读锁不能用写锁"],
+              "answer": 1,
+              "why": "不仅位置要全局共享，还不能在用着用着的过程中被换成一个新对象。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景",
+      "bridge": "把今天的代码搬进现实：门口确实只挂了全店唯一的一块计分板，可大家居然把门锁直接扣在了那张随时会撕下来重贴的数字便签上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": ["线程 A", "线程 B"],
+            "shared": { "name": "count槽", "value": "200" }
+          },
+          "story": "注意看 `static Integer count = 0;` 这个包装类字段：每执行一次 `count++`，因为 `Integer` 对象本身不可变，Java 会在背后偷偷给你换一张**写着新数字的新便签**贴到 `count` 上。你拿着旧便签进门、出门还旧便签的锁，下一个人却把锁挂在了新便签上！",
+          "say": "盯紧这件事：基本类型没有对象锁可挂，但包装类是不可变对象——每次加 1 都在换新牌子。",
+          "map": [
+            {
+              "scene": "同时跑来加 1 的两条请求",
+              "on": "actors",
+              "tag": "并发线程",
+              "code": "多条 `Thread`",
+              "say": "多条线程跑完 10 万次累加后，主线程等它们 `join()` 再核对总数。"
+            },
+            {
+              "scene": "贴着不可变数字牌的槽位",
+              "on": "shared",
+              "tag": "Integer 槽",
+              "code": "`static Integer`",
+              "say": "注意首字母是大写的包装类 `Integer`，里面装的不是数字本身，而是一个对象引用。"
+            },
+            {
+              "scene": "撕旧牌换新牌的动作",
+              "on": "action",
+              "tag": "自动装箱",
+              "code": "`count++`",
+              "say": "表面上看只写了简简单单两个加号，实际每加一次都在拆箱、计算、再装箱赋回新对象。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "代码里一行 new 都没有，谁换了对象",
+      "bridge": "今天最迷惑人的地方在于：我们在 Java 代码里一次 `new` 都没敲过。那对象到底是怎么悄悄变成另一个的？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "先亮标尺：基准 `Plain` 用 `static Integer count = 0;` 直接 `count++`；马上再包进 `synchronized (count)` 变成 `BoxLock`，看这把会跑的锁有多隐蔽。",
+          "say": "代码加起来还不到三十行。先看清楚不加锁时包装类自增怎么丢数，再去加那句最让人放心的同步块。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "二十多行，看清基准代码",
+      "bridge": "点开左边的基准代码，顺着三步核对好变量类型和累加动作。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "boxlock.Plain",
+          "say": "带虚线的词可以点开看解释。注意全篇没出现任何 `new`，可字段类型写的是大写开头的 `Integer`。",
+          "walk": [
+            {
+              "focus": ["static Integer count = 0;"],
+              "key": "Integer 是引用类型，每次改动都会换新对象",
+              "say": "第一处是共享计数器：`static Integer count = 0;`。因为用了包装类，这个静态槽位装的是对象指针，而不是干脆的整数本身。"
+            },
+            {
+              "focus": ["static void add() {", "count++;"],
+              "say": "第二处是静态 `add()` 方法，里面只有一句极其平常的 `count++`。"
+            },
+            {
+              "focus": ["for (int i = 0; i < ROUNDS; i++) {", "add();"],
+              "say": "第三处是每条线程把 `add()` 循环跑满 10 万次，最后由主线程 `join()` 汇总检查。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先给基准版押一注",
+      "bridge": "默认 4 条线程各跑 `Plain` 10 万次，理论上应该加到 400,000。先猜猜看结果。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "plain",
+          "q": "4 个线程无锁跑 `Plain`，最后的 `count` 会是多少？",
+          "options": ["正好 400,000", "远少于 400,000，每次跑都不一致", "正好丢一半 200,000", "只有超过 8 线程才少"],
+          "answer": 1,
+          "say": "无锁状态下不仅没法保证三步不插队，包装类自增每步还要拆箱装箱，先选一个答案再看实测。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "先看基准版的 20 轮实测",
+      "bridge": "点击把默认 4 线程下的 20 轮结果一轮轮揭晓，摸准底线。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "boxlock",
+          "show": ["Plain"],
+          "knob": false,
+          "hand": true,
+          "focus": ["count++;"],
+          "say": "点「看第 1 次运行」，瞅一眼实测和 40 万差多远；再放几轮看飘得有多乱，最后全部放完。"
+        },
+        {
+          "t": "reveal",
+          "of": "plain",
+          "key": "无锁对 Integer 执行 count++ 照样严重丢数",
+          "say": "整整 20 轮全部大幅掉在 40 万左边！包装类不仅没带锁保护，等会儿你还会看到它甚至暗藏换锁陷阱。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "把线程数拨去 1 对照一眼",
+      "bridge": "先拨到 1 线程验一下：只要没有别人同时进来抢，包装类自增自己算对算不对？",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "boxlock",
+          "show": ["Plain"],
+          "say": "切换 1、2、4、8 线程查看散点。把旋钮拨到 1 对比看看。"
+        },
+        {
+          "t": "try",
+          "key": "1 线程每次稳稳 10 万，2 线程起就全线滑落",
+          "say": "拨去 1 时 20 个点全部叠在 10 万虚线上，一点不差；从 2、4、8 线程开始，每一轮都远远掉到虚线左边。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "点出这两行埋下隐患的位置",
+      "bridge": "回 `Plain.java` 里把用错包装类型和触发自动重新装箱的两行找出来。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "boxlock.Plain",
+          "q": "点出声明引用型包装计数器那一行，以及背后会重新装箱赋值的自增那一行。",
+          "answer": ["static Integer count = 0;", "count++;"],
+          "hint": "提示：一行用大写 `Integer` 声明字段，另一行是在 `add()` 里的自增。",
+          "found": "选得一点不错！问题就在：上方声明了一个可变的包装类引用，下方每次自增都在偷偷给它换上新对象。",
+          "say": "去左边代码栏点中这两行。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "拆开一行 `count++` 里的五步秘密",
+      "bridge": "Java 代码里虽然只写了一个 `count++`，但编译器在背后帮你铺开了五步字节码。用 `javap` 亲眼看看它怎么换掉对象的。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "boxlock.Plain",
+          "within": "static void add()",
+          "from": "getstatic",
+          "to": "return",
+          "say": "左边的字节码直接戳穿了「一行代码没写 `new`」的假象：短短一句 `count++` 被拆成了拆箱、加一、再装箱三道大工序！",
+          "walk": [
+            {
+              "focus": ["getstatic", "intValue"],
+              "label": "取出旧值拆箱",
+              "say": "先 `getstatic` 拿到 `count` 当前指向的旧 `Integer` 对象，再调用 `intValue` 拆箱，把里面藏着的整数取出来。"
+            },
+            {
+              "focus": ["iadd", "Integer.valueOf", "putstatic"],
+              "label": "新装箱并换引用",
+              "key": "count++ 调 Integer.valueOf 并换引用",
+              "say": "`iadd` 加 1 后调用 `Integer.valueOf` 自动装箱。记住：只有 `-128` 到 `127` 会复用缓存对象，超过 127 每次都是全新对象，再用 `putstatic` 写回静态字段——原对象直接被抛弃了！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "无锁泳道：两路同时拆箱装箱怎么丢数",
+      "bridge": "先过一遍不加锁时两条线程的泳道，看清读旧数与写回新对象是怎么互相盖掉的。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "count++; // 拆箱 +1 装箱赋值",
+          "parts": {
+            "read": "拆箱读数",
+            "calc": "加一装箱",
+            "write": "赋回新引用"
+          },
+          "lanes": ["线程 A", "线程 B"],
+          "shared": { "name": "count指针", "start": "200" },
+          "say": "当前 `count` 已经加到了大于 127 的 `200`（对象 @200）。两条线程同时进来拆箱。",
+          "steps": [
+            {
+              "lane": 0, "op": "read", "text": "A拆箱得200",
+              "say": "线程 A 刚执行完 `getstatic` 和 `intValue`，拆出整数 200。"
+            },
+            {
+              "lane": 1, "op": "read", "text": "B也拆出200",
+              "say": "此时线程 B 也来拆箱，读到的还是没被改写的对象 200。"
+            },
+            {
+              "lane": 0, "op": "calc", "text": "A装箱新201",
+              "say": "A 加 1 后调用 `Integer.valueOf(201)`，在堆里造出一个新 `Integer(201)` 对象。"
+            },
+            {
+              "lane": 1, "op": "calc", "text": "B也装箱新201",
+              "say": "B 同样照着旧数 200 装箱出自己的新 `Integer(201)`。"
+            },
+            {
+              "lane": 0, "op": "write", "value": "201", "text": "A换指201",
+              "say": "A 执行 `putstatic` 把 `count` 改指向新对象 201。"
+            },
+            {
+              "lane": 1, "op": "write", "value": "201", "text": "B盖成另一个201",
+              "say": "B 把自己的 `201` 又 `putstatic` 盖上去，直接丢掉一笔。"
+            }
+          ],
+          "verdict": "一句 `count++` 背后藏着==拆箱、计算、换新对象引用==，无锁必覆盖。",
+          "verdictSay": "现在你已经隐约摸到危险在哪了——如果我自作聪明在外面包一层 `synchronized (count)`，猜猜会发生什么？"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "加把静态锁：synchronized(count)",
+      "bridge": "现在只加一层同步块：`synchronized (count) { count++; }` 变成 `BoxLock`。这回 `count` 本身就是全局唯一的 `static` 字段，总行了吧？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "boxlock",
+          "q": "加 `synchronized (count)` 锁住全局后，4 线程能加准吗？",
+          "options": ["能，400,000 一次不错", "照样大量丢数，一次都凑不齐 400,000", "前 127 次错，后面就对了", "编译会直接报错无法运行"],
+          "answer": 1,
+          "say": "先别急着猜「都加上 static 锁了总该全对」。想一想刚刚在字节码里看见谁被 `putstatic` 换掉了——押一注！"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测结果：2 线程起全线失守",
+      "bridge": "把 `BoxLock` 和基准 `Plain` 摆在一起看真运行结果，顺便切换旋钮看每一档。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "boxlock",
+          "show": ["Plain", "BoxLock"],
+          "select": "BoxLock",
+          "say": "左边亮出改动：真的把整句自增放进了 `synchronized (count)` 里！可再看右边点图——20 个点全掉在 40 万左边！"
+        },
+        {
+          "t": "reveal",
+          "of": "boxlock",
+          "key": "锁对象一旦在块内重新赋值，加了锁也照样丢更新",
+          "say": "你没看错：`BoxLock` 在 2、4、8 线程下依然 20 轮全错！而且恰恰在 127 缓存边界一过去之后，锁就失灵得彻底！"
+        },
+        {
+          "t": "try",
+          "say": "切一下 1、2、4、8 线程试试：只有 1 线程自己跑对了，2、4、8 线程全部稳稳掉在 100% 虚线左边一大截。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "拆穿 `BoxLock` 字节码：锁着旧门，换走新牌",
+      "bridge": "这一步最精彩：打开 `BoxLock.add()` 的真实字节码，看 `monitorenter` 拿的是谁、中间换了谁、`monitorexit` 还的又是谁！",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "boxlock.BoxLock",
+          "within": "static void add()",
+          "from": "getstatic",
+          "to": "27: monitorexit",
+          "say": "这三十多条字节码把整个掉包案拍得清清楚楚！注意看 `astore_0` 存起来的那个旧对象——顺着三步走完。顺带一提，JDK 25 编译器编到这行甚至直接给你打了个警告！",
+          "walk": [
+            {
+              "focus": ["getstatic", "monitorenter"],
+              "label": "进门先锁旧对象",
+              "say": "开头的 `getstatic` 把此刻 `count` 指着的旧 `Integer` 对象先存在局部变量里，然后 `monitorenter` **锁住这个旧对象**。"
+            },
+            {
+              "focus": ["Integer.valueOf", "putstatic"],
+              "label": "半路换成新对象",
+              "key": "块内 putstatic 把 count 换成新装箱对象",
+              "say": "走到中间执行 `count++`：`Integer.valueOf` 造出新对象后，`putstatic` 把全局变量 `count` **悄悄指向了新对象**！可手上这把锁锁的还是老对象。"
+            },
+            {
+              "focus": ["27: monitorexit"],
+              "label": "出门解锁旧对象",
+              "key": "新来的线程看到的是新对象，根本不在这把旧锁外排队",
+              "say": "最后 `monitorexit` 释放的还是进门存下的老对象！下一位进来的线程一读 `count`，拿到的已经是个**没人锁过的新对象**，直接畅通无阻！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "泳道实景：两人各锁新旧牌，当场撞一起",
+      "bridge": "把两条线程放进泳道，看清怎么只靠两条线程，A 和 B 就同时走进了 `synchronized` 里面。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "synchronized (count) { count++; }",
+          "parts": {
+            "read": "拆箱算新值",
+            "calc": "装箱造新对象",
+            "write": "换指针放旧锁"
+          },
+          "lanes": ["线程 A", "线程 B"],
+          "shared": { "name": "count指针", "start": "@200" },
+          "say": "假设 `count` 当前指向 `@200`（存着整数 200）。A 刚进门、B 紧随其后到门口排队，看下面掉包的一瞬间！",
+          "steps": [
+            {
+              "lane": 0, "op": "note", "tone": "ok", "text": "A锁住@200",
+              "say": "A 进门读到 `@200` 并锁死它；随后 B 到门口看到 `@200`，也老老实实在 `@200` 外面排队等着。"
+            },
+            {
+              "lane": 0, "op": "write", "value": "@201", "text": "A改count指@201",
+              "say": "A 加 1 后造出新对象 `@201`，用 `putstatic` 把全局 `count` 改指成 `@201`，接着释放 `@200` 出门。"
+            },
+            {
+              "lane": 1, "op": "note", "tone": "ok", "text": "B醒来拿着@200",
+              "say": "原本等在 `@200` 门外的 B 被唤醒进门了——注意：B 此刻手上持有的锁依然是老对象 `@200`！",
+              "ask": {
+                "q": "这时 A 立马跑下一轮再调 add()，A 去拿哪一个对象当锁？",
+                "options": ["还是排在 @200 后面等 B", "读取最新 count，拿的是新对象 @201"],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 0, "op": "note", "tone": "fail", "text": "A另锁@201进门",
+              "say": "糟糕一幕发生了：A 进新循环读 `count`，拿到的是 `@201`——压根没人锁 `@201`，A 不等一毫秒直接冲进同步块！"
+            },
+            {
+              "lane": 0, "op": "read", "text": "A和B同读201",
+              "say": "此刻 B 手握 `@200` 的锁、A 手握 `@201` 的锁，两人同时站在同步块里，同时读出里面的数值 201！"
+            },
+            {
+              "lane": 1, "op": "write", "value": "@202", "text": "双双写回202",
+              "say": "A 和 B 各自算出 `201 + 1 = 202`，双双用新 `@202` 覆盖 `count`，一笔账白白消失。"
+            }
+          ],
+          "verdict": "锁还给旧 `@200`，新线程却改锁 `@201`，==同一瞬间两把锁并存==。",
+          "verdictSay": "这就是为什么把可变引用（`Integer`、`Boolean`、非 `final` 字符串或开关对象）放进 `synchronized (...)` 是 Java 并发里数一数二的隐蔽陷阱！"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "两把真锁：final 常量 vs 显式可重入",
+      "bridge": "根因一句话说透：锁对象自己绝不能动！看这两种工程里最正统的修法：`FinalLock` 单独建一把带 `final` 的门锁，`Reentrant` 用显式可重入锁。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "boxlock",
+          "show": ["Plain", "BoxLock", "FinalLock", "Reentrant"],
+          "select": "FinalLock",
+          "say": "切看「锁不变常量」：加一行 `static final Object LOCK = new Object();`，只改了括号里那一个名字！「显式可重入」则换成了 JUC 的显式锁对象。"
+        },
+        {
+          "t": "try",
+          "key": "锁对象用 final 钉死不再换人后，1 到 8 线程全部零出错",
+          "say": "把旋钮拨过 1、2、4、8 检查一遍：「锁不变常量」和「显式可重入」是不是每一轮都牢牢贴住虚线，一分不少？"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "看一眼两种真锁的底层模样",
+      "bridge": "用 `javap` 并排瞧瞧 `FinalLock` 和 `Reentrant` 的 `add()`：一个盯着永不更换的 `LOCK`，另一个靠显式 `lock()` 与异常表兜底 `unlock()`。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "boxlock.FinalLock",
+          "within": "static void add()",
+          "from": "getstatic",
+          "to": "27: monitorexit",
+          "say": "看 `FinalLock`：加解锁过程和 `BoxLock` 几乎一模一样，唯一天壤之别在于开头 `getstatic` 读的是 `LOCK`——因为 `LOCK` 带了 `final`，没人能中途换掉它！",
+          "walk": [
+            {
+              "focus": ["LOCK:Ljava/lang/Object;", "monitorenter", "27: monitorexit"],
+              "label": "锁定不变 LOCK",
+              "key": "LOCK 标了 final，进出锁的永远是同一个对象",
+              "say": "无论中间 `count` 被 `putstatic` 换成了多少个新 `Integer`，门口 `monitorenter` 和出门 `monitorexit` 守着的始终是同一块 `LOCK` 铁门。"
+            }
+          ]
+        },
+        {
+          "t": "inside",
+          "of": "boxlock.Reentrant",
+          "within": "static void add()",
+          "from": "getstatic",
+          "to": "Exception table",
+          "say": "再看显式锁 `Reentrant`：没有 `monitorenter` 指令，变成调 `ReentrantLock` 的普通方法；而且注意最下面多出一张 `Exception table` 异常表！",
+          "walk": [
+            {
+              "focus": ["ReentrantLock.lock:()V", "ReentrantLock.unlock:()V"],
+              "label": "显式加锁放锁",
+              "say": "进门显式调用 `lock()`，改完 `count` 后再显式调 `unlock()`。注意一旦忘了写放锁，所有后来的线程都会永久死等。"
+            },
+            {
+              "focus": ["Exception table"],
+              "label": "finally 保底放锁",
+              "key": "try/finally 会编进异常表，出异常照样 unlock 绝不死锁",
+              "say": "正因为源码按规范写了 `try/finally`，编译器才自动往异常表里塞了一条兜底路径：哪怕中间算崩抛错，退出前照样执行 `unlock()`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时曲线：修好以后代价怎样",
+      "bridge": "把 1、2、4、8 线程下四个版本的实测耗时中位数画成线，实心点代表全对，空心点代表有错。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "boxlock",
+          "say": "纵轴越低越快。先看哪两条能保命走实心线，再对比谁在这个场景里跑得更轻快。",
+          "walk": [
+            {
+              "focus": "Plain",
+              "say": "「无锁装箱数」从 2 线程起全是空心点，线程多了还会互相争抢让耗时大步往上蹿，既不对也不快。"
+            },
+            {
+              "focus": "BoxLock",
+              "say": "「锁装箱对象」2、4、8 线程全是空心点！既丢了数，到 4、8 线程时耗时还反超了两把真锁。"
+            },
+            {
+              "focus": "FinalLock",
+              "key": "钉死 final 锁对象后全实心点，多线程也比出错版更稳更快",
+              "say": "「锁不变常量」1 到 8 线程全是实心点！只需要加一个 `final` 常量对象就能守住全部计数，4、8 线程时还比前两版更省时。"
+            },
+            {
+              "focus": "Reentrant",
+              "key": "显式锁同样全部实心点，是后续复杂控制的起点",
+              "say": "「显式可重入」同样全实心点，到 4、8 线程还贴在四条线最下方！后面遇到超时抢锁、公平排队等复杂需要时更要靠它。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "钉死门锁泳道：为什么 `count` 随便换也不怕",
+      "bridge": "切到 `FinalLock` 的泳道图对比一眼：`count` 还是那个随时装箱换新对象的 `Integer`，为什么大家排成一条队了？",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "synchronized (LOCK) { count++; }",
+          "parts": {
+            "read": "拆箱读旧数",
+            "calc": "装箱新对象",
+            "write": "改count后放LOCK"
+          },
+          "lanes": ["线程 A", "线程 B"],
+          "shared": { "name": "LOCK / count", "start": "200" },
+          "say": "这回门口的闸门叫 `LOCK`，它标了 `final` 焊死在墙上，跟里面被改动的 `count` 分成了两件东西。",
+          "steps": [
+            {
+              "lane": 0, "op": "note", "tone": "ok", "text": "A抢到唯一LOCK",
+              "say": "A 进门先抢到了焊死不变的 `LOCK`。"
+            },
+            {
+              "lane": 1, "op": "note", "tone": "wait", "text": "B在LOCK外等",
+              "say": "B 赶过来时也要抢这同一个 `LOCK`，只能老老实实停在门外排队。",
+              "ask": {
+                "q": "就算等会儿 A 把 `count` 换指向了新对象 `@201`，下一轮进来的线程找锁还会跑偏吗？",
+                "options": ["不会，锁认的是不变的 LOCK", "会，因为 count 变了"],
+                "answer": 0
+              }
+            },
+            {
+              "lane": 0, "op": "write", "value": "201", "text": "A换201并放LOCK",
+              "say": "A 在屋里稳稳算完，把 `count` 换成 `@201`，出门把 `LOCK` 交出来。"
+            },
+            {
+              "lane": 1, "op": "note", "tone": "ok", "text": "B拿到LOCK进门",
+              "say": "B 这才拿到这同一把 `LOCK` 进屋。"
+            },
+            {
+              "lane": 1, "op": "read", "text": "B拆箱读出201",
+              "say": "B 读出屋里最新的 `@201`，拆箱拿到 201。"
+            },
+            {
+              "lane": 1, "op": "write", "value": "202", "text": "B写回202",
+              "say": "B 算出 202 写回 `count` 后释放 `LOCK`，一笔都没丢。"
+            }
+          ],
+          "verdict": "==锁对象与被修改的引用彻底分开==，换多少个新数值也动不到门锁。",
+          "verdictSay": "多说一句工程提醒：这里用 `LOCK` 只是为了演示「锁包装类型会出事」。真写计数业务时，压根不用包装类 `Integer` 每次生成新对象，直接用 `AtomicInteger` 或把原始 `int` 包在锁里更省内存。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三把锁摆在一起：稳和巧怎么选",
+      "bridge": "把今天对比的锁写法在默认 4 线程数据下放上对比桌，顺便点明简单计数与显式锁的边界。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "选锁对象就像选门框：第一条底线就是门框自己绝对不能拆掉重装。",
+          "options": [
+            {
+              "name": "锁可变对象（如 Integer）",
+              "solves": "看似少建了一个锁对象字段，实则极其危险",
+              "cost": "4 线程错跑成 {ms:boxlock.BoxLock} ms，一旦重新赋值当场破防",
+              "when": "任何情况都不要拿会自动重绑或可变的包装类、字符串当锁",
+              "say": "不要贪图省一行代码直接 `synchronized (count)` 或锁某个可替换的配置字符串，引用一旦换人，整把锁立刻失效。"
+            },
+            {
+              "name": "static final 常量锁",
+              "solves": "用极低心智负担死死守住多步共享操作，绝不掉包",
+              "cost": "4 线程全对约 {ms:boxlock.FinalLock} ms；纯计数若配合装箱仍会多造对象",
+              "when": "需要同时保护多个变量或一串非原子步骤，且不需要超时、可中断",
+              "say": "写同步块时老老实实单独建一个私有的 `final` 空对象充当锁：它自己只占一点点空间，一辈子不会换引用，最不容易出错。"
+            },
+            {
+              "name": "显式锁（如可重入锁）",
+              "solves": "同样稳定互斥，而且能扩展尝试拿锁、超时放弃与公平排队",
+              "cost": "4 线程全对约 {ms:boxlock.Reentrant} ms；必须手写 try/finally",
+              "when": "需要超时拿锁、响应中断或多条件唤醒等精细并发控制时",
+              "say": "大多数常规互斥用 `synchronized` 配 `final` 锁就够；但当业务要求「抢不到等半秒就撤退」时，就要请出显式可重入锁了。注意如果是纯粹单数计数，还是直接上 `AtomicInteger` 最好。"
+            }
+          ],
+          "rule": "锁对象必须带 final 永不换引用；显式锁务必配 try/finally。",
+          "ruleSay": "把第七、八、九三节课合起来看，排查一把锁好不好使只有三关：是真互斥锁吗？锁得够宽吗？锁引用自己会变吗？",
+          "ruleKey": "锁对象的引用必须在整个并发周期里保持 final 不变"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "四个代码审查现场，当场排雷",
+      "layout": "split",
+      "bridge": "拿刚才那条挑锁原则，对照这棵判断树，把四个常见代码片段里的雷排干净。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "要选锁对象或并发工具，先看什么？",
+          "branches": [
+            { "when": "锁在会被重新赋值的包装类或开关上", "pick": "危险反例：立刻换掉", "eg": "改 flag 时锁住 flag 本身" },
+            { "when": "多字段复合操作、普通互斥即可", "pick": "final 常量锁", "eg": "单独私有 LOCK 护库存和状态" },
+            { "when": "需要超时试锁、中断或条件队列", "pick": "显式锁配 finally", "eg": "抢锁等不到 200ms 就降级" },
+            { "when": "只对单个数字加减、不想造堆垃圾", "pick": "AtomicInteger", "eg": "全局接口请求计数" }
+          ],
+          "say": "先沿这棵决策树看清该用哪把工具，再把四个审查场景逐个点选一遍。"
+        },
+        {
+          "t": "cases",
+          "tools": ["危险反例：立刻换掉", "final 常量锁", "显式锁配 finally", "AtomicInteger"],
+          "say": "每道题选一个处置意见，选完对照解释确认踩坑点。",
+          "items": [
+            {
+              "text": "代码写 `Boolean busy = false;` 并在 `synchronized (busy)` 里改写 `busy = true;`。",
+              "answer": 0,
+              "why": "跟今天一模一样！`Boolean` 也是包装不可变类，`busy = true` 马上换引用，锁瞬间失效。"
+            },
+            {
+              "text": "全局统计在线人数，原来写了 `static Integer online = 0;` 拿锁加减，现在重构掉。",
+              "answer": 3,
+              "why": "单数计数直接换 `AtomicInteger`，既不用给包装类不停装箱造新对象，也省去了锁排队。"
+            },
+            {
+              "text": "需要同时更新共享总金额和最近更新时间两个字段，外部不想别人误抢这把锁。",
+              "answer": 1,
+              "why": "建一个 `private static final Object LOCK = new Object();`，私有不暴露，加上 `final` 永不换引用，两全其美。"
+            },
+            {
+              "text": "定时任务抢分布状态锁时希望抢不到就先等 100 毫秒再决定是否放弃。",
+              "answer": 2,
+              "why": "只有 `ReentrantLock` 配合 `tryLock(timeout)` 能做到超时放弃，同时一定用 `try/finally` 保证释放。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "起个名字：锁对象掉包",
+      "bridge": "实验跑完了，字节码也拆穿了。给这种「写着锁同一个变量名、实际锁对象却一直在悄悄换人」的坑起个响亮名字。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "锁对象引用掉包",
+          "alias": "锁可变或自动装箱对象 · lock on mutable reference",
+          "oneLine": "把会被重新赋值的包装类或可变引用放进 `synchronized (...)`，结果==线程各自锁着前后不同版本的对象==。",
+          "asked": [
+            "为什么不能拿 Integer、Boolean 或 String 当锁？",
+            "Integer 的 -128 到 127 缓存区在这儿起了什么迷惑作用？",
+            "synchronized 和显式 ReentrantLock 在放锁写法上有什么关键区别？"
+          ],
+          "say": "面试如果被问到「为什么不要拿字符串或包装整数当锁」，今天你能直接报出字节码里 `Integer.valueOf` 换引用与 `astore` 还旧锁的全流程。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一：换个数字范围还会出错吗",
+      "bridge": "第一道小测检查你是不是真理解了包装类缓存区和掉包机理。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "把 `Integer count` 放进 `synchronized (count)` 自增，为何大循环会丢数？",
+          "options": [
+            { "text": "超过 127 后 count++ 换了新 Integer 对象，后续线程锁到新对象", "ok": true, "why": "精准命中！进了锁后 `putstatic` 把 `count` 换成了新对象，进门和出门守住的不是后续线程读到的那个对象。" },
+            { "text": "因为 `Integer` 类里面本来就禁止多线程进入", "ok": false, "why": "语法上和运行时都不会禁止（最多编译器发个提醒警告），真坑就在于它不可变、一改就换新对象。" },
+            { "text": "因为只有 0 到 127 之外的数才允许发生并发", "ok": false, "why": "0 到 127 之间其实一样在换对象引用（换成了另一个缓存值如 1 换成 2），照样会让相邻线程锁到 1 和 2 两个不同缓存对象！" }
+          ],
+          "say": "顺便留意第三个选项：哪怕在 0 到 127 的缓存区里，数值 1 和数值 2 本来也是两个不同的缓存对象，一样锁不住！"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二：改用显式锁最怕漏掉哪一行",
+      "bridge": "第二道小测把这节课最后引入的显式可重入锁防呆线拉紧，为下一批课程热好身。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "改用显式锁后，下面哪种写法在生产里最可靠？",
+          "options": [
+            { "text": "锁字段不加 final 修饰，并在方法末尾直接写 lock.unlock()", "ok": false, "why": "踩了两脚坑：一是锁字段没加 final 可能被意外替换，二是中间一旦抛异常就跳过了末尾的 unlock()，导致永久死锁。" },
+            { "text": "锁字段加 static final，加锁后在 try/finally 里 unlock", "ok": true, "why": "教科书级写法！`final` 保证锁不掉包，`try/finally` 保证不管有没有异常一定释放锁。" },
+            { "text": "只调用 lock.lock()，让线程跑完 method 自动像 synchronized 一样释放", "ok": false, "why": "显式锁不会自动释放！忘记 `unlock()` 会导致其他所有线程永远卡死等待。" }
+          ],
+          "say": "把 `static final` 和 `try/finally` 两条安全带同时系上，显式锁才算真正写稳。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲一遍",
+      "bridge": "两道小题都过关了。合上屏幕，把「为什么锁在全局 `Integer` 上还掉数、怎么才算真锁稳」当成面试作答讲一遍。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么不能拿 Integer 或可变引用当 synchronized 锁？稳妥的锁对象和显式锁怎么写？",
+          "points": [
+            "synchronized 锁的是传进去那一瞬间的堆内存对象，不是变量名本身",
+            "Integer 不可变，count++ 会重新装箱赋回新对象引用",
+            "线程进出门解的还是旧对象锁，新线程已按新引用锁上新对象，双方不再互斥",
+            "改用 static final Object 当锁，显式锁必配 try/finally"
+          ],
+          "model": "`synchronized` 在 `monitorenter` 时锁住的只是当时 `count` 指向的具体对象，不是变量名本身。把 `static Integer count = 0` 当锁后，`count++` 会先拆箱加一、再经 `Integer.valueOf` 生成并写回新对象引用。原线程出门释放的仍是老对象锁，后面进来的线程却按新 `count` 锁上了新对象，两拨人同时在临界区里互相覆盖。因此锁对象必须用 `private static final Object LOCK = new Object()` 钉死引用；单数计数优先换 `AtomicInteger`；使用显式可重入锁也同样要加 `final` 并把释放写进 `try/finally`。",
+          "say": "对着这四个关键点口述一遍，尤其把「`count++` 暗换引用导致前后锁到不同对象」说透。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张防踩坑卡",
+      "bridge": "第 9 课的三条铁律收进兜里。至此「找对锁」的三重陷阱——假锁、锁作用域错配、锁对象掉包——已经全部打通，下批课程就从显式锁展开更多实战！",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            { "q": "为什么绝不能拿 Integer、Boolean、String 当锁？", "a": "它们都是不可变对象，每次改动变量（如 count++）其实都在把变量重新指向另一个新对象，导致线程锁上不同对象、互不挡门。" },
+            { "q": "最保险的 synchronized 锁对象该怎么声明？", "a": "声明成私有的 `final Object LOCK = new Object()`（护静态数据再加 `static`），既不对外暴露误锁，又一辈子不会换引用。" },
+            { "q": "从今天引入的显式可重入锁带走哪条死规矩？", "a": "锁字段同样要 `final`，`lock.lock()` 之后紧跟 `try { ... } finally { lock.unlock(); }`，防止半路抛异常永久不放锁。" }
+          ],
+          "say": "第七到第九节三关连破：先看清谁改了数据（连 `get` 都要锁），再把锁放到跟数据一样宽，最后把锁钉死成永不换人的 `final`！"
+        }
+      ]
+    }
+  ]
+}

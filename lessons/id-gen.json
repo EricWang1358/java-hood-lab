@@ -1,0 +1,851 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "id-gen",
+  "course": "Java 并发实验",
+  "title": "位打包 CAS 发号：告别跨窗重号",
+  "lead": "把时间窗和序列号分开放，为什么加了原子类跨窗瞬间还是会撞出重复 ID？",
+  "minutes": 15,
+  "needs": [
+    "认识基本位运算与长整型",
+    "看过 CAS 原理与分拆原子撕裂"
+  ],
+  "after": [
+    "讲清分拆原子在跨时间窗时的重号错拍",
+    "用字节码看懂独立字段如何拆出时间缝隙",
+    "会用 64 位 AtomicLong 打包状态一次 CAS 推进",
+    "能按状态位数和竞争强度在 CAS 与锁间取舍"
+  ],
+  "experiments": {
+    "idgen": {
+      "runner": "java",
+      "home": "lab.idgen",
+      "variants": [
+        { "id": "Plain", "label": "裸字段", "code": "Plain.java" },
+        { "id": "SplitAtomic", "label": "分拆原子", "code": "SplitAtomic.java" },
+        { "id": "SyncGen", "label": "全方法加锁", "code": "SyncGen.java" },
+        { "id": "PackedCas", "label": "位打包CAS", "code": "PackedCas.java" }
+      ],
+      "knob": {
+        "label": "并发线程",
+        "values": ["1", "2", "4", "8"],
+        "default": "4"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "uniqueIds",
+        "expectKey": "expected",
+        "label": "不同 ID 数"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms"
+      }
+    }
+  },
+  "terms": {
+    "window": "时间窗编号，相当于雪花算法里的毫秒时间戳，用完配额就推进。",
+    "seq": "同一时间窗内的自增序列号，从 0 计到上限后必须归零。",
+    "SEQ_LIMIT": "单个时间窗允许发放的最大序列数，实验设成 8 让跨窗高频发生。",
+    "volatile": "保证读到最新主存值，但不能把两个变量的修改绑成一步。",
+    "AtomicInteger": "单个 int 的原子容器，只能管住自身，管不到旁边的 window。",
+    "AtomicLong": "64 位无锁原子容器，正好把 window 和 seq 塞进同一个长整型。",
+    "getAndIncrement": "先取值再加 1 的单字段原子操作，跨窗重置时仍会与读窗交错。",
+    "compareAndSet": "整份 64 位旧值未变才把新状态一次性写回，否则重读重试。",
+    "lushr": "无符号右移指令，把打包在高位的时间窗号单独提取出来。",
+    "land": "按位与指令，配合掩码把低位存放的序列号截取出来。",
+    "lshl": "左移指令，把时间窗号推到高位，把低 20 位让给序列号。",
+    "lor": "按位或指令，把高位的时间窗号与低位序列号拼成一个 long。",
+    "getstatic": "读取静态字段到栈顶；两个独立字段在字节码里各读一次。",
+    "putstatic": "把栈顶结果写回静态字段；归零与推窗写成两条独立指令。",
+    "synchronized": "方法级互斥锁，同时只放一个线程进发号段，零重号但要排队。"
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "发号器为什么怕跨窗口？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "仿雪花发号器高位存时间窗 `window`，低位存窗内序列号 `seq`。满额时必须同步把 `seq` 归零、再把 `window` 加 1。\n\n只要这两步分拆执行，跨窗瞬间就会算出完全相同的 ID。",
+          "say": "这一课我们专门盯紧仿雪花发号器跨窗的那一拍，看看为什么改了原子类照样撞出完全一样的 ID。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先热身：三道旧课底牌",
+      "bridge": "热身完毕之前，先唤醒前面看过的多字段撕裂、CAS 和状态合并。",
+      "blocks": [
+        {
+          "t": "recall",
+          "items": [
+            {
+              "have": "第 15 课",
+              "q": "两个引用各自都用原子操作，合在一起为什么还会撕裂？",
+              "options": [
+                "各自原子不等于组合原子",
+                "volatile 关键字写错了位置",
+                "编译器自动删除了更新"
+              ],
+              "answer": 0,
+              "why": "单个步骤再原子，两步之间的空隙依然能被其他线程插进去读取。"
+            },
+            {
+              "have": "第 13 课",
+              "q": "无锁更新共享状态时，CAS 凭什么敢直接写回新值？",
+              "options": [
+                "先上互斥锁再覆盖写",
+                "旧值未变才交换成功",
+                "靠睡眠避开并发冲突"
+              ],
+              "answer": 1,
+              "why": "只有确认内存值还等于刚才读到的旧快照，CAS 才会把新值写回去。"
+            },
+            {
+              "have": "第 24 课",
+              "q": "把版本号和状态码合并成单个字段后，为什么就能不串状态？",
+              "options": [
+                "一次 CAS 一起比较替换",
+                "拆成两个 Atomic 更清晰",
+                "虚拟机自动给字段加锁"
+              ],
+              "answer": 0,
+              "why": "关联状态收进同一个原子容器，单次比较交换就能整体推进。"
+            }
+          ],
+          "say": "记住第 15 课的教训和第 24 课的思路，今天我们把这套办法搬进 64 位长整型的比特位里。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "跨窗接力的致命一拍",
+      "bridge": "把抽象的字段放进发号现场，看谁共享着哪两份状态。",
+      "blocks": [
+        {
+          "t": "scene",
+          "story": "并发下单高峰期，两个业务线程同时调用发号器取单号。每个时间窗配额一到上限，就得立刻把序列号清回 0 并把时间窗往前拨 1；谁没等对方接好棒就先读了值，就会算出撞车单号。",
+          "map": [
+            {
+              "scene": "两条并发取号请求",
+              "code": "线程 A / 线程 B",
+              "say": "两个工作线程同时踏进发号方法，抢着要下一个可用序号。",
+              "on": "actors",
+              "tag": "线程 A · 线程 B"
+            },
+            {
+              "scene": "每窗配额上限",
+              "code": "SEQ_LIMIT = 8",
+              "say": "每窗只放 8 个序列号，刻意让跨窗换棒高频上演。"
+            },
+            {
+              "scene": "两半共享发号状态",
+              "code": "window 与 seq",
+              "say": "高位窗号配低位序号，拼在一起才是完整发号编号。",
+              "on": "shared",
+              "tag": "window=0, seq=8"
+            },
+            {
+              "scene": "满额归零再推窗",
+              "code": "seq=0; window++",
+              "say": "配额满时要先清零序号再递增窗号，两步之间没人看门。",
+              "on": "action",
+              "tag": "先归零，后推窗"
+            }
+          ],
+          "picture": {
+            "kind": "share",
+            "actors": ["线程 A", "线程 B"],
+            "shared": {
+              "name": "窗号与序号",
+              "value": "w0·s8"
+            }
+          },
+          "say": "两份共享变量摆在一起，只要清零和推窗没绑死在同一步，中间就一定藏着裂缝。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "只换原子类就高枕无忧了？",
+      "bridge": "很多人发现普通自增不安全后，第一反应就是把序号换成原子类。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "常见的修理写法是把 `seq` 换成 `AtomicInteger`，顺手给 `window` 加 `volatile`。\n\n两边看似都套上了并发护甲，高并发跑起来照样连环发出重复 ID。",
+          "say": "别凭感觉猜对错，先读两版源码，再直接放到 JDK 25 上实测看看。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看全无锁的裸字段基线",
+      "bridge": "先看最原始的裸字段版本，确认发号和跨窗究竟干了哪几步。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "idgen.Plain",
+          "focus": [
+            "int s = seq++;",
+            "seq = 0;",
+            "window++;",
+            "long w = window;",
+            "return (w << 20) | s;"
+          ],
+          "walk": [
+            {
+              "focus": ["int s = seq++;"],
+              "say": "第一步先从共享字段拿走当前 `seq` 准备用作低位序号，同时把它加 1。",
+              "key": "取当前 seq 并准备自增"
+            },
+            {
+              "focus": ["seq = 0;", "window++;"],
+              "say": "一旦拿到手的 `s` 越过配额，就把 `seq` 清零并把 `window` 往后推 1。",
+              "key": "满额时归零序号再推窗"
+            },
+            {
+              "focus": ["long w = window;", "return (w << 20) | s;"],
+              "say": "最后单独读出 `window`，左移 20 位拼上低位 `s` 返回给调用方。",
+              "key": "单独读窗号左移拼接"
+            }
+          ],
+          "say": "裸字段版没有任何保护，既会吞掉自增也会错开跨窗，用来当对照最直观。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "大家最常改出的分拆原子版",
+      "bridge": "再看“直觉修理版”：给 `seq` 换原子类，给 `window` 加 `volatile`。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "idgen.SplitAtomic",
+          "focus": [
+            "static volatile long window = 0;",
+            "static final AtomicInteger seq = new AtomicInteger(0);",
+            "int s = seq.getAndIncrement();",
+            "seq.set(0);",
+            "window++;",
+            "long w = window;"
+          ],
+          "walk": [
+            {
+              "focus": [
+                "static volatile long window = 0;",
+                "static final AtomicInteger seq = new AtomicInteger(0);"
+              ],
+              "say": "开发者用 `volatile` 保 `window` 可见性，又用 `AtomicInteger` 保 `seq` 自增不丢。",
+              "key": "两字段各自挂上并发关键字"
+            },
+            {
+              "focus": ["int s = seq.getAndIncrement();", "seq.set(0);"],
+              "say": "取号走 `getAndIncrement`，满额复位走 `set(0)`，单盯着 `seq` 确实都安全。",
+              "key": "seq 内部操作各自原子"
+            },
+            {
+              "focus": ["window++;", "long w = window;"],
+              "say": "可 `window` 另挂在旁边：复位 `seq`、递增 `window`、最后再读 `window` 全分开执行。",
+              "key": "window 与 seq 之间没有门锁"
+            }
+          ],
+          "say": "两边的修饰符看起来都头头是道，只是谁也没把这两个动作缝成同一瞬间。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "开跑前押一注：分拆原子能稳吗？",
+      "bridge": "代码就在眼前，先猜实测打开多核并发时会发生什么。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "分拆原子版在多线程高并发取号时，会发出重复 ID 吗？",
+          "options": [
+            "不会重复，AtomicInteger 已经保住序号",
+            "偶发少许丢失，但绝对不会发出重复号",
+            "照样稳定在多轮里撞出大量重复 ID",
+            "只有 8 线程会坏，2 线程跑不出来"
+          ],
+          "answer": 2,
+          "say": "选好你的判断，下一页我们就让两个无锁版本在 1 到 8 线程下真刀真枪跑一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "先上场验证：裸字段与分拆原子",
+      "bridge": "先别猜，直接拨动并发线程旋钮看 20 轮实测结果。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "idgen",
+          "show": ["Plain", "SplitAtomic"],
+          "say": "切到 2 线程以上观察：不只是裸字段，分拆原子版同样在多轮里稳定漏出重复 ID。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测揭晓：原子类没挡住重号",
+      "bridge": "把 20 轮实测结果拉回刚才的预测旁边对个账。",
+      "blocks": [
+        {
+          "t": "reveal",
+          "of": "p1",
+          "say": "结果很刺眼：只要并发开启，分拆原子版和裸字段一样稳稳撞号，不同 ID 数明显少于应发总数。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "先上手找错：点出断开的那两行",
+      "bridge": "现在回到源码，亲手点出把一次跨窗切成两截的位置。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "idgen.SplitAtomic",
+          "q": "点出把序列归零与窗号推进拆成两段的代码",
+          "answer": ["seq.set(0);", "window++;"],
+          "hint": "往满额跨窗分支里看，分别改动两个字段的那两行。",
+          "found": "就是 `seq.set(0);` 和 `window++;`，中间没有任何同步挡住别的线程插队。",
+          "say": "找准这两行，接下来把线程交错放慢，看看另一线程怎么从缝隙钻进去。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "泳道慢放：跨窗一瞬间怎么撞车",
+      "bridge": "放慢两个线程在跨窗临界点的一举一动，盯住共享状态如何变成新旧混搭。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "((w << 20) | s)",
+          "parts": {
+            "read": "拿号/读窗",
+            "calc": "判满/归零",
+            "write": "写回字段"
+          },
+          "lanes": ["线程 A", "线程 B"],
+          "shared": {
+            "name": "w / seq",
+            "start": "0, 8"
+          },
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "tone": "wait",
+              "text": "取号 s=8",
+              "say": "线程 A 先调用 `getAndIncrement` 取到 8，刚好踩到每窗上限。",
+              "key": "拿满额序号准备换窗"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "tone": "fail",
+              "value": "0, 0",
+              "text": "seq 归 0",
+              "say": "线程 A 抢先把 `seq` 重置成 0，这时 `window` 还没来得及加 1。",
+              "key": "先归零序号但窗号没变"
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "tone": "wait",
+              "text": "取号 s=0",
+              "say": "线程 B 趁隙进来取号，稳稳拿走了刚刚被清成 0 的低位序号。",
+              "key": "趁隙拿走新归零的 0"
+            },
+            {
+              "lane": 1,
+              "op": "calc",
+              "tone": "fail",
+              "text": "拼号 = w0·0",
+              "ask": {
+                "q": "线程 B 此时读到的 window 还是多少？",
+                "options": [
+                  "还是旧窗 0",
+                  "已经变成新窗 1",
+                  "会自旋等线程 A"
+                ],
+                "answer": 0
+              },
+              "say": "因为推窗指令还没落盘，线程 B 读到的还是旧 `window = 0`，拼出旧号。",
+              "key": "旧窗 0 配新 0 号发出"
+            },
+            {
+              "lane": 0,
+              "op": "write",
+              "tone": "ok",
+              "value": "1, 0",
+              "text": "窗号加 1",
+              "say": "线程 A 这才把 `window` 推成 1，可线程 B 早把重号交出去了。",
+              "key": "推窗太晚无法撤回旧号"
+            },
+            {
+              "lane": 1,
+              "op": "note",
+              "tone": "fail",
+              "text": "撞上旧 w0·0",
+              "say": "第 0 窗早在开场就发过 0 号，这一次旧窗配新零号立刻造成重复 ID。",
+              "key": "前后两笔订单拿到同号"
+            }
+          ],
+          "verdict": "两字段各自改写，中间缝隙照常发出新旧混搭号",
+          "verdictSay": "反过来若是 B 先拿 `s = 7` 还没读窗就停顿，也会读到新窗 1 拼出未来号并提前占坑。",
+          "verdictKey": "无论先后都有机会错拍撞号",
+          "say": "线程 A 先把 `seq` 清成 0 还没来得及给 `window` 加 1，线程 B 就顺手抓走旧窗配新 0 号撞了车。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "翻看字节码：确实是各自读写",
+      "bridge": "光看源码还不够铁证，直接调出 JDK 25 的 `javap` 字节码看个透。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "idgen.SplitAtomic",
+          "within": "static long nextId();",
+          "from": "0: getstatic",
+          "to": "46: lreturn",
+          "walk": [
+            {
+              "focus": ["17: invokevirtual"],
+              "label": "独立写seq",
+              "say": "第 17 处字节码先调 `set` 把 `seq` 写成 0，这时 `window` 还纹丝不动。",
+              "key": "先把 seq 单独写回 0"
+            },
+            {
+              "focus": ["20: getstatic", "25: putstatic"],
+              "label": "另写window",
+              "say": "到第 20 处才 `getstatic` 读 `window`，加 1 后到 25 处 `putstatic` 写回，这三步自己也不原子。",
+              "key": "window 自增又是另三条指令"
+            },
+            {
+              "focus": ["35: getstatic"],
+              "label": "隔空再读窗",
+              "say": "第 35 处又单独做一次 `getstatic` 读 `window` 来做 `lshl` 和 `lor`，中间随时被插队。",
+              "key": "最后再读一次窗号拼 ID"
+            }
+          ],
+          "say": "从字节码能看得明明白白：复位、推窗、再读窗跨了四五条独立内存操作，完全没有捆绑关系。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "补问一句：把窗号也换 AtomicLong 呢？",
+      "bridge": "有人会想：是不是只因为 `window++` 没用 `AtomicLong`，两个都用原子类就行了？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "哪怕把 `window` 也换成 `AtomicLong` 调 `incrementAndGet()`，也只保住了各自字段。\n\n`seq.set(0)` 和推进窗号依然存在时间差，照样会让并发线程拼出新旧混搭态。",
+          "say": "要彻底消灭跨字段裂缝，只有两条路：要么加锁把两步包起来，要么把两个数装进同一份字节一起换。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "解法一：synchronized 整段锁住",
+      "bridge": "先看最直白的护栏：用互斥锁把取号、判满、归零和推窗全部包成单行道。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "idgen.SyncGen",
+          "focus": [
+            "static synchronized long nextId()",
+            "if (seq >= SEQ_LIMIT)",
+            "long id = (window << 20) | seq;",
+            "seq++;"
+          ],
+          "walk": [
+            {
+              "focus": ["static synchronized long nextId()"],
+              "say": "直接用 `synchronized` 守住入口，同一时刻只放一个线程进门。",
+              "key": "整段方法只放单线程进入"
+            },
+            {
+              "focus": ["if (seq >= SEQ_LIMIT)"],
+              "say": "锁内判满、把 `seq` 清 0 并推高 `window`，别人根本看不到中间半成品。",
+              "key": "跨窗判断与复位在锁内完成"
+            },
+            {
+              "focus": ["long id = (window << 20) | seq;", "seq++;"],
+              "say": "拿完组合 ID 并递增 `seq` 才交锁，顺序永远连续、绝不重号。",
+              "key": "算好完整号才释放互斥锁"
+            }
+          ],
+          "say": "整段加锁逻辑极简且绝不错号，代价是高并发下线程得在门外排队等锁。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "解法二：把两个状态压进一个 long",
+      "bridge": "想无锁又要成对同步推进，就把 `window` 和 `seq` 装进同一个 64 位 `AtomicLong`。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "idgen.PackedCas",
+          "focus": [
+            "static final AtomicLong packed = new AtomicLong(0);",
+            "long cur = packed.get();",
+            "long w = cur >>> 20;",
+            "int s = (int) (cur & SEQ_MASK);",
+            "if (packed.compareAndSet(cur, next))"
+          ],
+          "walk": [
+            {
+              "focus": ["static final AtomicLong packed = new AtomicLong(0);", "long cur = packed.get();"],
+              "say": "合并成一个 `AtomicLong` 后，一次读取就锁定了同一瞬间的窗号与序号快照。",
+              "key": "单次读取锁定成对快照"
+            },
+            {
+              "focus": ["long w = cur >>> 20;", "int s = (int) (cur & SEQ_MASK);"],
+              "say": "高 44 位无符号右移出 `w`，低 20 位掩码截出 `s`，然后在局部算好下一个状态 `next`。",
+              "key": "位运算拆出窗号并算好下一态"
+            },
+            {
+              "focus": ["if (packed.compareAndSet(cur, next))"],
+              "say": "最后只用一次 `compareAndSet` 整体交换；没抢赢就重读重算，抢赢直接拿走旧 `cur`。",
+              "key": "单次 CAS 同时改完窗号与序号"
+            }
+          ],
+          "say": "由于新旧两半压在同一块 64 位内存里，一次 CAS 成功要么同时跨窗归零，要么根本没改过。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "看字节码：读一次、位拆拼、一次 CAS",
+      "bridge": "同样翻开 `javap` 字节码，确认位打包版本是怎么把两步焊成一体的。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "idgen.PackedCas",
+          "within": "static long nextId();",
+          "from": "0: getstatic",
+          "to": "64: goto",
+          "walk": [
+            {
+              "focus": ["3: invokevirtual", "10: lushr", "16: land"],
+              "label": "一次读取拆位",
+              "say": "第 3 处只读一次 `AtomicLong`，再用 `lushr` 无符号右移、用 `land` 按位与，从同一个长整数拆出成对的 `w` 和 `s`。",
+              "key": "lushr 与 land 从同快照拆值"
+            },
+            {
+              "focus": ["32: bipush", "34: lshl", "47: lor"],
+              "label": "栈内位拼新值",
+              "say": "满窗或加 1 都只在栈里用 `lshl` 左移配 `lor` 拼出下个长整数，过程不碰任何共享字段。",
+              "key": "lshl 与 lor 栈内拼完下一态"
+            },
+            {
+              "focus": ["56: invokevirtual", "64: goto"],
+              "label": "单次CAS提交",
+              "say": "第 56 处只发起一次 `compareAndSet` 换整包，抢输了由第 64 处 `goto` 回头重算。",
+              "key": "单次 CAS 原子替换全部状态"
+            }
+          ],
+          "say": "对比两边字节码就能看穿本质：一次读、栈里位运算、一次 CAS 写入，跨字段缝隙彻底消失。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四版同台跑：把旋钮从 1 拨到 8",
+      "bridge": "把四个实现全部放上实验台，边切线程数边看谁零重号、谁跑得更快。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "idgen",
+          "show": ["Plain", "SplitAtomic", "SyncGen", "PackedCas"],
+          "say": "依次从 1 线程拨到 8 线程：全方法加锁与位打包 CAS 在各档都零重号，分拆原子在多核下既撞号又一路拉高耗时。"
+        },
+        {
+          "t": "try",
+          "do": "把并发线程从 1 拨到 8，盯住 SplitAtomic、SyncGen 与 PackedCas 三条耗时曲线",
+          "see": "确认两修复版全程零重号；SplitAtomic 高并发重号且耗时追平 PackedCas，2 到 8 线程 PackedCas 只略快于 SyncGen。",
+          "say": "拨完四个档位再对比：位打包赢在无锁零重号且并发下略快于加锁，可 8 线程死磕单热点时自旋开销同样显著抬高。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "中位耗时曲线：四版并发表现对照",
+      "bridge": "把 20 轮实测的耗时和中位值摊在图上，看清每种方案的真实代价。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "idgen",
+          "show": ["Plain", "SplitAtomic", "SyncGen", "PackedCas"],
+          "walk": [
+            {
+              "focus": "Plain",
+              "say": "裸字段因为没有同步屏障，高并发下耗时最轻，但 2 线程起稳定少发大量唯一 ID，结果不可用。"
+            },
+            {
+              "focus": "SplitAtomic",
+              "say": "分拆原子既保不住并发不重号，还要为原子序号和 volatile 窗号双双买单，4 到 8 线程耗时几乎追平位打包 CAS。"
+            },
+            {
+              "focus": "SyncGen",
+              "say": "全方法加锁各档都是零重号；单线程几乎零开销，并发升高后主要耗时在门外排队等锁。"
+            },
+            {
+              "focus": "PackedCas",
+              "say": "位打包 CAS 同样全程零重号；2 到 8 线程都略快于加锁，但升到 8 线程单热点自旋变重，耗时同样陡升并贴近 SyncGen。"
+            }
+          ],
+          "say": "看清这条实测曲线：位打包首先保住了无锁不错号，但所有核心都抢同一块 64 位内存，高线程下一样有争用代价。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三种工程取舍：分拆、加锁还是位打包",
+      "bridge": "比完正确性和耗时，现在整理成工程选型表，别再把 CAS 当万能药。",
+      "blocks": [
+        {
+          "t": "choose",
+          "options": [
+            {
+              "name": "分拆原子",
+              "solves": "只保住单字段自增，保不住跨窗一致",
+              "cost": "约 {ms:idgen.SplitAtomic} ms（依然重号）",
+              "when": "任何要求全局不重号的并发发号都禁止使用",
+              "say": "花了原子操作代价却照样撞号，工程里必须一眼排雷。"
+            },
+            {
+              "name": "全方法加锁",
+              "solves": "锁内顺改窗号与序号，支持多字段扩张",
+              "cost": "约 {ms:idgen.SyncGen} ms（抢锁排队）",
+              "when": "状态塞不下 64 位、要顺带落日志或中小并发场景",
+              "say": "逻辑最直观，字段再多也能一把锁兜底，只在高竞争时吞吐受限。"
+            },
+            {
+              "name": "位打包 CAS",
+              "solves": "单次 64 位 CAS 同改窗号与序号，零重号",
+              "cost": "约 {ms:idgen.PackedCas} ms（单热点自旋）",
+              "when": "高频雪花发号、关联状态合起来不超过 64 位",
+              "say": "少一步互斥切换、无阻塞推进，但要注意所有位加总不能超出 64 位。"
+            }
+          ],
+          "rule": "互相关联的状态塞得进 64 位就打包 CAS，塞不下或逻辑重就上锁",
+          "ruleSay": "千万别用两个原子变量拼凑组合安全；能合并就一次 CAS 换整包，合不进老实加锁或分片。",
+          "ruleKey": "合得进 64 位才用打包 CAS",
+          "say": "先卡住关联字段总位数：64 位内靠位打包一次 CAS，装不下或逻辑复杂就上锁。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "按业务场景对号选方案",
+      "layout": "split",
+      "bridge": "左边看三道真实业务需求，右边顺着判断树挑出最合适那把工具。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "关联状态能塞进 64 位吗？",
+          "branches": [
+            {
+              "when": "不超 64 位且单机高频无锁",
+              "pick": "位打包 AtomicLong",
+              "eg": "雪花 (window, seq)"
+            },
+            {
+              "when": "状态多超 64 位或含多表操作",
+              "pick": "synchronized 整段锁",
+              "eg": "改状态并扣积分记流水"
+            },
+            {
+              "when": "要跨多台机器防撞或减单点自旋",
+              "pick": "号段缓存配锁",
+              "eg": "集群节点分段领号"
+            }
+          ],
+          "say": "先问位数塞不塞得下、再看要不要跨节点，三选一很快就能定型。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "位打包 AtomicLong",
+            "synchronized 整段锁",
+            "号段缓存配锁"
+          ],
+          "items": [
+            {
+              "text": "高频单机发号服务：41 位毫秒时间窗加上 22 位窗内序列号，高并发不能有锁阻塞。",
+              "answer": 0,
+              "why": "41 + 22 共 63 位刚好装进单个 long，打包后单次 CAS 就能无锁防重号。"
+            },
+            {
+              "text": "订单改价防重发：需要同时改状态码、更新金额 BigDecimal、再追加一条审计对象。",
+              "answer": 1,
+              "why": "涉及多对象和浮点金额，64 位绝对放不下，直接用锁保护临界区最稳妥。"
+            },
+            {
+              "text": "8 台网关都要高速拿雪花类短码，既要避免跨实例撞号，又怕单点自旋打满 CPU。",
+              "answer": 2,
+              "why": "按机器或线程先加锁批领一段区间号，本地再无锁消耗，跨机不撞也不死磕单点。"
+            }
+          ],
+          "say": "对照左边场景按右边条件对号：位够用就位打包，位不够就上锁，跨节点用号段分割竞争。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给这招取个硬核名字：位打包 CAS",
+      "bridge": "把今天这套解法凝练成面试高频术语，下次直接报出招式名。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "位打包 CAS",
+          "alias": "Bit-Packed AtomicLong / 状态压缩 CAS",
+          "oneLine": "把需同步变动的多个整型挤进同一个 64 位字段，靠一次 CAS 原子换整包。",
+          "asked": [
+            "雪花算法并发跨毫秒怎么无锁防重号？",
+            "给两个字段分别用 Atomic 为什么还会出错？",
+            "为什么很多并发框架都爱把标志位压进一个 long？"
+          ],
+          "say": "记住这个招式名：遇到双变量必须同进退时，脑海立刻响起“把位压进同个 long 做一次 CAS”。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检票一：拆开原子为什么仍重号",
+      "bridge": "拿三道常见面试追问查缺补漏，确保核心细节不打滑。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "SplitAtomic 已给 window 加 volatile、seq 用原子类，为何仍重号？",
+          "options": [
+            {
+              "text": "volatile 失效导致线程缓存看不到新值",
+              "ok": false,
+              "why": "volatile 保证了可见性，问题出在两个字段的更新分成前后两条指令。"
+            },
+            {
+              "text": "seq 归零与 window 加 1 之间会被插队混搭新旧值",
+              "ok": true,
+              "why": "正确！另一线程会在归零后、推窗前取走 0 配旧窗，或拿到新窗配旧号。"
+            },
+            {
+              "text": "AtomicInteger 的 getAndIncrement 在高并发下会发负数",
+              "ok": false,
+              "why": "在远未溢出的几千配额内不会变负，重号完全来自跨字段错拍。"
+            }
+          ],
+          "say": "只要操作跨过两个独立内存地址，单独看再安全，合起来照样有空隙。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检票二：位打包靠什么保住一致",
+      "bridge": "再查第二道：确认位打包版本是怎么消掉那道时间缝隙的。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "PackedCas 为什么只调用一次 compareAndSet 就能保跨窗不重号？",
+          "options": [
+            {
+              "text": "位运算会在 CPU 缓存行自动加上互斥锁",
+              "ok": false,
+              "why": "位运算只是算术指令并不加锁，靠的是把状态挤进同一条 CAS 比较替换里。"
+            },
+            {
+              "text": "window 和 seq 在同个 long 里，读取、判满与替换全基于同一份 64 位值",
+              "ok": true,
+              "why": "正确！一次读就定格完整成对状态，一次 CAS 失败就会全盘重算重来。"
+            },
+            {
+              "text": "PackedCas 在满窗时会悄悄 sleep 等其他线程跑完",
+              "ok": false,
+              "why": "它从不睡眠阻塞，只用 compareAndSet 失败重试来解决碰撞。"
+            }
+          ],
+          "say": "读一次拿到成对、写一次交换整包，中间任何插队都会让 CAS 失效重来。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检票三：什么时候不该死磕位打包",
+      "bridge": "最后验一道边界题：避免把位打包滥用到放不下的复杂场景。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "若发号还要顺带修改第三个 32 位机器权重字段，共超 64 位，该怎么改？",
+          "options": [
+            {
+              "text": "把权重单独放进另一个 AtomicInteger 一起改",
+              "ok": false,
+              "why": "一旦拆回两个独立 Atomic，又会重演今天的跨字段撕裂问题。"
+            },
+            {
+              "text": "改为整段加锁，或封成不可变对象引用做 AtomicReference CAS",
+              "ok": true,
+              "why": "正确！64 位放不下时，要么回到锁，要么用不可变快照对象配合单引用 CAS。"
+            },
+            {
+              "text": "给三个字段全部加上 volatile 就能同时生效",
+              "ok": false,
+              "why": "volatile 管不住组合原子性，三份字段依然可以分步被看到半成品。"
+            }
+          ],
+          "say": "记住这个边界：64 位装不下时，要么老实上锁，要么把组合状态做成不可变对象换引用。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "面试实战：1 分钟口述雪花无锁防重号",
+      "bridge": "把整节课浓缩成 4 步结构化口述，面试遇追问直接照这个骨架答。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：雪花发号器跨毫秒重置序列时如何无锁防重号？",
+          "points": [
+            "点出时间窗与序列号分开用原子类仍会在跨窗时撕裂",
+            "讲明 `seq` 归零后、推窗前会被并发抓到旧窗配 0 撞号",
+            "说明将窗号和序列号位打包进同一个 `AtomicLong`",
+            "用单次 `compareAndSet` 同步推进，放不下时改锁或换引用"
+          ],
+          "model": "雪花发号器跨窗时必须同时把序列号 `seq` 归零并把时间窗 `window` 加 1。如果只把 `seq` 换成 `AtomicInteger`、给 `window` 加 `volatile`，两条修改指令依然独立，并发下另一线程就会在归零后推窗前读到旧窗配 `0` 撞出重复 ID。无锁正解是位打包 CAS：把高位 `window` 和低位 `seq` 压进同一个 `AtomicLong`，读一次就锁定成对快照，在局部算好下一组状态后用单次 `compareAndSet` 整体换掉。如果字段超过 64 位或高冲突下自旋过高，就改用 `synchronized` 或批领号段。",
+          "say": "先说错法为什么错，再亮出位打包怎么缝合两步，最后补选型边界，答案滴水不漏。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张巩固复习卡",
+      "bridge": "课末留三张速查卡，考前瞄一眼就能立刻想起字节码证据。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "seq 换原子类、window 加 volatile 为什么照样重号？",
+              "a": "`seq.set(0)` 和 `window++` 对应不同字段读写指令，中间会被另一线程取到新旧混搭态。"
+            },
+            {
+              "q": "位打包 CAS 如何消除跨窗重号？",
+              "a": "将 `(window << 20) | seq` 压进同一个 `AtomicLong`，单次读取成对快照、单次 `compareAndSet` 整体推进。"
+            },
+            {
+              "q": "什么时候用位打包 CAS，什么时候换用锁或不可变对象？",
+              "a": "所有关联状态合起来不超过 64 位且需无阻塞高频发号时用位打包 CAS；放不下或需跨多对象操作时加锁或做引用 CAS。"
+            }
+          ],
+          "say": "今天把多字段如何借位打包变成一次 CAS 吃透了，下回遇到类似状态组合就能一眼看穿撕裂点。"
+        }
+      ]
+    }
+  ]
+}

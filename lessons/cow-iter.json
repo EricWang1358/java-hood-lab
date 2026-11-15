@@ -1,0 +1,788 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "cow-iter",
+  "course": "Java 并发从零",
+  "title": "加了同步包装，遍历还是炸？",
+  "lead": "读多写少的白名单换成 Collections.synchronizedList，为什么一边遍历一边改照样炸出异常？",
+  "minutes": 45,
+  "needs": [
+    "单步锁护不住两步中间（第三、五节）",
+    "synchronizedList 怎么加锁",
+    "知道 for-each 可以顺着遍历列表"
+  ],
+  "after": [
+    "看懂 for-each 底层靠迭代器多步推进",
+    "说清同步包装为何挡不住遍历时结构修改异常",
+    "会用整段加锁或写时复制容器写对读多写少",
+    "分清锁整趟遍历与写时复制快照的适用边界"
+  ],
+  "terms": {
+    "ArrayList": "普通动态数组列表，内部靠修改次数计数器配合迭代器做快速失败检查。",
+    "Collections.synchronizedList": "仅对单个列表方法加对象锁，不会把整趟跨方法的循环包进一把锁。",
+    "CopyOnWriteArrayList": "写时复制列表：修改时先拷贝整份新数组替换，读遍历全在旧快照上无锁跑。",
+    "ConcurrentModificationException": "并发修改异常：迭代器发现列表在遍历途中被结构性改动时立刻抛错停步。",
+    "for-each": "增强 for 循环语法糖，编译后会自动拆成拿迭代器、循环判断与取下一项。",
+    "Iterator": "集合迭代器，遍历过程中一步步记住当前位置与期待的修改次数。",
+    "hasNext": "迭代器接口方法，每次循环判断还有没有下一项可取。",
+    "next": "迭代器接口方法，先核对修改次数有没有被改过，再把下一项拿出来。",
+    "modCount": "ArrayList 记录结构被增删次数的计数器，每增或删一次都会加一。",
+    "expectedModCount": "迭代器刚创建时抄下的初始修改次数，每拿一项都要拿它和 modCount 对账。",
+    "synchronized": "给代码块加门锁，包住整趟遍历就能把读写完全串行隔开。",
+    "Thread": "独立执行的线程，本节分出一条写线程和其余读线程同时跑。",
+    "join()": "主线程等所有子线程全部收尾后，再汇总成功遍历的总次数。",
+    "javap": "JDK 反编译工具，能直接看出 synchronized 对应的加锁解锁字节码。",
+    "invokeinterface": "JVM 字节码指令，通过接口分别调用 iterator、hasNext 和 next。",
+    "monitorenter": "JVM 进门加锁指令，对应 synchronized 代码块的入口。",
+    "monitorexit": "JVM 出门放锁指令，保证走出或异常离开代码块时解开锁。"
+  },
+  "experiments": {
+    "cow": {
+      "runner": "java",
+      "home": "lab.cow",
+      "knob": {
+        "name": "threads",
+        "label": "读写总线程数",
+        "values": ["1", "2", "4", "8"],
+        "default": "4"
+      },
+      "metric": {
+        "key": "okReads",
+        "expectKey": "expected",
+        "label": "完整遍历次数",
+        "expect": "应成"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        { "id": "Plain", "label": "普通列表", "note": "基准写法：普通 ArrayList，一边高频 for-each，一边偶尔增删规则。" },
+        { "id": "SyncList", "label": "同步包装", "note": "换成 Collections.synchronizedList，for-each 外面不加同步块。" },
+        { "id": "SyncLoop", "label": "整段加锁", "note": "用 synchronized (rules) 把整趟 for-each 和修改成对包起来。" },
+        { "id": "CopyOnWrite", "label": "写时复制", "note": "换成 CopyOnWriteArrayList，修改复制新数组，遍历无锁读快照。" }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "白名单一边查，后台偶尔改",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "上节最后留了个悬念：换上 `Collections.synchronizedList` 以后单步 `add` 稳了，可只要一边 `for-each` 一边改，**一样当场炸掉**。今天亲自揭开这层窗户纸。",
+          "say": "上一节我们修好了多线程并发追加；今天把场景换成业务里最常见的读多写少：几条查询线程狂扫白名单，后台偶尔添删一条。"
+        },
+        {
+          "t": "recall",
+          "items": [
+            {
+              "have": "第三节：复合裂缝",
+              "q": "安全容器单步加锁后，先查再改两步之间为什么还会错？",
+              "options": [
+                "容器忘记给方法加锁了",
+                "只护单步不护两步间的缝",
+                "安全容器只能存小整数"
+              ],
+              "answer": 1,
+              "why": "每一次方法进门出门都放开了锁，两步之间的走廊照样没人把关。"
+            },
+            {
+              "have": "第五节：包装列表边界",
+              "q": "换成 Collections.synchronizedList 后遍历还会炸吗？",
+              "options": [
+                "不会，包装类包了所有代码",
+                "整趟遍历多步没锁仍会炸",
+                "只有清空列表时才可能炸"
+              ],
+              "answer": 1,
+              "why": "遍历并不是一步完成，只要外头没锁住整段循环，照样会被中途写入打断。"
+            }
+          ],
+          "say": "先把上几节立好的两个前提按出来：单步护不住跨步，循环也算跨多步。选完两题再进现场。"
+        },
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": ["读线程 A", "写线程 B"],
+            "shared": { "name": "rules", "value": "320条" }
+          },
+          "story": "风控服务放着一份 **320 条规则白名单** `rules`。99% 的请求都只是把这份名单从头到尾扫一遍核对长度；后台每隔一阵才偶尔往名单尾端添删一条临时名单。按理说写这么少，用安全包装列表应该万无一失，可线上还是频频报警。",
+          "say": "把这段系统想成图书馆借阅栏：一大群人顺着抄写目录，管理员在旁边抽走或补插一页。"
+        ,
+          "map": [
+            {
+              "scene": "高频扫名单的读线程",
+              "on": "actors",
+              "tag": "读线程",
+              "code": "执行 `scanOnce()`",
+              "say": "2/4/8 线程下，一条专门当写线程，其余全是不停 `for-each` 扫规则的读线程；全部等 `join()` 后对账。"
+            },
+            {
+              "scene": "共用那份规则白名单",
+              "on": "shared",
+              "tag": "共享列表",
+              "code": "白名单 `rules`",
+              "say": "所有读者和这位写者盯紧同一个列表对象。"
+            },
+            {
+              "scene": "后台偶尔改一条规则",
+              "on": "actors",
+              "tag": "结构修改",
+              "code": "调 `add` 与 `remove`",
+              "say": "写线程隔一小段时间就在尾端加一条再删一条，专门触发列表结构变动。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "不仅普通列表炸，同步包装也照炸",
+      "bridge": "普通 `ArrayList` 边读边改会撞出 `ConcurrentModificationException` 不稀奇；真正反直觉的是，换成 `Collections.synchronizedList` 竟然也救不住。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "实验里每次读线程完整跑完 `for-each` 记一次成功 `okReads++`；如果半路撞上 `ConcurrentModificationException` 被吞错停步，这次遍历就算作废。为什么线程安全的包装列表一样拦不住异常？",
+          "say": "这次盯住的不是算错数，而是每趟遍历会不会半路撞异常停掉；看清规则再往下验。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "十行代码看清怎么边读边改",
+      "bridge": "先看普通版 `Plain` 的骨架：上面写着扫描和修改两个方法，下面按总线程数拆出写者和读者。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "cow.Plain",
+          "walk": [
+            {
+              "focus": ["for (String rule : rules) {"],
+              "say": "每个读线程在 `scanOnce()` 里用最常见的一行 `for-each` 扫完 320 条规则。"
+            },
+            {
+              "focus": ["rules.add(TAGS[pick & 3]);", "rules.remove(rules.size() - 1);"],
+              "say": "并发时唯一的写线程每隔一小段就往尾端先加再删，改变列表结构。"
+            },
+            {
+              "focus": ["} catch (ConcurrentModificationException"],
+              "say": "程序特意接住了并发修改异常不让进程崩掉，只是这一趟遍历没计入成功次数。"
+            },
+            {
+              "focus": ["if (threads == 1) {"],
+              "say": "如果总 `Thread` 只有 1 条，读与写在同一条流里错开顺序跑完再 `join()` 对账，自然不会相撞。"
+            }
+          ],
+          "say": "代码结构很透明：2 线程以上时，1 条负责改、其余 `threads - 1` 条全在循环扫列表，每扫完整一趟才把 `okReads` 加一。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜：能完整扫完多少趟",
+      "bridge": "现在切到默认 4 线程（3 条读线程各跑 30000 趟，一共期待 90000 趟完整遍历，同时后台只有 1 条写线程偶尔改）。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "4 线程跑普通 `ArrayList`，预计 90000 趟里会怎样？",
+          "options": [
+            "因为写的很慢，90000 趟几乎全能完整扫完",
+            "大量遍历半路撞异常作废，每轮都凑不够 90000",
+            "第一趟撞完后面就自动适应，只有头一次报错"
+          ],
+          "answer": 1,
+          "say": "写线程加了两千五百次空转才动手改一回，够稀少了吧？猜猜读线程还会不会频频撞上它。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一遍看 `Plain` 断了多少趟",
+      "bridge": "点进实验台，先把 `Plain`（普通列表）连跑多轮，看清 `okReads` 离应成的 90000 差多远。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "cow",
+          "show": ["Plain"],
+          "say": "按默认 4 线程跑一轮看看：原本期望 90000 趟，实测丢掉了上万趟直接被异常掐断！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "say": "实测打醒幻想：哪怕写线程间隔再大、哪怕只有 1 条写线程，并发下普通列表照样每轮惨丢上万趟遍历！"
+        },
+        {
+          "t": "try",
+          "key": "1 线程错开读写全对；2 线程起只要同时读写就回回丢趟",
+          "say": "试着拨开 1、2、4、8 四档：1 线程全对，2 线程一读一写照样每轮必丢，说明单靠少写根本躲不开。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "在源码里指出来",
+      "bridge": "既然少写躲不开，回到 `Plain.java` 里把制造「正在逐格往下取」和「半路改动列表结构」的现场点出来。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "cow.Plain",
+          "q": "点出读线程正在拆步迭代的那行代码，以及写线程把结构改掉的一行。",
+          "answer": ["for (String rule : rules) {", "rules.add(TAGS[pick & 3]);"],
+          "hint": "提示：找 `scanOnce` 里的循环头，和 `updateRule` 里动手增加元素的那一句。",
+          "found": "抓得准！读在 `for-each` 循环里一步步向后摸，写那边顺手 `add/remove` 改变了结构计数，两者一碰立刻掀桌。",
+          "say": "去左边的源码里把这一读一写两处真正撞车的现场点出来。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "for-each 压根不是一步读完",
+      "bridge": "嘴上写的是简洁的一行 `for (String rule : rules)`，可编译器吐给 JVM 的并不是原子快照，而是好多趟接口方法调用。",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "`javap` 拆开 `scanOnce`：`for-each` 变成拿 `Iterator` 再循环调 `hasNext` 与 `next`，每步把 `modCount` 同 `expectedModCount` 对账。",
+          "say": "记住这四个词：`Iterator`、`hasNext`、`next`，再加上两个修改计数器 `modCount` 和 `expectedModCount`。"
+        },
+        {
+          "t": "inside",
+          "of": "cow.Plain",
+          "within": "static int scanOnce();",
+          "from": "getstatic",
+          "to": "ireturn",
+          "walk": [
+            {
+              "label": "第 1 步：拿迭代器",
+              "focus": ["List.iterator"],
+              "say": "循环刚开始先通过 `invokeinterface` 调 `List.iterator()`，拿到迭代器对象时顺手抄下一份当时的 `expectedModCount = modCount`。"
+            },
+            {
+              "label": "第 2 步：循环取值",
+              "focus": ["Iterator.hasNext", "Iterator.next"],
+              "say": "接下来每次绕回环头都要两次 `invokeinterface`：`hasNext` 查有没有完，`next` 先对账再取值。整圈下来完全没有 `monitorenter` 保护！"
+            }
+          ],
+          "say": "沿着真实反编译字节码看下来，所谓的 `for-each` 整圈都在不停进出接口方法，中间缝隙大得能塞进好几次写入。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清是怎么当场掀桌的",
+      "bridge": "现在把读线程 A 和写线程 B 放进泳道，看清 `modCount` 才刚加了 1，读线程怎么立刻在下一步炸出来。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "for (String r : rules) + rules.add(...)",
+          "parts": {
+            "read": "拿迭代器记账",
+            "calc": "对账并取元素",
+            "write": "改结构加计数"
+          },
+          "lanes": ["读线程 A", "写线程 B"],
+          "shared": { "name": "modCount", "start": 10 },
+          "say": "读线程 A 和写线程 B 同时操作同一份白名单：看 `modCount` 才刚加 1，下一轮怎么立刻掀桌。",
+          "steps": [
+            {
+              "lane": 0, "op": "read", "text": "抄下 exp = 10",
+              "say": "读线程 A 开始 `for-each`，拿 `Iterator` 时抄下初始计数 `expectedModCount = 10`。"
+            },
+            {
+              "lane": 0, "op": "calc", "text": "核对 10==10",
+              "say": "第 1 轮循环 `next()` 对账：目前 `modCount` 也是 10，顺利拿走第 0 条。"
+            },
+            {
+              "lane": 1, "op": "write", "value": "11", "text": "add 使 mod=11",
+              "say": "趁着 A 在循环里跑第 5 条，写线程 B 动手 `add` 了一条规则，`modCount` 被推成了 11！",
+              "ask": {
+                "q": "此时 A 抄下的旧数还是 10，下一轮 `next()` 对账会怎样？",
+                "options": ["立刻抛并发修改异常停步", "悄悄接着扫新加的第 11 号"],
+                "answer": 0
+              }
+            },
+            {
+              "lane": 0, "op": "note", "tone": "fail", "text": "11!=10 炸 CME",
+              "say": "A 刚喊下一轮 `next()`，一核对 `modCount(11) != expectedModCount(10)`，当场甩出异常停掉整趟遍历！"
+            }
+          ],
+          "verdict": "修改计数刚变 ==11==，迭代器一核对就立刻报错叫停。",
+          "verdictSay": "这就是集合的快速失败机制：宁可当场报错提醒「数据在遍历途中变了」，也不让读线程带着错位下标往下瞎跑。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "误改：换成同步包装列表行吗？",
+      "bridge": "有人顺手拿出上一节刚学过的法宝：把 `new ArrayList` 包成 `Collections.synchronizedList`！这回每一步都有锁了，遍历还炸吗？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "只把初始化那句改成 `Collections.synchronizedList(new ArrayList<>(512))`，`scanOnce()` 里的 `for-each` 原封不动。先用直觉猜一猜它顶不顶得住。",
+          "say": "这是线上最容易踩的二号大坑：看名字叫同步安全列表，就放心拿去一边 `for-each` 一边更新。"
+        },
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "换成 `Collections.synchronizedList` 且外层不加锁，4 线程会怎样？",
+          "options": [
+            "彻底不炸，因为包装类替每个方法加了锁",
+            "照样每轮大量撞异常，因为整趟循环还是散装的",
+            "偶尔掉一两趟，几乎看不出影响"
+          ],
+          "answer": 1,
+          "say": "心里拿第三节学过的「单步锁与复合锁」掂量一下，点出你的判断。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "把 `SyncList` 拉上台当场验货",
+      "bridge": "把 `Plain` 和 `SyncList` 并排摆在一起，跑出真结果比比看。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "cow",
+          "show": ["Plain", "SyncList"],
+          "say": "默认 4 线程跑一轮：盯紧 `SyncList` 的完整遍历次数和出错轮次。"
+        },
+        {
+          "t": "reveal",
+          "of": "p2",
+          "say": "一点面子都不留：`SyncList` 在 2、4、8 线程并发下照样每轮全错，照样丢掉大把遍历！"
+        },
+        {
+          "t": "try",
+          "key": "同步包装在 2/4/8 线程全部跟普通列表一样炸出异常",
+          "say": "拨滑块切到 2 和 8 线程各自验证一轮，亲眼记住：名字带 `synchronized` 也救不了裸跑的 `for-each`。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "字节码里还是没有包住整趟循环",
+      "bridge": "明明用了 `Collections.synchronizedList`，为什么字节码和 `Plain` 照样炸？打开 `SyncList.scanOnce` 看个究竟。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "cow.SyncList",
+          "within": "static int scanOnce();",
+          "from": "getstatic",
+          "to": "ireturn",
+          "walk": [
+            {
+              "label": "跟 Plain 一模一样",
+              "focus": ["List.iterator"],
+              "say": "在 `scanOnce` 的字节码里，依然只是拿完 `List.iterator()` 就走出那扇单步门。"
+            },
+            {
+              "label": "循环外头没有任何锁",
+              "focus": ["Iterator.hasNext", "Iterator.next"],
+              "say": "`hasNext` 和 `next` 之间压根没有 `monitorenter` 包住整圈循环！写线程在两步之间随时插进 `add` 或 `remove` 把 `modCount` 改掉。"
+            }
+          ],
+          "say": "真对比完就服了：`Collections.synchronizedList` 里的 `iterator()` 方法连锁都没替循环加上，JDK 文档也明写着「遍历时请调用方自己加锁」。"
+        },
+        {
+          "t": "text",
+          "md": "换言之，单步锁保得住 `list.add` 不会把内部数组搞乱，保不住**跨越 320 步的整趟遍历**不被插队改动。",
+          "say": "把这句话刻在脑门上：`synchronizedList` 护单个动词，护不住一条 `for-each` 循环。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "真修法一：synchronized 包住全段",
+      "bridge": "既然包装列表自己只管单步不管整圈，第一种真修法就是由我们亲自拿 `synchronized (rules)` 把整圈循环锁起来。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "cow.SyncLoop",
+          "walk": [
+            {
+              "focus": ["synchronized (rules) {", "for (String rule : rules) {"],
+              "say": "整趟 `for-each` 拿同一把 `rules` 对象锁包住，中途谁也进不来改结构。"
+            },
+            {
+              "focus": ["synchronized (rules) {", "rules.add(TAGS[pick & 3]);", "rules.remove(rules.size() - 1);"],
+              "say": "写线程改规则也拿这把锁（与包装列表自带同一把门锁），把读写彻底隔在门里门外。"
+            }
+          ],
+          "say": "这样写完之后，任何读线程只要跨进了循环，直到扫完 320 条走出大门前，写线程绝对改不了 `modCount`。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "验证字节码：终于看见真正的门锁",
+      "bridge": "代码加上了 `synchronized (rules)`，再用 `javap` 照一次 `SyncLoop.scanOnce`，看真正的字节码锁落在了哪里。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "cow.SyncLoop",
+          "within": "static int scanOnce();",
+          "from": "monitorenter",
+          "to": "monitorexit",
+          "walk": [
+            {
+              "label": "进循环前先加门锁",
+              "focus": ["monitorenter"],
+              "say": "拿到 `rules` 对象之后第一件事不是 `iterator()`，而是先执行 `monitorenter` 锁住大门。"
+            },
+            {
+              "label": "门里包住全趟循环",
+              "focus": ["List.iterator", "Iterator.hasNext", "Iterator.next"],
+              "say": "整段拿迭代器、循环 `hasNext` 和 `next` 全都安全地藏在这道门里面。"
+            },
+            {
+              "label": "扫完全部才放锁",
+              "focus": ["monitorexit"],
+              "say": "直到整趟循环全部跑完，才用 `monitorexit` 放锁；哪怕出异常也有备用出口放锁，绝不死占大门。"
+            }
+          ],
+          "say": "前后对照太清晰了：`monitorenter` 在头、`monitorexit` 在尾，这回整趟遍历终于严丝合缝闭合成一个整体。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "真修法二：CopyOnWriteArrayList",
+      "bridge": "加全段锁虽然全对，可所有读线程全得在门口排一队等待同一把锁。有没有让读多写少彻底放开跑的无锁读方案？",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "cow.CopyOnWrite",
+          "walk": [
+            {
+              "focus": ["rules = new CopyOnWriteArrayList<>();"],
+              "say": "换成写时复制列表：平时所有元素安安静静躺在内部数组里。"
+            },
+            {
+              "focus": ["for (String rule : rules) {"],
+              "say": "读线程执行 `for-each` 时一行不用加锁！它直接拿走当下数组的一份只读快照顺手扫到底。"
+            },
+            {
+              "focus": ["rules.add(TAGS[pick & 3]);", "rules.remove(rules.size() - 1);"],
+              "say": "写线程改名单时加内部短锁，把旧数组完整拷一份新的改完后再一次替换引用，绝不去动别人手里的旧快照。"
+            }
+          ],
+          "say": "写时复制就像每发一次修改先把新目录印刷好，再替换公告栏：原本已经在抄旧目录的读线程完全不用停、也不用锁。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四版同台：把正确性与速度全测一遍",
+      "bridge": "两个错误版和两个修好版一起进实验台，跑完看清谁全对，再看看读线程变多以后谁明显占上风。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "cow",
+          "show": ["Plain", "SyncList", "SyncLoop", "CopyOnWrite"],
+          "say": "点运行看 4 版全部结果：`SyncLoop` 和 `CopyOnWrite` 稳稳零出错，再留意它俩旁边的毫秒数！"
+        },
+        {
+          "t": "try",
+          "key": "整段加锁与写时复制在所有线程数下都零出错，读线程越多后者快得越明显",
+          "say": "把旋钮拨到 1、2、4、8 各跑一遍：注意看读线程从 1 升到 7 时，不用排队的 `CopyOnWrite` 和必须锁门排队的 `SyncLoop` 耗时拉开了多少。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "一张曲线看完读并发差距",
+      "bridge": "把 1 到 8 线程的四版中位数耗时画在一条图上，这次能直观看到读写分离架构到底省了哪段等待时间。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "cow",
+          "variants": ["Plain", "SyncList", "SyncLoop", "CopyOnWrite"],
+          "walk": [
+            {
+              "focus": "Plain",
+              "say": "1 线程不错；一到 2/4/8 线程就回回丢掉大片完整遍历，早早淘汰出局。"
+            },
+            {
+              "focus": "SyncList",
+              "say": "同样在 2/4/8 线程全错——单步加锁保不住整趟迭代，速度再快也不能要。"
+            },
+            {
+              "focus": "SyncLoop",
+              "say": "全线程零出错，但 4 线程（3 读者）到 8 线程（7 读者）时所有读线程全堵在同一把锁外排长队，耗时陡直往上冲。"
+            },
+            {
+              "focus": "CopyOnWrite",
+              "say": "同样全对，而且读多写少场景下读遍历完全不加锁、多核同时扫描，4/8 线程的耗时明显比整段加锁低出一大截。"
+            }
+          ],
+          "say": "把第 5 节和第 6 节的图放一块对照特别有意思：纯狂写日志时预扩 `SyncList` 快，读多写少狂遍历白名单时换成 `CopyOnWriteArrayList` 快。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "整段加锁为什么读线程也互相堵",
+      "bridge": "同样在并发下拿到零异常，`SyncLoop` 是怎么把几个读线程也一起拦在门外的？",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "synchronized (rules) { for (r : rules) }",
+          "parts": {
+            "read": "抢锁扫名单",
+            "calc": "核对并计数",
+            "write": "改完才放锁"
+          },
+          "lanes": ["读线程 A", "读线程 C"],
+          "shared": { "name": "锁占用", "start": 0 },
+          "say": "两个只读不写的线程碰上同一把 `synchronized` 门锁：点「走一步」看它俩为什么也要排成单队。",
+          "steps": [
+            {
+              "lane": 0, "op": "read", "text": "A拿锁扫320条",
+              "say": "读线程 A 先拿到 `rules` 门锁，开始从头扫描 320 条规则。"
+            },
+            {
+              "lane": 1, "op": "note", "tone": "wait", "text": "C也在门外等",
+              "say": "注意！读线程 C 只是来看一眼，根本不改数据，也因为在同一把互斥锁下被迫停在门外。",
+              "ask": {
+                "q": "两个线程都只读不改时，`SyncLoop` 能放它俩一起扫描吗？",
+                "options": ["不能，同一把 synchronized 只放一人", "可以，只读会自动免锁"],
+                "answer": 0
+              }
+            },
+            {
+              "lane": 0, "op": "write", "value": "0", "text": "A扫完放锁",
+              "say": "等 A 整整扫完 320 条出了门放锁，C 这才获准进门从头扫。"
+            },
+            {
+              "lane": 1, "op": "read", "text": "C进门再扫一遍",
+              "say": "7 个读线程就这样排成一条单队轮流进门，CPU 多核完全使不上劲。"
+            }
+          ],
+          "verdict": "绝对安全，可原本互不干扰的==读线程==也被串成了单行队。",
+          "verdictSay": "这就是互斥锁在读多写少场景里的短板：为了防万一才来一次的写线程，把天天挤在一起读的兄弟们全拦住了。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "CopyOnWrite 怎么做到读无锁",
+      "bridge": "再把 `CopyOnWriteArrayList` 的泳道摆出来：读线程不加锁，后台写线程改数据时凭什么还能两边相安无事？",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "snapshot = getArray() / setArray(copy)",
+          "parts": {
+            "read": "拿旧数组快照",
+            "calc": "拷贝改新数组",
+            "write": "切换新引用"
+          },
+          "lanes": ["读线程 A", "写线程 B"],
+          "shared": { "name": "array版本号", "start": 1 },
+          "say": "同样一读一写两条线程，看写时复制怎样让旧快照继续无锁跑到底、新副本在旁边静悄悄切换。",
+          "steps": [
+            {
+              "lane": 0, "op": "read", "text": "A拿V1版快照",
+              "say": "A 进 `for-each` 直接拿到当前底层数组 V1 的引用。注意：拿完就不看外头的版本号了，全程无锁。"
+            },
+            {
+              "lane": 1, "op": "calc", "text": "B拷出V2改写",
+              "say": "写线程 B 这时要增删规则，它拿内部锁后把 V1 完整拷贝成新数组 V2，在 V2 上慢慢改，动静再大也碰不着 V1。"
+            },
+            {
+              "lane": 1, "op": "write", "value": "2", "text": "指针切向 V2",
+              "say": "V2 改完，B 原子把容器内部引用切到新数组 V2（版本变成 2）后放锁！",
+              "ask": {
+                "q": "写线程切完 V2 时，已经在遍历 V1 的读线程 A 会炸异常或读到一半混入 V2 吗？",
+                "options": ["都不会，A 继续无锁扫完自己手里的 V1", "会立刻抛异常停掉"],
+                "answer": 0
+              }
+            },
+            {
+              "lane": 0, "op": "note", "tone": "ok", "text": "A扫完V1零报错",
+              "say": "A 稳稳当当顺着旧数组 V1 读完最后一条；至于新来的读线程，则会直接拿到刚生效的 V2。"
+            }
+          ],
+          "verdict": "读在==旧快照==上无锁跑到底，改在==新副本==上静悄悄完成。",
+          "verdictSay": "用一份拷贝新数组的成本，换来所有读遍历彻底免锁、零异常，而且根本不需要 `modCount` 对账。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "读多写少、读写都多，各自怎么挑",
+      "bridge": "这节课的两位选手都在所有线程数下交出了零失误的答卷。现在拿 4 线程真实耗时把常用方案并排放在一起挑一遍。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "看数据挑工具永远记两条：读和写谁多？数组拷贝起来有多重？",
+          "options": [
+            {
+              "name": "普通/单步同步列表",
+              "solves": "单线程写完只读，或绝不并发遍历修改",
+              "cost": "只要边读边改，无论加没加包装都炸异常",
+              "when": "启动一次性配好名单之后再也不改",
+              "say": "记住一条死线：配置一旦只在启动时初始化，后面只读不改，那普通 `ArrayList` 甚至比任何并发容器都快。"
+            },
+            {
+              "name": "整段 synchronized",
+              "solves": "锁住整个临界区，防住异常又能原位修改不拷贝",
+              "cost": "4 线程零出错约 {ms:cow.SyncLoop} ms；多核并发读要排队",
+              "when": "写得比较勤、列表特别大，或者要强实时看见最新修改",
+              "say": "如果名单有几万条、或者每秒写几千次，每次改都拷贝整数组受不了，老实拿 `synchronized` 或读写锁把整段循环锁好更实在。"
+            },
+            {
+              "name": "CopyOnWrite 列表",
+              "solves": "读遍历全免锁多核并跑，彻底告别并发修改异常",
+              "cost": "4 线程零出错约 {ms:cow.CopyOnWrite} ms；每次写要全量拷贝数组",
+              "when": "白名单、配置项、监听器列表等典型读多写少小集合",
+              "say": "当列表不大（几百几千条）、写入极稀少而读查询满天飞时，`CopyOnWriteArrayList` 是天然最优解。"
+            }
+          ],
+          "rule": "读极多写极少用写时复制；列表太大或写得太勤，老实加锁守住全段。",
+          "ruleSay": "切记没有万能银弹：写时复制把代价全压在了「写」上，一旦拿去高频写入就会疯狂分配大数组拖垮 GC。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个业务场景，你当主厨选容器",
+      "layout": "split",
+      "bridge": "把规则放进真实工程需求里，照着决策树挑出最贴合的那个容器。",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "多线共用列表或队列怎么挑？",
+          "branches": [
+            { "when": "读远多于写且体积不大", "pick": "CopyOnWrite 列表", "eg": "风控白名单、事件监听器" },
+            { "when": "列表很大或写得相当勤", "pick": "整段加锁", "eg": "频繁增删的活跃会话表" },
+            { "when": "只管往尾端追加等消费", "pick": "并发无锁队列", "eg": "异步日志、任务流水队列" }
+          ],
+          "say": "先分清「读写比例」和「是否只进不出」，一秒锁定合适工具，别把写时复制用在高频写队列里。"
+        },
+        {
+          "t": "cases",
+          "tools": ["CopyOnWrite 列表", "整段加锁", "并发无锁队列"],
+          "items": [
+            {
+              "text": "网关每毫秒收上万次请求都遍历百来条敏感词规则；运营几分钟才在后台改一条。",
+              "answer": 0,
+              "why": "典型极度读多写少、名单体积小，CopyOnWriteArrayList 让读请求全免锁多核飞奔。"
+            },
+            {
+              "text": "在线房间列表共两万条记录，每秒有上千次进出增删，同时偶尔需要遍历统计。",
+              "answer": 1,
+              "why": "元素多且写入勤，若用写时复制每秒拷贝上千份两万长度数组会把内存和 GC 压垮，应整段加锁（或分段 Map）。"
+            },
+            {
+              "text": "16 条下单线程同时不断往里追加流水记录，后台另一条线程按先进先出顺序取走落库。",
+              "answer": 2,
+              "why": "高频写入且只需先进先出消费，第五节学过的 ConcurrentLinkedQueue 不拷贝不阻塞最顺手。"
+            }
+          ],
+          "say": "把三个场景对应着工具点一遍，体会第 5 节和第 6 节学到的工具是怎样严丝合缝分工的。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给这堂课立个正式名字",
+      "bridge": "机制摸透了，代价算清了，两个场景也拆开了。给今天的核心本领起个专业名字带上路。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "快速失败与写时复制",
+          "oneLine": "迭代器靠修改计数实现快速失败；写时复制以改写全拷贝换来无锁快照读。",
+          "asked": [
+            "synchronizedList 边遍历边改为何还抛异常？",
+            "CopyOnWriteArrayList 的底层原理和适用条件是什么？",
+            "写时复制的迭代器有哪些弱一致性限制？"
+          ],
+          "say": "面试再被问到「`synchronizedList` 和 `CopyOnWriteArrayList` 的区别」，从 `for-each` 的多步迭代和快照拷贝两面一起答，条理直接拉满。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "测一测：真吃透了吗（一）",
+      "bridge": "拿两道常见面试陷阱题验收一下今天的收获。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么绝不能把 `CopyOnWriteArrayList` 当成「高频写入日志列表」去替代 `ArrayList`？",
+          "options": [
+            { "text": "因为它的读遍历速度比普通列表慢很多", "ok": false, "why": "恰恰相反，它的读只需拿数组引用顺着扫，读极快；拖垮系统的是写入。" },
+            { "text": "每次写入都要加锁拷贝一整份新数组，高频写会引发剧烈拷贝与 GC", "ok": true, "why": "完全正确！哪怕列表已有五万条数据，只要新加一条也要重造五万零一长的数组，写多直接卡爆内存。" },
+            { "text": "因为它不支持 add 方法", "ok": false, "why": "它支持 `add` 和 `remove`，只是每调用一次写操作都要付出整数组拷贝代价。" }
+          ],
+          "say": "盯着「CopyOnWrite」名字里的 Copy 两个字选出它的真正死穴。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "测一测：真吃透了吗（二）",
+      "bridge": "第二题考一个容易在真实线上踩到的细节：用快照读时，刚刚改好的数据什么时候能看见？",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "读线程刚拿到 `CopyOnWriteArrayList` 的 `for-each` 迭代器开始扫，写线程立刻新增了一条，这次遍历能扫到吗？",
+          "options": [
+            { "text": "一定能立刻扫到刚加的那条", "ok": false, "why": "不对！新加元素写在了复制出来的新数组 V2 上，当前读线程手里拿的还是旧快照 V1。" },
+            { "text": "扫不到，这趟只看到开始遍历那刻的旧快照，且不能在迭代器上调 remove", "ok": true, "why": "答得极准！写时复制保证的是「最终一致」而不是遍历途中的强实时一致，下一趟重新遍历才会看见新版。" },
+            { "text": "会立刻抛 ConcurrentModificationException", "ok": false, "why": "正因为它读的是不变的旧数组快照，所以它压根不会抛并发修改异常。" }
+          ],
+          "say": "回想泳道图里「A 拿着 V1、B 换上 V2」那一幕，稳稳选出正确答案。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，讲给自己听",
+      "bridge": "题目全部过关，合上细节用自己的话把第 6 节整个故事顺一遍。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "synchronizedList 遍历为何还炸？整段加锁与写时复制怎么修，各有啥代价？",
+          "points": [
+            "for-each 拆成拿迭代器与 hasNext/next，包装列表锁不住全段",
+            "遍历途中 modCount 变化就会让 next 核对失败，触发快速失败抛出异常",
+            "整段 synchronized (list) 彻底隔开读写但让多核读线程互相排队",
+            "写时复制读旧快照全无锁，但写拷贝全数组且读为旧快照"
+          ],
+          "model": "`Collections.synchronizedList` 只保护单次方法调用，而 `for-each` 会被编译成先拿 `Iterator`、再循环调用 `hasNext` 和 `next` 的复合过程；如果外层不加锁，写线程在两次循环之间调 `add` 或 `remove` 改掉 `modCount`，下一次 `next` 核对 `expectedModCount` 不一致就会触发快速失败抛出 `ConcurrentModificationException`。修法一是用 `synchronized` 把整趟遍历和写入包住，但会让多个读线程也一起排队；修法二是改用 `CopyOnWriteArrayList`，修改时拷贝一份新数组再替换引用，读遍历直接在旧快照上无锁并行，不过写入拷贝重、只适合读多写少且接受快照弱一致性的中小列表。",
+          "say": "对着四个要点顺两遍，确保自己能从字节码到选型代价一气讲下来。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡，收官第一阶段",
+      "bridge": "从第 1 节的加一丢数到今天第 6 节的边遍历边修改，恭喜你已经打通了 Java 并发六块最经典的集合与锁基石。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "Collections.synchronizedList 一边 for-each 一边改为什么还炸？",
+              "a": "单步锁护不住整圈迭代：写线程在 hasNext/next 缝里改动 modCount，next 核对失败立刻抛 ConcurrentModificationException。"
+            },
+            {
+              "q": "整段 synchronized 与 CopyOnWriteArrayList 怎么选？",
+              "a": "读多写少、列表小、能接受快照延迟选 CopyOnWriteArrayList；列表大、写入勤或需强实时看见最新选整段加锁。"
+            },
+            {
+              "q": "这六节课共同的底层法则是什么？",
+              "a": "先看动作到底有几步（读算写、查与改、整趟遍历），再用匹配的锁边界、原子步骤或快照把缝严严实实封住。"
+            }
+          ],
+          "say": "三张卡和六节课的全部脉络都收进了你的工具箱。下次遇到任何并发坑，先别急着瞎改，像这六节一样：跑出来、拆字节码、拉泳道看清缝在哪里，再对症下药。"
+        }
+      ]
+    }
+  ]
+}

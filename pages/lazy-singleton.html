@@ -1,0 +1,1644 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>外面判空里面又加锁，怎么还建出两份实例？</title>
+<script>try{var t=localStorage.getItem("lesson-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>
+/* Lesson page. One stage, one teacher line at the bottom: every press brings one sentence and one visible change.
+   Colours follow StudyHub's paper tokens (ui/tokens.css). The accent means "look here, now" and nothing else;
+   green = came out as it should, plum = did not. No shadows beyond a hairline, no gradients, no decoration. */
+:root {
+  --canvas: #f1ede6; --surface: #faf8f4; --raised: #ffffff; --sunken: #e8e3da;
+  --ink: #1e1a15; --ink-2: #453e35; --muted: #635b51; --faint: #7b7368;
+  --rule: #2a1c0e24; --rule-strong: #2a1c0e52;
+  --accent: #c03a1f; --accent-text: #ad4025; --accent-ink: #fffaf5; --accent-wash: #c03a1f14;
+  --ok: #1c6c48; --ok-wash: #1c6c4817; --bad: #a23461; --bad-wash: #a2346114; --info: #346287; --ochre: #8a5a10;
+  --code-k: #8a3b1f;
+  --s1: #1c5cab; --s2: #e0703a; --s3: #16a37a; --s4: #8a5a10;
+  --font: "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --display: "Segoe UI Variable Display", "SF Pro Display", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Microsoft YaHei UI", monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { font-size: clamp(16px, .5vw + 10.5px, 19px); -webkit-text-size-adjust: 100%; }
+body { margin: 0; height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden;
+  background: var(--canvas); color: var(--ink); font-family: var(--font); line-height: 1.6; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--mono); }
+p code, li code, .opt code, .voice code { font-size: .9em; background: var(--sunken); padding: .08em .36em; border-radius: 5px; }
+mark { background: none; color: inherit; box-shadow: inset 0 -.5em 0 var(--accent-wash); font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* top: where this lesson is going */
+.top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 1rem; padding: .55rem 1.4rem; border-bottom: 1px solid var(--rule); }
+.top__title { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top__tools { display: flex; justify-content: flex-end; align-items: center; gap: .8rem; font-size: .8rem; color: var(--muted); }
+.beats { display: flex; align-items: center; }
+.beat { display: flex; align-items: center; gap: .4rem; padding: .3rem .55rem; border: 0; background: none; border-radius: 8px; font-size: .78rem; color: var(--faint); cursor: pointer; white-space: nowrap; }
+.beat::before { content: ""; width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid currentColor; }
+.beat:hover { color: var(--ink); }
+.beat.is-done { color: var(--muted); }
+.beat.is-done::before { background: currentColor; }
+.beat.is-now { color: var(--ink); font-weight: 650; }
+.beat.is-now::before { background: var(--accent); border-color: var(--accent); }
+.tool { border: 1px solid var(--rule); background: none; border-radius: 8px; padding: .25rem .6rem; cursor: pointer; }
+.tool:hover { border-color: var(--rule-strong); color: var(--ink); }
+
+/* stage */
+/* no top padding on the scroller itself: a sticky bar inside it must be able to reach the very top */
+.stage { overflow-x: hidden; overflow-y: auto; padding: 0 clamp(1rem, 4vw, 3.4rem) 2rem; }
+.slide { width: 100%; max-width: 68rem; margin: 0 auto; padding-top: clamp(1.4rem, 4vh, 2.8rem); }
+.slide__title { font-family: var(--display); font-size: clamp(1.5rem, 2.6vw, 2.3rem); line-height: 1.22; font-weight: 680; letter-spacing: -.01em; margin: 0 0 1.3rem; text-wrap: balance; }
+.slide__blocks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+.slide--split .slide__blocks { grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); column-gap: 2.4rem; align-items: start; }
+.slide--split .block:first-child { grid-row: 1 / span 4; }
+.block { transition: opacity .28s var(--ease), transform .28s var(--ease); }
+.block.is-waiting { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+.slide--hook .slide__title { font-size: clamp(2.2rem, 5vw, 4rem); line-height: 1.12; font-weight: 720; letter-spacing: -.02em; max-width: 13em; margin-top: clamp(.5rem, 7vh, 4.5rem); margin-bottom: 1.6rem; }
+.hook__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.4rem; margin-top: 2.4rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); max-width: 52rem; }
+.hook__meta h3 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .5rem; }
+.hook__meta ul { margin: 0; padding: 0; list-style: none; font-size: .92rem; color: var(--ink-2); }
+.hook__meta li { padding: .14rem 0; }
+
+.text { font-size: 1.18rem; line-height: 1.65; color: var(--ink-2); margin: 0; max-width: 34em; }
+.slide--hook .text { font-size: 1.4rem; color: var(--ink); }
+.points { margin: 0; padding: 0; list-style: none; display: grid; gap: .7rem; font-size: 1.08rem; line-height: 1.55; }
+.points li { display: grid; grid-template-columns: 1.1rem 1fr; }
+.points li::before { content: ""; width: 6px; height: 6px; margin-top: .62em; background: var(--ink-2); }
+.callout { border-left: 3px solid var(--info); padding: .1rem 0 .1rem 1rem; max-width: 36em; }
+.callout--pitfall { border-left-color: var(--bad); }
+.callout h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.callout p { margin: 0; color: var(--ink-2); }
+
+/* code */
+.code { background: var(--raised); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+.code__path { padding: .55rem 1rem .5rem; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: .68rem; color: var(--faint); }
+.code__scroll { overflow: auto; max-height: min(58vh, 31rem); padding: .5rem 0 .8rem; scrollbar-width: thin; }
+.code__line { display: grid; grid-template-columns: 3em minmax(0, 1fr); font-family: var(--mono); font-size: .78rem; line-height: 1.68; white-space: pre; padding-right: 1rem; border-left: 3px solid transparent; transition: opacity .3s, background-color .3s; }
+.code__no { text-align: right; padding-right: 1em; color: var(--faint); opacity: .7; user-select: none; }
+.code.has-focus .code__line { opacity: .4; }
+.code.has-focus .code__line.is-focus { opacity: 1; background: var(--accent-wash); border-left-color: var(--accent); }
+.code .code__line.is-changed { opacity: 1; background: var(--ok-wash); border-left-color: var(--ok); }
+.tk-k { color: var(--code-k); font-weight: 600; }
+.tk-s { color: var(--ok); }
+.tk-n { color: var(--info); }
+.tk-c { color: var(--faint); font-style: italic; }
+
+/* buttons and segmented choices */
+.btn { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 10px; padding: .5rem 1rem; cursor: pointer; }
+.btn:hover { border-color: var(--ink-2); }
+.btn--primary { background: var(--ink); border-color: var(--ink); color: var(--canvas); font-weight: 600; }
+.btn--primary:hover { border-color: var(--ink); opacity: .86; }
+.btn--quiet { border-color: transparent; background: none; color: var(--muted); padding: .2rem .5rem; font-size: .78rem; }
+.btn--quiet:hover { color: var(--ink); border-color: var(--rule); }
+.btn:disabled { opacity: .4; cursor: default; }
+.seg { display: inline-flex; align-items: center; gap: .6rem; font-size: .82rem; color: var(--muted); }
+.seg__set { display: inline-flex; padding: 3px; background: var(--sunken); border-radius: 10px; }
+.seg__set button { border: 0; background: none; padding: .32rem .8rem; border-radius: 8px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.seg__set button:hover { color: var(--ink); }
+.seg__set button[aria-pressed="true"] { background: var(--raised); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--rule), 0 1px 2px #0000001a; }
+
+/* experiment: the code on the left, what really happened on the right */
+.exp__bar { display: flex; justify-content: space-between; align-items: center; gap: .8rem 1.5rem; flex-wrap: wrap; margin-bottom: .4rem; padding: .5rem 0; position: sticky; top: 0; z-index: 2; background: var(--canvas); }
+.exp__body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 1.6rem; align-items: start; }
+.exp .code__scroll { max-height: min(34vh, 22rem); }
+.block:has(> .try) { display: none; }
+.exp.is-invited .seg__set { animation: invite 2.4s var(--ease); }
+@keyframes invite { 0%, 70% { box-shadow: 0 0 0 2px var(--accent); } }
+.exp__q { margin: .1rem 0 .7rem; font-size: .92rem; color: var(--ink-2); }
+.plot__row { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; align-items: center; gap: .8rem; width: 100%; padding: 0; border: 0; border-top: 1px solid var(--rule); background: none; text-align: left; cursor: pointer; }
+.plot__row[disabled] { cursor: default; }
+.plot__label { font-size: .86rem; color: var(--muted); }
+.plot__row.is-on .plot__label { color: var(--ink); font-weight: 650; }
+.plot__track { position: relative; height: 3.3rem; }
+.plot__track::before { content: ""; position: absolute; inset: 50% 0 auto 0; border-top: 1px solid var(--rule); }
+.plot__track::after { content: ""; position: absolute; top: 0; bottom: 0; left: var(--expect); border-left: 1.5px dashed var(--ok); opacity: .7; }
+.dot { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--bad); z-index: 1;
+  transition: left .55s var(--ease), transform .55s var(--ease), opacity .3s, background-color .3s; }
+.dot.is-ok { background: var(--ok); }
+.dot.is-waiting { opacity: 0; pointer-events: none; }
+.plot__row:not(.is-on) .dot { opacity: .5; }
+.plot__row:not(.is-on) .dot.is-waiting { opacity: 0; }
+.plot__sum { text-align: right; font-size: .8rem; color: var(--muted); line-height: 1.35; }
+.plot__sum b { display: block; font-size: .9rem; color: var(--bad); }
+.plot__sum b.is-ok { color: var(--ok); }
+.plot__axis { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; gap: .8rem; border-top: 1px solid var(--rule); font-size: .72rem; color: var(--faint); }
+.plot__ticks { position: relative; height: 1.6rem; }
+.plot__ticks span { position: absolute; top: .3rem; white-space: nowrap; }
+.plot__ticks .is-expect { left: var(--expect); transform: translateX(-100%); padding-right: .4rem; color: var(--ok); font-weight: 600; }
+.exp__finding { margin: .9rem 0 0; font-size: 1.04rem; line-height: 1.55; min-height: 3.2em; }
+.exp__finding b { font-variant-numeric: tabular-nums; }
+.exp__foot { margin-top: .5rem; display: flex; align-items: center; gap: .3rem .9rem; flex-wrap: wrap; font-size: .72rem; color: var(--faint); }
+.cmd { font-family: var(--mono); background: var(--sunken); color: var(--ink-2); padding: .15rem .5rem; border-radius: 6px; }
+
+/* lanes: two threads and the one thing they share; time runs downward */
+.lanes__expr { display: flex; align-items: center; gap: .6rem 1.4rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.lanes__code { font-family: var(--mono); font-size: 1.5rem; font-weight: 650; }
+.lanes__parts { display: flex; align-items: center; gap: .45rem; font-size: .84rem; color: var(--faint); }
+.part { padding: .2rem .7rem; border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); transition: color .25s, border-color .25s, background-color .25s; }
+.part.is-now { color: var(--accent-text); border-color: var(--accent); background: var(--accent-wash); font-weight: 600; }
+.lanes__grid { display: grid; grid-template-columns: minmax(0, 1fr) 5.4rem minmax(0, 1fr); max-width: 46rem; margin: 0; }
+.lanes__head { font-size: .82rem; color: var(--muted); padding-bottom: .5rem; border-bottom: 1px solid var(--rule); }
+.lanes__head--a { text-align: right; padding-right: 3.6rem; }
+.lanes__head--b { padding-left: 3.6rem; }
+.lanes__head--mid { text-align: center; font-family: var(--mono); color: var(--ink); font-weight: 600; }
+.lcell { min-height: 2.9rem; display: flex; align-items: center; transition: opacity .3s var(--ease); }
+.lcell--a { justify-content: flex-end; }
+.lcell--mid { justify-content: center; position: relative; }
+.lcell--mid::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid var(--rule-strong); }
+.lrow { display: contents; }
+.lrow.is-waiting .lcell > * { opacity: 0; }
+.lcell > * { transition: opacity .3s var(--ease); }
+.chip { font-size: .92rem; padding: .32rem .8rem; border-radius: 8px; background: var(--raised); border: 1px solid var(--rule); white-space: nowrap; }
+.lrow.is-now .chip { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.arrow { flex: 0 0 3rem; height: 0; border-top: 1.5px solid var(--ink-2); position: relative; margin: 0 .3rem; }
+.arrow::after { content: ""; position: absolute; top: -5px; border: 4.25px solid transparent; }
+.arrow--right::after { right: -2px; border-left: 7px solid var(--ink-2); border-right: 0; }
+.arrow--left::after { left: -2px; border-right: 7px solid var(--ink-2); border-left: 0; }
+.arrow--none { border-top-color: transparent; }
+.arrow--none::after { display: none; }
+.val { position: relative; z-index: 1; min-width: 2.7rem; text-align: center; font-family: var(--mono); font-size: .98rem; font-weight: 650; padding: .2rem .6rem; border-radius: 8px; background: var(--canvas); border: 1.5px solid var(--ink-2); }
+.val--write { border-color: var(--accent); color: var(--accent-text); }
+.lanes__verdict { max-width: 46rem; margin: .9rem 0 0; padding-top: .9rem; border-top: 1px solid var(--rule); font-size: 1.15rem; font-weight: 650; transition: opacity .3s; }
+.lanes__verdict.is-waiting { opacity: 0; }
+
+/* guess, then see */
+.predict__q, .quiz__q { font-size: 1.3rem; font-weight: 650; line-height: 1.4; margin: 0 0 1rem; }
+.opts { display: grid; gap: .55rem; max-width: 40rem; }
+.opt { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto; align-items: center; gap: .6rem; width: 100%; text-align: left; padding: .75rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--raised); cursor: pointer; font-size: 1.02rem; }
+.opt:hover { border-color: var(--ink-2); }
+.opt__key { font-family: var(--mono); font-size: .82rem; color: var(--faint); }
+.opt__tag { font-size: .74rem; font-weight: 600; }
+.opt.is-picked { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.opt.is-picked .opt__tag { color: var(--ink-2); }
+.opt.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); }
+.opt.is-right .opt__tag { color: var(--ok); }
+.opt.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
+.opt.is-wrong .opt__tag { color: var(--bad); }
+.opt__why { grid-column: 2 / -1; font-size: .88rem; color: var(--ink-2); }
+.reveal { display: flex; gap: .5rem 2.6rem; flex-wrap: wrap; padding-top: .8rem; border-top: 1px solid var(--rule); max-width: 46rem; }
+.reveal dl { margin: 0; }
+.reveal dt { font-size: .76rem; color: var(--muted); }
+.reveal dd { margin: .1rem 0 0; font-size: 1.02rem; font-weight: 600; }
+.reveal .is-ok { color: var(--ok); }
+.reveal .is-miss { color: var(--bad); }
+
+/* the name comes last */
+.name__term { font-family: var(--display); font-size: clamp(2.4rem, 5.4vw, 4.2rem); line-height: 1.1; font-weight: 720; letter-spacing: -.02em; margin: 0; }
+.name__alias { font-family: var(--mono); font-size: .92rem; color: var(--muted); margin: .5rem 0 0; }
+.name__line { font-size: 1.28rem; line-height: 1.55; margin: 1.1rem 0 0; max-width: 30em; }
+.name__asked { margin: 1.8rem 0 0; padding-top: 1rem; border-top: 1px solid var(--rule); max-width: 40rem; }
+.name__asked h4 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .4rem; }
+.name__asked ul { margin: 0; padding: 0; list-style: none; font-size: 1.02rem; color: var(--ink-2); }
+.name__asked li { padding: .2rem 0; }
+
+/* say it aloud, take three cards */
+.say__prompt { font-size: 1.5rem; font-weight: 650; line-height: 1.4; margin: 0 0 1.2rem; max-width: 26em; text-wrap: balance; }
+.say__row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.say__clock { font-family: var(--mono); font-size: 1.7rem; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 3.4em; }
+.say__points { margin: 1.4rem 0 0; padding: 1rem 0 0; border-top: 1px solid var(--rule); list-style: none; display: grid; gap: .5rem; max-width: 40rem; }
+.say__points label { display: grid; grid-template-columns: 1.4rem 1fr; gap: .5rem; align-items: start; cursor: pointer; font-size: 1.02rem; }
+.say__points input { width: 1.05rem; height: 1.05rem; margin-top: .32rem; accent-color: var(--ok); }
+.say__score { margin: .8rem 0 0; font-size: .92rem; color: var(--muted); }
+.cards { display: grid; gap: 0; max-width: 44rem; border-bottom: 1px solid var(--rule); }
+.card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem 1rem; align-items: baseline; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.card__q { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.card__a { grid-column: 1 / -1; margin: 0; color: var(--ink-2); }
+
+/* the teacher: what a person standing next to you would say right now. It leads; the stage shows. */
+.voice { border-top: 1px solid var(--rule); padding: 1rem clamp(1rem, 4vw, 3.4rem) 1.1rem; }
+.voice__inner { max-width: 68rem; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.6rem; align-items: end; }
+.voice__line { margin: 0; font-size: 1.2rem; line-height: 1.62; min-height: 4.86em; max-width: 43em; }
+.voice__line > span { display: block; }
+.voice__line.is-fresh > span { animation: line-in .32s var(--ease); }
+.voice__nav { display: flex; gap: .5rem; }
+@keyframes line-in { from { opacity: 0; transform: translateY(5px); } }
+
+.voice__key { margin: .4rem 0 0; font-size: .8rem; color: var(--muted); animation: line-in .32s var(--ease); }
+.tool.is-flash { animation: flash 1.2s var(--ease); }
+@keyframes flash { 0%, 40% { background: var(--accent-wash); border-color: var(--accent); color: var(--ink); } }
+
+/* reminders at the moment of need */
+.term { border-bottom: 1.5px dotted var(--ochre); cursor: help; border-radius: 2px; }
+.term:hover, .term:focus-visible { background: var(--accent-wash); }
+.tip { position: fixed; z-index: 20; max-width: 22rem; padding: .6rem .8rem; border-radius: 10px; background: var(--ink); color: var(--canvas); font-size: .86rem; line-height: 1.5; box-shadow: 0 8px 24px -10px #000000a0; }
+.tip b { display: block; font-size: .8rem; opacity: .75; margin-bottom: .1rem; }
+.tip code { background: none; padding: 0; }
+.notes { position: relative; }
+.notes__list { position: absolute; right: 0; top: calc(100% + .5rem); z-index: 15; width: min(22rem, 86vw); margin: 0; padding: .7rem 1rem .7rem 2rem; background: var(--raised); border: 1px solid var(--rule-strong); border-radius: 12px; font-size: .88rem; color: var(--ink); line-height: 1.5; box-shadow: 0 14px 34px -20px #000000a0; }
+.notes__list li { padding: .15rem 0; }
+.notes__list .is-empty { list-style: none; margin-left: -1rem; color: var(--muted); }
+
+.exp__note { margin: .5rem 0 0; font-size: .84rem; color: var(--muted); min-height: 1.4em; }
+button.plot__label { border: 0; background: none; padding: .3rem 0; text-align: left; cursor: pointer; line-height: 1.3; }
+button.plot__label:hover { color: var(--ink); }
+.plot__row { cursor: default; }
+.dot { cursor: pointer; }
+.dot::after { content: ""; position: absolute; inset: -5px; }
+.dot:hover { box-shadow: 0 0 0 3px var(--canvas), 0 0 0 4.5px currentColor; color: var(--ink-2); }
+.exp__probe { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.lrow-list { display: contents; }
+.lrow--controls .lcell { padding-top: .7rem; }
+.lrow--controls .lcell--a { padding-right: .8rem; }
+.lrow--controls .lcell--b { padding-left: .8rem; }
+.sched__bar { display: flex; align-items: center; justify-content: flex-start; gap: .6rem 1.2rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.goals { display: flex; gap: .5rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; font-size: .86rem; }
+.goal { display: flex; align-items: center; gap: .4rem; padding: .22rem .7rem; border: 1px solid var(--rule-strong); border-radius: 999px; color: var(--ink-2); }
+.goal::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid currentColor; }
+.goal.is-done { color: var(--ok); border-color: var(--ok); font-weight: 600; }
+.goal.is-done::before { background: var(--ok); border-color: var(--ok); }
+.sched__result { max-width: 46rem; margin: .9rem 0 0; min-height: 3.2em; font-size: 1.05rem; }
+
+.block > .code { max-width: 46rem; }
+.lrow--controls .btn { border-color: var(--ink-2); font-weight: 600; }
+.lrow--controls .btn:disabled { border-color: var(--rule-strong); font-weight: 400; }
+
+/* small answer buttons, shared by the warm-up, the lanes question and the cases */
+.picks { display: flex; gap: .45rem; flex-wrap: wrap; }
+.pick { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 9px; padding: .36rem .85rem; font-size: .95rem; cursor: pointer; }
+.pick:hover:not(:disabled) { border-color: var(--ink-2); }
+.pick:disabled { cursor: default; color: var(--muted); }
+.pick.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); color: var(--ok); font-weight: 600; }
+.pick.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); color: var(--bad); }
+.pick--tool { font-family: var(--mono); font-size: .86rem; }
+
+/* opening: what you already have, then a picture to hang the lesson on */
+.recall, .cases { max-width: 50rem; }
+.recall__item { display: grid; grid-template-columns: 7.4rem minmax(0, 1fr); gap: .4rem 1.2rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.recall__have { grid-row: 1 / span 3; font-size: .82rem; color: var(--muted); padding-top: .2rem; }
+.recall__q, .cases__text { margin: 0; font-size: 1.08rem; font-weight: 600; line-height: 1.5; }
+.recall__why, .cases__why { margin: 0; font-size: .92rem; color: var(--ink-2); }
+.recall__score, .cases__score { margin: 0; padding-top: .8rem; border-top: 1px solid var(--rule); font-size: .92rem; color: var(--muted); min-height: 2.4em; }
+.cases__item { display: grid; gap: .5rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.cases__text { font-weight: 400; }
+.scene__story { margin: 0 0 1.4rem; font-size: 1.28rem; line-height: 1.7; max-width: 33em; }
+.scene__map { max-width: 44rem; transition: opacity .3s var(--ease); }
+.scene__map.is-waiting, .scene__row.is-waiting { opacity: 0; }
+.scene__head, .scene__row { display: grid; grid-template-columns: minmax(0, 1fr) 2.6rem minmax(0, 1.1fr); align-items: center; }
+.scene__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; border-bottom: 1px solid var(--rule); }
+.scene__row { padding: .58rem 0; border-bottom: 1px solid var(--rule); font-size: 1.04rem; transition: opacity .3s var(--ease); }
+.scene__arrow { color: var(--faint); }
+.scene__row.is-now .scene__arrow { color: var(--accent); }
+.scene__to { font-weight: 600; }
+
+/* find the line; look inside */
+.inside { max-width: 46rem; }
+.spot { display: grid; grid-template-columns: minmax(0, 46rem) minmax(13rem, 19rem); gap: 0 2rem; align-items: start; }
+.spot__q { grid-column: 1 / -1; }
+.spot__how { margin: .2rem 0 .8rem; font-size: .92rem; color: var(--muted); }
+.spot__q { margin: 0 0 .8rem; font-size: 1.18rem; font-weight: 650; line-height: 1.45; }
+.spot .code__scroll { max-height: max(12rem, calc(100vh - 21.5rem)); }
+.code.is-pickable .code__line { cursor: pointer; }
+.code.is-pickable .code__line:hover { background: var(--sunken); }
+.code__line.is-wrong { background: var(--bad-wash); border-left-color: var(--bad); }
+.spot__out { margin: 0; font-size: 1rem; line-height: 1.7; color: var(--ink-2); }
+.spot__out.is-ok { color: var(--ok); font-weight: 600; }
+.inside__what { margin: 0 0 .6rem; font-size: .86rem; color: var(--muted); }
+.inside .code__line { position: relative; font-size: .88rem; line-height: 2.2; }
+.code__tag { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); font-family: var(--font); font-size: .78rem; font-weight: 600; line-height: 1.7; padding: 0 .7rem; border-radius: 999px; background: var(--raised); border: 1px solid var(--rule-strong); }
+.code__line.is-focus .code__tag { border-color: var(--accent); color: var(--accent-text); }
+
+/* lanes: a question between two steps; steps that touch nothing */
+.lanes--long .lcell { min-height: 2.5rem; }
+.chip--wait { border-style: dashed; color: var(--muted); }
+.chip--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.chip--ok { border-color: var(--ok); color: var(--ok); }
+.lanes__ask { max-width: 46rem; margin-top: .8rem; padding: .8rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--surface); display: grid; gap: .5rem; }
+.lanes__ask[hidden] { display: none; }
+.lanes__ask p { margin: 0; font-weight: 600; }
+.lanes__ask .ask__out { font-weight: 400; font-size: .9rem; color: var(--muted); min-height: 1.5em; }
+
+/* runs let out by hand; a reference answer after speaking */
+.exp__hand { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; }
+.exp__hand[hidden] { display: none; }
+.plot__sum.is-held > * { visibility: hidden; }
+.say__model { margin: 1rem 0 0; padding: .9rem 1.1rem; border-left: 3px solid var(--rule-strong); background: var(--surface); font-size: 1rem; line-height: 1.8; max-width: 42rem; }
+
+/* how to choose between the tools just met */
+.choose { max-width: 62rem; }
+.choose__head, .choose__row { display: grid; grid-template-columns: 9.6rem repeat(3, minmax(0, 1fr)); gap: 0 1.6rem; }
+.choose__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; }
+.choose__row { padding: .8rem 0; border-top: 1px solid var(--rule); font-size: .98rem; line-height: 1.5; color: var(--ink-2); }
+.choose__row { transition: opacity .3s var(--ease); }
+.choose.is-walking .choose__row:not(.is-now) { opacity: .42; }
+.choose__name { font-family: var(--mono); font-weight: 650; color: var(--ink); }
+.choose__rule.is-waiting { visibility: hidden; }
+.choose__rule { margin: 0; padding-top: .9rem; border-top: 1px solid var(--rule-strong); font-size: 1.12rem; font-weight: 600; }
+
+/* pictures: two actors and the thing they share. Drawn at a fixed size so every part has a known place. */
+.pic { position: relative; width: 300px; height: 300px; flex: none; font-size: 16px; line-height: 1.3; }
+.pic__lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.pic__arrow { opacity: 0; transition: opacity .25s var(--ease); }
+.pic__arrow.is-on { opacity: 1; }
+.pic__arrow line { stroke: var(--accent); stroke-width: 1.75; }
+.pic__arrow polygon { fill: var(--accent); }
+.pic--plain .pic__arrow line { stroke: var(--ink-2); }
+.pic--plain .pic__arrow polygon { fill: var(--ink-2); }
+.pic__over { position: absolute; left: 0; right: 0; bottom: calc(100% - 38px); display: grid; justify-items: center; gap: 3px; }
+.pic__name { font-size: 13px; color: var(--muted); }
+.pic__tags { display: grid; justify-items: center; gap: 3px; }
+.pic__tags span { font-family: var(--mono); font-size: 12.5px; font-weight: 650; color: var(--ink); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--rule-strong); background: var(--surface); white-space: nowrap; }
+.pic__board { position: absolute; left: 90px; top: 44px; width: 120px; height: 62px; display: grid; place-items: center; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .25s, box-shadow .25s; }
+.pic__board.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__value { font-family: var(--mono); font-size: 28px; font-weight: 650; line-height: 1; }
+.pic__board.is-now .pic__value { color: var(--accent-text); }
+.pic__hand { position: absolute; top: 146px; width: 64px; height: 38px; display: grid; place-items: center; border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--raised); font-family: var(--mono); font-size: 16px; transition: border-color .25s, box-shadow .25s; }
+.pic__hand--a { left: 50px; }
+.pic__hand--b { left: 186px; }
+.pic__hand small { position: absolute; left: 0; right: 0; top: -18px; text-align: center; font-family: var(--font); font-size: 11px; color: var(--faint); }
+.pic__hand.is-empty { border-style: dashed; background: none; }
+.pic__hand.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__actor { position: absolute; top: 196px; width: 110px; display: grid; justify-items: center; gap: 3px; }
+.pic__actor--a { left: 0; }
+.pic__actor--b { left: 190px; }
+.pic__figure { width: 44px; height: 40px; fill: var(--raised); stroke: var(--ink-2); stroke-width: 1.5; transition: stroke .25s; }
+.pic__actor.is-now .pic__figure { stroke: var(--accent); }
+.pic__note { font-size: 12.5px; padding: 2px 8px; border-radius: 7px; border: 1px solid var(--rule-strong); background: var(--raised); white-space: nowrap; }
+.pic__note:empty { display: none; }
+.pic__note--wait { border-style: dashed; color: var(--muted); }
+.pic__note--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.pic__note--ok { border-color: var(--ok); color: var(--ok); }
+.pic__note.is-now { box-shadow: 0 0 0 1px currentColor; }
+.pic__action { position: absolute; left: 0; right: 0; top: 138px; text-align: center; font-family: var(--mono); font-weight: 650; font-size: 14px; color: var(--ink); }
+.pic__action.is-now { color: var(--accent-text); }
+.pic__action:empty { display: none; }
+.scene__body.has-picture { display: grid; grid-template-columns: minmax(0, 44rem) 300px; gap: 0 2.4rem; align-items: start; }
+.lanes { display: grid; grid-template-columns: minmax(0, 46rem) 300px; gap: 0 2rem; align-items: start; }
+.lanes__side { position: sticky; top: .6rem; }
+.lanes__now { margin: 0 0 .1rem; font-size: .76rem; color: var(--muted); text-align: center; }
+@media (max-width: 1220px) { .lanes { grid-template-columns: minmax(0, 1fr); } .lanes__side { display: none; } }
+
+/* chart: the recorded runs as lines. Colour names the way of writing; a hollow point means that group came out wrong. */
+.chart { margin: 0; display: grid; grid-template-columns: minmax(0, 44rem) minmax(13rem, 1fr); gap: 0 2rem; align-items: start; }
+.chart__cap { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem 1rem; font-size: .84rem; color: var(--muted); margin-bottom: .5rem; }
+.chart__cap b { font-size: 1rem; color: var(--ink); }
+.chart__marks { display: inline-flex; align-items: center; gap: .4rem; }
+.chart__mark { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--ink-2); border: 2px solid var(--ink-2); }
+.chart__mark.is-wrong { background: transparent; margin-left: .7rem; }
+.chart__picks { display: grid; justify-items: start; gap: .4rem; margin-bottom: 1rem; }
+.chart__pick { display: inline-flex; align-items: center; gap: .5rem; padding: .26rem .75rem; border: 1px solid var(--rule-strong); border-radius: 999px; background: none; font-size: .86rem; color: var(--ink-2); cursor: pointer; }
+.chart__pick:hover { border-color: var(--ink-2); }
+.chart__pick[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); font-weight: 600; background: var(--raised); }
+.chart__key { flex: none; width: 18px; height: 0; border-top: 3px solid var(--s, var(--ink-2)); border-radius: 2px; }
+.chart__key--1, .chart__series--1 { --s: var(--s1); }
+.chart__key--2, .chart__series--2 { --s: var(--s2); }
+.chart__key--3, .chart__series--3 { --s: var(--s3); }
+.chart__key--4, .chart__series--4 { --s: var(--s4); }
+.chart__plot { position: relative; }
+.chart__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart__grid { stroke: var(--rule); stroke-width: 1; }
+.chart__base { stroke: var(--rule-strong); stroke-width: 1; }
+.chart__tick { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.chart__series { transition: opacity .25s var(--ease); }
+.chart__series.is-dim { opacity: .2; }
+.chart__line { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; transition: stroke-width .2s; }
+.chart__series.is-on .chart__line { stroke-width: 3.2; }
+.chart__lead { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 1; opacity: .55; }
+.chart__dot { fill: var(--s, var(--ink-2)); stroke: var(--canvas); stroke-width: 2; }
+.chart__dot.is-wrong { fill: var(--canvas); stroke: var(--s, var(--ink-2)); }
+.chart__name { font-size: 11.5px; fill: var(--ink-2); }
+.chart__end { font-weight: 650; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.chart__cross { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+.chart__cross.is-on { opacity: .7; }
+.chart__hit { fill: transparent; cursor: crosshair; outline: none; }
+.chart__hit:focus-visible { stroke: var(--ink-2); stroke-dasharray: 2 3; }
+.chart__tip { position: absolute; top: 4%; z-index: 2; min-width: 16rem; padding: .55rem .7rem; border-radius: 10px; background: var(--raised); border: 1px solid var(--rule-strong); box-shadow: 0 8px 22px -14px #000000a0; font-size: .8rem; display: grid; gap: .25rem; pointer-events: none; }
+.chart__tip[hidden] { display: none; }
+.chart__row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto 4.8em; gap: .5rem; align-items: center; }
+.chart__row.is-dim { opacity: .45; }
+.chart__row span:last-child { color: var(--muted); text-align: right; }
+.chart__row span.is-wrong { color: var(--bad); }
+.chart__read { margin: 0 0 .8rem; min-height: 6.4em; font-size: .98rem; line-height: 1.65; color: var(--ink-2); }
+.chart__table { font-size: .8rem; color: var(--muted); }
+.chart__table summary { cursor: pointer; width: max-content; }
+.chart__table table { border-collapse: collapse; margin-top: .4rem; font-variant-numeric: tabular-nums; }
+.chart__table th, .chart__table td { padding: .22rem .5rem; border-bottom: 1px solid var(--rule); text-align: right; font-weight: 400; white-space: nowrap; }
+.chart__table th:first-child { text-align: left; }
+
+/* decide: the rule for choosing, as a small tree */
+.decide { max-width: 19rem; padding: 1rem 1.1rem; border: 1px solid var(--rule-strong); border-radius: 12px; background: var(--surface); }
+.decide__q { margin: 0; font-weight: 650; font-size: 1.02rem; }
+.decide__list { list-style: none; margin: 0; padding: .5rem 0 0 .5rem; }
+.decide__branch { position: relative; display: grid; gap: .2rem; padding: .5rem 0 .6rem 1.4rem; border-left: 1.5px solid var(--ink-2); }
+.decide__branch:last-child { border-left-color: transparent; }
+.decide__branch::before { content: ""; position: absolute; left: -1.5px; top: 0; width: 1rem; height: 1.2rem; border-left: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2); border-bottom-left-radius: 9px; }
+.decide__when { font-size: .92rem; color: var(--ink-2); }
+.decide__pick { justify-self: start; font-family: var(--mono); font-weight: 650; font-size: .92rem; padding: .18rem .6rem; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .3s, color .3s; }
+.decide__eg { font-size: .78rem; color: var(--muted); }
+.decide__branch.is-used .decide__pick { border-color: var(--ok); color: var(--ok); }
+.decide__branch.is-hit .decide__pick { animation: hit 1.6s var(--ease); }
+@keyframes hit { 0%, 55% { box-shadow: 0 0 0 5px var(--ok-wash), 0 0 0 1.5px var(--ok); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr) 19rem; }
+.slide--split .block:has(> .decide) { grid-column: 2; position: sticky; top: .6rem; }
+.slide--split .block:has(> .decide) ~ .block { grid-column: 1; grid-row: 1; }
+
+@media (max-width: 860px) {
+  .top { grid-template-columns: minmax(0, 1fr) auto; padding: .5rem .9rem; }
+  .top__title, #count { display: none; }
+  .beat:not(.is-now) { font-size: 0; gap: 0; padding: .3rem .22rem; }
+  .stage { padding: 0 .9rem 1.4rem; }
+  .slide { padding-top: 1rem; }
+  .exp__bar { position: static; }
+  .slide--split .slide__blocks, .exp__body, .hook__meta { grid-template-columns: minmax(0, 1fr); }
+  .hook__meta { gap: 1.2rem; }
+  .slide--split .block:first-child { grid-row: auto; }
+  .code__scroll, .exp .code__scroll { max-height: 15rem; }
+  .seg, .seg__set { flex-wrap: wrap; }
+  .plot__label { font-size: .72rem; overflow-wrap: anywhere; }
+  .plot__sum { font-size: .72rem; }
+  .plot__sum b { font-size: .8rem; }
+  .lrow--controls .btn { padding: .45rem .5rem; font-size: .8rem; }
+  .lrow--controls .lcell--a { padding-right: .3rem; } .lrow--controls .lcell--b { padding-left: .3rem; }
+  .plot__row, .plot__axis { grid-template-columns: 5.8em minmax(0, 1fr) 4.4em; gap: .4rem; }
+  .lanes__grid { grid-template-columns: minmax(0, 1fr) 3.4rem minmax(0, 1fr); }
+  .lanes__head--a { padding-right: 1.4rem; } .lanes__head--b { padding-left: 1.4rem; }
+  .arrow { flex-basis: 1rem; margin: 0 .15rem; }
+  .chip { font-size: .78rem; padding: .28rem .45rem; }
+  .val { min-width: 2.2rem; padding: .2rem .3rem; font-size: .88rem; }
+  .voice { padding: .7rem .9rem .8rem; }
+  .voice__inner { gap: .7rem; }
+  .voice__line { font-size: 1rem; line-height: 1.55; min-height: 0; }
+  .exp__body > :first-child { order: 2; }
+  .choose__head { display: none; }
+  .recall__item { grid-template-columns: minmax(0, 1fr); }
+  .spot { grid-template-columns: minmax(0, 1fr); }
+  .spot .code__scroll { max-height: 46vh; }
+  .spot__side { margin-top: .7rem; }
+  .spot__how { display: none; }
+  .recall__have { grid-row: auto; }
+  .scene__body.has-picture, .chart { grid-template-columns: minmax(0, 1fr); }
+  .scene__body .pic { order: -1; justify-self: center; margin-bottom: .6rem; }
+  .chart__picks { display: flex; flex-wrap: wrap; margin: .6rem 0; }
+  .chart__pick { font-size: .8rem; padding: .22rem .6rem; }
+  .chart__tick, .chart__name { font-size: 19px; }
+  .chart__label { display: none; }
+  .chart__dot { r: 7px; }
+  .chart__line { stroke-width: 3; }
+  .scene__head, .scene__row { column-gap: .4rem; }
+  .chart__read { min-height: 0; }
+  .chart__tip { min-width: 13rem; }
+  .slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr); }
+  .slide--split .block:has(> .decide), .slide--split .block:has(> .decide) ~ .block { grid-column: auto; grid-row: auto; position: static; }
+  .decide { max-width: none; }
+  .code__tag { position: static; transform: none; grid-column: 2; justify-self: start; margin-bottom: .3rem; }
+  .choose__row { grid-template-columns: minmax(0, 1fr); gap: .2rem; }
+  .choose__row > [data-label]::before { content: attr(data-label) "："; color: var(--muted); font-size: .82em; }
+  .voice__nav .btn { padding: .5rem .7rem; }
+  .btn__label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+@media print { body { height: auto; overflow: visible; display: block; } .voice__nav, .top__tools { display: none; } }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top__title" id="title"></div>
+  <nav class="beats" id="beats" aria-label="这节课走到哪了"></nav>
+  <div class="top__tools">
+    <span class="num" id="count"></span>
+    <div class="notes"><button class="tool" id="notes" type="button">要点 0</button><ul class="notes__list" id="notes-list" hidden></ul></div>
+    <button class="tool" id="theme" type="button">深色</button>
+  </div>
+</header>
+<main class="stage" id="stage"></main>
+<footer class="voice" aria-label="老师的讲解">
+  <div class="voice__inner">
+    <div><p class="voice__line" id="line" aria-live="polite"></p><p class="voice__key" id="key" hidden></p></div>
+    <div class="voice__nav">
+      <button class="btn" id="prev" type="button" aria-label="上一步">←</button>
+      <button class="btn btn--primary" id="next" type="button"><span class="btn__label">下一步 </span>→</button>
+    </div>
+  </div>
+</footer>
+<script type="application/json" id="lesson-data">{"format":"studyhub-lesson/1","template":"experiment","id":"lazy-singleton","course":"Java 并发从零","title":"外面判空里面又加锁，怎么还建出两份实例？","lead":"只在锁外判空、进锁直接建，并发仍造两份；全方法加锁拖慢纯读，靠 volatile 双检锁只建一次又秒读。","minutes":45,"needs":["理解 volatile 管可见与禁止重排序（第 1 节）","知道实例字段落在堆上会被多线程共享（第 17 节）","了解锁外判空到进门执行之间的竞态缝隙（第 25 节）"],"after":["说清「外判空 + 锁内直接建」为何在并发下照样初始化两次","对照真实字节码指出单检加锁缺失的第二次判空跳转分支","对比全方法同步与双重检查锁在读多写少场景的性能差异","讲清 volatile 防重排序原理与静态内部类 Holder 边界"],"terms":{"volatile":"字段修饰符，保证写后对读可见，并插内存屏障禁建对象指令重排序。","synchronized":"内置互斥锁，进入代码块前抢锁、退出释放，同一时刻只放一线程。","AtomicInteger":"原子整数计数器，多线程并发调用 incrementAndGet 也不丢统计次数。","CyclicBarrier":"同步栅栏：每波清空重置槽位后等全部线程就位，再同毫秒齐发开抢。","createHeavy":"昂贵初始化方法：给创建计数加一并做一段稳定循环模拟耗时构造。","instance":"保存懒加载结果对象的实例引用字段，未初始化前保持为 null。","get":"槽位入口读方法，本课四种懒加载写法的全部差异都在这个方法里。","Thread":"独立推进代码的执行线程，多条线程并发调用同一个槽位的 get。","getfield":"JVM 字节码指令，从当前对象上读取 instance 字段的值压入操作数栈。","ifnonnull":"JVM 条件跳转指令：若栈顶引用不是 null，就跳过新建逻辑直接往下走。","monitorenter":"JVM 加锁指令，在进入 synchronized 代码块时获取对象监视器锁。","monitorexit":"JVM 放锁指令，离开同步块或抛异常退出时释放所持有的监视器锁。","invokestatic":"JVM 指令，调用静态方法，在本课里对应调用 createHeavy 新建对象。","putfield":"JVM 写字段指令，把刚构造出来的对象引用写回当前对象的 instance。","Holder":"静态内部类懒加载写法，依靠 JVM 类初始化锁做到天然零锁单次构建。"},"experiments":{"lazysingle":{"runner":"java","home":"lab.lazysingle","knob":{"name":"threads","label":"并发读线程","values":["1","2","4","8"],"default":"4"},"metric":{"key":"inits","expectKey":"expected","label":"对象创建次数","expect":"应建"},"time":{"key":"ms","unit":"ms","label":"耗时"},"repeat":20,"variants":[{"id":"PlainLazy","label":"裸判空懒建","code":"PlainLazy.java","note":"基准写法：不加任何锁，先判 instance == null，为空就直接创建写回。"},{"id":"SingleCheckLock","label":"单检加锁","code":"SingleCheckLock.java","note":"常见误区：外层先判空，进 synchronized 块后忘了再写一遍判空，直接就新建。"},{"id":"SyncGetter","label":"全方法同步","code":"SyncGetter.java","note":"整个 get() 加上 synchronized，确保只建 1 次但后续海量只读也全去抢锁。"},{"id":"VolatileDcl","label":"双重检查锁","code":"VolatileDcl.java","note":"volatile 字段配局部变量读，判空后再进锁做二次判空并写回。"}],"lang":"java","sources":{"PlainLazy":"package lab.lazysingle;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\n\npublic class PlainLazy {\n    static final int WAVES = 100;\n    static final int SLOTS = 16;\n    static final int READS = 600;\n    static final AtomicInteger inits = new AtomicInteger();\n    static volatile long sink;\n\n    static final class Heavy {\n        final int val;\n        Heavy(int val) { this.val = val; }\n    }\n\n    private Heavy instance;\n\n    private static Heavy createHeavy() {\n        inits.incrementAndGet();\n        long x = 17;\n        for (int i = 0; i \u003c 12_000; i++) x = x * 31 + i;\n        return new Heavy((int) (x & 0xffff));\n    }\n\n    Heavy get() {\n        if (instance == null) {\n            instance = createHeavy();\n        }\n        return instance;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        PlainLazy[] slots = new PlainLazy[SLOTS];\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> {\n            for (int i = 0; i \u003c SLOTS; i++) slots[i] = new PlainLazy();\n        });\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    long sum = 0;\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        for (int r = 0; r \u003c READS; r++) {\n                            for (int i = 0; i \u003c SLOTS; i++) {\n                                sum += slots[i].get().val;\n                            }\n                        }\n                    }\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"inits=\" + inits.get());\n        System.out.println(\"expected=\" + (WAVES * SLOTS));\n        System.out.println(\"ms=\" + ms);\n    }\n}","SingleCheckLock":"package lab.lazysingle;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\n\npublic class SingleCheckLock {\n    static final int WAVES = 100;\n    static final int SLOTS = 16;\n    static final int READS = 600;\n    static final AtomicInteger inits = new AtomicInteger();\n    static volatile long sink;\n\n    static final class Heavy {\n        final int val;\n        Heavy(int val) { this.val = val; }\n    }\n\n    private Heavy instance;\n\n    private static Heavy createHeavy() {\n        inits.incrementAndGet();\n        long x = 17;\n        for (int i = 0; i \u003c 12_000; i++) x = x * 31 + i;\n        return new Heavy((int) (x & 0xffff));\n    }\n\n    Heavy get() {\n        if (instance == null) {\n            synchronized (this) {\n                instance = createHeavy();\n            }\n        }\n        return instance;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        SingleCheckLock[] slots = new SingleCheckLock[SLOTS];\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> {\n            for (int i = 0; i \u003c SLOTS; i++) slots[i] = new SingleCheckLock();\n        });\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    long sum = 0;\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        for (int r = 0; r \u003c READS; r++) {\n                            for (int i = 0; i \u003c SLOTS; i++) {\n                                sum += slots[i].get().val;\n                            }\n                        }\n                    }\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"inits=\" + inits.get());\n        System.out.println(\"expected=\" + (WAVES * SLOTS));\n        System.out.println(\"ms=\" + ms);\n    }\n}","SyncGetter":"package lab.lazysingle;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\n\npublic class SyncGetter {\n    static final int WAVES = 100;\n    static final int SLOTS = 16;\n    static final int READS = 600;\n    static final AtomicInteger inits = new AtomicInteger();\n    static volatile long sink;\n\n    static final class Heavy {\n        final int val;\n        Heavy(int val) { this.val = val; }\n    }\n\n    private Heavy instance;\n\n    private static Heavy createHeavy() {\n        inits.incrementAndGet();\n        long x = 17;\n        for (int i = 0; i \u003c 12_000; i++) x = x * 31 + i;\n        return new Heavy((int) (x & 0xffff));\n    }\n\n    synchronized Heavy get() {\n        if (instance == null) {\n            instance = createHeavy();\n        }\n        return instance;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        SyncGetter[] slots = new SyncGetter[SLOTS];\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> {\n            for (int i = 0; i \u003c SLOTS; i++) slots[i] = new SyncGetter();\n        });\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    long sum = 0;\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        for (int r = 0; r \u003c READS; r++) {\n                            for (int i = 0; i \u003c SLOTS; i++) {\n                                sum += slots[i].get().val;\n                            }\n                        }\n                    }\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"inits=\" + inits.get());\n        System.out.println(\"expected=\" + (WAVES * SLOTS));\n        System.out.println(\"ms=\" + ms);\n    }\n}","VolatileDcl":"package lab.lazysingle;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\n\npublic class VolatileDcl {\n    static final int WAVES = 100;\n    static final int SLOTS = 16;\n    static final int READS = 600;\n    static final AtomicInteger inits = new AtomicInteger();\n    static volatile long sink;\n\n    static final class Heavy {\n        final int val;\n        Heavy(int val) { this.val = val; }\n    }\n\n    private volatile Heavy instance;\n\n    private static Heavy createHeavy() {\n        inits.incrementAndGet();\n        long x = 17;\n        for (int i = 0; i \u003c 12_000; i++) x = x * 31 + i;\n        return new Heavy((int) (x & 0xffff));\n    }\n\n    Heavy get() {\n        Heavy h = instance;\n        if (h == null) {\n            synchronized (this) {\n                if (instance == null) {\n                    instance = createHeavy();\n                }\n                h = instance;\n            }\n        }\n        return h;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        VolatileDcl[] slots = new VolatileDcl[SLOTS];\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> {\n            for (int i = 0; i \u003c SLOTS; i++) slots[i] = new VolatileDcl();\n        });\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    long sum = 0;\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        for (int r = 0; r \u003c READS; r++) {\n                            for (int i = 0; i \u003c SLOTS; i++) {\n                                sum += slots[i].get().val;\n                            }\n                        }\n                    }\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"inits=\" + inits.get());\n        System.out.println(\"expected=\" + (WAVES * SLOTS));\n        System.out.println(\"ms=\" + ms);\n    }\n}"},"paths":{"PlainLazy":"src/lab/lazysingle/PlainLazy.java","SingleCheckLock":"src/lab/lazysingle/SingleCheckLock.java","SyncGetter":"src/lab/lazysingle/SyncGetter.java","VolatileDcl":"src/lab/lazysingle/VolatileDcl.java"},"shown":{"PlainLazy":"java -cp out lab.lazysingle.PlainLazy","SingleCheckLock":"java -cp out lab.lazysingle.SingleCheckLock","SyncGetter":"java -cp out lab.lazysingle.SyncGetter","VolatileDcl":"java -cp out lab.lazysingle.VolatileDcl"},"results":{"id":"lazysingle","variants":{"PlainLazy":{"hash":"1eada827d428a677","repeat":20,"runs":{"1":[{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":18},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":20}],"2":[{"inits":2926,"expected":1600,"ms":29},{"inits":2962,"expected":1600,"ms":26},{"inits":2958,"expected":1600,"ms":25},{"inits":2812,"expected":1600,"ms":26},{"inits":2862,"expected":1600,"ms":26},{"inits":2995,"expected":1600,"ms":26},{"inits":2966,"expected":1600,"ms":27},{"inits":2963,"expected":1600,"ms":28},{"inits":2860,"expected":1600,"ms":26},{"inits":2823,"expected":1600,"ms":26},{"inits":2868,"expected":1600,"ms":32},{"inits":2949,"expected":1600,"ms":27},{"inits":2868,"expected":1600,"ms":27},{"inits":2780,"expected":1600,"ms":27},{"inits":2911,"expected":1600,"ms":26},{"inits":2836,"expected":1600,"ms":26},{"inits":2877,"expected":1600,"ms":25},{"inits":2855,"expected":1600,"ms":27},{"inits":2925,"expected":1600,"ms":25},{"inits":2951,"expected":1600,"ms":24}],"4":[{"inits":5278,"expected":1600,"ms":34},{"inits":5280,"expected":1600,"ms":32},{"inits":5220,"expected":1600,"ms":35},{"inits":5264,"expected":1600,"ms":38},{"inits":5438,"expected":1600,"ms":56},{"inits":5364,"expected":1600,"ms":57},{"inits":5392,"expected":1600,"ms":55},{"inits":5193,"expected":1600,"ms":34},{"inits":5352,"expected":1600,"ms":38},{"inits":5236,"expected":1600,"ms":33},{"inits":5322,"expected":1600,"ms":34},{"inits":5213,"expected":1600,"ms":32},{"inits":5209,"expected":1600,"ms":41},{"inits":5237,"expected":1600,"ms":36},{"inits":5194,"expected":1600,"ms":34},{"inits":5251,"expected":1600,"ms":57},{"inits":5159,"expected":1600,"ms":43},{"inits":5197,"expected":1600,"ms":48},{"inits":5367,"expected":1600,"ms":35},{"inits":5403,"expected":1600,"ms":39}],"8":[{"inits":8591,"expected":1600,"ms":80},{"inits":8835,"expected":1600,"ms":75},{"inits":9112,"expected":1600,"ms":55},{"inits":8380,"expected":1600,"ms":71},{"inits":8797,"expected":1600,"ms":61},{"inits":8409,"expected":1600,"ms":93},{"inits":8516,"expected":1600,"ms":76},{"inits":8834,"expected":1600,"ms":93},{"inits":8836,"expected":1600,"ms":77},{"inits":8660,"expected":1600,"ms":65},{"inits":8463,"expected":1600,"ms":59},{"inits":8864,"expected":1600,"ms":86},{"inits":8694,"expected":1600,"ms":62},{"inits":9030,"expected":1600,"ms":60},{"inits":8820,"expected":1600,"ms":46},{"inits":8690,"expected":1600,"ms":77},{"inits":8829,"expected":1600,"ms":62},{"inits":8774,"expected":1600,"ms":61},{"inits":8541,"expected":1600,"ms":65},{"inits":9218,"expected":1600,"ms":48}]},"inside":"Compiled from \"PlainLazy.java\"\npublic class lab.lazysingle.PlainLazy {\n  static final int WAVES;\n\n  static final int SLOTS;\n\n  static final int READS;\n\n  static final java.util.concurrent.atomic.AtomicInteger inits;\n\n  static volatile long sink;\n\n  private lab.lazysingle.PlainLazy$Heavy instance;\n\n  public lab.lazysingle.PlainLazy();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  private static lab.lazysingle.PlainLazy$Heavy createHeavy();\n    Code:\n         0: getstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n         3: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n         6: pop\n         7: ldc2_w        #19                 // long 17l\n        10: lstore_0\n        11: iconst_0\n        12: istore_2\n        13: iload_2\n        14: sipush        12000\n        17: if_icmpge     35\n        20: lload_0\n        21: ldc2_w        #21                 // long 31l\n        24: lmul\n        25: iload_2\n        26: i2l\n        27: ladd\n        28: lstore_0\n        29: iinc          2, 1\n        32: goto          13\n        35: new           #23                 // class lab/lazysingle/PlainLazy$Heavy\n        38: dup\n        39: lload_0\n        40: ldc2_w        #25                 // long 65535l\n        43: land\n        44: l2i\n        45: invokespecial #27                 // Method lab/lazysingle/PlainLazy$Heavy.\"\u003cinit>\":(I)V\n        48: areturn\n\n  lab.lazysingle.PlainLazy$Heavy get();\n    Code:\n         0: aload_0\n         1: getfield      #30                 // Field instance:Llab/lazysingle/PlainLazy$Heavy;\n         4: ifnonnull     14\n         7: aload_0\n         8: invokestatic  #34                 // Method createHeavy:()Llab/lazysingle/PlainLazy$Heavy;\n        11: putfield      #30                 // Field instance:Llab/lazysingle/PlainLazy$Heavy;\n        14: aload_0\n        15: getfield      #30                 // Field instance:Llab/lazysingle/PlainLazy$Heavy;\n        18: areturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #38                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: bipush        16\n         9: anewarray     #8                  // class lab/lazysingle/PlainLazy\n        12: astore_2\n        13: new           #44                 // class java/util/concurrent/CyclicBarrier\n        16: dup\n        17: iload_1\n        18: aload_2\n        19: invokedynamic #46,  0             // InvokeDynamic #0:run:([Llab/lazysingle/PlainLazy;)Ljava/lang/Runnable;\n        24: invokespecial #50                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(ILjava/lang/Runnable;)V\n        27: astore_3\n        28: iload_1\n        29: anewarray     #53                 // class java/lang/Thread\n        32: astore        4\n        34: invokestatic  #55                 // Method java/lang/System.nanoTime:()J\n        37: lstore        5\n        39: iconst_0\n        40: istore        7\n        42: iload         7\n        44: iload_1\n        45: if_icmpge     81\n        48: aload         4\n        50: iload         7\n        52: new           #53                 // class java/lang/Thread\n        55: dup\n        56: aload_3\n        57: aload_2\n        58: invokedynamic #61,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;[Llab/lazysingle/PlainLazy;)Ljava/lang/Runnable;\n        63: invokespecial #64                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        66: aastore\n        67: aload         4\n        69: iload         7\n        71: aaload\n        72: invokevirtual #67                 // Method java/lang/Thread.start:()V\n        75: iinc          7, 1\n        78: goto          42\n        81: aload         4\n        83: astore        7\n        85: aload         7\n        87: arraylength\n        88: istore        8\n        90: iconst_0\n        91: istore        9\n        93: iload         9\n        95: iload         8\n        97: if_icmpge     118\n       100: aload         7\n       102: iload         9\n       104: aaload\n       105: astore        10\n       107: aload         10\n       109: invokevirtual #70                 // Method java/lang/Thread.join:()V\n       112: iinc          9, 1\n       115: goto          93\n       118: invokestatic  #55                 // Method java/lang/System.nanoTime:()J\n       121: lload         5\n       123: lsub\n       124: ldc2_w        #73                 // long 1000000l\n       127: ldiv\n       128: lstore        7\n       130: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: getstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n       136: invokevirtual #79                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       139: invokedynamic #82,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       144: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       147: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       150: ldc           #92                 // String expected=1600\n       152: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       155: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       158: lload         7\n       160: invokedynamic #94,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       165: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       168: return\n\n  private static void lambda$main$1(java.util.concurrent.CyclicBarrier, lab.lazysingle.PlainLazy[]);\n    Code:\n         0: lconst_0\n         1: lstore_2\n         2: iconst_0\n         3: istore        4\n         5: iload         4\n         7: bipush        100\n         9: if_icmpge     70\n        12: aload_0\n        13: invokevirtual #97                 // Method java/util/concurrent/CyclicBarrier.await:()I\n        16: pop\n        17: iconst_0\n        18: istore        5\n        20: iload         5\n        22: sipush        600\n        25: if_icmpge     64\n        28: iconst_0\n        29: istore        6\n        31: iload         6\n        33: bipush        16\n        35: if_icmpge     58\n        38: lload_2\n        39: aload_1\n        40: iload         6\n        42: aaload\n        43: invokevirtual #100                // Method get:()Llab/lazysingle/PlainLazy$Heavy;\n        46: getfield      #102                // Field lab/lazysingle/PlainLazy$Heavy.val:I\n        49: i2l\n        50: ladd\n        51: lstore_2\n        52: iinc          6, 1\n        55: goto          31\n        58: iinc          5, 1\n        61: goto          20\n        64: iinc          4, 1\n        67: goto          5\n        70: lload_2\n        71: putstatic     #106                // Field sink:J\n        74: goto          87\n        77: astore_2\n        78: new           #112                // class java/lang/RuntimeException\n        81: dup\n        82: aload_2\n        83: invokespecial #114                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        86: athrow\n        87: return\n      Exception table:\n         from    to  target type\n             0    74    77   Class java/lang/Exception\n\n  private static void lambda$main$0(lab.lazysingle.PlainLazy[]);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: bipush        16\n         5: if_icmpge     24\n         8: aload_0\n         9: iload_1\n        10: new           #8                  // class lab/lazysingle/PlainLazy\n        13: dup\n        14: invokespecial #117                // Method \"\u003cinit>\":()V\n        17: aastore\n        18: iinc          1, 1\n        21: goto          2\n        24: return\n\n  static {};\n    Code:\n         0: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n         3: dup\n         4: invokespecial #118                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n         7: putstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n        10: return\n}"},"SingleCheckLock":{"hash":"d38ed2be55b62015","repeat":20,"runs":{"1":[{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":18},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":18},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":22},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":23},{"inits":1600,"expected":1600,"ms":23},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":23},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":20}],"2":[{"inits":2471,"expected":1600,"ms":29},{"inits":2467,"expected":1600,"ms":28},{"inits":2429,"expected":1600,"ms":28},{"inits":2459,"expected":1600,"ms":30},{"inits":2446,"expected":1600,"ms":29},{"inits":2478,"expected":1600,"ms":29},{"inits":2444,"expected":1600,"ms":27},{"inits":2494,"expected":1600,"ms":27},{"inits":2445,"expected":1600,"ms":28},{"inits":2440,"expected":1600,"ms":27},{"inits":2458,"expected":1600,"ms":29},{"inits":2472,"expected":1600,"ms":33},{"inits":2490,"expected":1600,"ms":35},{"inits":2431,"expected":1600,"ms":30},{"inits":2438,"expected":1600,"ms":29},{"inits":2482,"expected":1600,"ms":26},{"inits":2484,"expected":1600,"ms":28},{"inits":2437,"expected":1600,"ms":27},{"inits":2452,"expected":1600,"ms":29},{"inits":2491,"expected":1600,"ms":29}],"4":[{"inits":3538,"expected":1600,"ms":35},{"inits":3646,"expected":1600,"ms":31},{"inits":3598,"expected":1600,"ms":31},{"inits":3648,"expected":1600,"ms":34},{"inits":3539,"expected":1600,"ms":33},{"inits":3616,"expected":1600,"ms":37},{"inits":3614,"expected":1600,"ms":35},{"inits":3640,"expected":1600,"ms":34},{"inits":3576,"expected":1600,"ms":33},{"inits":3587,"expected":1600,"ms":30},{"inits":3552,"expected":1600,"ms":36},{"inits":3639,"expected":1600,"ms":41},{"inits":3512,"expected":1600,"ms":43},{"inits":3633,"expected":1600,"ms":32},{"inits":3690,"expected":1600,"ms":33},{"inits":3552,"expected":1600,"ms":37},{"inits":3617,"expected":1600,"ms":32},{"inits":3675,"expected":1600,"ms":33},{"inits":3572,"expected":1600,"ms":33},{"inits":3646,"expected":1600,"ms":36}],"8":[{"inits":4672,"expected":1600,"ms":57},{"inits":4786,"expected":1600,"ms":46},{"inits":4768,"expected":1600,"ms":48},{"inits":4788,"expected":1600,"ms":43},{"inits":4689,"expected":1600,"ms":51},{"inits":4626,"expected":1600,"ms":60},{"inits":4681,"expected":1600,"ms":67},{"inits":4756,"expected":1600,"ms":42},{"inits":4802,"expected":1600,"ms":45},{"inits":4671,"expected":1600,"ms":54},{"inits":4669,"expected":1600,"ms":61},{"inits":4673,"expected":1600,"ms":53},{"inits":4616,"expected":1600,"ms":46},{"inits":4556,"expected":1600,"ms":54},{"inits":4414,"expected":1600,"ms":66},{"inits":4353,"expected":1600,"ms":62},{"inits":4436,"expected":1600,"ms":63},{"inits":4625,"expected":1600,"ms":61},{"inits":4628,"expected":1600,"ms":59},{"inits":4711,"expected":1600,"ms":49}]},"inside":"Compiled from \"SingleCheckLock.java\"\npublic class lab.lazysingle.SingleCheckLock {\n  static final int WAVES;\n\n  static final int SLOTS;\n\n  static final int READS;\n\n  static final java.util.concurrent.atomic.AtomicInteger inits;\n\n  static volatile long sink;\n\n  private lab.lazysingle.SingleCheckLock$Heavy instance;\n\n  public lab.lazysingle.SingleCheckLock();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  private static lab.lazysingle.SingleCheckLock$Heavy createHeavy();\n    Code:\n         0: getstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n         3: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n         6: pop\n         7: ldc2_w        #19                 // long 17l\n        10: lstore_0\n        11: iconst_0\n        12: istore_2\n        13: iload_2\n        14: sipush        12000\n        17: if_icmpge     35\n        20: lload_0\n        21: ldc2_w        #21                 // long 31l\n        24: lmul\n        25: iload_2\n        26: i2l\n        27: ladd\n        28: lstore_0\n        29: iinc          2, 1\n        32: goto          13\n        35: new           #23                 // class lab/lazysingle/SingleCheckLock$Heavy\n        38: dup\n        39: lload_0\n        40: ldc2_w        #25                 // long 65535l\n        43: land\n        44: l2i\n        45: invokespecial #27                 // Method lab/lazysingle/SingleCheckLock$Heavy.\"\u003cinit>\":(I)V\n        48: areturn\n\n  lab.lazysingle.SingleCheckLock$Heavy get();\n    Code:\n         0: aload_0\n         1: getfield      #30                 // Field instance:Llab/lazysingle/SingleCheckLock$Heavy;\n         4: ifnonnull     28\n         7: aload_0\n         8: dup\n         9: astore_1\n        10: monitorenter\n        11: aload_0\n        12: invokestatic  #34                 // Method createHeavy:()Llab/lazysingle/SingleCheckLock$Heavy;\n        15: putfield      #30                 // Field instance:Llab/lazysingle/SingleCheckLock$Heavy;\n        18: aload_1\n        19: monitorexit\n        20: goto          28\n        23: astore_2\n        24: aload_1\n        25: monitorexit\n        26: aload_2\n        27: athrow\n        28: aload_0\n        29: getfield      #30                 // Field instance:Llab/lazysingle/SingleCheckLock$Heavy;\n        32: areturn\n      Exception table:\n         from    to  target type\n            11    20    23   any\n            23    26    23   any\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #38                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: bipush        16\n         9: anewarray     #8                  // class lab/lazysingle/SingleCheckLock\n        12: astore_2\n        13: new           #44                 // class java/util/concurrent/CyclicBarrier\n        16: dup\n        17: iload_1\n        18: aload_2\n        19: invokedynamic #46,  0             // InvokeDynamic #0:run:([Llab/lazysingle/SingleCheckLock;)Ljava/lang/Runnable;\n        24: invokespecial #50                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(ILjava/lang/Runnable;)V\n        27: astore_3\n        28: iload_1\n        29: anewarray     #53                 // class java/lang/Thread\n        32: astore        4\n        34: invokestatic  #55                 // Method java/lang/System.nanoTime:()J\n        37: lstore        5\n        39: iconst_0\n        40: istore        7\n        42: iload         7\n        44: iload_1\n        45: if_icmpge     81\n        48: aload         4\n        50: iload         7\n        52: new           #53                 // class java/lang/Thread\n        55: dup\n        56: aload_3\n        57: aload_2\n        58: invokedynamic #61,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;[Llab/lazysingle/SingleCheckLock;)Ljava/lang/Runnable;\n        63: invokespecial #64                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        66: aastore\n        67: aload         4\n        69: iload         7\n        71: aaload\n        72: invokevirtual #67                 // Method java/lang/Thread.start:()V\n        75: iinc          7, 1\n        78: goto          42\n        81: aload         4\n        83: astore        7\n        85: aload         7\n        87: arraylength\n        88: istore        8\n        90: iconst_0\n        91: istore        9\n        93: iload         9\n        95: iload         8\n        97: if_icmpge     118\n       100: aload         7\n       102: iload         9\n       104: aaload\n       105: astore        10\n       107: aload         10\n       109: invokevirtual #70                 // Method java/lang/Thread.join:()V\n       112: iinc          9, 1\n       115: goto          93\n       118: invokestatic  #55                 // Method java/lang/System.nanoTime:()J\n       121: lload         5\n       123: lsub\n       124: ldc2_w        #73                 // long 1000000l\n       127: ldiv\n       128: lstore        7\n       130: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: getstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n       136: invokevirtual #79                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       139: invokedynamic #82,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       144: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       147: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       150: ldc           #92                 // String expected=1600\n       152: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       155: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       158: lload         7\n       160: invokedynamic #94,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       165: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       168: return\n\n  private static void lambda$main$1(java.util.concurrent.CyclicBarrier, lab.lazysingle.SingleCheckLock[]);\n    Code:\n         0: lconst_0\n         1: lstore_2\n         2: iconst_0\n         3: istore        4\n         5: iload         4\n         7: bipush        100\n         9: if_icmpge     70\n        12: aload_0\n        13: invokevirtual #97                 // Method java/util/concurrent/CyclicBarrier.await:()I\n        16: pop\n        17: iconst_0\n        18: istore        5\n        20: iload         5\n        22: sipush        600\n        25: if_icmpge     64\n        28: iconst_0\n        29: istore        6\n        31: iload         6\n        33: bipush        16\n        35: if_icmpge     58\n        38: lload_2\n        39: aload_1\n        40: iload         6\n        42: aaload\n        43: invokevirtual #100                // Method get:()Llab/lazysingle/SingleCheckLock$Heavy;\n        46: getfield      #102                // Field lab/lazysingle/SingleCheckLock$Heavy.val:I\n        49: i2l\n        50: ladd\n        51: lstore_2\n        52: iinc          6, 1\n        55: goto          31\n        58: iinc          5, 1\n        61: goto          20\n        64: iinc          4, 1\n        67: goto          5\n        70: lload_2\n        71: putstatic     #106                // Field sink:J\n        74: goto          87\n        77: astore_2\n        78: new           #112                // class java/lang/RuntimeException\n        81: dup\n        82: aload_2\n        83: invokespecial #114                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        86: athrow\n        87: return\n      Exception table:\n         from    to  target type\n             0    74    77   Class java/lang/Exception\n\n  private static void lambda$main$0(lab.lazysingle.SingleCheckLock[]);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: bipush        16\n         5: if_icmpge     24\n         8: aload_0\n         9: iload_1\n        10: new           #8                  // class lab/lazysingle/SingleCheckLock\n        13: dup\n        14: invokespecial #117                // Method \"\u003cinit>\":()V\n        17: aastore\n        18: iinc          1, 1\n        21: goto          2\n        24: return\n\n  static {};\n    Code:\n         0: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n         3: dup\n         4: invokespecial #118                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n         7: putstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n        10: return\n}"},"SyncGetter":{"hash":"332404b25417b0ad","repeat":20,"runs":{"1":[{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":22},{"inits":1600,"expected":1600,"ms":22},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":22},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":22},{"inits":1600,"expected":1600,"ms":22},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":31}],"2":[{"inits":1600,"expected":1600,"ms":45},{"inits":1600,"expected":1600,"ms":43},{"inits":1600,"expected":1600,"ms":43},{"inits":1600,"expected":1600,"ms":39},{"inits":1600,"expected":1600,"ms":44},{"inits":1600,"expected":1600,"ms":43},{"inits":1600,"expected":1600,"ms":40},{"inits":1600,"expected":1600,"ms":56},{"inits":1600,"expected":1600,"ms":52},{"inits":1600,"expected":1600,"ms":52},{"inits":1600,"expected":1600,"ms":45},{"inits":1600,"expected":1600,"ms":40},{"inits":1600,"expected":1600,"ms":41},{"inits":1600,"expected":1600,"ms":40},{"inits":1600,"expected":1600,"ms":50},{"inits":1600,"expected":1600,"ms":39},{"inits":1600,"expected":1600,"ms":38},{"inits":1600,"expected":1600,"ms":37},{"inits":1600,"expected":1600,"ms":38},{"inits":1600,"expected":1600,"ms":39}],"4":[{"inits":1600,"expected":1600,"ms":73},{"inits":1600,"expected":1600,"ms":83},{"inits":1600,"expected":1600,"ms":101},{"inits":1600,"expected":1600,"ms":86},{"inits":1600,"expected":1600,"ms":93},{"inits":1600,"expected":1600,"ms":94},{"inits":1600,"expected":1600,"ms":79},{"inits":1600,"expected":1600,"ms":80},{"inits":1600,"expected":1600,"ms":81},{"inits":1600,"expected":1600,"ms":82},{"inits":1600,"expected":1600,"ms":81},{"inits":1600,"expected":1600,"ms":75},{"inits":1600,"expected":1600,"ms":78},{"inits":1600,"expected":1600,"ms":85},{"inits":1600,"expected":1600,"ms":78},{"inits":1600,"expected":1600,"ms":90},{"inits":1600,"expected":1600,"ms":74},{"inits":1600,"expected":1600,"ms":79},{"inits":1600,"expected":1600,"ms":73},{"inits":1600,"expected":1600,"ms":80}],"8":[{"inits":1600,"expected":1600,"ms":150},{"inits":1600,"expected":1600,"ms":142},{"inits":1600,"expected":1600,"ms":149},{"inits":1600,"expected":1600,"ms":161},{"inits":1600,"expected":1600,"ms":163},{"inits":1600,"expected":1600,"ms":154},{"inits":1600,"expected":1600,"ms":151},{"inits":1600,"expected":1600,"ms":160},{"inits":1600,"expected":1600,"ms":164},{"inits":1600,"expected":1600,"ms":148},{"inits":1600,"expected":1600,"ms":167},{"inits":1600,"expected":1600,"ms":176},{"inits":1600,"expected":1600,"ms":149},{"inits":1600,"expected":1600,"ms":146},{"inits":1600,"expected":1600,"ms":152},{"inits":1600,"expected":1600,"ms":167},{"inits":1600,"expected":1600,"ms":148},{"inits":1600,"expected":1600,"ms":155},{"inits":1600,"expected":1600,"ms":154},{"inits":1600,"expected":1600,"ms":160}]},"inside":"Compiled from \"SyncGetter.java\"\npublic class lab.lazysingle.SyncGetter {\n  static final int WAVES;\n\n  static final int SLOTS;\n\n  static final int READS;\n\n  static final java.util.concurrent.atomic.AtomicInteger inits;\n\n  static volatile long sink;\n\n  private lab.lazysingle.SyncGetter$Heavy instance;\n\n  public lab.lazysingle.SyncGetter();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  private static lab.lazysingle.SyncGetter$Heavy createHeavy();\n    Code:\n         0: getstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n         3: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n         6: pop\n         7: ldc2_w        #19                 // long 17l\n        10: lstore_0\n        11: iconst_0\n        12: istore_2\n        13: iload_2\n        14: sipush        12000\n        17: if_icmpge     35\n        20: lload_0\n        21: ldc2_w        #21                 // long 31l\n        24: lmul\n        25: iload_2\n        26: i2l\n        27: ladd\n        28: lstore_0\n        29: iinc          2, 1\n        32: goto          13\n        35: new           #23                 // class lab/lazysingle/SyncGetter$Heavy\n        38: dup\n        39: lload_0\n        40: ldc2_w        #25                 // long 65535l\n        43: land\n        44: l2i\n        45: invokespecial #27                 // Method lab/lazysingle/SyncGetter$Heavy.\"\u003cinit>\":(I)V\n        48: areturn\n\n  synchronized lab.lazysingle.SyncGetter$Heavy get();\n    Code:\n         0: aload_0\n         1: getfield      #30                 // Field instance:Llab/lazysingle/SyncGetter$Heavy;\n         4: ifnonnull     14\n         7: aload_0\n         8: invokestatic  #34                 // Method createHeavy:()Llab/lazysingle/SyncGetter$Heavy;\n        11: putfield      #30                 // Field instance:Llab/lazysingle/SyncGetter$Heavy;\n        14: aload_0\n        15: getfield      #30                 // Field instance:Llab/lazysingle/SyncGetter$Heavy;\n        18: areturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #38                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: bipush        16\n         9: anewarray     #8                  // class lab/lazysingle/SyncGetter\n        12: astore_2\n        13: new           #44                 // class java/util/concurrent/CyclicBarrier\n        16: dup\n        17: iload_1\n        18: aload_2\n        19: invokedynamic #46,  0             // InvokeDynamic #0:run:([Llab/lazysingle/SyncGetter;)Ljava/lang/Runnable;\n        24: invokespecial #50                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(ILjava/lang/Runnable;)V\n        27: astore_3\n        28: iload_1\n        29: anewarray     #53                 // class java/lang/Thread\n        32: astore        4\n        34: invokestatic  #55                 // Method java/lang/System.nanoTime:()J\n        37: lstore        5\n        39: iconst_0\n        40: istore        7\n        42: iload         7\n        44: iload_1\n        45: if_icmpge     81\n        48: aload         4\n        50: iload         7\n        52: new           #53                 // class java/lang/Thread\n        55: dup\n        56: aload_3\n        57: aload_2\n        58: invokedynamic #61,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;[Llab/lazysingle/SyncGetter;)Ljava/lang/Runnable;\n        63: invokespecial #64                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        66: aastore\n        67: aload         4\n        69: iload         7\n        71: aaload\n        72: invokevirtual #67                 // Method java/lang/Thread.start:()V\n        75: iinc          7, 1\n        78: goto          42\n        81: aload         4\n        83: astore        7\n        85: aload         7\n        87: arraylength\n        88: istore        8\n        90: iconst_0\n        91: istore        9\n        93: iload         9\n        95: iload         8\n        97: if_icmpge     118\n       100: aload         7\n       102: iload         9\n       104: aaload\n       105: astore        10\n       107: aload         10\n       109: invokevirtual #70                 // Method java/lang/Thread.join:()V\n       112: iinc          9, 1\n       115: goto          93\n       118: invokestatic  #55                 // Method java/lang/System.nanoTime:()J\n       121: lload         5\n       123: lsub\n       124: ldc2_w        #73                 // long 1000000l\n       127: ldiv\n       128: lstore        7\n       130: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: getstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n       136: invokevirtual #79                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       139: invokedynamic #82,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       144: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       147: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       150: ldc           #92                 // String expected=1600\n       152: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       155: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       158: lload         7\n       160: invokedynamic #94,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       165: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       168: return\n\n  private static void lambda$main$1(java.util.concurrent.CyclicBarrier, lab.lazysingle.SyncGetter[]);\n    Code:\n         0: lconst_0\n         1: lstore_2\n         2: iconst_0\n         3: istore        4\n         5: iload         4\n         7: bipush        100\n         9: if_icmpge     70\n        12: aload_0\n        13: invokevirtual #97                 // Method java/util/concurrent/CyclicBarrier.await:()I\n        16: pop\n        17: iconst_0\n        18: istore        5\n        20: iload         5\n        22: sipush        600\n        25: if_icmpge     64\n        28: iconst_0\n        29: istore        6\n        31: iload         6\n        33: bipush        16\n        35: if_icmpge     58\n        38: lload_2\n        39: aload_1\n        40: iload         6\n        42: aaload\n        43: invokevirtual #100                // Method get:()Llab/lazysingle/SyncGetter$Heavy;\n        46: getfield      #102                // Field lab/lazysingle/SyncGetter$Heavy.val:I\n        49: i2l\n        50: ladd\n        51: lstore_2\n        52: iinc          6, 1\n        55: goto          31\n        58: iinc          5, 1\n        61: goto          20\n        64: iinc          4, 1\n        67: goto          5\n        70: lload_2\n        71: putstatic     #106                // Field sink:J\n        74: goto          87\n        77: astore_2\n        78: new           #112                // class java/lang/RuntimeException\n        81: dup\n        82: aload_2\n        83: invokespecial #114                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        86: athrow\n        87: return\n      Exception table:\n         from    to  target type\n             0    74    77   Class java/lang/Exception\n\n  private static void lambda$main$0(lab.lazysingle.SyncGetter[]);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: bipush        16\n         5: if_icmpge     24\n         8: aload_0\n         9: iload_1\n        10: new           #8                  // class lab/lazysingle/SyncGetter\n        13: dup\n        14: invokespecial #117                // Method \"\u003cinit>\":()V\n        17: aastore\n        18: iinc          1, 1\n        21: goto          2\n        24: return\n\n  static {};\n    Code:\n         0: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n         3: dup\n         4: invokespecial #118                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n         7: putstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n        10: return\n}"},"VolatileDcl":{"hash":"44a93ea150469620","repeat":20,"runs":{"1":[{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":21},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":20},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":19},{"inits":1600,"expected":1600,"ms":20}],"2":[{"inits":1600,"expected":1600,"ms":28},{"inits":1600,"expected":1600,"ms":27},{"inits":1600,"expected":1600,"ms":25},{"inits":1600,"expected":1600,"ms":26},{"inits":1600,"expected":1600,"ms":27},{"inits":1600,"expected":1600,"ms":25},{"inits":1600,"expected":1600,"ms":26},{"inits":1600,"expected":1600,"ms":25},{"inits":1600,"expected":1600,"ms":29},{"inits":1600,"expected":1600,"ms":26},{"inits":1600,"expected":1600,"ms":25},{"inits":1600,"expected":1600,"ms":29},{"inits":1600,"expected":1600,"ms":25},{"inits":1600,"expected":1600,"ms":26},{"inits":1600,"expected":1600,"ms":26},{"inits":1600,"expected":1600,"ms":24},{"inits":1600,"expected":1600,"ms":27},{"inits":1600,"expected":1600,"ms":27},{"inits":1600,"expected":1600,"ms":26},{"inits":1600,"expected":1600,"ms":28}],"4":[{"inits":1600,"expected":1600,"ms":40},{"inits":1600,"expected":1600,"ms":35},{"inits":1600,"expected":1600,"ms":32},{"inits":1600,"expected":1600,"ms":34},{"inits":1600,"expected":1600,"ms":32},{"inits":1600,"expected":1600,"ms":32},{"inits":1600,"expected":1600,"ms":35},{"inits":1600,"expected":1600,"ms":31},{"inits":1600,"expected":1600,"ms":36},{"inits":1600,"expected":1600,"ms":37},{"inits":1600,"expected":1600,"ms":35},{"inits":1600,"expected":1600,"ms":35},{"inits":1600,"expected":1600,"ms":34},{"inits":1600,"expected":1600,"ms":35},{"inits":1600,"expected":1600,"ms":35},{"inits":1600,"expected":1600,"ms":33},{"inits":1600,"expected":1600,"ms":33},{"inits":1600,"expected":1600,"ms":36},{"inits":1600,"expected":1600,"ms":32},{"inits":1600,"expected":1600,"ms":33}],"8":[{"inits":1600,"expected":1600,"ms":52},{"inits":1600,"expected":1600,"ms":53},{"inits":1600,"expected":1600,"ms":49},{"inits":1600,"expected":1600,"ms":48},{"inits":1600,"expected":1600,"ms":48},{"inits":1600,"expected":1600,"ms":47},{"inits":1600,"expected":1600,"ms":50},{"inits":1600,"expected":1600,"ms":42},{"inits":1600,"expected":1600,"ms":45},{"inits":1600,"expected":1600,"ms":49},{"inits":1600,"expected":1600,"ms":47},{"inits":1600,"expected":1600,"ms":47},{"inits":1600,"expected":1600,"ms":46},{"inits":1600,"expected":1600,"ms":54},{"inits":1600,"expected":1600,"ms":48},{"inits":1600,"expected":1600,"ms":52},{"inits":1600,"expected":1600,"ms":54},{"inits":1600,"expected":1600,"ms":57},{"inits":1600,"expected":1600,"ms":53},{"inits":1600,"expected":1600,"ms":51}]},"inside":"Compiled from \"VolatileDcl.java\"\npublic class lab.lazysingle.VolatileDcl {\n  static final int WAVES;\n\n  static final int SLOTS;\n\n  static final int READS;\n\n  static final java.util.concurrent.atomic.AtomicInteger inits;\n\n  static volatile long sink;\n\n  private volatile lab.lazysingle.VolatileDcl$Heavy instance;\n\n  public lab.lazysingle.VolatileDcl();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  private static lab.lazysingle.VolatileDcl$Heavy createHeavy();\n    Code:\n         0: getstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n         3: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n         6: pop\n         7: ldc2_w        #19                 // long 17l\n        10: lstore_0\n        11: iconst_0\n        12: istore_2\n        13: iload_2\n        14: sipush        12000\n        17: if_icmpge     35\n        20: lload_0\n        21: ldc2_w        #21                 // long 31l\n        24: lmul\n        25: iload_2\n        26: i2l\n        27: ladd\n        28: lstore_0\n        29: iinc          2, 1\n        32: goto          13\n        35: new           #23                 // class lab/lazysingle/VolatileDcl$Heavy\n        38: dup\n        39: lload_0\n        40: ldc2_w        #25                 // long 65535l\n        43: land\n        44: l2i\n        45: invokespecial #27                 // Method lab/lazysingle/VolatileDcl$Heavy.\"\u003cinit>\":(I)V\n        48: areturn\n\n  lab.lazysingle.VolatileDcl$Heavy get();\n    Code:\n         0: aload_0\n         1: getfield      #30                 // Field instance:Llab/lazysingle/VolatileDcl$Heavy;\n         4: astore_1\n         5: aload_1\n         6: ifnonnull     42\n         9: aload_0\n        10: dup\n        11: astore_2\n        12: monitorenter\n        13: aload_0\n        14: getfield      #30                 // Field instance:Llab/lazysingle/VolatileDcl$Heavy;\n        17: ifnonnull     27\n        20: aload_0\n        21: invokestatic  #34                 // Method createHeavy:()Llab/lazysingle/VolatileDcl$Heavy;\n        24: putfield      #30                 // Field instance:Llab/lazysingle/VolatileDcl$Heavy;\n        27: aload_0\n        28: getfield      #30                 // Field instance:Llab/lazysingle/VolatileDcl$Heavy;\n        31: astore_1\n        32: aload_2\n        33: monitorexit\n        34: goto          42\n        37: astore_3\n        38: aload_2\n        39: monitorexit\n        40: aload_3\n        41: athrow\n        42: aload_1\n        43: areturn\n      Exception table:\n         from    to  target type\n            13    34    37   any\n            37    40    37   any\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #38                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: bipush        16\n         9: anewarray     #8                  // class lab/lazysingle/VolatileDcl\n        12: astore_2\n        13: new           #44                 // class java/util/concurrent/CyclicBarrier\n        16: dup\n        17: iload_1\n        18: aload_2\n        19: invokedynamic #46,  0             // InvokeDynamic #0:run:([Llab/lazysingle/VolatileDcl;)Ljava/lang/Runnable;\n        24: invokespecial #50                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(ILjava/lang/Runnable;)V\n        27: astore_3\n        28: iload_1\n        29: anewarray     #53                 // class java/lang/Thread\n        32: astore        4\n        34: invokestatic  #55                 // Method java/lang/System.nanoTime:()J\n        37: lstore        5\n        39: iconst_0\n        40: istore        7\n        42: iload         7\n        44: iload_1\n        45: if_icmpge     81\n        48: aload         4\n        50: iload         7\n        52: new           #53                 // class java/lang/Thread\n        55: dup\n        56: aload_3\n        57: aload_2\n        58: invokedynamic #61,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;[Llab/lazysingle/VolatileDcl;)Ljava/lang/Runnable;\n        63: invokespecial #64                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        66: aastore\n        67: aload         4\n        69: iload         7\n        71: aaload\n        72: invokevirtual #67                 // Method java/lang/Thread.start:()V\n        75: iinc          7, 1\n        78: goto          42\n        81: aload         4\n        83: astore        7\n        85: aload         7\n        87: arraylength\n        88: istore        8\n        90: iconst_0\n        91: istore        9\n        93: iload         9\n        95: iload         8\n        97: if_icmpge     118\n       100: aload         7\n       102: iload         9\n       104: aaload\n       105: astore        10\n       107: aload         10\n       109: invokevirtual #70                 // Method java/lang/Thread.join:()V\n       112: iinc          9, 1\n       115: goto          93\n       118: invokestatic  #55                 // Method java/lang/System.nanoTime:()J\n       121: lload         5\n       123: lsub\n       124: ldc2_w        #73                 // long 1000000l\n       127: ldiv\n       128: lstore        7\n       130: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: getstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n       136: invokevirtual #79                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       139: invokedynamic #82,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       144: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       147: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       150: ldc           #92                 // String expected=1600\n       152: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       155: getstatic     #75                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       158: lload         7\n       160: invokedynamic #94,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       165: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       168: return\n\n  private static void lambda$main$1(java.util.concurrent.CyclicBarrier, lab.lazysingle.VolatileDcl[]);\n    Code:\n         0: lconst_0\n         1: lstore_2\n         2: iconst_0\n         3: istore        4\n         5: iload         4\n         7: bipush        100\n         9: if_icmpge     70\n        12: aload_0\n        13: invokevirtual #97                 // Method java/util/concurrent/CyclicBarrier.await:()I\n        16: pop\n        17: iconst_0\n        18: istore        5\n        20: iload         5\n        22: sipush        600\n        25: if_icmpge     64\n        28: iconst_0\n        29: istore        6\n        31: iload         6\n        33: bipush        16\n        35: if_icmpge     58\n        38: lload_2\n        39: aload_1\n        40: iload         6\n        42: aaload\n        43: invokevirtual #100                // Method get:()Llab/lazysingle/VolatileDcl$Heavy;\n        46: getfield      #102                // Field lab/lazysingle/VolatileDcl$Heavy.val:I\n        49: i2l\n        50: ladd\n        51: lstore_2\n        52: iinc          6, 1\n        55: goto          31\n        58: iinc          5, 1\n        61: goto          20\n        64: iinc          4, 1\n        67: goto          5\n        70: lload_2\n        71: putstatic     #106                // Field sink:J\n        74: goto          87\n        77: astore_2\n        78: new           #112                // class java/lang/RuntimeException\n        81: dup\n        82: aload_2\n        83: invokespecial #114                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        86: athrow\n        87: return\n      Exception table:\n         from    to  target type\n             0    74    77   Class java/lang/Exception\n\n  private static void lambda$main$0(lab.lazysingle.VolatileDcl[]);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: bipush        16\n         5: if_icmpge     24\n         8: aload_0\n         9: iload_1\n        10: new           #8                  // class lab/lazysingle/VolatileDcl\n        13: dup\n        14: invokespecial #117                // Method \"\u003cinit>\":()V\n        17: aastore\n        18: iinc          1, 1\n        21: goto          2\n        24: return\n\n  static {};\n    Code:\n         0: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n         3: dup\n         4: invokespecial #118                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n         7: putstatic     #7                  // Field inits:Ljava/util/concurrent/atomic/AtomicInteger;\n        10: return\n}"}},"env":{"runtime":"JDK 25.0.4","cores":32,"os":"win32 10.0.26200","date":"2026-11-15"}}}},"slides":[{"beat":"open","title":"外面判空里面又加锁，怎么还建出两份实例？","blocks":[{"t":"text","md":"写懒加载单例时，很多人觉得「外面先判空挡掉多数请求，里面再套一层 `synchronized` 总安全了吧？」可真把多波冷启动并发跑起来，**昂贵对象依然会被重复造出好几份**；干脆给整个 `get()` 加锁又会把高频纯读一路拖慢。","say":"大家背过「懒加载要加锁」，可一上手漏了锁内那半句判空，照样撞出双份创建。这节课就拆穿这个误区，再看清怎么做到又准又快。"}]},{"beat":"open","title":"热身：先把前面对并发的三块基石拿稳","bridge":"揭开「加了锁却仍然建两次」和「只读被锁拖慢」的谜底前，先借前 28 课学过的三条硬规律热个身。","blocks":[{"t":"recall","say":"三题分别来自第 1、17、25 节。各选一项，把有序性、堆上共享和锁外判空缝隙抓回手里。","items":[{"have":"第 1 节：volatile","q":"`volatile` 修饰字段时，它真正能护住哪两件事？","options":["立即可见与禁止重排序","把复合读改写变成原子","替代互斥锁拦住多线程"],"answer":0,"why":"第 1 节实测过：`volatile` 保证写入立即可见并卡住重排序，但不把读和写捆成互斥锁。"},{"have":"第 17 节：堆共享状态","q":"多个线程调用同一个槽位对象的 `get()`，字段存在哪里？","options":["共用同一个堆上对象字段","每个线程栈里私有一份","只在当前波次结束后生成"],"answer":0,"why":"第 17 节见过：对象实例及它的字段都放在共享堆里，不同线程看到的是同一处引用。"},{"have":"第 25 节：门外判空","q":"无保护先判空再去执行耗时创建，为何总多干活？","options":["多条线程同时看见空就冲进去","判空语句每次消耗双倍内存","线程启动后会跳过首次判断"],"answer":0,"why":"第 25 节看穿了这条缝隙：判断为真到写回结果之间若没护严，大家就会各自算一遍。"}]}]},{"beat":"open","title":"先想象一个场景","bridge":"热身完毕。现在走进刚重置好的对象槽位门前：里面还没放进重对象，几条业务线程同一毫秒扑过来拿它。","blocks":[{"t":"scene","picture":{"kind":"share","actors":["线程 A","线程 B"],"shared":{"name":"共享槽位","value":"空槽"}},"story":"服务按需初始化一个代价很高的配置或连接引擎。平时成千上万次请求只管拿来用，只有刚上线、还没初始化的那一瞬间大家都要触发首次创建。线程 A 和 B 同一毫秒喊着去取这同一个槽位，低头一看里面还都是空的。","say":"左边对照表列出代码要素，右边图画出了现场：两路请求一齐盯上同一个还没装好对象的空槽位。","map":[{"scene":"同时发来请求的线程","on":"actors","tag":"并发请求","code":"多条 `Thread`","say":"每波开跑时多个线程齐发，抢同一个未初始化槽位并做海量只读。"},{"scene":"保存懒加载结果的槽位","on":"shared","tag":"堆共享引用","code":"槽位 `instance`","say":"每个槽位只配一个引用字段，初始为 `null`，理论上全波次只该造出 1 个对象。"},{"scene":"判空后去建重对象","on":"action","tag":"懒初始化","code":"判空建 `Heavy`","say":"一旦拿到空值就调用构造逻辑，造好写回槽位，之后海量读取直接复用。"},{"scene":"昂贵的构造与计数","code":"`createHeavy`","say":"每次真正触发构造都会让总创建次数加一，并跑一万两千次算术模拟创建代价。"}]}]},{"beat":"hook","title":"100 波 1600 个槽，多建多少、读多慢？","bridge":"实验一共跑 100 波、每波重置 16 个全新的懒加载槽位，再紧接着并发读取 600 轮。总创建次数基准线清清楚楚。","blocks":[{"t":"text","md":"100 波乘 16 个槽位，每个槽位只应初始化 1 次，所以总创建次数 `inits` 的基准线稳稳是 **1600**。紧接着每个线程还会反复读满 `READS = 600` 轮——既考验首次初始化准不准，也检验后续海量只读快不快。","say":"应建次数明明白白是 1600，同时还有海量的读操作在后面等着测耗时。先把最直观的裸判空懒建代码拉出来认个门。"}]},{"beat":"code","title":"看清裸判空懒建怎么按需造对象","bridge":"基准代码总共六十多行。顺着三步核对清楚：构造计数怎么记、入口方法怎么判空、波次栅栏怎么同步开抢。","blocks":[{"t":"code","of":"lazysingle.PlainLazy","say":"页面里带虚线的术语随时能点开看解释。点三步把代码结构过一遍。","walk":[{"focus":["private static Heavy createHeavy() {","inits.incrementAndGet();"],"key":"每次建重对象都给原子计数加 1，并用循环模拟创建代价","say":"第一处是创建方法：一旦真去造对象，就用原子计数记下一笔，然后执行一万两千次循环模拟重对象初始化耗时。","focusLines":[20,21]},{"focus":["if (instance == null) {","instance = createHeavy();"],"key":"最常见的直觉写法：先判空，为空才建，建完返回","say":"第二处就是入口 `get()` 方法：先看字段是不是空，为空就新建并赋值，最后返回给调用方。","focusLines":[28,29]},{"focus":["CyclicBarrier barrier = new CyclicBarrier(threads, () -> {","for (int r = 0; r \u003c READS; r++) {"],"key":"每波建新槽位后多线程齐抢首次读取，再跑 600 轮高频纯读","say":"第三处是压测主干：栅栏每次把 16 个槽位全部换新，然后各线程同步起跑抢着首次读取并连读 600 轮。","focusLines":[37,48]}],"source":"package lab.lazysingle;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\n\npublic class PlainLazy {\n    static final int WAVES = 100;\n    static final int SLOTS = 16;\n    static final int READS = 600;\n    static final AtomicInteger inits = new AtomicInteger();\n    static volatile long sink;\n\n    static final class Heavy {\n        final int val;\n        Heavy(int val) { this.val = val; }\n    }\n\n    private Heavy instance;\n\n    private static Heavy createHeavy() {\n        inits.incrementAndGet();\n        long x = 17;\n        for (int i = 0; i \u003c 12_000; i++) x = x * 31 + i;\n        return new Heavy((int) (x & 0xffff));\n    }\n\n    Heavy get() {\n        if (instance == null) {\n            instance = createHeavy();\n        }\n        return instance;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        PlainLazy[] slots = new PlainLazy[SLOTS];\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> {\n            for (int i = 0; i \u003c SLOTS; i++) slots[i] = new PlainLazy();\n        });\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    long sum = 0;\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        for (int r = 0; r \u003c READS; r++) {\n                            for (int i = 0; i \u003c SLOTS; i++) {\n                                sum += slots[i].get().val;\n                            }\n                        }\n                    }\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"inits=\" + inits.get());\n        System.out.println(\"expected=\" + (WAVES * SLOTS));\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/lazysingle/PlainLazy.java","lang":"java","focusLines":[]}]},{"beat":"predict","title":"先押一注：裸判空并发抢槽会建出多少次？","bridge":"代码全看过了：100 波 1600 个槽位，4 条线程同时抢着首次调用 `get()`，总创建次数会落在哪？","blocks":[{"t":"predict","id":"plain","q":"4 个线程在 100 波里同时抢着调用裸判空 `get()`，实际创建多少个对象？","options":["稳稳守住 1600 次，每槽只建 1 个","远超 1600 次，多线程撞进空槽重复建","比 1600 次少，部分槽位会来不及建","只第 1 波多建，后面 99 波就稳了"],"answer":1,"say":"凭直觉先下个判断。想想四条线程一起冲过第一行空判断时，各自看到的字段状态是什么。"}]},{"beat":"run","title":"一轮一轮放出来看：裸判空多建了多少次","bridge":"押完直接看你这台电脑上的真跑结果。逐轮放点，盯紧实测点数离 1600 那条虚线飞出多远。","blocks":[{"t":"experiment","lab":"lazysingle","show":["PlainLazy"],"knob":false,"hand":true,"focus":["if (instance == null) {","instance = createHeavy();"],"say":"点「看第 1 次运行」再连放几轮，留意 `inits` 落在基准线什么位置，以及每轮是不是都在上下浮动。","focusLines":[28,29]},{"t":"reveal","of":"plain","key":"4 线程下 20 轮回回严重超标，远高于 1600 基准线","say":"20 轮没有一轮压在线上！因为多个线程同时在槽位刚变热前穿过判空，每一个槽位都被重复造了好几个重对象。"}]},{"beat":"run","title":"把线程数拨到 1：计算代码自身错了吗？","bridge":"验证实验本身很简单：把并发读线程滑块往左拨到 1，看单线程慢慢跑时总数准不准。","blocks":[{"t":"experiment","lab":"lazysingle","show":["PlainLazy"],"say":"拨动上方旋钮在 1、2、4、8 线程之间来回切一遍，对比点数有没有贴到基准虚线上。","focusLines":[]},{"t":"try","key":"1 线程 20 轮全对；从 2 线程起每轮必超标","say":"1 线程下 20 轮严严实实全压在 1600 上，一个都没多建！只要拨上 2、4、8 线程，所有 20 轮点立刻全部飞离基准线。"}]},{"beat":"run","title":"回到源码点出祸首","bridge":"单线程稳稳 1600、并发立马上天。点出左边源码里联手把多线程同时放进构造大门的那两行。","blocks":[{"t":"spot","of":"lazysingle.PlainLazy","q":"点出发现字段为空后、毫无阻拦各自去新建重对象的那两行代码。","answer":["if (instance == null) {","instance = createHeavy();"],"hint":"提示：看 `get()` 方法体里前两行——先做空值判断的那句，和紧接着直接创建赋值的那句。","found":"抓准了！正是 `if (instance == null)` 放大家一齐跨过门，接着各自执行 `createHeavy()`。","say":"对照左边源码直接点出这两行；右边问题与提示随时能帮你校准。","source":"package lab.lazysingle;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\n\npublic class PlainLazy {\n    static final int WAVES = 100;\n    static final int SLOTS = 16;\n    static final int READS = 600;\n    static final AtomicInteger inits = new AtomicInteger();\n    static volatile long sink;\n\n    static final class Heavy {\n        final int val;\n        Heavy(int val) { this.val = val; }\n    }\n\n    private Heavy instance;\n\n    private static Heavy createHeavy() {\n        inits.incrementAndGet();\n        long x = 17;\n        for (int i = 0; i \u003c 12_000; i++) x = x * 31 + i;\n        return new Heavy((int) (x & 0xffff));\n    }\n\n    Heavy get() {\n        if (instance == null) {\n            instance = createHeavy();\n        }\n        return instance;\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        PlainLazy[] slots = new PlainLazy[SLOTS];\n        CyclicBarrier barrier = new CyclicBarrier(threads, () -> {\n            for (int i = 0; i \u003c SLOTS; i++) slots[i] = new PlainLazy();\n        });\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    long sum = 0;\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        for (int r = 0; r \u003c READS; r++) {\n                            for (int i = 0; i \u003c SLOTS; i++) {\n                                sum += slots[i].get().val;\n                            }\n                        }\n                    }\n                    sink = sum;\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"inits=\" + inits.get());\n        System.out.println(\"expected=\" + (WAVES * SLOTS));\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/lazysingle/PlainLazy.java","lang":"java","answerLines":[28,29]}]},{"beat":"why","title":"两条泳道看清：两个线程怎么一起闯进空槽","bridge":"把镜头的节奏放慢到纳米秒级，沿着左右泳道走一遍裸判空懒建到底是怎么造出两份重对象的。","blocks":[{"t":"lanes","expr":"if (slot == null) new()","parts":{"read":"读取判空","calc":"创建对象","write":"写回字段"},"lanes":["线程 A","线程 B"],"shared":{"name":"共享槽","start":"空"},"say":"点开每一步往下看：A 还没把新对象放回字段时，B 也跑完了同一行判空。","steps":[{"lane":0,"op":"read","text":"A读到空位","say":"线程 A 一进门读到 `instance` 还是空值，顺利通过判断准备构造。"},{"lane":1,"op":"read","text":"B也读到空位","say":"A 刚起步还没构造完，B 同刻读取槽位也拿到空值！","ask":{"q":"现在 A 和 B 都过了判空那一关，接下来会建出几个对象？","options":["各建各的，一共造 2 个","B 会自动停下来等 A 写完"],"answer":0}},{"lane":0,"op":"calc","text":"A耗时造对象","say":"A 调 `createHeavy()` 开始跑一万两千次初始化循环，计数加到 1。"},{"lane":1,"op":"calc","text":"B同时也在造","say":"B 毫无察觉，也在同一时间调了 `createHeavy()`，计数直接涨到 2！"},{"lane":0,"op":"write","value":"造1次","text":"A把对象写入","say":"A 造好后把第 1 个对象挂进槽位。"},{"lane":1,"op":"write","value":"造2次","text":"B写回又覆盖","say":"B 接着把第 2 个对象覆写上去——不仅白建一遍，还把 A 返回出去的老引用弄成孤岛。"}],"verdict":"两线程同时看见空位，==无锁放行各自新建并覆写==。","verdictSay":"最底层的病根很直接：判空和新建之间没有任何互斥保护，看到空的人全都能进门构造。","verdictKey":"锁外判空到写入间没任何保护，并发必然各自造一遍"}]},{"beat":"fix","title":"经典误区：外面判空 + 锁里直接新建？","bridge":"不少同学马上想到优化读写吞吐：外面先判一次空挡掉热读，发现空了再进 `synchronized` 锁块去建——这样总能只建一次了吧？","blocks":[{"t":"predict","id":"singlecheck","q":"只在外面判空，进了 `synchronized (this)` 后直接建不重判，4 线程跑会怎样？","options":["锁挡住了并发，20 轮全部守住 1600 次","虽然排队进锁了，但照样 20 轮回回多建","只比 1600 多出几个，偶尔才会撞上 1 回","线程会被永久死锁卡死，跑不出结果"],"answer":1,"say":"这一版改法在面试手写题里极常见。先猜猜看，光进门加锁却漏掉锁内重判，跑出来究竟啥样。"}]},{"beat":"fix","title":"实测打脸：加了锁，并发下照样 20 轮全错！","bridge":"不猜谜了，把这套「单检加锁」请进实验台，跟裸判空版本并排一跑见高下。","blocks":[{"t":"experiment","lab":"lazysingle","show":["PlainLazy","SingleCheckLock"],"select":"SingleCheckLock","say":"点选「单检加锁」，左边高亮了它确实在新建外包了一层同步块；再盯住右边实测圆点和错误率。","focusLines":[]},{"t":"reveal","of":"singlecheck","key":"2 到 8 线程依然 20/20 全错，只是从同时建变成排队重造","say":"别说只多几个了——2 到 8 线程下竟然一样 20 轮全部错掉！只是单检加锁里建出次数比裸判空稍微收敛一截，依然远高于 1600 基准。"},{"t":"try","say":"把并发读线程在 1、2、4、8 间切一遍：只有 1 线程是准的；从 2 线程起，锁一加上照样轮轮全错！"}]},{"beat":"fix","title":"泳道慢放：穿过外层空门后，在锁门前排成队重造","bridge":"加了锁明明把大家拦成串行排队了，怎么还会造两次？把镜头拉到同步锁大门前那一瞬看清楚。","blocks":[{"t":"lanes","expr":"if (s == null) sync + new","parts":{"read":"外层判空","calc":"锁内重建","write":"写入槽位"},"lanes":["线程 A","线程 B"],"shared":{"name":"共享槽","start":"空"},"say":"盯紧线程 B 停在了哪一步门前！点步骤走一遍两人怎么前后脚进锁各建一次。","steps":[{"lane":0,"op":"read","text":"A外层判空过","say":"A 在门外检查 `instance == null` 为真，跨过判断门槛准备拿锁。"},{"lane":1,"op":"read","text":"B也外层通过","say":"就在这电光火石间，A 还没进锁建完，B 也跨过了外层空判断！"},{"lane":0,"op":"note","tone":"ok","text":"A进锁B站门外","say":"A 抢先拿下对象锁进了门；注意看 B 此时已经过了外层 `if`，正直接堵在锁门口等锁！","ask":{"q":"等 A 建好对象放出锁之后，站在门外的 B 一进锁门就会做什么？","options":["不再判空，直接又新建第 2 个","会自动重新跳回锁外再判一次空"],"answer":0}},{"lane":0,"op":"calc","text":"A造第1个对象","say":"A 在锁里老老实实调用 `createHeavy()` 造出第 1 个对象，计数加 1。"},{"lane":0,"op":"write","value":"造1次","text":"A写入并放锁","say":"A 把对象写入 `instance` 并释放锁。按理说槽位已经热了！"},{"lane":1,"op":"calc","text":"B进锁又新建","say":"可 B 在锁门内接过执行权后，第一行就是 `createHeavy()`，根本不知道里面早已经有值了！"},{"lane":1,"op":"write","value":"造2次","text":"B写回覆第2个","say":"结果 B 硬是排队又新建并覆写了第 2 个重对象——加锁只把并发冲突拆成了串行重造！"}],"verdict":"双双跨过外层判空后，==在锁前排好队依次各新建一次==。","verdictSay":"这就是单检加锁最骗人的地方：外层判空只防住了对象早已建好之后的新请求；同批冷启动撞在门口的线程，进锁后不重判就会排队再造一轮。","verdictKey":"两线程先过了外层判空再等锁，进锁不重判必定再造"}]},{"beat":"fix","title":"拆开字节码对比：为什么进锁还是直接造？","bridge":"拿 `javap` 反编译看看字节码就一清二楚：进入监视器大门之后，到底有没有第二道检查屏障。","blocks":[{"t":"text","md":"外层虽有 `getfield` 与 `ifnonnull`，但 `10: monitorenter` 一进来直奔 `invokestatic` 和 `putfield`，**锁内全无二次判空**。","say":"跟住真实字节码三步走，亲眼确认 `monitorenter` 与 `monitorexit` 之间到底少了什么。"},{"t":"inside","of":"lazysingle.SingleCheckLock","within":"Heavy get()","from":"0: aload_0","to":"32: areturn","say":"点开下面三个焦点标记，对照看清锁外和锁内分别只有哪些指令。","walk":[{"focus":["1: getfield","4: ifnonnull"],"label":"锁外首次判空","key":"外层只看了一眼字段是不是空，为空就往锁门口冲","say":"第 1 到 4 行用 `getfield` 读出字段，再用 `ifnonnull` 跳向末尾返回；只要拿到 `null` 就往下继续找锁。","focusLines":[2,3]},{"focus":["10: monitorenter","12: invokestatic","15: putfield"],"label":"进锁直接新建","key":"进锁无 getfield 与 ifnonnull，直接新建写回","say":"盯死第 10 行 `monitorenter` 进门后：第 12 行立刻 `invokestatic` 调构造，第 15 行 `putfield` 直接写回——中间连再看一眼字段都不做！","focusLines":[7,9,10]},{"focus":["19: monitorexit","29: getfield"],"label":"放锁后再读字段","say":"最后 `monitorexit` 放锁并再 `getfield` 返回引用。正因锁内少了一次读判空，排队进门的后来者必再建一次。","focusLines":[12,20]}],"source":" 0: aload_0\n 1: getfield      #30                 // Field instance:Llab/lazysingle/SingleCheckLock$Heavy;\n 4: ifnonnull     28\n 7: aload_0\n 8: dup\n 9: astore_1\n10: monitorenter\n11: aload_0\n12: invokestatic  #34                 // Method createHeavy:()Llab/lazysingle/SingleCheckLock$Heavy;\n15: putfield      #30                 // Field instance:Llab/lazysingle/SingleCheckLock$Heavy;\n18: aload_1\n19: monitorexit\n20: goto          28\n23: astore_2\n24: aload_1\n25: monitorexit\n26: aload_2\n27: athrow\n28: aload_0\n29: getfield      #30                 // Field instance:Llab/lazysingle/SingleCheckLock$Heavy;\n32: areturn","command":"javap -c -p -cp out lab.lazysingle.SingleCheckLock"}]},{"beat":"fix","title":"全方法同步 vs 双重检查锁：快慢差在哪？","bridge":"既然单检漏了锁内二次检查，那干脆直接给整个 `get()` 挂上 `synchronized` 锁怎么样？把四种写法全部摆上实验台实跑对决。","blocks":[{"t":"experiment","lab":"lazysingle","show":["PlainLazy","SingleCheckLock","SyncGetter","VolatileDcl"],"select":"VolatileDcl","say":"四版齐聚一堂！切点「全方法同步」和「双重检查锁」比代码，再把滑块拨上 4 和 8 线程看看右边的数字。","focusLines":[]},{"t":"try","key":"全方法同步与双重检查锁都是 0/20 错，高并发只读明显拉开差距","say":"先看创建次数：后两种写法在 1、2、4、8 全档下都稳稳 0/20 错！再盯紧 4 和 8 线程的耗时：明明每槽只新建 1 次、后面全是纯读，全方法同步却慢了一大截。"}]},{"beat":"fix","title":"四条耗时折线：全方法加锁为什么在 4、8 线程掉队？","bridge":"把 1 到 8 线程的 20 轮中位数耗时画成折线：实心圆点代表 0/20 错（绝对准确），空心圆点代表发生重复创建。","blocks":[{"t":"chart","of":"lazysingle","say":"纵轴越低跑得越快，横轴代表并发读线程从 1 拉到 8。逐个点击下面四条线把走势看穿。","walk":[{"focus":"PlainLazy","say":"「裸判空懒建」只有 1 线程亮实心；2 线程往上全变空心点，线程越多重复新建一万次循环的白功越多。"},{"focus":"SingleCheckLock","key":"单检加锁只在 1 线程准确，2 到 8 线程照样全亮空心点","say":"「单检加锁」也是只有 1 线程守住实心，2、4、8 线程全亮空心，说明加锁姿势不完整根本防不住重复建。"},{"focus":"SyncGetter","key":"全方法同步虽全档实心零错，但 4/8 线程读多写少时陡峭飙升","say":"「全方法同步」1 到 8 线程全实心零错！可看它的曲线从 2 线程起越爬越陡：明明槽位早已建好，后面每波成千上万次纯读取还要挤去抢锁。"},{"focus":"VolatileDcl","key":"双重检查锁全档零错，且 4/8 线程无锁快路径稳稳压低在下方","say":"「双重检查锁」既保住了全档实心 1600 零超标，4 和 8 线程下还把耗时稳稳压在低位——因为槽位建好后所有后续只读全走无锁快路径！"}]}]},{"beat":"fix","title":"字节码拆解双重检查锁：外层无锁秒读，锁内二次拦截","bridge":"同样用字节码透视「双重检查锁」：看清它怎么在锁外用一次读取放行热读，又在进锁之后补上第二道防线。","blocks":[{"t":"text","md":"外层先用 `Heavy h = instance;` 只读一次再判空直接返；撞空才进 `monitorenter`，在锁内再查 `getfield` 配 `ifnonnull`，**堵死重造**。","say":"跟着字节码三段焦点走一遍，把无锁快路径和锁内二次防线对上号。"},{"t":"inside","of":"lazysingle.VolatileDcl","within":"Heavy get()","from":"0: aload_0","to":"43: areturn","say":"点开下面三个节点：留意第 1 次读字段进局部变量、锁内第 2 次读字段判空，以及它们是怎么接起来的。","walk":[{"focus":["1: getfield","4: astore_1","6: ifnonnull"],"label":"外层无锁快读","key":"对象已建好后只读 1 次 volatile，直接跳到末尾无锁返回","say":"第 1 到 6 行用 `getfield` 读进局部变量 `h`，再靠 `ifnonnull` 直接飞去第 42 行 `areturn`——后续成千上万次读取压根不碰监视器锁，也不连读两次字段。","focusLines":[2,3,5]},{"focus":["12: monitorenter","14: getfield","17: ifnonnull"],"label":"锁内二次判空","key":"第 2 条线程等锁放行后进来，立刻重查一次字段拦截重造","say":"即使 A 和 B 一起过了外层判空，A 放锁后 B 一过 `monitorenter`，第 14 行重新 `getfield`、第 17 行 `ifnonnull` 发现对象已在场，直接跳过新建！","focusLines":[9,11,12]},{"focus":["21: invokestatic","24: putfield","33: monitorexit"],"label":"仅首建者写回","say":"只有抢在第一位的线程会在锁内调用 `invokestatic` 创建对象并用 `putfield` 写回，之后放锁收工。","focusLines":[14,15,20]}],"source":" 0: aload_0\n 1: getfield      #30                 // Field instance:Llab/lazysingle/VolatileDcl$Heavy;\n 4: astore_1\n 5: aload_1\n 6: ifnonnull     42\n 9: aload_0\n10: dup\n11: astore_2\n12: monitorenter\n13: aload_0\n14: getfield      #30                 // Field instance:Llab/lazysingle/VolatileDcl$Heavy;\n17: ifnonnull     27\n20: aload_0\n21: invokestatic  #34                 // Method createHeavy:()Llab/lazysingle/VolatileDcl$Heavy;\n24: putfield      #30                 // Field instance:Llab/lazysingle/VolatileDcl$Heavy;\n27: aload_0\n28: getfield      #30                 // Field instance:Llab/lazysingle/VolatileDcl$Heavy;\n31: astore_1\n32: aload_2\n33: monitorexit\n34: goto          42\n37: astore_3\n38: aload_2\n39: monitorexit\n40: aload_3\n41: athrow\n42: aload_1\n43: areturn","command":"javap -c -p -cp out lab.lazysingle.VolatileDcl"}]},{"beat":"fix","title":"为什么还必须加 volatile？防半初始化重排序","bridge":"锁内重判解决了「建两次」，可字段上的 `volatile` 依然绝不能省，否则高频无锁读取照样踩坑。","blocks":[{"t":"text","md":"构造 `new Heavy()` 底层分三步：分内存、填字段、写引用。不加 `volatile` 时，**写引用可能重排到填字段前**，让外层无锁快读拿到未填完的 `val` 半成品；加屏障可保证建完才公开。","say":"面试几乎必追问「双重检查锁去掉 volatile 行不行」，直接把对象构造三步与指令重排序暴露半成品讲透。"}]},{"beat":"fix","title":"全局真单例：静态内部类 Holder 天然零锁","bridge":"既然双检锁要写这么细，如果需求只是全类唯一的无参全局单例，Java 还有一套天然零锁写法。","blocks":[{"t":"text","md":"写静态内部类 `Holder` 持有 `static final` 实例：首次访问 `Holder.INSTANCE` 时由 **JVM 类初始化锁**保证只建一次，之后读取既不加锁也不用内存屏障。","say":"记住分工：无参全局单例直接写静态内部类；需要挂在多个实例槽位按需懒建时，再用双重检查锁。"}]},{"beat":"choose","title":"三种写法并排比价：按锁代价与粒度挑一把","bridge":"准确率、字节码原理与默认 4 线程真实耗时全拿在手里了。现在把三套并发懒加载思路放上选型台。","blocks":[{"t":"choose","say":"选型的尺子很干脆：能不能容忍重造、后续纯读频不频繁，以及槽位是不是全类唯一。","options":[{"name":"单检加锁（错误示范）","solves":"只拦住了建好之后的请求，冷启动瞬间照样重复建","cost":"4 线程约 34 ms 且 20/20 错","when":"任何要求单次初始化的懒加载都不该选这个误区写法","say":"别以为在外面判空、里面加了同步块就安全了；只要锁里忘了再判空，冷并发一来依然稳稳撞出多份对象。"},{"name":"全方法 synchronized","solves":"规则极简零暗坑，绝对保证每个槽位只建一次","cost":"4 线程零重复且约 81 ms（读多显著变慢）","when":"极低频调用、几乎没有高并发纯读的冷门初始化工具","say":"如果这个方法总共也就上线后调个几十回、完全不在乎读吞吐，全方法同步直白好懂；一到高频热读场景就会成为全链路瓶颈。"},{"name":"volatile 双重检查锁","solves":"首次互斥只建 1 次，后续海量只读无锁直拿且防半初始化","cost":"4 线程零重复且约 35 ms（高频读压低耗时）","when":"带参或实例级懒加载槽位、初始化贵且后续读远多于写；若是全局静态单例更推荐用 Holder","say":"既有「首次互斥」的准度，又保留「后续零锁」的读速度；但写的时候必须锁外一读局部变量、锁内二判、字段加写屏障。"}],"rule":"全局静态单例用 Holder，实例级高频热读用 volatile 双检锁。","ruleSay":"以后手写懒加载先问自己两点：是全局唯一还是按槽位带参实例？如果是高频读的多例懒槽位，直接按三件套写双检锁。","ruleKey":"全局单例优先 Holder，实例懒槽位用 volatile 双检锁"}]},{"beat":"choose","title":"三个真实场景，挑出最省心又稳妥的方案","layout":"split","bridge":"账单齐了。看着右边的决策判断树，给左边三个实际工程需求分别对号入座。","blocks":[{"t":"decide","q":"全局性、并发读与改造成本？","branches":[{"when":"读少不争抢、图代码极短稳","pick":"全方法同步锁","eg":"低频诊断开关懒加载"},{"when":"多槽位实例字段、高频热读","pick":"volatile 双重检查","eg":"按配置动态建缓存槽"},{"when":"无参全局唯一单例、最优雅","pick":"静态内部类 Holder","eg":"全局配置管理器单实例"}],"say":"右边三问帮你拍板：高频并发只读选无锁快路径，全类唯一直接交给类加载器。点左边每题选出对应解法。"},{"t":"cases","tools":["全方法同步锁","volatile 双重检查","静态内部类 Holder"],"say":"逐个看清是类级全局还是实例字段、是低频冷读还是并发高频热读，再下手。","items":[{"text":"一个无外部参数、整个进程只此一份的全局算法引擎，首次用到时才初始化，平时全服务几万 QPS 只管读它。","answer":2,"why":"无参全局真单例优先交给静态内部类，JVM 类初始化天然保证单次互斥，代码更短还没有写错双检锁的风险。"},{"text":"每个租户对象内部持有一个独立的昂贵解析器实例字段，按需首次创建，创建后百万次请求只读不改。","answer":1,"why":"挂在实例字段上且要随实例动态懒加载时没法套静态内部类，上 volatile 双重检查锁就能首建互斥、热读零锁。"},{"text":"运维后台导出小工具里的本地证书解析器，一天也就十来次串行读取，只要求三行写对绝不错。","answer":0,"why":"几乎没有高频只读争抢，把整个读取方法挂同步锁简单直白、零易错细节，维护成本最低。"}]}]},{"beat":"name","title":"立个名字：双重检查锁（DCL）与 Holder","bridge":"把踩过的坑、跑出的数据和两条标准写法统统挂到面试高频词条下，一问就能顺着底层讲下去。","blocks":[{"t":"name","term":"双重检查锁 / DCL","alias":"Double-Checked Locking · 静态内部类 Holder","oneLine":"外层==无锁快读==拦热路径，锁内==二次判空==拦竞态，配写屏障防半成品。","asked":["单检加锁只在外层判空、进锁直接建为什么还建出两个？","双重检查锁为什么要加 volatile？局部变量 h 有啥用？","全方法同步锁慢在哪里？什么情况直接写 Holder 更好？"],"say":"以后被问懒汉单例怎么写才安全又快，就从「少一判的坑」起手，顺出双检字节码与防重排序，再补静态内部类，滴水不漏。"}]},{"beat":"check","title":"小测一：单检加锁到底漏在了哪一步？","bridge":"最后三道小题收口验收。第一题直击今天跑出 20/20 全错的常见误区。","blocks":[{"t":"quiz","q":"外层先 `if (instance == null)`，进 `synchronized` 块直接新建不重判，为啥还会建两次？","options":[{"text":"多条线程一起跨过外层判空并在锁门前排队，依次进门各造一次","ok":true,"why":"完全抓准！加锁只把并发冲门变成了串行排队，进门没再查一次依然各造一遍。"},{"text":"因为对象锁锁不住静态造对象方法，两个线程会同时进锁执行","ok":false,"why":"互斥锁本身确实挡住了同时进门，错在不该盲目相信跨进门时槽位还是空的。"},{"text":"因为 Java 编译器遇到无判空锁块时会自动把锁优化消掉","ok":false,"why":"锁并没有消掉，字节码里清清楚楚有 monitorenter，纯粹是锁内少了一次空检查。"}],"say":"回忆刚才两条泳道里线程 B 在锁门前等什么、进去后第一行又执行什么。"}]},{"beat":"check","title":"小测二：为什么双重检查必须配 volatile？","bridge":"第二题验收双检锁里最常被追问的底层内存序细节。","blocks":[{"t":"quiz","q":"如果双重检查锁里去掉字段的 `volatile`，多线程高并发下可能出什么险情？","options":[{"text":"外层快读可能拿到重排序提前发布的半初始化对象","ok":true,"why":"精准！new 的三步若被重排先写引用后填构造，外层线程看到非空直接跳过锁去读，就读到未填完的字段。"},{"text":"锁内的第二次判空会失效，导致每个槽位必定创建两次","ok":false,"why":"有监视器锁在，互斥和二次判空本身仍拦得住建两次；险情出在锁外直读时序。"},{"text":"整个方法编译时就会报错拒绝通过","ok":false,"why":"编译完全不报错，可线上高并发跑起来极其隐蔽地偶发字段空值错。"}],"say":"把第 1 节的内存序和对象构造三步连起来挑出真正会塌的点。"}]},{"beat":"check","title":"小测三：什么时候直接用静态内部类 Holder？","bridge":"最后一题区分这几套懒加载方案各自的边界，别把双检锁硬套进所有角落。","blocks":[{"t":"quiz","q":"关于静态内部类 `Holder` 与双重检查锁的取舍，哪一句说得最准？","options":[{"text":"无参全局类单例用 Holder 靠类初始化锁天然零锁；实例按槽懒建用双检锁","ok":true,"why":"透彻！JVM 加载静态内部类天然加锁只跑一次，代码极简；需要挂在非静态实例上时再用双检锁。"},{"text":"静态内部类每次 get 都要抢同一把全局类锁，因此一定比双检锁更慢","ok":false,"why":"大错！类初始化锁只在第一次触发加载时走一回，之后读取和普通静态变量一模一样快。"},{"text":"把所有实例字段改成静态字段，就能无视多实例全部改写成 Holder","ok":false,"why":"不同对象实例需要各自持有一份延迟初始化字段时，静态字段全混成一份就彻底错乱了。"}],"say":"分清静态类级单一份还是每个实例持有一份槽位，答案一眼就能挑出来。"}]},{"beat":"say","title":"合上代码，用自己的话讲给面试官听","bridge":"三题全过！现在假设面试官把笔递过来问「聊聊单检加锁、全方法加锁和双重检查锁，为什么要有 volatile，还有没有更干净的写法？」，试着一口气说清楚。","blocks":[{"t":"say","prompt":"为何外判空锁内直建会建两次？DCL 如何兼顾准与快、为何配 volatile，何时选 Holder？","points":["单检加锁只挡冷后请求，同批过外判空的线程进锁不重判会排队再造","全方法加 synchronized 虽然零重造，但后续海量纯读被迫串行抢锁拖慢","DCL 用局部变量先读一次非空无锁返回，进锁后再做二次判空拦截","volatile 插屏障防 new 三步重排序暴露半初始化对象；全局无参单例更推荐 Holder"],"model":"如果只在锁外判空、进 `synchronized` 后直接构造，高并发下同时越过外层空判断的线程会在锁门前排队，前人放锁写完后，后人进门不重判照样再造一遍。直接给整个 `get()` 加锁虽然能保准，可对象建好后成千上万次纯读取仍要去抢锁，并发读越多拖得越慢。改成双重检查锁后，先用局部缓存变量读一次 `volatile` 字段，非空直接无锁返回；极少数撞空的线程再进 `monitorenter`，在锁内二次判空后再构造写入。`volatile` 不可或缺，因为构造三步可能重排序把未初始化完成的引用提前露出给外层快读。若只需要无参全局单例，写静态内部类 `Holder` 靠 JVM 类初始化锁天然零锁更干净。","say":"不看下方参考答案，顺着四条脉络完整张口讲一遍，重点把「排队重造」和「半初始化重排序」点出来。"}]},{"beat":"take","title":"带走这三张核心卡","bridge":"从单检错觉、全方法抢锁拖慢，到双检字节码与静态内部类，懒加载并发防线已经彻底踩实。收好最后三张卡片。","blocks":[{"t":"cards","items":[{"q":"为什么锁外判空 + 进锁直接新建挡不住建两次？","a":"多条线程能同时通过外层判空并在锁外等锁；先到的建完放锁，后到的进门因缺少锁内二次判空，会排队再建一次。"},{"q":"双重检查锁中 volatile 和外层局部变量 h 各管什么？","a":"volatile 禁构造三步重排序防外层读到半成品；局部变量 h 让已建好后的纯读只访一次 volatile，直接无锁返回。"},{"q":"DCL、全方法同步和静态内部类 Holder 怎么挑？","a":"全局无参单例首选 Holder 靠 JVM 类加载锁天然零锁；实例按槽懒建且读远多于写用 DCL；极低频冷读可全方法同步。"}],"say":"到此，从基础内存序、对象共享到高并发懒加载三板斧全部打通。以后再写按需初始化，记住锁内务必重判、防半初始化、读多用无锁快路径。"}]}],"beats":[{"id":"open","label":"开场"},{"id":"hook","label":"问题"},{"id":"code","label":"代码"},{"id":"predict","label":"先猜"},{"id":"run","label":"跑一跑"},{"id":"why","label":"为什么"},{"id":"fix","label":"改一处"},{"id":"choose","label":"怎么选"},{"id":"name","label":"名字"},{"id":"check","label":"小测"},{"id":"say","label":"开口讲"},{"id":"take","label":"带走"}]}</script>
+<script>
+/* Shared pieces of the lesson page: element building, inline marks, Java colouring, the code view, a line diff, saved state.
+   Text always goes in as text nodes; nothing a lesson writes is parsed as HTML. */
+(function () {
+  "use strict";
+  const L = (window.Lesson = { blocks: {} });
+
+  /** h("div.a.b", { text, on: { click }, attr: {…} }, child, child…) */
+  L.h = function (spec, props, ...kids) {
+    const [tag, ...classes] = spec.split(".");
+    const el = document.createElement(tag || "div");
+    if (classes.length) el.className = classes.join(" ");
+    if (props) {
+      if (props.text !== undefined) el.textContent = props.text;
+      for (const [name, value] of Object.entries(props.attr || {})) el.setAttribute(name, value);
+      for (const [name, fn] of Object.entries(props.on || {})) el.addEventListener(name, fn);
+    }
+    for (const kid of kids.flat()) if (kid) el.append(kid);
+    return el;
+  };
+
+  L.num = (value) => Number(value).toLocaleString("en-US");
+
+  /** **bold**, `code` and ==mark== inside a sentence. */
+  L.md = function (text) {
+    const out = document.createDocumentFragment();
+    const pattern = /\*\*([^*]+)\*\*|`([^`]+)`|==([^=]+)==/g;
+    let last = 0;
+    for (let hit = pattern.exec(text); hit; hit = pattern.exec(text)) {
+      out.append(text.slice(last, hit.index));
+      out.append(hit[1] ? L.h("b", { text: hit[1] }) : hit[2] ? L.term(hit[2], L.h("code", { text: hit[2] })) : L.h("mark", { text: hit[3] }));
+      last = pattern.lastIndex;
+    }
+    out.append(text.slice(last));
+    return out;
+  };
+
+  const JAVA = new Set("abstract boolean break byte case catch char class continue default do double else enum extends final finally float for if implements import instanceof int interface long new null package private protected public record return short static super switch synchronized this throw throws try var void volatile while true false".split(" "));
+  const PYTHON = new Set("and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield True False None".split(" "));
+  const LANGS = { java: { words: JAVA, comment: "//" }, python: { words: PYTHON, comment: "#" }, text: { words: new Set(), comment: "\n" } };
+  const TOKEN = /(\/\/.*$|#.*$)|("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)')|\b(\d[\d_]*(?:\.\d+)?[LlFfDd]?)\b|\b([A-Za-z_]\w*)\b/g;
+
+  /** One line of code as coloured spans. */
+  L.colour = function (line, lang) {
+    const { words, comment } = LANGS[lang] || LANGS.text;
+    const out = document.createDocumentFragment();
+    let last = 0;
+    TOKEN.lastIndex = 0;
+    for (let hit = TOKEN.exec(line); hit; hit = TOKEN.exec(line)) {
+      const kind = hit[1] ? (hit[1].startsWith(comment) ? "c" : "") : hit[2] || hit[3] ? "s" : hit[4] ? "n" : words.has(hit[5]) ? "k" : "";
+      out.append(line.slice(last, hit.index));
+      out.append(kind ? L.h(`span.tk-${kind}`, { text: hit[0] }) : hit[0]);
+      last = TOKEN.lastIndex;
+    }
+    out.append(line.slice(last));
+    return out;
+  };
+
+  /* Reminders at the moment of need: a word the learner may not know is explained where it stands, on hover, focus or tap. */
+  L.glossary = {};
+  const tip = L.h("div.tip", { attr: { role: "tooltip", id: "lesson-tip", hidden: "" } });
+  let tipFor = null, tipTimer = 0;
+  function showTip(anchor, word) {
+    clearTimeout(tipTimer);
+    tipFor = anchor;
+    tip.replaceChildren(L.h("b.mono", { text: word }), L.h("span", null, L.md(L.glossary[word])));
+    tip.hidden = false;
+    if (!tip.isConnected) document.body.append(tip);
+    const box = anchor.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
+    tip.style.left = `${Math.max(8, Math.min(window.innerWidth - width - 8, box.left + box.width / 2 - width / 2))}px`;
+    tip.style.top = `${box.bottom + height + 14 > window.innerHeight ? box.top - height - 8 : box.bottom + 8}px`;
+  }
+  L.hideTip = function () { clearTimeout(tipTimer); tip.hidden = true; tipFor = null; };
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") L.hideTip(); });
+  document.addEventListener("click", (event) => { if (tipFor && !tipFor.contains(event.target)) L.hideTip(); });
+
+  /** Wraps `content` as an explainable word when the glossary knows it; otherwise returns the content unchanged. */
+  L.term = function (word, content) {
+    if (!L.glossary[word]) return content;
+    return L.h("span.term", {
+      attr: { tabindex: "0", role: "button", "aria-describedby": "lesson-tip" },
+      on: {
+        mouseenter(event) { const anchor = event.currentTarget; tipTimer = setTimeout(() => showTip(anchor, word), 140); },
+        mouseleave: L.hideTip,
+        focus(event) { showTip(event.currentTarget, word); },
+        blur: L.hideTip,
+        click(event) { event.stopPropagation(); if (tipFor === event.currentTarget) L.hideTip(); else showTip(event.currentTarget, word); },
+      },
+    }, content);
+  };
+
+  /** A line of code with the glossary's words made explainable (longest word first; nothing inside a comment). */
+  L.codeLine = function (line, lang) {
+    const words = Object.keys(L.glossary).sort((a, b) => b.length - a.length);
+    const comment = line.indexOf((LANGS[lang] || LANGS.text).comment);
+    const limit = comment < 0 ? line.length : comment;
+    const out = document.createDocumentFragment();
+    let from = 0;
+    for (let at = 0; at < limit;) {
+      const word = words.find((candidate) => line.startsWith(candidate, at)
+        && !(/\w/.test(candidate[0]) && /\w/.test(line[at - 1] || ""))
+        && !(/\w/.test(candidate.at(-1)) && /\w/.test(line[at + candidate.length] || "")));
+      if (!word) { at++; continue; }
+      out.append(L.colour(line.slice(from, at), lang), L.term(word, L.h("span", null, L.colour(word, lang))));
+      at += word.length;
+      from = at;
+    }
+    out.append(L.colour(line.slice(from), lang));
+    return out;
+  };
+
+  /** The 1-based numbers of the lines of `other` that are not in `base` (longest common subsequence). */
+  L.changedLines = function (base, other) {
+    const a = base.split("\n"), b = other.split("\n");
+    const table = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+    for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
+    const changed = [];
+    for (let i = 0, j = 0; j < b.length;) {
+      if (i < a.length && a[i] === b[j]) { i++; j++; } else if (i < a.length && table[i + 1][j] >= table[i][j + 1]) i++; else changed.push(++j);
+    }
+    return changed;
+  };
+
+  /** A source file with line numbers. show(source, { focus, changed }) redraws it and scrolls the first marked line into view. */
+  L.codeView = function () {
+    const scroll = L.h("div.code__scroll", { attr: { tabindex: "0" } });
+    const label = L.h("div.code__path");
+    const el = L.h("div.code", null, label, scroll);
+    return {
+      el,
+      /** Calls fn(lineNumber) when the learner presses a line. */
+      onLine(fn) { scroll.addEventListener("click", (event) => { const row = event.target.closest(".code__line"); if (row) fn([...scroll.children].indexOf(row) + 1); }); },
+      show(source, { path = "", lang = "text", focus = [], changed = [], wrong = [], tags = {} } = {}) {
+        label.textContent = path;
+        el.classList.toggle("has-focus", focus.length > 0);
+        scroll.replaceChildren(...source.split("\n").map((line, i) => {
+          const state = changed.includes(i + 1) ? ".is-changed" : focus.includes(i + 1) ? ".is-focus" : wrong.includes(i + 1) ? ".is-wrong" : "";
+          return L.h(`div.code__line${state}`, null, L.h("span.code__no", { text: String(i + 1) }), L.h("span", null, L.codeLine(line, lang)), tags[i + 1] ? L.h("span.code__tag", { text: tags[i + 1] }) : null);
+        }));
+        const place = () => {
+          const first = scroll.querySelector(".is-changed, .is-focus");
+          if (first) scroll.scrollTop = Math.max(0, first.offsetTop - scroll.offsetTop - scroll.clientHeight / 3);
+        };
+        place();
+        requestAnimationFrame(place); // a view built before it is on the page has no size yet
+      },
+    };
+  };
+
+  /** A row of mutually exclusive choices. `options` are { id, label }. */
+  L.segmented = function (label, options, selected, onPick) {
+    const buttons = options.map((option) => L.h("button", { text: option.label, attr: { type: "button", "aria-pressed": String(option.id === selected) }, on: { click() { pick(option.id); onPick(option.id); } } }));
+    function pick(id) { buttons.forEach((button, i) => button.setAttribute("aria-pressed", String(options[i].id === id))); }
+    return { el: L.h("div.seg", null, label ? L.h("span", { text: label }) : null, L.h("div.seg__set", { attr: { role: "group", "aria-label": label || "选择" } }, buttons)), pick };
+  };
+
+  /** What the learner did, kept across reloads; quietly does nothing where storage is unavailable. */
+  L.memory = function (key) {
+    let data = {};
+    try { data = JSON.parse(localStorage.getItem(key) || "{}"); } catch { data = {}; }
+    return {
+      get: (name, fallback) => (name in data ? data[name] : fallback),
+      set(name, value) { data[name] = value; try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* private window */ } },
+    };
+  };
+})();
+
+</script>
+<script>
+/* The plain blocks of a lesson. Each maker takes (block, ctx) and returns { el, steps?, set?, ready?, refresh? }:
+   steps = teacher sentences for moments inside the block after it has appeared; set(k) shows it as of step k;
+   ready() false means the learner still has to act before the lesson moves on; refresh() runs each time the block is revealed. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const KEYS = "ABCD";
+
+  L.blocks.text = (block) => ({ el: h("p.text", null, L.md(block.md)) });
+
+  /** A row of small answer buttons. paint(picked, right) locks them once an answer is in and marks the right and the wrong one. */
+  function picks(labels, onPick, extra = "") {
+    const buttons = labels.map((text, i) => h(`button.pick${extra}`, { attr: { type: "button" }, on: { click: () => onPick(i) } }, L.md(text)));
+    return {
+      el: h("div.picks", null, buttons),
+      paint(picked, right) {
+        buttons.forEach((button, i) => {
+          button.disabled = picked !== undefined;
+          button.classList.toggle("is-right", picked !== undefined && i === right);
+          button.classList.toggle("is-wrong", picked === i && i !== right);
+        });
+      },
+    };
+  }
+
+  /** Several small questions answered on the spot. make(item, i) gives each row's content; the answers survive a reload. */
+  function answered(block, ctx, name, make, sum) {
+    const key = `${name}:${block.items.length}:${block.items[0].q || block.items[0].text}`;
+    const answers = ctx.memory.get(key, {});
+    const score = h(`p.${name}__score`, { attr: { "aria-live": "polite" } });
+    const rows = block.items.map((item, i) => {
+      const why = h(`p.${name}__why`, { attr: { hidden: "" } }, L.md(item.why));
+      const row = make(item, (j) => { answers[i] = j; ctx.memory.set(key, answers); paint(); (done() ? score : why).scrollIntoView({ block: "nearest", behavior: "smooth" }); });
+      return { item, why, pick: row.pick, el: h(`div.${name}__item`, null, row.head, row.pick.el, why) };
+    });
+    const done = () => rows.every((row, i) => answers[i] !== undefined);
+    function paint() {
+      rows.forEach((row, i) => { row.pick.paint(answers[i], row.item.answer); row.why.hidden = answers[i] === undefined; });
+      score.textContent = done() ? sum(rows.filter((row, i) => answers[i] === row.item.answer).length, rows.length) : "";
+    }
+    paint();
+    return { el: h(`div.${name}`, null, rows.map((row) => row.el), score), ready: done, waitSay: "先把这几道都点一下再往下。点错没关系；实在想跳过，再按一次。" };
+  }
+
+  /** "You have met these before": a quick question per thing the lesson builds on, with the one sentence needed if it has faded. */
+  L.blocks.recall = (block, ctx) => answered(block, ctx, "recall",
+    (item, onPick) => ({ head: [h("span.recall__have", null, L.md(item.have)), h("p.recall__q", null, L.md(item.q))], pick: picks(item.options, onPick) }),
+    (right, total) => (right === total ? `${total} 样都记得，可以开始了。` : `${total} 样里记得 ${right} 样。没记住的，把它下面那句话再看一眼，这节课够用了。`));
+
+  /** Apply the rule just learned: for each situation, pick the tool. */
+  L.blocks.cases = (block, ctx) => answered(block, ctx, "cases",
+    (item, onPick) => ({ head: [h("p.cases__text", null, L.md(item.text))], pick: picks(block.tools, (j) => { onPick(j); document.dispatchEvent(new CustomEvent("lesson:picked", { detail: { name: block.tools[item.answer] } })); }, ".pick--tool") }),
+    (right, total) => (right === total ? `${total} 个场景都选对了。这条规则是你的了。` : `${total} 个里选对 ${right} 个。看一眼没选对的那条理由，再回想那句规则。`));
+
+  /** A picture to hang the lesson on: a short everyday story, then what each thing in it is called in the program. */
+  L.blocks.scene = (block) => {
+    const rows = block.map.map((pair) => h("div.scene__row", null, h("span", null, L.md(pair.scene)), h("span.scene__arrow", { text: "→" }), h("span.scene__to", null, L.md(pair.code))));
+    const table = h("div.scene__map", null, h("div.scene__head", null, h("span", { text: "场景里" }), h("span"), h("span", { text: "程序里" })), rows);
+    const picture = block.picture ? L.sharePicture({ actors: block.picture.actors, shared: block.picture.shared.name, hands: false }) : null;
+    /* The picture starts as the everyday scene; each row that is reached pins the program's word onto the part it names. */
+    const draw = (k) => {
+      const tags = { actors: [], shared: [], action: "" };
+      block.map.slice(0, k).forEach((pair) => { if (pair.on === "action") tags.action = pair.tag; else if (pair.on) tags[pair.on].push(pair.tag); });
+      picture.set({ value: block.picture.shared.value, tags, hot: k ? block.map[k - 1].on || null : null });
+    };
+    const set = (k) => { table.classList.toggle("is-waiting", k === 0); rows.forEach((row, i) => { row.classList.toggle("is-waiting", i >= k); row.classList.toggle("is-now", i === k - 1); }); if (picture) draw(k); };
+    set(0);
+    return { el: h("div.scene", null, h("p.scene__story", null, L.md(block.story)), h(`div.scene__body${picture ? ".has-picture" : ""}`, null, table, picture?.el)), steps: block.map.map((pair) => ({ say: pair.say })), set };
+  };
+
+  /** "Which line is it?" The learner presses the line they suspect, on the real source. */
+  L.blocks.spot = (block, ctx) => {
+    const key = `spot:${block.of}:${block.answerLines.join("-")}`;
+    const view = L.codeView();
+    const out = h("p.spot__out", { attr: { "aria-live": "polite" } });
+    let found = ctx.memory.get(key, false), wrong = [];
+    function paint() {
+      view.show(block.source, { path: block.path, lang: block.lang, focus: found ? block.answerLines : [], wrong });
+      view.el.classList.toggle("is-pickable", !found);
+      out.className = `spot__out${found ? ".is-ok" : wrong.length ? ".is-miss" : ""}`.replace(/\./g, " ");
+      out.replaceChildren(found ? L.md(block.found) : wrong.length ? L.md(block.hint) : "");
+    }
+    view.onLine((n) => {
+      if (found) return;
+      if (block.answerLines.includes(n)) { found = true; wrong = []; ctx.memory.set(key, true); } else wrong = [n];
+      paint();
+    });
+    paint();
+    return {
+      el: h("div.spot", null, h("p.spot__q", null, L.md(block.q)), view.el, h("div.spot__side", null, h("p.spot__how", { text: "在左边的代码上，点你怀疑的那一行。" }), out)),
+      ready: () => found,
+      waitSay: "先在代码上点一行你怀疑的。点错会有提示；实在想跳过，再按一次。",
+      pass() { found = true; wrong = []; paint(); },
+    };
+  };
+
+  /** Evidence: what the built program looks like inside, as the lab's inspect command printed it. Labels are added as the teacher names each part. */
+  L.blocks.inside = (block) => {
+    const view = L.codeView();
+    const show = (k) => view.show(block.source, {
+      path: block.command, lang: "text", focus: k ? block.walk[k - 1].focusLines : [],
+      tags: Object.fromEntries(block.walk.slice(0, k).map((step) => [step.focusLines.at(-1), step.label])),
+    });
+    show(0);
+    return { el: h("div.inside", null, h("p.inside__what", { text: "这是工具打印出来的真实输出，不是示意图。" }), view.el), steps: block.walk.map((step) => ({ say: step.say, key: step.key })), set: show };
+  };
+
+  /** The teacher hands over the controls: nothing new appears, the switches of the experiment on this slide light up once. */
+  L.blocks.try = () => {
+    const el = h("span.try");
+    return {
+      el,
+      refresh() {
+        for (const exp of el.closest(".slide").querySelectorAll(".exp")) { exp.classList.remove("is-invited"); void exp.offsetWidth; exp.classList.add("is-invited"); }
+      },
+    };
+  };
+
+  L.blocks.points = (block) => ({ el: h("ul.points", null, block.items.map((item) => h("li", null, h("span", null, L.md(item))))) });
+
+  L.blocks.callout = (block) => ({ el: h(`div.callout.callout--${block.tone}`, null, h("h4", { text: block.title }), h("p", null, L.md(block.md))) });
+
+  L.blocks.code = (block) => {
+    const view = L.codeView();
+    const walk = block.walk || [];
+    const show = (focus) => view.show(block.source, { path: block.path, lang: block.lang, focus });
+    show(block.focusLines);
+    return { el: view.el, steps: walk.map((step) => ({ say: step.say, key: step.key })), set(k) { show(k ? walk[k - 1].focusLines : block.focusLines); } };
+  };
+
+  function option(index, text, onPick) {
+    const tag = h("span.opt__tag");
+    const el = h("button.opt", { attr: { type: "button" }, on: { click: () => onPick(index) } }, h("span.opt__key", { text: KEYS[index] }), h("span", null, L.md(text)), tag);
+    return { el, tag };
+  }
+
+  /** Guess first. Nothing is confirmed here: the answer comes from the run, in the matching reveal block. */
+  L.blocks.predict = (block, ctx) => {
+    const key = `predict:${block.id}`;
+    const options = block.options.map((text, i) => option(i, text, pick));
+    function paint() {
+      const picked = ctx.memory.get(key);
+      options.forEach((item, i) => { item.el.classList.toggle("is-picked", i === picked); item.tag.textContent = i === picked ? "你的猜测" : ""; });
+    }
+    function pick(index) { ctx.memory.set(key, index); paint(); }
+    paint();
+    return { el: h("div.predict", null, h("p.predict__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => ctx.memory.get(key) !== undefined };
+  };
+
+  /** After the run: the learner's guess beside what really happened. The explaining is the teacher's job, not this block's. */
+  L.blocks.reveal = (block, ctx) => {
+    const predict = ctx.predicts[block.of];
+    const guess = h("dd");
+    return {
+      el: h("div.reveal", null, h("dl", null, h("dt", { text: "你猜的" }), guess), h("dl", null, h("dt", { text: "实际" }), h("dd.is-ok", null, L.md(predict.options[predict.answer])))),
+      refresh() {
+        const picked = ctx.memory.get(`predict:${block.of}`);
+        guess.className = picked === undefined ? "" : picked === predict.answer ? "is-ok" : "is-miss";
+        guess.replaceChildren(picked === undefined ? "刚才没猜" : L.md(predict.options[picked]));
+      },
+    };
+  };
+
+  /** Several tools side by side: what each solves, what it costs, when to reach for it. The teacher goes through them one row at a
+      time, and the rule to choose by comes last, after every row has been talked through. */
+  L.blocks.choose = (block) => {
+    const rows = block.options.map((option) => h("div.choose__row", null,
+      h("span.choose__name", null, L.term(option.name, h("span", { text: option.name }))),
+      h("span", { attr: { "data-label": "解决什么" } }, L.md(option.solves)),
+      h("span", { attr: { "data-label": "代价" } }, L.md(option.cost)),
+      h("span", { attr: { "data-label": "什么时候用" } }, L.md(option.when))));
+    const rule = h("p.choose__rule", null, L.md(block.rule));
+    const el = h("div.choose", null,
+      h("div.choose__head", null, h("span"), h("span", { text: "解决什么" }), h("span", { text: "代价" }), h("span", { text: "什么时候用" })), rows, rule);
+    const set = (k) => {
+      const walking = k >= 1 && k <= rows.length;
+      el.classList.toggle("is-walking", walking);
+      rows.forEach((row, i) => row.classList.toggle("is-now", walking && i === k - 1));
+      rule.classList.toggle("is-waiting", k <= rows.length);
+    };
+    set(0);
+    return { el, steps: block.options.map((option) => ({ say: option.say })).concat({ say: block.ruleSay, key: block.ruleKey }), set };
+  };
+
+  L.blocks.name = (block) => ({
+    el: h("div.name", null,
+      h("h2.name__term", { text: block.term }),
+      block.alias ? h("p.name__alias", { text: block.alias }) : null,
+      h("p.name__line", null, L.md(block.oneLine)),
+      h("div.name__asked", null, h("h4", { text: "面试里它长这样" }), h("ul", null, block.asked.map((question) => h("li", { text: `「${question}」` })))),
+    ),
+  });
+
+  /** Answered on the spot: the picked option and the right one both show why. */
+  L.blocks.quiz = (block) => {
+    let done = false;
+    const options = block.options.map((item, i) => option(i, item.text, pick));
+    function pick(index) {
+      if (done) return;
+      done = true;
+      block.options.forEach((item, i) => {
+        if (i !== index && !item.ok) return;
+        options[i].el.classList.add(item.ok ? "is-right" : "is-wrong");
+        options[i].tag.textContent = item.ok ? "对" : "不对";
+        options[i].el.append(h("span.opt__why", null, L.md(item.why)));
+      });
+    }
+    return { el: h("div.quiz", null, h("p.quiz__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => done };
+  };
+
+  /** Say it aloud against a clock, then tick off what you covered. The points stay hidden until the learner has spoken. */
+  L.blocks.say = (block) => {
+    const total = block.seconds || 120;
+    let left = total, timer = 0;
+    const clock = h("span.say__clock");
+    const score = h("p.say__score");
+    const boxes = block.points.map((point) => h("input", { attr: { type: "checkbox" }, on: { change: count } }));
+    const points = h("ul.say__points", { attr: { hidden: "" } }, block.points.map((point, i) => h("li", null, h("label", null, boxes[i], h("span", null, L.md(point))))), score);
+    const start = h("button.btn", { text: "开始讲", attr: { type: "button" }, on: { click: toggle } });
+    const model = h("p.say__model", { attr: { hidden: "" } }, L.md(block.model));
+    const showModel = h("button.btn", { text: "看一份参考回答", attr: { type: "button", hidden: "" }, on: { click() { model.hidden = !model.hidden; showModel.textContent = model.hidden ? "看一份参考回答" : "收起参考回答"; if (!model.hidden) model.scrollIntoView({ block: "nearest", behavior: "smooth" }); } } });
+    const check = h("button.btn.btn--primary", { text: "讲完了，对要点", attr: { type: "button" }, on: { click() { stop(); points.hidden = false; check.hidden = true; showModel.hidden = false; count(); } } });
+    function draw() { clock.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`; }
+    function stop() { clearInterval(timer); timer = 0; start.textContent = left === total ? "开始讲" : "接着讲"; }
+    function toggle() {
+      if (timer) return stop();
+      if (left === 0) left = total;
+      start.textContent = "暂停";
+      timer = setInterval(() => { left -= 1; draw(); if (left === 0) stop(); }, 1000);
+      draw();
+    }
+    function count() { score.textContent = `${block.points.length} 个要点，你讲到了 ${boxes.filter((box) => box.checked).length} 个。没讲到的，回到对应那一页再看一遍。`; }
+    draw();
+    return { el: h("div.say", null, h("p.say__prompt", null, L.md(block.prompt)), h("div.say__row", null, clock, start, check, showModel), points, model) };
+  };
+
+  L.blocks.cards = (block) => ({
+    el: h("div.cards", null, block.items.map((card) => {
+      const answer = h("p.card__a", { attr: { hidden: "" } }, L.md(card.a));
+      const button = h("button.btn.btn--quiet", { text: "看答案", attr: { type: "button" }, on: { click() { answer.hidden = !answer.hidden; button.textContent = answer.hidden ? "看答案" : "收起"; } } });
+      return h("div.card", null, h("p.card__q", null, L.md(card.q)), button, answer);
+    })),
+  });
+})();
+
+</script>
+<script>
+/* Things that are drawn instead of described. Three of them:
+   - the shared-thing picture: two actors, what each holds in hand, and the one thing they share. A scene uses it to show the
+     everyday story; `lanes` puts the same picture beside its rows, so every step is also seen in space, not only in time;
+   - `chart`: the recorded runs as lines, one per way of writing the code, along the experiment's knob;
+   - `decide`: the rule for choosing, drawn as a small tree.
+   Every number in a chart is read from the recorded runs. Colour names a series and nothing else; right or wrong is the marker's shape. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const NS = "http://www.w3.org/2000/svg";
+  const s = (tag, attrs, ...kids) => {
+    const el = document.createElementNS(NS, tag);
+    for (const [name, value] of Object.entries(attrs || {})) el.setAttribute(name, value);
+    el.append(...kids.flat().filter(Boolean));
+    return el;
+  };
+
+  /* ---------- two actors and the thing they share ---------- */
+
+  const PIC = { width: 300, height: 300 };
+  const FIGURE = () => s("svg", { viewBox: "0 0 44 40", class: "pic__figure", "aria-hidden": "true" },
+    s("circle", { cx: 22, cy: 10, r: 8.5 }), s("path", { d: "M4 40v-4a18 14 0 0 1 36 0v4" }));
+
+  /** A straight arrow from (x1, y1) to (x2, y2), stopping a little short at both ends. */
+  function arrow(x1, y1, x2, y2) {
+    const length = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / length, uy = (y2 - y1) / length;
+    const tipX = x2 - ux * 3, tipY = y2 - uy * 3, backX = tipX - ux * 9, backY = tipY - uy * 9;
+    return s("g", { class: "pic__arrow" },
+      s("line", { x1: x1 + ux * 3, y1: y1 + uy * 3, x2: backX, y2: backY }),
+      s("polygon", { points: `${tipX},${tipY} ${backX - uy * 4.5},${backY + ux * 4.5} ${backX + uy * 4.5},${backY - ux * 4.5}` }));
+  }
+
+  /** actors: two names; shared: its name; hands: whether each actor holds a value (the scene's story has no need of it). */
+  L.sharePicture = function ({ actors, shared, hands = true }) {
+    const side = ["a", "b"];
+    const value = h("b.pic__value");
+    const boardTags = h("div.pic__tags");
+    const board = h("div.pic__board", null, value);
+    const boardName = h("div.pic__over", null, h("span.pic__name", { text: shared }), boardTags);
+    const action = h("span.pic__action");
+    const people = actors.map((name, i) => {
+      const tags = h("div.pic__tags");
+      const note = h("span.pic__note");
+      const held = h("b");
+      return {
+        tags, note, held,
+        el: h(`div.pic__actor.pic__actor--${side[i]}`, null, FIGURE(), h("span.pic__name", { text: name }), tags, note),
+        hand: hands ? h(`div.pic__hand.pic__hand--${side[i]}`, null, h("small", { text: "手里" }), held) : null,
+      };
+    });
+    /* With hands the arrows run between the board and a hand; without, between an actor and the board. */
+    const ends = hands ? [[124, 110, 104, 144], [176, 110, 196, 144]] : [[122, 110, 62, 192], [178, 110, 238, 192]];
+    const arrows = ends.map(([bx, by, px, py]) => ({ in: arrow(bx, by, px, py), out: arrow(px, py, bx, by) }));
+    const lines = s("svg", { viewBox: `0 0 ${PIC.width} ${PIC.height}`, class: "pic__lines", "aria-hidden": "true" }, arrows.flatMap((pair) => [pair.in, pair.out]));
+    const el = h(`div.pic${hands ? "" : ".pic--plain"}`, { attr: { role: "img" } }, lines, boardName, board, action, people.flatMap((person) => [person.hand, person.el]));
+
+    const fill = (box, texts) => box.replaceChildren(...(texts || []).map((text) => h("span", { text })));
+    return {
+      el,
+      /** state: { value, hands: [text|null ×2], notes: [{ text, tone }|null ×2], move: { lane, op }|null,
+          tags: { actors: [], shared: [], action: text }, hot: "actors"|"shared"|"action"|null } */
+      set(state) {
+        const move = state.move, tags = state.tags || {};
+        value.textContent = String(state.value);
+        board.classList.toggle("is-now", move?.op === "write" || state.hot === "shared");
+        fill(boardTags, tags.shared);
+        action.textContent = tags.action || "";
+        action.classList.toggle("is-now", state.hot === "action");
+        people.forEach((person, i) => {
+          const mine = move?.lane === i;
+          if (person.hand) {
+            const text = state.hands?.[i];
+            person.held.textContent = text ?? "";
+            person.hand.classList.toggle("is-empty", text === null || text === undefined);
+            person.hand.classList.toggle("is-now", mine && (move.op === "read" || move.op === "calc"));
+          }
+          const note = state.notes?.[i];
+          person.note.textContent = note?.text || "";
+          person.note.className = `pic__note${note?.tone ? ` pic__note--${note.tone}` : ""}${mine && move.op === "note" ? " is-now" : ""}`;
+          person.el.classList.toggle("is-now", state.hot === "actors" || (mine && move.op === "note"));
+          fill(person.tags, tags.actors);
+          arrows[i].in.classList.toggle("is-on", mine && move.op === "read");
+          arrows[i].out.classList.toggle("is-on", (mine && move.op === "write") || Boolean(tags.action));
+        });
+        const holding = (state.hands || []).map((text, i) => (text === null || text === undefined ? "" : `${actors[i]}手里是 ${text}`)).filter(Boolean).join("，");
+        el.setAttribute("aria-label", `${actors.join("和")}共用${shared}，现在是 ${state.value}${holding ? `；${holding}` : ""}`);
+      },
+    };
+  };
+
+  /** What the picture shows after each step of a `lanes` walk: frame 0 is the start, frame k is after step k. */
+  L.shareFrames = function (steps, start) {
+    const frames = [{ value: start, hands: [null, null], notes: [null, null], move: null }];
+    for (const step of steps) {
+      const last = frames.at(-1);
+      const frame = { value: last.value, hands: [...last.hands], notes: last.notes.map((note) => (note?.tone === "fail" ? null : note)), move: { lane: step.lane, op: step.op } };
+      if (step.op === "read") frame.hands[step.lane] = String(frame.value);
+      else if (step.op === "calc") frame.hands[step.lane] = step.text.includes("=") ? step.text.split("=").pop().trim() : step.text;
+      else if (step.op === "write") { frame.value = step.value; frame.hands[step.lane] = null; }
+      else frame.notes[step.lane] = { text: step.text, tone: step.tone };
+      frames.push(frame);
+    }
+    return frames.concat({ ...frames.at(-1), move: null });
+  };
+
+  /* ---------- the recorded runs as a line chart ---------- */
+
+  const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+  const VIEW = { width: 640, height: 300, left: 44, right: 178, top: 14, bottom: 34, inset: 18, labelGap: 19 };
+
+  function step(max, ticks = 4) {
+    const raw = max / ticks, power = 10 ** Math.floor(Math.log10(raw));
+    return [1, 2, 5, 10].find((unit) => unit * power >= raw) * power;
+  }
+
+  /** Label heights that keep the order of `wanted` but never sit closer than `gap`, inside [top, bottom]. */
+  function spread(wanted, gap, top, bottom) {
+    const order = wanted.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y);
+    order.forEach((item, n) => { item.y = Math.max(item.y, n ? order[n - 1].y + gap : top); });
+    for (let n = order.length - 1; n >= 0; n--) order[n].y = Math.min(order[n].y, n === order.length - 1 ? bottom : order[n + 1].y - gap);
+    const out = [];
+    order.forEach((item) => { out[item.i] = item.y; });
+    return out;
+  }
+
+  L.blocks.chart = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.of];
+    const y = { label: "耗时", ...(block.y || exp.time) };
+    const xs = exp.knob.values;
+    const base = exp.variants[0];
+    const series = exp.variants.filter((variant) => !block.show || block.show.includes(variant.id)).slice(0, 4).map((variant) => ({
+      variant,
+      slot: exp.variants.indexOf(variant) + 1, // colour follows the way of writing, not its place in this chart
+      points: xs.map((x) => {
+        const runs = exp.results.variants[variant.id].runs[x];
+        return { x, value: median(runs.map((run) => run[y.key])), wrong: runs.filter((run) => run[exp.metric.key] !== run[exp.metric.expectKey]).length, total: runs.length };
+      }),
+    }));
+    const tick = step(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))));
+    const top = tick * Math.ceil(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))) / tick);
+    const plot = { width: VIEW.width - VIEW.left - VIEW.right, height: VIEW.height - VIEW.top - VIEW.bottom };
+    const px = (i) => VIEW.left + VIEW.inset + (i * (plot.width - 2 * VIEW.inset)) / (xs.length - 1);
+    const py = (value) => VIEW.top + plot.height - (value / top) * plot.height;
+    const verdict = (point) => (point.wrong === 0 ? `${point.total} 次全对` : point.wrong === point.total ? `${point.total} 次全错` : `错了 ${point.wrong} 次`);
+    let focus = null;
+
+    const grid = [];
+    for (let value = 0; value <= top; value += tick) {
+      grid.push(s("line", { class: value ? "chart__grid" : "chart__base", x1: VIEW.left, x2: VIEW.left + plot.width, y1: py(value), y2: py(value) }));
+      grid.push(s("text", { class: "chart__tick", x: VIEW.left - 8, y: py(value) + 4, "text-anchor": "end" }, String(value)));
+    }
+    const xLabels = xs.map((x, i) => s("text", { class: "chart__tick", x: px(i), y: VIEW.height - 14, "text-anchor": "middle" }, String(x)));
+    const xTitle = s("text", { class: "chart__tick", x: VIEW.left + plot.width + 12, y: VIEW.height - 14 }, exp.knob.label);
+    const labelY = spread(series.map((one) => py(one.points.at(-1).value)), VIEW.labelGap, VIEW.top + 6, VIEW.top + plot.height);
+    const endX = px(xs.length - 1);
+
+    series.forEach((one, n) => {
+      const last = one.points.at(-1);
+      one.el = s("g", { class: `chart__series chart__series--${one.slot}` },
+        s("polyline", { class: "chart__line", points: one.points.map((point, i) => `${px(i)},${py(point.value)}`).join(" ") }),
+        s("polyline", { class: "chart__lead", points: `${endX + 8},${py(last.value)} ${endX + 20},${labelY[n]} ${endX + 30},${labelY[n]}` }),
+        one.points.map((point, i) => s("circle", { class: `chart__dot${point.wrong ? " is-wrong" : ""}`, cx: px(i), cy: py(point.value), r: 5 })),
+        s("text", { class: "chart__name", x: endX + 35, y: labelY[n] + 4 }, s("tspan", { class: "chart__label" }, `${one.variant.label} `), s("tspan", { class: "chart__end" }, String(last.value))));
+    });
+
+    const cross = s("line", { class: "chart__cross", y1: VIEW.top, y2: VIEW.top + plot.height });
+    const tip = h("div.chart__tip", { attr: { hidden: "" } });
+    function point(i) {
+      cross.setAttribute("x1", px(i)); cross.setAttribute("x2", px(i));
+      cross.classList.add("is-on");
+      tip.replaceChildren(h("b", { text: `${exp.knob.label} ${xs[i]}` }), ...[...series].sort((a, b) => b.points[i].value - a.points[i].value).map((one) => h(`div.chart__row${focus && focus !== one.variant.id ? ".is-dim" : ""}`, null,
+        h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label }), h("span.num", { text: `${one.points[i].value} ${y.unit}` }), h(`span${one.points[i].wrong ? ".is-wrong" : ""}`, { text: verdict(one.points[i]) }))));
+      tip.hidden = false;
+      const half = i >= xs.length / 2;
+      tip.style.left = half ? "" : `${((px(i) + 14) / VIEW.width) * 100}%`;
+      tip.style.right = half ? `${100 - ((px(i) - 14) / VIEW.width) * 100}%` : "";
+    }
+    function leave() { cross.classList.remove("is-on"); tip.hidden = true; }
+    const width = (plot.width - 2 * VIEW.inset) / (xs.length - 1);
+    const hits = xs.map((x, i) => {
+      const hit = s("rect", { class: "chart__hit", x: px(i) - width / 2, y: VIEW.top, width, height: plot.height + VIEW.bottom, tabindex: 0, role: "button", "aria-label": `${exp.knob.label} ${x}，读这一列` });
+      for (const name of ["pointerenter", "focus", "click"]) hit.addEventListener(name, () => point(i));
+      hit.addEventListener("blur", leave);
+      return hit;
+    });
+    const svg = s("svg", { viewBox: `0 0 ${VIEW.width} ${VIEW.height}`, class: "chart__svg", role: "img", "aria-label": `${y.label}随${exp.knob.label}的变化，${series.length} 种写法，数据在下面的表里` },
+      grid, xLabels, xTitle, cross, series.map((one) => one.el), hits);
+    svg.addEventListener("pointerleave", leave);
+
+    const read = h("p.chart__read", { attr: { "aria-live": "polite" } });
+    const buttons = series.map((one) => h("button.chart__pick", { attr: { type: "button", "aria-pressed": "false" }, on: { click: () => look(focus === one.variant.id ? null : one.variant.id) } },
+      h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label })));
+    function look(id) {
+      focus = id;
+      series.forEach((one, n) => { one.el.classList.toggle("is-dim", Boolean(id) && one.variant.id !== id); one.el.classList.toggle("is-on", one.variant.id === id); buttons[n].setAttribute("aria-pressed", String(one.variant.id === id)); });
+      const one = series.find((candidate) => candidate.variant.id === id);
+      if (!one) return read.replaceChildren("点上面的写法名，只看那一条线；把鼠标移到图上（手机上点一下），读那一列的每个数。");
+      const last = one.points.at(-1), first = one.points[0];
+      const basePoint = exp.results.variants[base.id].runs[last.x];
+      const ratio = one.variant.id === base.id ? "" : `，是「${base.label}」的 ${(last.value / median(basePoint.map((run) => run[y.key]))).toFixed(1)} 倍`;
+      const wrongAt = one.points.filter((item) => item.wrong).map((item) => item.x);
+      read.replaceChildren(L.md(`${one.variant.label}：${exp.knob.label} ${first.x} 时 **${first.value} ${y.unit}**，到 ${last.x} 时 **${last.value} ${y.unit}**${ratio}。${wrongAt.length ? `==${exp.knob.label}为 ${wrongAt.join("、")} 时结果有错==。` : "每一组结果都对。"}`));
+    }
+    look(null);
+
+    const table = h("details.chart__table", null, h("summary", { text: "看数据表" }), h("table", null,
+      h("thead", null, h("tr", null, h("th", { text: `${exp.knob.label} →` }), xs.map((x) => h("th", { text: String(x) })))),
+      h("tbody", null, series.map((one) => h("tr", null, h("th", { text: one.variant.label }), one.points.map((item) => h("td", { text: `${item.value} ${y.unit}${item.wrong ? "（有错）" : ""}` })))))));
+
+    return {
+      el: h("figure.chart", null,
+        h("figcaption.chart__cap", null, h("b", { text: `${y.label}（${y.unit}）` }), h("span", { text: `每个点是 ${exp.repeat} 次真实运行的中位数` }),
+          h("span.chart__marks", null, h("i.chart__mark"), "这一组结果全对", h("i.chart__mark.is-wrong"), "有错")),
+        h("div.chart__plot", null, svg, tip),
+        h("div.chart__side", null, h("div.chart__picks", { attr: { role: "group", "aria-label": "只看一种写法" } }, buttons), read, table)),
+      steps: block.walk.map((item) => ({ say: item.say, key: item.key })),
+      set(k) { look(k ? block.walk[k - 1].focus : null); },
+    };
+  };
+
+  /* ---------- the rule for choosing, as a tree ---------- */
+
+  L.blocks.decide = (block) => {
+    const branches = block.branches.map((branch) => ({
+      pick: branch.pick,
+      el: h("li.decide__branch", null,
+        h("span.decide__when", null, L.md(branch.when)),
+        h("span.decide__pick", null, L.term(branch.pick, h("span", { text: branch.pick }))),
+        branch.eg ? h("small.decide__eg", { text: `比如：${branch.eg}` }) : null),
+    }));
+    /* When the learner answers a `cases` item on the same slide, the branch that item belongs to lights up. */
+    const onPicked = (event) => {
+      const hit = branches.find((branch) => branch.pick === event.detail.name);
+      if (!hit || !hit.el.isConnected) return;
+      branches.forEach((branch) => branch.el.classList.remove("is-hit"));
+      void hit.el.offsetWidth; // restart the flash when the same branch is hit twice
+      hit.el.classList.add("is-hit", "is-used");
+    };
+    document.addEventListener("lesson:picked", onPicked);
+    return { el: h("div.decide", null, h("p.decide__q", null, L.md(block.q)), h("ul.decide__list", null, branches.map((branch) => branch.el))) };
+  };
+})();
+
+</script>
+<script>
+/* The experiment block: the code on the left (switch what was changed), what really happened on the right.
+   Every dot is one recorded run on the learner's own machine; the page never invents a number. Switching the code or the knob
+   moves the same dots, so the learner sees the effect of one change as data. Touch a dot to read that single run. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const AXIS_ROOM = 1.04, BIN = 1.2, DROP_MS = 45;
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  const median = (values) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.floor(sorted.length / 2)]; };
+
+  /** worst: the largest miss of the target, signed (negative = came out too low, positive = too high). */
+  function summary(runs, metric) {
+    const misses = runs.map((run) => run[metric.key] - run[metric.expectKey]);
+    return { wrong: misses.filter(Boolean).length, total: runs.length, worst: misses.reduce((far, miss) => (Math.abs(miss) > Math.abs(far) ? miss : far), 0), expected: runs[0][metric.expectKey] };
+  }
+  const missed = (miss) => `${miss > 0 ? "多了" : "少了"} ${L.num(Math.abs(miss))}`;
+
+  L.blocks.experiment = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.lab];
+    const shown = exp.variants.filter((variant) => block.show.includes(variant.id));
+    const base = exp.variants[0];
+    const metric = exp.metric, time = exp.time;
+    let variant = block.select || shown[0].id;
+    let knob = block.at || (exp.knob ? exp.knob.default : "-");
+    let played = false;
+    let seen = block.hand ? 0 : exp.repeat; // hand: the learner lets the recorded runs out one press at a time
+
+    const runsOf = (id) => exp.results.variants[id].runs[knob];
+    const view = L.codeView();
+    const note = h("p.exp__note");
+    const question = h("p.exp__q");
+    const finding = h("p.exp__finding", { attr: { "aria-live": "polite" } });
+    const probe = h("span.exp__probe");
+    const command = h("code.cmd");
+    const ticks = h("div.plot__ticks", null, h("span", { text: "0" }), h("span.is-expect"));
+
+    const rows = shown.map((item) => {
+      const dots = Array.from({ length: exp.repeat }, (unused, i) => h("i.dot.is-waiting", { on: { mouseenter: () => read(item, i), click: () => read(item, i) } }));
+      const sum = h("span.plot__sum");
+      const label = h("button.plot__label", { text: item.label, attr: { type: "button" }, on: { click: () => choose(item.id) } });
+      return { item, dots, sum, track: h("div.plot__track", null, dots), el: null, label };
+    });
+    rows.forEach((row) => { row.el = h("div.plot__row", null, row.label, row.track, row.sum); });
+
+    function read(item, i) {
+      const run = runsOf(item.id)[i];
+      probe.textContent = `${item.label} · 第 ${i + 1} 次：${metric.key} = ${L.num(run[metric.key])}${time ? `，${run[time.key]} ${time.unit}` : ""}`;
+    }
+
+    /* The far end of the axis: the largest result or target among everything this block can show. */
+    const reachable = exp.knob && block.knob !== false ? exp.knob.values : [knob];
+    const axisTop = AXIS_ROOM * Math.max(...shown.flatMap((item) => reachable.flatMap((value) => exp.results.variants[item.id].runs[value].flatMap((run) => [run[metric.key], run[metric.expectKey]]))));
+
+    function place(row) {
+      const runs = runsOf(row.item.id);
+      const info = summary(runs, metric);
+      const bins = new Map();
+      row.track.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      runs.forEach((run, i) => {
+        const percent = (run[metric.key] / axisTop) * 100;
+        const bin = Math.round(percent / BIN);
+        const seat = bins.get(bin) || 0;
+        bins.set(bin, seat + 1);
+        row.dots[i].style.left = `${percent}%`;
+        row.dots[i].style.transform = `translate(${-Math.floor(seat / 3) * 7}px, ${[0, -11, 11][seat % 3]}px)`;
+        row.dots[i].classList.toggle("is-ok", run[metric.key] === run[metric.expectKey]);
+      });
+      row.sum.replaceChildren(
+        h(`b${info.wrong ? "" : ".is-ok"}`, { text: info.wrong === 0 ? `${info.total} 次全对` : info.wrong === info.total ? `${info.total} 次全错` : `错了 ${info.wrong} 次` }),
+        time ? h("span.num", { text: `中位 ${median(runs.map((run) => run[time.key]))} ${time.unit}` }) : null,
+      );
+      row.el.classList.toggle("is-on", row.item.id === variant);
+      return info;
+    }
+
+    function tell(info, item) {
+      const runs = runsOf(item.id);
+      const speed = time ? `中位耗时 **${median(runs.map((run) => run[time.key]))} ${time.unit}**` : "";
+      if (info.wrong === 0) {
+        const slower = time && item.id !== base.id ? `，${base.label}是 ${median(runsOf(base.id).map((run) => run[time.key]))} ${time.unit}` : "";
+        return `${item.label}：${info.total} 次==全对==。${speed}${slower}。`;
+      }
+      const share = Math.round((Math.abs(info.worst) / info.expected) * 100);
+      return `${item.label}：${info.total} 次里 ==${info.wrong} 次不对==。${info.worst > 0 ? "最多到了" : "最少只到"} **${L.num(info.expected + info.worst)}**，${missed(info.worst)}${share ? `（${share}%）` : ""}。${speed}。`;
+    }
+
+    function draw() {
+      const item = exp.variants.find((candidate) => candidate.id === variant);
+      const source = exp.sources[variant];
+      view.show(source, { path: exp.paths[variant], lang: exp.lang, changed: variant === base.id ? [] : L.changedLines(exp.sources[base.id], source), focus: variant === base.id ? block.focusLines || [] : [] });
+      note.textContent = item.note || "";
+      let info = null;
+      for (const row of rows) { const result = place(row); if (row.item.id === variant) info = result; }
+      ticks.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      ticks.lastChild.textContent = `应该是 ${L.num(info.expected)}`;
+      question.replaceChildren(L.md(`每种写法跑 **${exp.repeat} 次**，一个点是一次的「${metric.label}」。`));
+      finding.replaceChildren(L.md(tell(info, item)));
+      command.textContent = `${exp.shown[variant]}${knob === "-" ? "" : ` ${knob}`}`;
+      probe.textContent = "";
+      if (block.hand) paintHand();
+    }
+
+    /* Hand mode: nothing is summed up until every run has been seen, so the surprise is the learner's own. */
+    const more = h("button.btn.btn--primary", { attr: { type: "button" }, on: { click: () => letOut(1) } });
+    const rest = h("button.btn", { attr: { type: "button" }, on: { click: () => letOut(exp.repeat) } });
+    const hand = block.hand ? h("div.exp__hand", null, more, rest) : null;
+    function paintHand() {
+      const row = rows[0], runs = runsOf(row.item.id), pending = seen < exp.repeat;
+      row.dots.forEach((dot, i) => dot.classList.toggle("is-waiting", i >= seen));
+      row.sum.classList.toggle("is-held", pending);
+      hand.hidden = !pending;
+      if (!pending) return;
+      more.textContent = seen === 0 ? "看第 1 次运行" : "再看一次";
+      rest.textContent = `把剩下的 ${exp.repeat - seen} 次一起放出来`;
+      rest.hidden = seen < 2;
+      if (seen === 0) return finding.replaceChildren("还一次都没看。点下面的按钮，看第 1 次跑出了多少。");
+      const last = runs[seen - 1], value = last[metric.key], expected = last[metric.expectKey];
+      const same = seen > 1 && runs[seen - 2][metric.key] === value;
+      finding.replaceChildren(L.md(`第 ${seen} 次：**${L.num(value)}**。${value === expected ? "和应该的一样。" : `应该是 ${L.num(expected)}，==${missed(value - expected)}==。`}${seen > 1 ? (same ? "和上一次一样。" : "和上一次还不一样。") : ""}`));
+    }
+    function letOut(n) {
+      const from = seen;
+      seen = Math.min(exp.repeat, seen + n);
+      draw();
+      if (seen - from > 1 && !still.matches) rows[0].dots.forEach((dot, i) => { if (i >= from) { dot.classList.add("is-waiting"); setTimeout(() => dot.classList.remove("is-waiting"), 80 + (i - from) * DROP_MS); } });
+    }
+
+    function play() {
+      played = true;
+      if (seen < exp.repeat) return;
+      const all = rows.flatMap((row) => row.dots);
+      all.forEach((dot) => dot.classList.add("is-waiting"));
+      if (still.matches) return all.forEach((dot) => dot.classList.remove("is-waiting"));
+      rows.forEach((row) => row.dots.forEach((dot, i) => setTimeout(() => dot.classList.remove("is-waiting"), 260 + i * DROP_MS)));
+    }
+
+    function choose(id) { variant = id; tabs?.pick(id); draw(); }
+    const tabs = shown.length > 1 ? L.segmented("写法", shown.map((item) => ({ id: item.id, label: item.label })), variant, choose) : null;
+    const dial = exp.knob && block.knob !== false ? L.segmented(exp.knob.label, exp.knob.values.map((value) => ({ id: value, label: value })), knob, (value) => { knob = value; draw(); }) : null;
+    const copy = h("button.btn.btn--quiet", { text: "复制", attr: { type: "button" }, on: { click() { navigator.clipboard?.writeText(command.textContent).then(() => { copy.textContent = "已复制"; }, () => {}); } } });
+    const env = exp.results.env;
+
+    draw();
+    return {
+      el: h("div.exp", null,
+        tabs || dial ? h("div.exp__bar", null, tabs?.el, dial?.el) : null,
+        h("div.exp__body", null,
+          h("div", null, view.el, note),
+          h("div.exp__data", null, question, h("div.plot", null, rows.map((row) => row.el), h("div.plot__axis", null, h("span"), ticks, h("span"))), finding, hand,
+            h("div.exp__foot", null,
+              h("span", { text: `真实记录 · 这台电脑 · ${env.runtime} · ${env.cores} 个逻辑核 · ${env.date}` }),
+              h("button.btn.btn--quiet", { text: "再放一遍", attr: { type: "button" }, on: { click: play } }),
+              h("span", null, "自己跑：", command), copy, probe))),
+      ),
+      refresh() { if (!played) play(); },
+      waitSay: "先自己看：点「看第 1 次运行」，一次一次把结果放出来。实在想跳过，再按一次。",
+      ready: () => seen >= exp.repeat,
+      pass() { if (seen < exp.repeat) letOut(exp.repeat); },
+    };
+  };
+})();
+
+</script>
+<script>
+/* Two actors and the one thing they share, with time running downward.
+   `lanes` is the teacher's walk through one fixed order of steps; a step may end in a question the learner answers before the next
+   step shows what really happens. `schedule` hands the order to the learner: they press which actor moves next and watch what the
+   shared value becomes, with a lock they can switch on. Both draw rows the same way. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const OPS = ["read", "calc", "write"];
+
+  /** One row: a step in its actor's lane, an arrow to or from the shared value when the step touches it.
+      A `note` step touches nothing: the actor waits, gives up, takes or releases something. */
+  function row(step, shared) {
+    const touches = step.op === "read" || step.op === "write";
+    const inward = step.op === "write";
+    const arrow = h(`span.arrow.arrow--${!touches ? "none" : (step.lane === 0) === inward ? "right" : "left"}`);
+    const chip = h(`span.chip${step.op === "note" && step.tone ? `.chip--${step.tone}` : ""}`, { text: step.text });
+    const cells = [h("div.lcell.lcell--a"), h("div.lcell.lcell--mid"), h("div.lcell.lcell--b")];
+    cells[step.lane === 0 ? 0 : 2].append(...(step.lane === 0 ? [chip, arrow] : [arrow, chip]));
+    if (touches) cells[1].append(h(`span.val${inward ? ".val--write" : ""}`, { text: String(shared) }));
+    return h("div.lrow", null, cells);
+  }
+
+  function grid(names, sharedName, rows) {
+    return h("div.lanes__grid", null,
+      h("div.lanes__head.lanes__head--a", { text: names[0] }), h("div.lanes__head.lanes__head--mid", { text: sharedName }), h("div.lanes__head.lanes__head--b", { text: names[1] }),
+      rows);
+  }
+
+  L.blocks.lanes = (block, ctx) => {
+    let shared = block.shared.start, now = 0;
+    const key = `lanes:${block.expr}:${block.steps.length}`;
+    const answers = ctx.memory.get(key, {});
+    const parts = OPS.map((op) => h("span.part", { text: block.parts[op] }));
+    const rows = block.steps.map((step) => { if (step.op === "write") shared = step.value; return row(step, shared); });
+    const verdict = h("p.lanes__verdict.is-waiting", null, L.md(block.verdict));
+    const askBox = h("div.lanes__ask", { attr: { hidden: "" } });
+    const askNow = () => (now >= 1 && now <= rows.length ? block.steps[now - 1].ask : null);
+    /* The same steps seen in space: who holds what, and what the shared thing is right now. */
+    const picture = L.sharePicture({ actors: block.lanes, shared: block.shared.name });
+    const frames = L.shareFrames(block.steps, block.shared.start);
+
+    /* The question that closes a step: what will the next step do? Answered here, shown for real by the next press. */
+    function paintAsk() {
+      const ask = askNow();
+      askBox.hidden = !ask;
+      if (!ask) return;
+      const picked = answers[now - 1];
+      const buttons = ask.options.map((text, i) => {
+        const button = h("button.pick", { attr: { type: "button" }, on: { click() { answers[now - 1] = i; ctx.memory.set(key, answers); paintAsk(); } } }, L.md(text));
+        button.disabled = picked !== undefined;
+        if (picked !== undefined && i === ask.answer) button.classList.add("is-right");
+        if (picked === i && i !== ask.answer) button.classList.add("is-wrong");
+        return button;
+      });
+      const out = picked === undefined ? "" : picked === ask.answer ? "对。按下一步，看它是怎么发生的。" : "不是这个。按下一步，看实际发生了什么。";
+      askBox.replaceChildren(h("p", null, L.md(ask.q)), h("div.picks", null, buttons), h("p.ask__out", { text: out }));
+    }
+
+    return {
+      el: h(`div.lanes${rows.length > 7 ? ".lanes--long" : ""}`, null,
+        h("div.lanes__main", null,
+          h("div.lanes__expr", null, h("code.lanes__code", { text: block.expr }), h("div.lanes__parts", null, parts[0], "→", parts[1], "→", parts[2])),
+          grid(block.lanes, block.shared.name, rows), askBox, verdict),
+        h("div.lanes__side", null, h("p.lanes__now", { text: "此刻" }), picture.el)),
+      steps: block.steps.map((step) => ({ say: step.say, key: step.key })).concat({ say: block.verdictSay, key: block.verdictKey }),
+      waitSay: "先猜一下再往下：点一个你觉得会发生的。实在想跳过，再按一次。",
+      ready: () => !askNow() || answers[now - 1] !== undefined,
+      set(k) {
+        now = k;
+        rows.forEach((el, i) => { el.classList.toggle("is-waiting", i >= k); el.classList.toggle("is-now", i === k - 1); });
+        const op = k >= 1 && k <= rows.length ? block.steps[k - 1].op : null;
+        parts.forEach((part, i) => part.classList.toggle("is-now", OPS[i] === op));
+        verdict.classList.toggle("is-waiting", k <= rows.length);
+        picture.set(frames[Math.min(k, frames.length - 1)]);
+        paintAsk();
+      },
+      /** The part that just changed, so a long walk keeps its newest row on screen. */
+      spot: () => (now > rows.length ? verdict : askNow() ? askBox : rows[now - 1]?.firstChild),
+    };
+  };
+
+  L.blocks.schedule = (block) => {
+    const name = block.shared.name;
+    const hint = { read: `读 ${name}`, calc: "算出新值", write: `写回 ${name}` };
+    const reached = new Set();
+    let shared, actors, owner, locked = false;
+
+    const rows = h("div.lrow-list");
+    const value = h("span.val");
+    const buttons = [0, 1].map((lane) => h("button.btn", { attr: { type: "button" }, on: { click: () => move(lane) } }));
+    const result = h("p.sched__result", { attr: { "aria-live": "polite" } });
+    const goals = block.goals.map((goal) => h("li.goal", { text: goal.label }));
+    const lock = block.lock ? L.segmented("", [{ id: "off", label: "不加锁" }, { id: "on", label: block.lock.label }], "off", (id) => { locked = id === "on"; reset(); }) : null;
+    const allReached = () => block.goals.every((goal) => reached.has(goal.value));
+
+    function paint() {
+      value.textContent = String(shared);
+      buttons.forEach((button, lane) => {
+        const actor = actors[lane];
+        const waits = locked && owner !== null && owner !== lane;
+        button.disabled = actor.pc === OPS.length || waits;
+        button.textContent = actor.pc === OPS.length ? `${block.lanes[lane]} 走完了` : waits ? `${block.lanes[lane]} 在等锁` : `${block.lanes[lane]} 走一步：${hint[OPS[actor.pc]]}`;
+      });
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      if (actors.some((actor) => actor.pc < OPS.length)) { result.textContent = ""; return; }
+      reached.add(shared);
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      const lost = (block.shared.start + 2 * block.delta - shared) / block.delta;
+      const outcome = `两边都走完了：${name} = ${shared}。${lost ? `有 ${lost} 次白加了。` : "一次都没丢。"}`;
+      result.replaceChildren(L.md(allReached() ? `${outcome}${block.done}` : `${outcome}点「重来」，换一种顺序试试。`));
+    }
+
+    function move(lane) {
+      const actor = actors[lane], op = OPS[actor.pc];
+      let text;
+      if (op === "read") { actor.local = shared; owner = lane; text = `读到 ${shared}`; }
+      else if (op === "calc") { text = `${actor.local} ${block.delta < 0 ? "−" : "+"} ${Math.abs(block.delta)} = ${actor.local + block.delta}`; actor.local += block.delta; }
+      else { shared = actor.local; owner = null; text = `写回 ${shared}`; }
+      actor.pc += 1;
+      rows.append(row({ lane, op, text }, shared));
+      rows.lastChild.scrollIntoView({ block: "nearest" });
+      paint();
+    }
+
+    function reset() {
+      shared = block.shared.start;
+      actors = [{ pc: 0, local: null }, { pc: 0, local: null }];
+      owner = null;
+      rows.replaceChildren();
+      paint();
+    }
+
+    reset();
+    return {
+      el: h("div.sched", null,
+        h("div.sched__bar", null, h("ul.goals", null, goals), lock?.el, h("button.btn.btn--quiet", { text: "重来", attr: { type: "button" }, on: { click: reset } })),
+        grid(block.lanes, name, [rows,
+          h("div.lrow.lrow--controls", null, h("div.lcell.lcell--a", null, buttons[0]), h("div.lcell.lcell--mid", null, value), h("div.lcell.lcell--b", null, buttons[1]))]),
+        result),
+      waitSay: "先自己排一排：点两边的按钮，把上面几种结果都排出来。实在想跳过，再按一次。",
+      ready: allReached,
+    };
+  };
+})();
+
+</script>
+<script>
+/* The lesson as a sequence of moments. A moment is one teacher sentence plus one visible change: a block appearing, or one step
+   inside a block. → / space goes to the next moment, ← back; the track at the top shows where the lesson is in its arc.
+   A block that waits for the learner (a guess, a quiz) holds the lesson once, then lets a second press pass.
+   Deep link: #4 opens slide 4, #4.end opens it with every moment shown. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const lesson = JSON.parse(document.getElementById("lesson-data").textContent);
+  const memory = L.memory(`lesson:${lesson.id}`);
+  const predicts = {};
+  for (const slide of lesson.slides) for (const block of slide.blocks) if (block.t === "predict") predicts[block.id] = block;
+  const ctx = { lesson, memory, predicts };
+  L.glossary = lesson.terms || {};
+
+  const $ = (id) => document.getElementById(id);
+  const stage = $("stage"), line = $("line"), keyLine = $("key"), prev = $("prev"), next = $("next"), count = $("count"), notes = $("notes"), notesList = $("notes-list");
+  const beats = lesson.beats.map((beat) => h("button.beat", { text: beat.label, attr: { type: "button" }, on: { click: () => go(lesson.slides.findIndex((slide) => slide.beat === beat.id), 0) } }));
+  $("beats").append(...beats);
+  $("title").textContent = `${lesson.course} · ${lesson.title}`;
+
+  let at = { s: 0, m: 0 }, current = null, nudged = false;
+
+  function build(index) {
+    const slide = lesson.slides[index];
+    const items = slide.blocks.map((block) => { const made = L.blocks[block.t](block, ctx); return { block, made, wrap: h("div.block.is-waiting", null, made.el), seen: false }; });
+    const moments = slide.bridge ? [{ b: -1, k: 0, say: slide.bridge }] : [];
+    items.forEach((item, b) => {
+      moments.push({ b, k: 0, say: item.block.say, key: item.block.key });
+      (item.made.steps || []).forEach((step, i) => moments.push({ b, k: i + 1, say: step.say ?? step, key: step.key }));
+    });
+    const hook = index === 0;
+    const meta = hook ? h("div.hook__meta", null,
+      h("div", null, h("h3", { text: "需要先会" }), h("ul", null, lesson.needs.map((item) => h("li", { text: item })))),
+      h("div", null, h("h3", { text: `学完你能（约 ${lesson.minutes} 分钟）` }), h("ul", null, lesson.after.map((item) => h("li", { text: item }))))) : null;
+    const el = h(`section.slide${hook ? ".slide--hook" : ""}${slide.layout === "split" ? ".slide--split" : ""}`, null,
+      h("h1.slide__title", { text: slide.title }), h("div.slide__blocks", null, items.map((item) => item.wrap)), meta);
+    return { index, items, moments, el };
+  }
+
+  function remember(key) {
+    const keys = memory.get("keys", []);
+    if (keys.includes(key)) return;
+    memory.set("keys", keys.concat(key));
+    notes.classList.remove("is-flash");
+    void notes.offsetWidth;
+    notes.classList.add("is-flash");
+  }
+
+  function paintNotes() {
+    const keys = memory.get("keys", []);
+    notes.textContent = `要点 ${keys.length}`;
+    notesList.replaceChildren(...(keys.length ? keys.map((key) => h("li", { text: key })) : [h("li.is-empty", { text: "讲到关键结论时，会自动记在这里。" })]));
+  }
+
+  function show(spoken) {
+    L.hideTip();
+    if (!current || current.index !== at.s) { current = build(at.s); stage.replaceChildren(current.el); stage.scrollTop = 0; }
+    at.m = Math.min(at.m, current.moments.length - 1);
+    const now = current.moments[at.m];
+    current.items.forEach((item, b) => {
+      const reached = current.moments.filter((moment, i) => i <= at.m && moment.b === b);
+      item.wrap.classList.toggle("is-waiting", reached.length === 0);
+      if (!reached.length) { item.seen = false; return; }
+      item.made.set?.(reached.at(-1).k);
+      if (!item.seen) { item.seen = true; item.made.refresh?.(); }
+    });
+    line.replaceChildren(h("span", null, L.md(spoken || now.say)));
+    line.classList.remove("is-fresh");
+    void line.offsetWidth;
+    line.classList.add("is-fresh");
+    keyLine.hidden = !now.key || Boolean(spoken);
+    if (now.key && !spoken) { keyLine.textContent = `已记入要点：${now.key}`; remember(now.key); }
+    paintNotes();
+    // keep what just changed in view: the block says which part of it that is, or it is the block itself
+    const changed = current.items[now.b];
+    if (at.m > 0 && changed) (changed.made.spot?.() || changed.wrap).scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const beat = lesson.beats.findIndex((item) => item.id === lesson.slides[at.s].beat);
+    beats.forEach((el, i) => { el.classList.toggle("is-now", i === beat); el.classList.toggle("is-done", i < beat); el.setAttribute("aria-current", i === beat ? "step" : "false"); });
+    count.textContent = `${at.s + 1} / ${lesson.slides.length}`;
+    const last = at.s === lesson.slides.length - 1 && at.m === current.moments.length - 1;
+    prev.disabled = at.s === 0 && at.m === 0;
+    next.disabled = last;
+    memory.set("at", at);
+  }
+
+  function go(s, m) { if (s < 0) return; at = { s, m }; nudged = false; show(); }
+
+  function forward() {
+    const item = current.items[current.moments[at.m].b];
+    if (item?.made.ready && !item.made.ready()) {
+      if (!nudged) { nudged = true; return show(item.made.waitSay || "先选一个再往下。猜错没关系；实在想跳过，再按一次。"); }
+      item.made.pass?.(); // the learner chose to skip: the block shows what it was holding back
+    }
+    if (at.m < current.moments.length - 1) return go(at.s, at.m + 1);
+    if (at.s < lesson.slides.length - 1) go(at.s + 1, 0);
+  }
+
+  function back() {
+    if (at.m > 0) return go(at.s, at.m - 1);
+    if (at.s > 0) go(at.s - 1, Number.MAX_SAFE_INTEGER);
+  }
+
+  next.addEventListener("click", forward);
+  prev.addEventListener("click", back);
+  document.addEventListener("keydown", (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const typing = event.target.closest?.("button, input, [role=button], .code__scroll");
+    if (event.key === "ArrowRight" || event.key === "PageDown" || (event.key === " " && !typing)) { event.preventDefault(); forward(); }
+    else if (event.key === "ArrowLeft" || event.key === "PageUp") { event.preventDefault(); back(); }
+  });
+
+  notes.addEventListener("click", (event) => { event.stopPropagation(); notesList.hidden = !notesList.hidden; });
+  document.addEventListener("click", (event) => { if (!notesList.contains(event.target)) notesList.hidden = true; });
+
+  const root = document.documentElement, themeButton = $("theme");
+  const dark = () => (root.dataset.theme ? root.dataset.theme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const paintTheme = () => { themeButton.textContent = dark() ? "浅色" : "深色"; };
+  themeButton.addEventListener("click", () => { root.dataset.theme = dark() ? "light" : "dark"; try { localStorage.setItem("lesson-theme", root.dataset.theme); } catch { /* private window */ } paintTheme(); });
+  paintTheme();
+
+  const link = /^#(\d+)(\.end)?$/.exec(location.hash);
+  const saved = memory.get("at", { s: 0, m: 0 });
+  if (link) go(Math.min(Number(link[1]), lesson.slides.length) - 1, link[2] ? Number.MAX_SAFE_INTEGER : 0);
+  else go(Math.min(saved.s, lesson.slides.length - 1), saved.m);
+})();
+
+</script>
+</body>
+</html>

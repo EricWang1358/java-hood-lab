@@ -1,0 +1,1644 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Semaphore：同时只放 2 个线程</title>
+<script>try{var t=localStorage.getItem("lesson-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>
+/* Lesson page. One stage, one teacher line at the bottom: every press brings one sentence and one visible change.
+   Colours follow StudyHub's paper tokens (ui/tokens.css). The accent means "look here, now" and nothing else;
+   green = came out as it should, plum = did not. No shadows beyond a hairline, no gradients, no decoration. */
+:root {
+  --canvas: #f1ede6; --surface: #faf8f4; --raised: #ffffff; --sunken: #e8e3da;
+  --ink: #1e1a15; --ink-2: #453e35; --muted: #635b51; --faint: #7b7368;
+  --rule: #2a1c0e24; --rule-strong: #2a1c0e52;
+  --accent: #c03a1f; --accent-text: #ad4025; --accent-ink: #fffaf5; --accent-wash: #c03a1f14;
+  --ok: #1c6c48; --ok-wash: #1c6c4817; --bad: #a23461; --bad-wash: #a2346114; --info: #346287; --ochre: #8a5a10;
+  --code-k: #8a3b1f;
+  --s1: #1c5cab; --s2: #e0703a; --s3: #16a37a; --s4: #8a5a10;
+  --font: "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --display: "Segoe UI Variable Display", "SF Pro Display", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Microsoft YaHei UI", monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { font-size: clamp(16px, .5vw + 10.5px, 19px); -webkit-text-size-adjust: 100%; }
+body { margin: 0; height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden;
+  background: var(--canvas); color: var(--ink); font-family: var(--font); line-height: 1.6; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--mono); }
+p code, li code, .opt code, .voice code { font-size: .9em; background: var(--sunken); padding: .08em .36em; border-radius: 5px; }
+mark { background: none; color: inherit; box-shadow: inset 0 -.5em 0 var(--accent-wash); font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* top: where this lesson is going */
+.top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 1rem; padding: .55rem 1.4rem; border-bottom: 1px solid var(--rule); }
+.top__title { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top__tools { display: flex; justify-content: flex-end; align-items: center; gap: .8rem; font-size: .8rem; color: var(--muted); }
+.beats { display: flex; align-items: center; }
+.beat { display: flex; align-items: center; gap: .4rem; padding: .3rem .55rem; border: 0; background: none; border-radius: 8px; font-size: .78rem; color: var(--faint); cursor: pointer; white-space: nowrap; }
+.beat::before { content: ""; width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid currentColor; }
+.beat:hover { color: var(--ink); }
+.beat.is-done { color: var(--muted); }
+.beat.is-done::before { background: currentColor; }
+.beat.is-now { color: var(--ink); font-weight: 650; }
+.beat.is-now::before { background: var(--accent); border-color: var(--accent); }
+.tool { border: 1px solid var(--rule); background: none; border-radius: 8px; padding: .25rem .6rem; cursor: pointer; }
+.tool:hover { border-color: var(--rule-strong); color: var(--ink); }
+
+/* stage */
+/* no top padding on the scroller itself: a sticky bar inside it must be able to reach the very top */
+.stage { overflow-x: hidden; overflow-y: auto; padding: 0 clamp(1rem, 4vw, 3.4rem) 2rem; }
+.slide { width: 100%; max-width: 68rem; margin: 0 auto; padding-top: clamp(1.4rem, 4vh, 2.8rem); }
+.slide__title { font-family: var(--display); font-size: clamp(1.5rem, 2.6vw, 2.3rem); line-height: 1.22; font-weight: 680; letter-spacing: -.01em; margin: 0 0 1.3rem; text-wrap: balance; }
+.slide__blocks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+.slide--split .slide__blocks { grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); column-gap: 2.4rem; align-items: start; }
+.slide--split .block:first-child { grid-row: 1 / span 4; }
+.block { transition: opacity .28s var(--ease), transform .28s var(--ease); }
+.block.is-waiting { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+.slide--hook .slide__title { font-size: clamp(2.2rem, 5vw, 4rem); line-height: 1.12; font-weight: 720; letter-spacing: -.02em; max-width: 13em; margin-top: clamp(.5rem, 7vh, 4.5rem); margin-bottom: 1.6rem; }
+.hook__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.4rem; margin-top: 2.4rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); max-width: 52rem; }
+.hook__meta h3 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .5rem; }
+.hook__meta ul { margin: 0; padding: 0; list-style: none; font-size: .92rem; color: var(--ink-2); }
+.hook__meta li { padding: .14rem 0; }
+
+.text { font-size: 1.18rem; line-height: 1.65; color: var(--ink-2); margin: 0; max-width: 34em; }
+.slide--hook .text { font-size: 1.4rem; color: var(--ink); }
+.points { margin: 0; padding: 0; list-style: none; display: grid; gap: .7rem; font-size: 1.08rem; line-height: 1.55; }
+.points li { display: grid; grid-template-columns: 1.1rem 1fr; }
+.points li::before { content: ""; width: 6px; height: 6px; margin-top: .62em; background: var(--ink-2); }
+.callout { border-left: 3px solid var(--info); padding: .1rem 0 .1rem 1rem; max-width: 36em; }
+.callout--pitfall { border-left-color: var(--bad); }
+.callout h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.callout p { margin: 0; color: var(--ink-2); }
+
+/* code */
+.code { background: var(--raised); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+.code__path { padding: .55rem 1rem .5rem; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: .68rem; color: var(--faint); }
+.code__scroll { overflow: auto; max-height: min(58vh, 31rem); padding: .5rem 0 .8rem; scrollbar-width: thin; }
+.code__line { display: grid; grid-template-columns: 3em minmax(0, 1fr); font-family: var(--mono); font-size: .78rem; line-height: 1.68; white-space: pre; padding-right: 1rem; border-left: 3px solid transparent; transition: opacity .3s, background-color .3s; }
+.code__no { text-align: right; padding-right: 1em; color: var(--faint); opacity: .7; user-select: none; }
+.code.has-focus .code__line { opacity: .4; }
+.code.has-focus .code__line.is-focus { opacity: 1; background: var(--accent-wash); border-left-color: var(--accent); }
+.code .code__line.is-changed { opacity: 1; background: var(--ok-wash); border-left-color: var(--ok); }
+.tk-k { color: var(--code-k); font-weight: 600; }
+.tk-s { color: var(--ok); }
+.tk-n { color: var(--info); }
+.tk-c { color: var(--faint); font-style: italic; }
+
+/* buttons and segmented choices */
+.btn { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 10px; padding: .5rem 1rem; cursor: pointer; }
+.btn:hover { border-color: var(--ink-2); }
+.btn--primary { background: var(--ink); border-color: var(--ink); color: var(--canvas); font-weight: 600; }
+.btn--primary:hover { border-color: var(--ink); opacity: .86; }
+.btn--quiet { border-color: transparent; background: none; color: var(--muted); padding: .2rem .5rem; font-size: .78rem; }
+.btn--quiet:hover { color: var(--ink); border-color: var(--rule); }
+.btn:disabled { opacity: .4; cursor: default; }
+.seg { display: inline-flex; align-items: center; gap: .6rem; font-size: .82rem; color: var(--muted); }
+.seg__set { display: inline-flex; padding: 3px; background: var(--sunken); border-radius: 10px; }
+.seg__set button { border: 0; background: none; padding: .32rem .8rem; border-radius: 8px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.seg__set button:hover { color: var(--ink); }
+.seg__set button[aria-pressed="true"] { background: var(--raised); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--rule), 0 1px 2px #0000001a; }
+
+/* experiment: the code on the left, what really happened on the right */
+.exp__bar { display: flex; justify-content: space-between; align-items: center; gap: .8rem 1.5rem; flex-wrap: wrap; margin-bottom: .4rem; padding: .5rem 0; position: sticky; top: 0; z-index: 2; background: var(--canvas); }
+.exp__body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 1.6rem; align-items: start; }
+.exp .code__scroll { max-height: min(34vh, 22rem); }
+.block:has(> .try) { display: none; }
+.exp.is-invited .seg__set { animation: invite 2.4s var(--ease); }
+@keyframes invite { 0%, 70% { box-shadow: 0 0 0 2px var(--accent); } }
+.exp__q { margin: .1rem 0 .7rem; font-size: .92rem; color: var(--ink-2); }
+.plot__row { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; align-items: center; gap: .8rem; width: 100%; padding: 0; border: 0; border-top: 1px solid var(--rule); background: none; text-align: left; cursor: pointer; }
+.plot__row[disabled] { cursor: default; }
+.plot__label { font-size: .86rem; color: var(--muted); }
+.plot__row.is-on .plot__label { color: var(--ink); font-weight: 650; }
+.plot__track { position: relative; height: 3.3rem; }
+.plot__track::before { content: ""; position: absolute; inset: 50% 0 auto 0; border-top: 1px solid var(--rule); }
+.plot__track::after { content: ""; position: absolute; top: 0; bottom: 0; left: var(--expect); border-left: 1.5px dashed var(--ok); opacity: .7; }
+.dot { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--bad); z-index: 1;
+  transition: left .55s var(--ease), transform .55s var(--ease), opacity .3s, background-color .3s; }
+.dot.is-ok { background: var(--ok); }
+.dot.is-waiting { opacity: 0; pointer-events: none; }
+.plot__row:not(.is-on) .dot { opacity: .5; }
+.plot__row:not(.is-on) .dot.is-waiting { opacity: 0; }
+.plot__sum { text-align: right; font-size: .8rem; color: var(--muted); line-height: 1.35; }
+.plot__sum b { display: block; font-size: .9rem; color: var(--bad); }
+.plot__sum b.is-ok { color: var(--ok); }
+.plot__axis { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; gap: .8rem; border-top: 1px solid var(--rule); font-size: .72rem; color: var(--faint); }
+.plot__ticks { position: relative; height: 1.6rem; }
+.plot__ticks span { position: absolute; top: .3rem; white-space: nowrap; }
+.plot__ticks .is-expect { left: var(--expect); transform: translateX(-100%); padding-right: .4rem; color: var(--ok); font-weight: 600; }
+.exp__finding { margin: .9rem 0 0; font-size: 1.04rem; line-height: 1.55; min-height: 3.2em; }
+.exp__finding b { font-variant-numeric: tabular-nums; }
+.exp__foot { margin-top: .5rem; display: flex; align-items: center; gap: .3rem .9rem; flex-wrap: wrap; font-size: .72rem; color: var(--faint); }
+.cmd { font-family: var(--mono); background: var(--sunken); color: var(--ink-2); padding: .15rem .5rem; border-radius: 6px; }
+
+/* lanes: two threads and the one thing they share; time runs downward */
+.lanes__expr { display: flex; align-items: center; gap: .6rem 1.4rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.lanes__code { font-family: var(--mono); font-size: 1.5rem; font-weight: 650; }
+.lanes__parts { display: flex; align-items: center; gap: .45rem; font-size: .84rem; color: var(--faint); }
+.part { padding: .2rem .7rem; border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); transition: color .25s, border-color .25s, background-color .25s; }
+.part.is-now { color: var(--accent-text); border-color: var(--accent); background: var(--accent-wash); font-weight: 600; }
+.lanes__grid { display: grid; grid-template-columns: minmax(0, 1fr) 5.4rem minmax(0, 1fr); max-width: 46rem; margin: 0; }
+.lanes__head { font-size: .82rem; color: var(--muted); padding-bottom: .5rem; border-bottom: 1px solid var(--rule); }
+.lanes__head--a { text-align: right; padding-right: 3.6rem; }
+.lanes__head--b { padding-left: 3.6rem; }
+.lanes__head--mid { text-align: center; font-family: var(--mono); color: var(--ink); font-weight: 600; }
+.lcell { min-height: 2.9rem; display: flex; align-items: center; transition: opacity .3s var(--ease); }
+.lcell--a { justify-content: flex-end; }
+.lcell--mid { justify-content: center; position: relative; }
+.lcell--mid::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid var(--rule-strong); }
+.lrow { display: contents; }
+.lrow.is-waiting .lcell > * { opacity: 0; }
+.lcell > * { transition: opacity .3s var(--ease); }
+.chip { font-size: .92rem; padding: .32rem .8rem; border-radius: 8px; background: var(--raised); border: 1px solid var(--rule); white-space: nowrap; }
+.lrow.is-now .chip { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.arrow { flex: 0 0 3rem; height: 0; border-top: 1.5px solid var(--ink-2); position: relative; margin: 0 .3rem; }
+.arrow::after { content: ""; position: absolute; top: -5px; border: 4.25px solid transparent; }
+.arrow--right::after { right: -2px; border-left: 7px solid var(--ink-2); border-right: 0; }
+.arrow--left::after { left: -2px; border-right: 7px solid var(--ink-2); border-left: 0; }
+.arrow--none { border-top-color: transparent; }
+.arrow--none::after { display: none; }
+.val { position: relative; z-index: 1; min-width: 2.7rem; text-align: center; font-family: var(--mono); font-size: .98rem; font-weight: 650; padding: .2rem .6rem; border-radius: 8px; background: var(--canvas); border: 1.5px solid var(--ink-2); }
+.val--write { border-color: var(--accent); color: var(--accent-text); }
+.lanes__verdict { max-width: 46rem; margin: .9rem 0 0; padding-top: .9rem; border-top: 1px solid var(--rule); font-size: 1.15rem; font-weight: 650; transition: opacity .3s; }
+.lanes__verdict.is-waiting { opacity: 0; }
+
+/* guess, then see */
+.predict__q, .quiz__q { font-size: 1.3rem; font-weight: 650; line-height: 1.4; margin: 0 0 1rem; }
+.opts { display: grid; gap: .55rem; max-width: 40rem; }
+.opt { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto; align-items: center; gap: .6rem; width: 100%; text-align: left; padding: .75rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--raised); cursor: pointer; font-size: 1.02rem; }
+.opt:hover { border-color: var(--ink-2); }
+.opt__key { font-family: var(--mono); font-size: .82rem; color: var(--faint); }
+.opt__tag { font-size: .74rem; font-weight: 600; }
+.opt.is-picked { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.opt.is-picked .opt__tag { color: var(--ink-2); }
+.opt.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); }
+.opt.is-right .opt__tag { color: var(--ok); }
+.opt.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
+.opt.is-wrong .opt__tag { color: var(--bad); }
+.opt__why { grid-column: 2 / -1; font-size: .88rem; color: var(--ink-2); }
+.reveal { display: flex; gap: .5rem 2.6rem; flex-wrap: wrap; padding-top: .8rem; border-top: 1px solid var(--rule); max-width: 46rem; }
+.reveal dl { margin: 0; }
+.reveal dt { font-size: .76rem; color: var(--muted); }
+.reveal dd { margin: .1rem 0 0; font-size: 1.02rem; font-weight: 600; }
+.reveal .is-ok { color: var(--ok); }
+.reveal .is-miss { color: var(--bad); }
+
+/* the name comes last */
+.name__term { font-family: var(--display); font-size: clamp(2.4rem, 5.4vw, 4.2rem); line-height: 1.1; font-weight: 720; letter-spacing: -.02em; margin: 0; }
+.name__alias { font-family: var(--mono); font-size: .92rem; color: var(--muted); margin: .5rem 0 0; }
+.name__line { font-size: 1.28rem; line-height: 1.55; margin: 1.1rem 0 0; max-width: 30em; }
+.name__asked { margin: 1.8rem 0 0; padding-top: 1rem; border-top: 1px solid var(--rule); max-width: 40rem; }
+.name__asked h4 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .4rem; }
+.name__asked ul { margin: 0; padding: 0; list-style: none; font-size: 1.02rem; color: var(--ink-2); }
+.name__asked li { padding: .2rem 0; }
+
+/* say it aloud, take three cards */
+.say__prompt { font-size: 1.5rem; font-weight: 650; line-height: 1.4; margin: 0 0 1.2rem; max-width: 26em; text-wrap: balance; }
+.say__row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.say__clock { font-family: var(--mono); font-size: 1.7rem; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 3.4em; }
+.say__points { margin: 1.4rem 0 0; padding: 1rem 0 0; border-top: 1px solid var(--rule); list-style: none; display: grid; gap: .5rem; max-width: 40rem; }
+.say__points label { display: grid; grid-template-columns: 1.4rem 1fr; gap: .5rem; align-items: start; cursor: pointer; font-size: 1.02rem; }
+.say__points input { width: 1.05rem; height: 1.05rem; margin-top: .32rem; accent-color: var(--ok); }
+.say__score { margin: .8rem 0 0; font-size: .92rem; color: var(--muted); }
+.cards { display: grid; gap: 0; max-width: 44rem; border-bottom: 1px solid var(--rule); }
+.card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem 1rem; align-items: baseline; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.card__q { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.card__a { grid-column: 1 / -1; margin: 0; color: var(--ink-2); }
+
+/* the teacher: what a person standing next to you would say right now. It leads; the stage shows. */
+.voice { border-top: 1px solid var(--rule); padding: 1rem clamp(1rem, 4vw, 3.4rem) 1.1rem; }
+.voice__inner { max-width: 68rem; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.6rem; align-items: end; }
+.voice__line { margin: 0; font-size: 1.2rem; line-height: 1.62; min-height: 4.86em; max-width: 43em; }
+.voice__line > span { display: block; }
+.voice__line.is-fresh > span { animation: line-in .32s var(--ease); }
+.voice__nav { display: flex; gap: .5rem; }
+@keyframes line-in { from { opacity: 0; transform: translateY(5px); } }
+
+.voice__key { margin: .4rem 0 0; font-size: .8rem; color: var(--muted); animation: line-in .32s var(--ease); }
+.tool.is-flash { animation: flash 1.2s var(--ease); }
+@keyframes flash { 0%, 40% { background: var(--accent-wash); border-color: var(--accent); color: var(--ink); } }
+
+/* reminders at the moment of need */
+.term { border-bottom: 1.5px dotted var(--ochre); cursor: help; border-radius: 2px; }
+.term:hover, .term:focus-visible { background: var(--accent-wash); }
+.tip { position: fixed; z-index: 20; max-width: 22rem; padding: .6rem .8rem; border-radius: 10px; background: var(--ink); color: var(--canvas); font-size: .86rem; line-height: 1.5; box-shadow: 0 8px 24px -10px #000000a0; }
+.tip b { display: block; font-size: .8rem; opacity: .75; margin-bottom: .1rem; }
+.tip code { background: none; padding: 0; }
+.notes { position: relative; }
+.notes__list { position: absolute; right: 0; top: calc(100% + .5rem); z-index: 15; width: min(22rem, 86vw); margin: 0; padding: .7rem 1rem .7rem 2rem; background: var(--raised); border: 1px solid var(--rule-strong); border-radius: 12px; font-size: .88rem; color: var(--ink); line-height: 1.5; box-shadow: 0 14px 34px -20px #000000a0; }
+.notes__list li { padding: .15rem 0; }
+.notes__list .is-empty { list-style: none; margin-left: -1rem; color: var(--muted); }
+
+.exp__note { margin: .5rem 0 0; font-size: .84rem; color: var(--muted); min-height: 1.4em; }
+button.plot__label { border: 0; background: none; padding: .3rem 0; text-align: left; cursor: pointer; line-height: 1.3; }
+button.plot__label:hover { color: var(--ink); }
+.plot__row { cursor: default; }
+.dot { cursor: pointer; }
+.dot::after { content: ""; position: absolute; inset: -5px; }
+.dot:hover { box-shadow: 0 0 0 3px var(--canvas), 0 0 0 4.5px currentColor; color: var(--ink-2); }
+.exp__probe { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.lrow-list { display: contents; }
+.lrow--controls .lcell { padding-top: .7rem; }
+.lrow--controls .lcell--a { padding-right: .8rem; }
+.lrow--controls .lcell--b { padding-left: .8rem; }
+.sched__bar { display: flex; align-items: center; justify-content: flex-start; gap: .6rem 1.2rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.goals { display: flex; gap: .5rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; font-size: .86rem; }
+.goal { display: flex; align-items: center; gap: .4rem; padding: .22rem .7rem; border: 1px solid var(--rule-strong); border-radius: 999px; color: var(--ink-2); }
+.goal::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid currentColor; }
+.goal.is-done { color: var(--ok); border-color: var(--ok); font-weight: 600; }
+.goal.is-done::before { background: var(--ok); border-color: var(--ok); }
+.sched__result { max-width: 46rem; margin: .9rem 0 0; min-height: 3.2em; font-size: 1.05rem; }
+
+.block > .code { max-width: 46rem; }
+.lrow--controls .btn { border-color: var(--ink-2); font-weight: 600; }
+.lrow--controls .btn:disabled { border-color: var(--rule-strong); font-weight: 400; }
+
+/* small answer buttons, shared by the warm-up, the lanes question and the cases */
+.picks { display: flex; gap: .45rem; flex-wrap: wrap; }
+.pick { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 9px; padding: .36rem .85rem; font-size: .95rem; cursor: pointer; }
+.pick:hover:not(:disabled) { border-color: var(--ink-2); }
+.pick:disabled { cursor: default; color: var(--muted); }
+.pick.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); color: var(--ok); font-weight: 600; }
+.pick.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); color: var(--bad); }
+.pick--tool { font-family: var(--mono); font-size: .86rem; }
+
+/* opening: what you already have, then a picture to hang the lesson on */
+.recall, .cases { max-width: 50rem; }
+.recall__item { display: grid; grid-template-columns: 7.4rem minmax(0, 1fr); gap: .4rem 1.2rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.recall__have { grid-row: 1 / span 3; font-size: .82rem; color: var(--muted); padding-top: .2rem; }
+.recall__q, .cases__text { margin: 0; font-size: 1.08rem; font-weight: 600; line-height: 1.5; }
+.recall__why, .cases__why { margin: 0; font-size: .92rem; color: var(--ink-2); }
+.recall__score, .cases__score { margin: 0; padding-top: .8rem; border-top: 1px solid var(--rule); font-size: .92rem; color: var(--muted); min-height: 2.4em; }
+.cases__item { display: grid; gap: .5rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.cases__text { font-weight: 400; }
+.scene__story { margin: 0 0 1.4rem; font-size: 1.28rem; line-height: 1.7; max-width: 33em; }
+.scene__map { max-width: 44rem; transition: opacity .3s var(--ease); }
+.scene__map.is-waiting, .scene__row.is-waiting { opacity: 0; }
+.scene__head, .scene__row { display: grid; grid-template-columns: minmax(0, 1fr) 2.6rem minmax(0, 1.1fr); align-items: center; }
+.scene__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; border-bottom: 1px solid var(--rule); }
+.scene__row { padding: .58rem 0; border-bottom: 1px solid var(--rule); font-size: 1.04rem; transition: opacity .3s var(--ease); }
+.scene__arrow { color: var(--faint); }
+.scene__row.is-now .scene__arrow { color: var(--accent); }
+.scene__to { font-weight: 600; }
+
+/* find the line; look inside */
+.inside { max-width: 46rem; }
+.spot { display: grid; grid-template-columns: minmax(0, 46rem) minmax(13rem, 19rem); gap: 0 2rem; align-items: start; }
+.spot__q { grid-column: 1 / -1; }
+.spot__how { margin: .2rem 0 .8rem; font-size: .92rem; color: var(--muted); }
+.spot__q { margin: 0 0 .8rem; font-size: 1.18rem; font-weight: 650; line-height: 1.45; }
+.spot .code__scroll { max-height: max(12rem, calc(100vh - 21.5rem)); }
+.code.is-pickable .code__line { cursor: pointer; }
+.code.is-pickable .code__line:hover { background: var(--sunken); }
+.code__line.is-wrong { background: var(--bad-wash); border-left-color: var(--bad); }
+.spot__out { margin: 0; font-size: 1rem; line-height: 1.7; color: var(--ink-2); }
+.spot__out.is-ok { color: var(--ok); font-weight: 600; }
+.inside__what { margin: 0 0 .6rem; font-size: .86rem; color: var(--muted); }
+.inside .code__line { position: relative; font-size: .88rem; line-height: 2.2; }
+.code__tag { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); font-family: var(--font); font-size: .78rem; font-weight: 600; line-height: 1.7; padding: 0 .7rem; border-radius: 999px; background: var(--raised); border: 1px solid var(--rule-strong); }
+.code__line.is-focus .code__tag { border-color: var(--accent); color: var(--accent-text); }
+
+/* lanes: a question between two steps; steps that touch nothing */
+.lanes--long .lcell { min-height: 2.5rem; }
+.chip--wait { border-style: dashed; color: var(--muted); }
+.chip--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.chip--ok { border-color: var(--ok); color: var(--ok); }
+.lanes__ask { max-width: 46rem; margin-top: .8rem; padding: .8rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--surface); display: grid; gap: .5rem; }
+.lanes__ask[hidden] { display: none; }
+.lanes__ask p { margin: 0; font-weight: 600; }
+.lanes__ask .ask__out { font-weight: 400; font-size: .9rem; color: var(--muted); min-height: 1.5em; }
+
+/* runs let out by hand; a reference answer after speaking */
+.exp__hand { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; }
+.exp__hand[hidden] { display: none; }
+.plot__sum.is-held > * { visibility: hidden; }
+.say__model { margin: 1rem 0 0; padding: .9rem 1.1rem; border-left: 3px solid var(--rule-strong); background: var(--surface); font-size: 1rem; line-height: 1.8; max-width: 42rem; }
+
+/* how to choose between the tools just met */
+.choose { max-width: 62rem; }
+.choose__head, .choose__row { display: grid; grid-template-columns: 9.6rem repeat(3, minmax(0, 1fr)); gap: 0 1.6rem; }
+.choose__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; }
+.choose__row { padding: .8rem 0; border-top: 1px solid var(--rule); font-size: .98rem; line-height: 1.5; color: var(--ink-2); }
+.choose__row { transition: opacity .3s var(--ease); }
+.choose.is-walking .choose__row:not(.is-now) { opacity: .42; }
+.choose__name { font-family: var(--mono); font-weight: 650; color: var(--ink); }
+.choose__rule.is-waiting { visibility: hidden; }
+.choose__rule { margin: 0; padding-top: .9rem; border-top: 1px solid var(--rule-strong); font-size: 1.12rem; font-weight: 600; }
+
+/* pictures: two actors and the thing they share. Drawn at a fixed size so every part has a known place. */
+.pic { position: relative; width: 300px; height: 300px; flex: none; font-size: 16px; line-height: 1.3; }
+.pic__lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.pic__arrow { opacity: 0; transition: opacity .25s var(--ease); }
+.pic__arrow.is-on { opacity: 1; }
+.pic__arrow line { stroke: var(--accent); stroke-width: 1.75; }
+.pic__arrow polygon { fill: var(--accent); }
+.pic--plain .pic__arrow line { stroke: var(--ink-2); }
+.pic--plain .pic__arrow polygon { fill: var(--ink-2); }
+.pic__over { position: absolute; left: 0; right: 0; bottom: calc(100% - 38px); display: grid; justify-items: center; gap: 3px; }
+.pic__name { font-size: 13px; color: var(--muted); }
+.pic__tags { display: grid; justify-items: center; gap: 3px; }
+.pic__tags span { font-family: var(--mono); font-size: 12.5px; font-weight: 650; color: var(--ink); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--rule-strong); background: var(--surface); white-space: nowrap; }
+.pic__board { position: absolute; left: 90px; top: 44px; width: 120px; height: 62px; display: grid; place-items: center; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .25s, box-shadow .25s; }
+.pic__board.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__value { font-family: var(--mono); font-size: 28px; font-weight: 650; line-height: 1; }
+.pic__board.is-now .pic__value { color: var(--accent-text); }
+.pic__hand { position: absolute; top: 146px; width: 64px; height: 38px; display: grid; place-items: center; border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--raised); font-family: var(--mono); font-size: 16px; transition: border-color .25s, box-shadow .25s; }
+.pic__hand--a { left: 50px; }
+.pic__hand--b { left: 186px; }
+.pic__hand small { position: absolute; left: 0; right: 0; top: -18px; text-align: center; font-family: var(--font); font-size: 11px; color: var(--faint); }
+.pic__hand.is-empty { border-style: dashed; background: none; }
+.pic__hand.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__actor { position: absolute; top: 196px; width: 110px; display: grid; justify-items: center; gap: 3px; }
+.pic__actor--a { left: 0; }
+.pic__actor--b { left: 190px; }
+.pic__figure { width: 44px; height: 40px; fill: var(--raised); stroke: var(--ink-2); stroke-width: 1.5; transition: stroke .25s; }
+.pic__actor.is-now .pic__figure { stroke: var(--accent); }
+.pic__note { font-size: 12.5px; padding: 2px 8px; border-radius: 7px; border: 1px solid var(--rule-strong); background: var(--raised); white-space: nowrap; }
+.pic__note:empty { display: none; }
+.pic__note--wait { border-style: dashed; color: var(--muted); }
+.pic__note--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.pic__note--ok { border-color: var(--ok); color: var(--ok); }
+.pic__note.is-now { box-shadow: 0 0 0 1px currentColor; }
+.pic__action { position: absolute; left: 0; right: 0; top: 138px; text-align: center; font-family: var(--mono); font-weight: 650; font-size: 14px; color: var(--ink); }
+.pic__action.is-now { color: var(--accent-text); }
+.pic__action:empty { display: none; }
+.scene__body.has-picture { display: grid; grid-template-columns: minmax(0, 44rem) 300px; gap: 0 2.4rem; align-items: start; }
+.lanes { display: grid; grid-template-columns: minmax(0, 46rem) 300px; gap: 0 2rem; align-items: start; }
+.lanes__side { position: sticky; top: .6rem; }
+.lanes__now { margin: 0 0 .1rem; font-size: .76rem; color: var(--muted); text-align: center; }
+@media (max-width: 1220px) { .lanes { grid-template-columns: minmax(0, 1fr); } .lanes__side { display: none; } }
+
+/* chart: the recorded runs as lines. Colour names the way of writing; a hollow point means that group came out wrong. */
+.chart { margin: 0; display: grid; grid-template-columns: minmax(0, 44rem) minmax(13rem, 1fr); gap: 0 2rem; align-items: start; }
+.chart__cap { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem 1rem; font-size: .84rem; color: var(--muted); margin-bottom: .5rem; }
+.chart__cap b { font-size: 1rem; color: var(--ink); }
+.chart__marks { display: inline-flex; align-items: center; gap: .4rem; }
+.chart__mark { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--ink-2); border: 2px solid var(--ink-2); }
+.chart__mark.is-wrong { background: transparent; margin-left: .7rem; }
+.chart__picks { display: grid; justify-items: start; gap: .4rem; margin-bottom: 1rem; }
+.chart__pick { display: inline-flex; align-items: center; gap: .5rem; padding: .26rem .75rem; border: 1px solid var(--rule-strong); border-radius: 999px; background: none; font-size: .86rem; color: var(--ink-2); cursor: pointer; }
+.chart__pick:hover { border-color: var(--ink-2); }
+.chart__pick[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); font-weight: 600; background: var(--raised); }
+.chart__key { flex: none; width: 18px; height: 0; border-top: 3px solid var(--s, var(--ink-2)); border-radius: 2px; }
+.chart__key--1, .chart__series--1 { --s: var(--s1); }
+.chart__key--2, .chart__series--2 { --s: var(--s2); }
+.chart__key--3, .chart__series--3 { --s: var(--s3); }
+.chart__key--4, .chart__series--4 { --s: var(--s4); }
+.chart__plot { position: relative; }
+.chart__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart__grid { stroke: var(--rule); stroke-width: 1; }
+.chart__base { stroke: var(--rule-strong); stroke-width: 1; }
+.chart__tick { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.chart__series { transition: opacity .25s var(--ease); }
+.chart__series.is-dim { opacity: .2; }
+.chart__line { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; transition: stroke-width .2s; }
+.chart__series.is-on .chart__line { stroke-width: 3.2; }
+.chart__lead { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 1; opacity: .55; }
+.chart__dot { fill: var(--s, var(--ink-2)); stroke: var(--canvas); stroke-width: 2; }
+.chart__dot.is-wrong { fill: var(--canvas); stroke: var(--s, var(--ink-2)); }
+.chart__name { font-size: 11.5px; fill: var(--ink-2); }
+.chart__end { font-weight: 650; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.chart__cross { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+.chart__cross.is-on { opacity: .7; }
+.chart__hit { fill: transparent; cursor: crosshair; outline: none; }
+.chart__hit:focus-visible { stroke: var(--ink-2); stroke-dasharray: 2 3; }
+.chart__tip { position: absolute; top: 4%; z-index: 2; min-width: 16rem; padding: .55rem .7rem; border-radius: 10px; background: var(--raised); border: 1px solid var(--rule-strong); box-shadow: 0 8px 22px -14px #000000a0; font-size: .8rem; display: grid; gap: .25rem; pointer-events: none; }
+.chart__tip[hidden] { display: none; }
+.chart__row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto 4.8em; gap: .5rem; align-items: center; }
+.chart__row.is-dim { opacity: .45; }
+.chart__row span:last-child { color: var(--muted); text-align: right; }
+.chart__row span.is-wrong { color: var(--bad); }
+.chart__read { margin: 0 0 .8rem; min-height: 6.4em; font-size: .98rem; line-height: 1.65; color: var(--ink-2); }
+.chart__table { font-size: .8rem; color: var(--muted); }
+.chart__table summary { cursor: pointer; width: max-content; }
+.chart__table table { border-collapse: collapse; margin-top: .4rem; font-variant-numeric: tabular-nums; }
+.chart__table th, .chart__table td { padding: .22rem .5rem; border-bottom: 1px solid var(--rule); text-align: right; font-weight: 400; white-space: nowrap; }
+.chart__table th:first-child { text-align: left; }
+
+/* decide: the rule for choosing, as a small tree */
+.decide { max-width: 19rem; padding: 1rem 1.1rem; border: 1px solid var(--rule-strong); border-radius: 12px; background: var(--surface); }
+.decide__q { margin: 0; font-weight: 650; font-size: 1.02rem; }
+.decide__list { list-style: none; margin: 0; padding: .5rem 0 0 .5rem; }
+.decide__branch { position: relative; display: grid; gap: .2rem; padding: .5rem 0 .6rem 1.4rem; border-left: 1.5px solid var(--ink-2); }
+.decide__branch:last-child { border-left-color: transparent; }
+.decide__branch::before { content: ""; position: absolute; left: -1.5px; top: 0; width: 1rem; height: 1.2rem; border-left: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2); border-bottom-left-radius: 9px; }
+.decide__when { font-size: .92rem; color: var(--ink-2); }
+.decide__pick { justify-self: start; font-family: var(--mono); font-weight: 650; font-size: .92rem; padding: .18rem .6rem; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .3s, color .3s; }
+.decide__eg { font-size: .78rem; color: var(--muted); }
+.decide__branch.is-used .decide__pick { border-color: var(--ok); color: var(--ok); }
+.decide__branch.is-hit .decide__pick { animation: hit 1.6s var(--ease); }
+@keyframes hit { 0%, 55% { box-shadow: 0 0 0 5px var(--ok-wash), 0 0 0 1.5px var(--ok); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr) 19rem; }
+.slide--split .block:has(> .decide) { grid-column: 2; position: sticky; top: .6rem; }
+.slide--split .block:has(> .decide) ~ .block { grid-column: 1; grid-row: 1; }
+
+@media (max-width: 860px) {
+  .top { grid-template-columns: minmax(0, 1fr) auto; padding: .5rem .9rem; }
+  .top__title, #count { display: none; }
+  .beat:not(.is-now) { font-size: 0; gap: 0; padding: .3rem .22rem; }
+  .stage { padding: 0 .9rem 1.4rem; }
+  .slide { padding-top: 1rem; }
+  .exp__bar { position: static; }
+  .slide--split .slide__blocks, .exp__body, .hook__meta { grid-template-columns: minmax(0, 1fr); }
+  .hook__meta { gap: 1.2rem; }
+  .slide--split .block:first-child { grid-row: auto; }
+  .code__scroll, .exp .code__scroll { max-height: 15rem; }
+  .seg, .seg__set { flex-wrap: wrap; }
+  .plot__label { font-size: .72rem; overflow-wrap: anywhere; }
+  .plot__sum { font-size: .72rem; }
+  .plot__sum b { font-size: .8rem; }
+  .lrow--controls .btn { padding: .45rem .5rem; font-size: .8rem; }
+  .lrow--controls .lcell--a { padding-right: .3rem; } .lrow--controls .lcell--b { padding-left: .3rem; }
+  .plot__row, .plot__axis { grid-template-columns: 5.8em minmax(0, 1fr) 4.4em; gap: .4rem; }
+  .lanes__grid { grid-template-columns: minmax(0, 1fr) 3.4rem minmax(0, 1fr); }
+  .lanes__head--a { padding-right: 1.4rem; } .lanes__head--b { padding-left: 1.4rem; }
+  .arrow { flex-basis: 1rem; margin: 0 .15rem; }
+  .chip { font-size: .78rem; padding: .28rem .45rem; }
+  .val { min-width: 2.2rem; padding: .2rem .3rem; font-size: .88rem; }
+  .voice { padding: .7rem .9rem .8rem; }
+  .voice__inner { gap: .7rem; }
+  .voice__line { font-size: 1rem; line-height: 1.55; min-height: 0; }
+  .exp__body > :first-child { order: 2; }
+  .choose__head { display: none; }
+  .recall__item { grid-template-columns: minmax(0, 1fr); }
+  .spot { grid-template-columns: minmax(0, 1fr); }
+  .spot .code__scroll { max-height: 46vh; }
+  .spot__side { margin-top: .7rem; }
+  .spot__how { display: none; }
+  .recall__have { grid-row: auto; }
+  .scene__body.has-picture, .chart { grid-template-columns: minmax(0, 1fr); }
+  .scene__body .pic { order: -1; justify-self: center; margin-bottom: .6rem; }
+  .chart__picks { display: flex; flex-wrap: wrap; margin: .6rem 0; }
+  .chart__pick { font-size: .8rem; padding: .22rem .6rem; }
+  .chart__tick, .chart__name { font-size: 19px; }
+  .chart__label { display: none; }
+  .chart__dot { r: 7px; }
+  .chart__line { stroke-width: 3; }
+  .scene__head, .scene__row { column-gap: .4rem; }
+  .chart__read { min-height: 0; }
+  .chart__tip { min-width: 13rem; }
+  .slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr); }
+  .slide--split .block:has(> .decide), .slide--split .block:has(> .decide) ~ .block { grid-column: auto; grid-row: auto; position: static; }
+  .decide { max-width: none; }
+  .code__tag { position: static; transform: none; grid-column: 2; justify-self: start; margin-bottom: .3rem; }
+  .choose__row { grid-template-columns: minmax(0, 1fr); gap: .2rem; }
+  .choose__row > [data-label]::before { content: attr(data-label) "："; color: var(--muted); font-size: .82em; }
+  .voice__nav .btn { padding: .5rem .7rem; }
+  .btn__label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+@media print { body { height: auto; overflow: visible; display: block; } .voice__nav, .top__tools { display: none; } }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top__title" id="title"></div>
+  <nav class="beats" id="beats" aria-label="这节课走到哪了"></nav>
+  <div class="top__tools">
+    <span class="num" id="count"></span>
+    <div class="notes"><button class="tool" id="notes" type="button">要点 0</button><ul class="notes__list" id="notes-list" hidden></ul></div>
+    <button class="tool" id="theme" type="button">深色</button>
+  </div>
+</header>
+<main class="stage" id="stage"></main>
+<footer class="voice" aria-label="老师的讲解">
+  <div class="voice__inner">
+    <div><p class="voice__line" id="line" aria-live="polite"></p><p class="voice__key" id="key" hidden></p></div>
+    <div class="voice__nav">
+      <button class="btn" id="prev" type="button" aria-label="上一步">←</button>
+      <button class="btn btn--primary" id="next" type="button"><span class="btn__label">下一步 </span>→</button>
+    </div>
+  </div>
+</footer>
+<script type="application/json" id="lesson-data">{"format":"studyhub-lesson/1","template":"experiment","id":"semaphore-gate","course":"Java 并发","title":"Semaphore：同时只放 2 个线程","lead":"下游最多扛 2 并发，先查再加照样打超，互斥锁又只放 1 个，用 Semaphore 精准卡在 2。","minutes":15,"needs":["先检查再改会失效","synchronized 互斥只进 1 个"],"after":["能用 Semaphore(n) 把并发精确限在 n 个","讲清它和 AtomicInteger 先查再加、互斥锁的差别","学会用 try-finally 兜底归还 permit 防泄露"],"experiments":{"semgate":{"runner":"java","home":"lab.semgate","variants":[{"id":"Plain","label":"普通int检查","code":"Plain.java"},{"id":"AtomicCheck","label":"原子先查再加","code":"AtomicCheck.java"},{"id":"SyncOne","label":"互斥锁串行","code":"SyncOne.java"},{"id":"SemGate","label":"信号量放2个","code":"SemGate.java"}],"knob":{"name":"threads","label":"几个线程调下游","values":["2","4","8","12"],"default":"8"},"repeat":20,"metric":{"key":"okCalls","expectKey":"expected","label":"合规调用数"},"time":{"key":"ms","unit":"ms"},"lang":"java","sources":{"Plain":"package lab.semgate;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\nimport java.util.concurrent.locks.LockSupport;\n\npublic class Plain {\n    static final int LIMIT = 2;\n    static final int WAVES = 12;\n    static int active = 0;\n    static final AtomicInteger inFlight = new AtomicInteger();\n    static final AtomicInteger peak = new AtomicInteger();\n    static final AtomicInteger okCalls = new AtomicInteger();\n\n    static void callDownstream() {\n        int cur = inFlight.incrementAndGet();\n        peak.accumulateAndGet(cur, Math::max);\n        LockSupport.parkNanos(1_850_000L);\n        if (cur \u003c= LIMIT && inFlight.get() \u003c= LIMIT) {\n            okCalls.incrementAndGet();\n        }\n        inFlight.decrementAndGet();\n    }\n\n    static void enterGate() {\n        for (int i = 0; i \u003c 60_000; i++) {\n            if (active \u003c LIMIT) {\n                active++;\n                try {\n                    callDownstream();\n                } finally {\n                    active--;\n                }\n                return;\n            }\n            Thread.yield();\n        }\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        CyclicBarrier barrier = new CyclicBarrier(threads);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        enterGate();\n                    }\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"okCalls=\" + okCalls.get());\n        System.out.println(\"expected=\" + (threads * WAVES));\n        System.out.println(\"peak=\" + peak.get());\n        System.out.println(\"ms=\" + ms);\n    }\n}","AtomicCheck":"package lab.semgate;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\nimport java.util.concurrent.locks.LockSupport;\n\npublic class AtomicCheck {\n    static final int LIMIT = 2;\n    static final int WAVES = 12;\n    static final AtomicInteger active = new AtomicInteger();\n    static final AtomicInteger inFlight = new AtomicInteger();\n    static final AtomicInteger peak = new AtomicInteger();\n    static final AtomicInteger okCalls = new AtomicInteger();\n\n    static void callDownstream() {\n        int cur = inFlight.incrementAndGet();\n        peak.accumulateAndGet(cur, Math::max);\n        LockSupport.parkNanos(1_850_000L);\n        if (cur \u003c= LIMIT && inFlight.get() \u003c= LIMIT) {\n            okCalls.incrementAndGet();\n        }\n        inFlight.decrementAndGet();\n    }\n\n    static void enterGate() {\n        for (;;) {\n            if (active.get() \u003c LIMIT) {\n                active.incrementAndGet();\n                try {\n                    callDownstream();\n                } finally {\n                    active.decrementAndGet();\n                }\n                return;\n            }\n            Thread.yield();\n        }\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        CyclicBarrier barrier = new CyclicBarrier(threads);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        enterGate();\n                    }\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"okCalls=\" + okCalls.get());\n        System.out.println(\"expected=\" + (threads * WAVES));\n        System.out.println(\"peak=\" + peak.get());\n        System.out.println(\"ms=\" + ms);\n    }\n}","SyncOne":"package lab.semgate;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\nimport java.util.concurrent.locks.LockSupport;\n\npublic class SyncOne {\n    static final int LIMIT = 2;\n    static final int WAVES = 12;\n    static final Object LOCK = new Object();\n    static final AtomicInteger inFlight = new AtomicInteger();\n    static final AtomicInteger peak = new AtomicInteger();\n    static final AtomicInteger okCalls = new AtomicInteger();\n\n    static void callDownstream() {\n        int cur = inFlight.incrementAndGet();\n        peak.accumulateAndGet(cur, Math::max);\n        LockSupport.parkNanos(1_850_000L);\n        if (cur \u003c= LIMIT && inFlight.get() \u003c= LIMIT) {\n            okCalls.incrementAndGet();\n        }\n        inFlight.decrementAndGet();\n    }\n\n    static void enterGate() {\n        synchronized (LOCK) {\n            callDownstream();\n        }\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        CyclicBarrier barrier = new CyclicBarrier(threads);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        enterGate();\n                    }\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"okCalls=\" + okCalls.get());\n        System.out.println(\"expected=\" + (threads * WAVES));\n        System.out.println(\"peak=\" + peak.get());\n        System.out.println(\"ms=\" + ms);\n    }\n}","SemGate":"package lab.semgate;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.Semaphore;\nimport java.util.concurrent.atomic.AtomicInteger;\nimport java.util.concurrent.locks.LockSupport;\n\npublic class SemGate {\n    static final int LIMIT = 2;\n    static final int WAVES = 12;\n    static final Semaphore sem = new Semaphore(LIMIT);\n    static final AtomicInteger inFlight = new AtomicInteger();\n    static final AtomicInteger peak = new AtomicInteger();\n    static final AtomicInteger okCalls = new AtomicInteger();\n\n    static void callDownstream() {\n        int cur = inFlight.incrementAndGet();\n        peak.accumulateAndGet(cur, Math::max);\n        LockSupport.parkNanos(1_850_000L);\n        if (cur \u003c= LIMIT && inFlight.get() \u003c= LIMIT) {\n            okCalls.incrementAndGet();\n        }\n        inFlight.decrementAndGet();\n    }\n\n    static void enterGate() throws InterruptedException {\n        sem.acquire();\n        try {\n            callDownstream();\n        } finally {\n            sem.release();\n        }\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        CyclicBarrier barrier = new CyclicBarrier(threads);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        enterGate();\n                    }\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"okCalls=\" + okCalls.get());\n        System.out.println(\"expected=\" + (threads * WAVES));\n        System.out.println(\"peak=\" + peak.get());\n        System.out.println(\"ms=\" + ms);\n    }\n}"},"paths":{"Plain":"src/lab/semgate/Plain.java","AtomicCheck":"src/lab/semgate/AtomicCheck.java","SyncOne":"src/lab/semgate/SyncOne.java","SemGate":"src/lab/semgate/SemGate.java"},"shown":{"Plain":"java -cp out lab.semgate.Plain","AtomicCheck":"java -cp out lab.semgate.AtomicCheck","SyncOne":"java -cp out lab.semgate.SyncOne","SemGate":"java -cp out lab.semgate.SemGate"},"results":{"id":"semgate","variants":{"Plain":{"hash":"d34e1aff5fdc66b2","repeat":20,"runs":{"2":[{"okCalls":24,"expected":24,"peak":2,"ms":20},{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":21},{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":21},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":20},{"okCalls":24,"expected":24,"peak":2,"ms":24},{"okCalls":24,"expected":24,"peak":2,"ms":24},{"okCalls":24,"expected":24,"peak":2,"ms":20},{"okCalls":24,"expected":24,"peak":2,"ms":21},{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":19},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":19},{"okCalls":24,"expected":24,"peak":2,"ms":21},{"okCalls":24,"expected":24,"peak":2,"ms":19},{"okCalls":24,"expected":24,"peak":2,"ms":20}],"4":[{"okCalls":18,"expected":48,"peak":4,"ms":31},{"okCalls":13,"expected":48,"peak":3,"ms":37},{"okCalls":19,"expected":48,"peak":3,"ms":34},{"okCalls":11,"expected":48,"peak":3,"ms":34},{"okCalls":8,"expected":48,"peak":3,"ms":36},{"okCalls":8,"expected":48,"peak":3,"ms":32},{"okCalls":23,"expected":48,"peak":3,"ms":38},{"okCalls":11,"expected":48,"peak":3,"ms":39},{"okCalls":11,"expected":48,"peak":3,"ms":35},{"okCalls":17,"expected":48,"peak":3,"ms":36},{"okCalls":19,"expected":48,"peak":3,"ms":39},{"okCalls":12,"expected":48,"peak":3,"ms":35},{"okCalls":21,"expected":48,"peak":3,"ms":38},{"okCalls":6,"expected":48,"peak":3,"ms":37},{"okCalls":15,"expected":48,"peak":3,"ms":36},{"okCalls":10,"expected":48,"peak":3,"ms":38},{"okCalls":27,"expected":48,"peak":3,"ms":38},{"okCalls":16,"expected":48,"peak":4,"ms":36},{"okCalls":12,"expected":48,"peak":3,"ms":37},{"okCalls":16,"expected":48,"peak":4,"ms":25}],"8":[{"okCalls":3,"expected":96,"peak":7,"ms":34},{"okCalls":4,"expected":96,"peak":7,"ms":40},{"okCalls":1,"expected":96,"peak":7,"ms":37},{"okCalls":2,"expected":96,"peak":7,"ms":40},{"okCalls":3,"expected":96,"peak":7,"ms":41},{"okCalls":2,"expected":96,"peak":7,"ms":38},{"okCalls":4,"expected":96,"peak":7,"ms":38},{"okCalls":3,"expected":96,"peak":7,"ms":41},{"okCalls":1,"expected":96,"peak":7,"ms":41},{"okCalls":2,"expected":96,"peak":7,"ms":36},{"okCalls":5,"expected":96,"peak":7,"ms":37},{"okCalls":2,"expected":96,"peak":8,"ms":33},{"okCalls":2,"expected":96,"peak":7,"ms":35},{"okCalls":4,"expected":96,"peak":8,"ms":31},{"okCalls":4,"expected":96,"peak":7,"ms":41},{"okCalls":3,"expected":96,"peak":7,"ms":38},{"okCalls":3,"expected":96,"peak":7,"ms":36},{"okCalls":1,"expected":96,"peak":7,"ms":40},{"okCalls":4,"expected":96,"peak":7,"ms":41},{"okCalls":2,"expected":96,"peak":7,"ms":37}],"12":[{"okCalls":1,"expected":144,"peak":11,"ms":38},{"okCalls":3,"expected":144,"peak":11,"ms":40},{"okCalls":1,"expected":144,"peak":11,"ms":41},{"okCalls":4,"expected":144,"peak":11,"ms":38},{"okCalls":2,"expected":144,"peak":12,"ms":34},{"okCalls":1,"expected":144,"peak":10,"ms":42},{"okCalls":1,"expected":144,"peak":11,"ms":38},{"okCalls":1,"expected":144,"peak":10,"ms":43},{"okCalls":4,"expected":144,"peak":11,"ms":35},{"okCalls":2,"expected":144,"peak":11,"ms":33},{"okCalls":1,"expected":144,"peak":11,"ms":39},{"okCalls":1,"expected":144,"peak":11,"ms":35},{"okCalls":2,"expected":144,"peak":11,"ms":40},{"okCalls":4,"expected":144,"peak":11,"ms":40},{"okCalls":2,"expected":144,"peak":11,"ms":37},{"okCalls":3,"expected":144,"peak":11,"ms":39},{"okCalls":1,"expected":144,"peak":11,"ms":37},{"okCalls":2,"expected":144,"peak":11,"ms":38},{"okCalls":1,"expected":144,"peak":11,"ms":41},{"okCalls":2,"expected":144,"peak":11,"ms":41}]},"inside":"Compiled from \"Plain.java\"\npublic class lab.semgate.Plain {\n  static final int LIMIT;\n\n  static final int WAVES;\n\n  static int active;\n\n  static final java.util.concurrent.atomic.AtomicInteger inFlight;\n\n  static final java.util.concurrent.atomic.AtomicInteger peak;\n\n  static final java.util.concurrent.atomic.AtomicInteger okCalls;\n\n  public lab.semgate.Plain();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static void callDownstream();\n    Code:\n         0: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n         3: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n         6: istore_0\n         7: getstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n        10: iload_0\n        11: invokedynamic #22,  0             // InvokeDynamic #0:applyAsInt:()Ljava/util/function/IntBinaryOperator;\n        16: invokevirtual #26                 // Method java/util/concurrent/atomic/AtomicInteger.accumulateAndGet:(ILjava/util/function/IntBinaryOperator;)I\n        19: pop\n        20: ldc2_w        #30                 // long 1850000l\n        23: invokestatic  #32                 // Method java/util/concurrent/locks/LockSupport.parkNanos:(J)V\n        26: iload_0\n        27: iconst_2\n        28: if_icmpgt     48\n        31: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        34: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n        37: iconst_2\n        38: if_icmpgt     48\n        41: getstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n        44: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n        47: pop\n        48: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        51: invokevirtual #44                 // Method java/util/concurrent/atomic/AtomicInteger.decrementAndGet:()I\n        54: pop\n        55: return\n\n  static void enterGate();\n    Code:\n         0: iconst_0\n         1: istore_0\n         2: iload_0\n         3: ldc           #47                 // int 60000\n         5: if_icmpge     58\n         8: getstatic     #48                 // Field active:I\n        11: iconst_2\n        12: if_icmpge     49\n        15: getstatic     #48                 // Field active:I\n        18: iconst_1\n        19: iadd\n        20: putstatic     #48                 // Field active:I\n        23: invokestatic  #52                 // Method callDownstream:()V\n        26: getstatic     #48                 // Field active:I\n        29: iconst_1\n        30: isub\n        31: putstatic     #48                 // Field active:I\n        34: goto          48\n        37: astore_1\n        38: getstatic     #48                 // Field active:I\n        41: iconst_1\n        42: isub\n        43: putstatic     #48                 // Field active:I\n        46: aload_1\n        47: athrow\n        48: return\n        49: invokestatic  #55                 // Method java/lang/Thread.yield:()V\n        52: iinc          0, 1\n        55: goto          2\n        58: return\n      Exception table:\n         from    to  target type\n            23    26    37   any\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #60                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: new           #66                 // class java/util/concurrent/CyclicBarrier\n        10: dup\n        11: iload_1\n        12: invokespecial #68                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(I)V\n        15: astore_2\n        16: iload_1\n        17: anewarray     #56                 // class java/lang/Thread\n        20: astore_3\n        21: invokestatic  #71                 // Method java/lang/System.nanoTime:()J\n        24: lstore        4\n        26: iconst_0\n        27: istore        6\n        29: iload         6\n        31: iload_1\n        32: if_icmpge     65\n        35: aload_3\n        36: iload         6\n        38: new           #56                 // class java/lang/Thread\n        41: dup\n        42: aload_2\n        43: invokedynamic #77,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n        48: invokespecial #81                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        51: aastore\n        52: aload_3\n        53: iload         6\n        55: aaload\n        56: invokevirtual #84                 // Method java/lang/Thread.start:()V\n        59: iinc          6, 1\n        62: goto          29\n        65: aload_3\n        66: astore        6\n        68: aload         6\n        70: arraylength\n        71: istore        7\n        73: iconst_0\n        74: istore        8\n        76: iload         8\n        78: iload         7\n        80: if_icmpge     101\n        83: aload         6\n        85: iload         8\n        87: aaload\n        88: astore        9\n        90: aload         9\n        92: invokevirtual #87                 // Method java/lang/Thread.join:()V\n        95: iinc          8, 1\n        98: goto          76\n       101: invokestatic  #71                 // Method java/lang/System.nanoTime:()J\n       104: lload         4\n       106: lsub\n       107: ldc2_w        #90                 // long 1000000l\n       110: ldiv\n       111: lstore        6\n       113: getstatic     #92                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       116: getstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n       119: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       122: invokedynamic #96,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       127: invokevirtual #100                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       130: getstatic     #92                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: iload_1\n       134: bipush        12\n       136: imul\n       137: invokedynamic #106,  0            // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n       142: invokevirtual #100                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       145: getstatic     #92                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       148: getstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n       151: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       154: invokedynamic #107,  0            // InvokeDynamic #4:makeConcatWithConstants:(I)Ljava/lang/String;\n       159: invokevirtual #100                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       162: getstatic     #92                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       165: lload         6\n       167: invokedynamic #108,  0            // InvokeDynamic #5:makeConcatWithConstants:(J)Ljava/lang/String;\n       172: invokevirtual #100                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       175: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: bipush        12\n         5: if_icmpge     22\n         8: aload_0\n         9: invokevirtual #111                // Method java/util/concurrent/CyclicBarrier.await:()I\n        12: pop\n        13: invokestatic  #114                // Method enterGate:()V\n        16: iinc          1, 1\n        19: goto          2\n        22: goto          35\n        25: astore_1\n        26: new           #119                // class java/lang/RuntimeException\n        29: dup\n        30: aload_1\n        31: invokespecial #121                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        34: athrow\n        35: return\n      Exception table:\n         from    to  target type\n             0    22    25   Class java/lang/Exception\n\n  static {};\n    Code:\n         0: iconst_0\n         1: putstatic     #48                 // Field active:I\n         4: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n         7: dup\n         8: invokespecial #124                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        11: putstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        14: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n        17: dup\n        18: invokespecial #124                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        21: putstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n        24: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n        27: dup\n        28: invokespecial #124                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        31: putstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n        34: return\n}"},"AtomicCheck":{"hash":"10c009d67b61f269","repeat":20,"runs":{"2":[{"okCalls":24,"expected":24,"peak":2,"ms":21},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":24},{"okCalls":24,"expected":24,"peak":2,"ms":26},{"okCalls":24,"expected":24,"peak":2,"ms":21},{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":19},{"okCalls":24,"expected":24,"peak":2,"ms":20},{"okCalls":24,"expected":24,"peak":2,"ms":21},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":21},{"okCalls":24,"expected":24,"peak":2,"ms":20},{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":18},{"okCalls":24,"expected":24,"peak":2,"ms":20},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":19},{"okCalls":24,"expected":24,"peak":2,"ms":22}],"4":[{"okCalls":34,"expected":48,"peak":3,"ms":40},{"okCalls":34,"expected":48,"peak":3,"ms":36},{"okCalls":37,"expected":48,"peak":3,"ms":37},{"okCalls":35,"expected":48,"peak":3,"ms":36},{"okCalls":38,"expected":48,"peak":3,"ms":34},{"okCalls":34,"expected":48,"peak":3,"ms":38},{"okCalls":40,"expected":48,"peak":3,"ms":40},{"okCalls":34,"expected":48,"peak":3,"ms":38},{"okCalls":40,"expected":48,"peak":3,"ms":39},{"okCalls":33,"expected":48,"peak":3,"ms":36},{"okCalls":33,"expected":48,"peak":3,"ms":37},{"okCalls":41,"expected":48,"peak":3,"ms":34},{"okCalls":42,"expected":48,"peak":3,"ms":37},{"okCalls":42,"expected":48,"peak":3,"ms":39},{"okCalls":38,"expected":48,"peak":3,"ms":35},{"okCalls":39,"expected":48,"peak":3,"ms":36},{"okCalls":32,"expected":48,"peak":3,"ms":41},{"okCalls":37,"expected":48,"peak":3,"ms":40},{"okCalls":38,"expected":48,"peak":3,"ms":35},{"okCalls":35,"expected":48,"peak":3,"ms":35}],"8":[{"okCalls":26,"expected":96,"peak":7,"ms":38},{"okCalls":27,"expected":96,"peak":7,"ms":45},{"okCalls":34,"expected":96,"peak":7,"ms":46},{"okCalls":35,"expected":96,"peak":7,"ms":50},{"okCalls":38,"expected":96,"peak":7,"ms":49},{"okCalls":42,"expected":96,"peak":7,"ms":49},{"okCalls":22,"expected":96,"peak":7,"ms":44},{"okCalls":29,"expected":96,"peak":7,"ms":41},{"okCalls":27,"expected":96,"peak":7,"ms":47},{"okCalls":27,"expected":96,"peak":7,"ms":48},{"okCalls":29,"expected":96,"peak":7,"ms":44},{"okCalls":35,"expected":96,"peak":7,"ms":49},{"okCalls":41,"expected":96,"peak":7,"ms":51},{"okCalls":32,"expected":96,"peak":7,"ms":50},{"okCalls":26,"expected":96,"peak":7,"ms":47},{"okCalls":36,"expected":96,"peak":7,"ms":51},{"okCalls":37,"expected":96,"peak":7,"ms":49},{"okCalls":34,"expected":96,"peak":7,"ms":49},{"okCalls":45,"expected":96,"peak":7,"ms":55},{"okCalls":42,"expected":96,"peak":7,"ms":52}],"12":[{"okCalls":41,"expected":144,"peak":11,"ms":57},{"okCalls":25,"expected":144,"peak":11,"ms":51},{"okCalls":26,"expected":144,"peak":11,"ms":45},{"okCalls":37,"expected":144,"peak":11,"ms":57},{"okCalls":44,"expected":144,"peak":10,"ms":68},{"okCalls":29,"expected":144,"peak":11,"ms":56},{"okCalls":49,"expected":144,"peak":10,"ms":69},{"okCalls":40,"expected":144,"peak":11,"ms":61},{"okCalls":31,"expected":144,"peak":11,"ms":49},{"okCalls":40,"expected":144,"peak":11,"ms":63},{"okCalls":27,"expected":144,"peak":11,"ms":44},{"okCalls":37,"expected":144,"peak":11,"ms":53},{"okCalls":32,"expected":144,"peak":11,"ms":53},{"okCalls":32,"expected":144,"peak":10,"ms":56},{"okCalls":28,"expected":144,"peak":11,"ms":40},{"okCalls":34,"expected":144,"peak":11,"ms":47},{"okCalls":41,"expected":144,"peak":11,"ms":64},{"okCalls":30,"expected":144,"peak":11,"ms":49},{"okCalls":30,"expected":144,"peak":10,"ms":53},{"okCalls":25,"expected":144,"peak":10,"ms":53}]},"inside":"Compiled from \"AtomicCheck.java\"\npublic class lab.semgate.AtomicCheck {\n  static final int LIMIT;\n\n  static final int WAVES;\n\n  static final java.util.concurrent.atomic.AtomicInteger active;\n\n  static final java.util.concurrent.atomic.AtomicInteger inFlight;\n\n  static final java.util.concurrent.atomic.AtomicInteger peak;\n\n  static final java.util.concurrent.atomic.AtomicInteger okCalls;\n\n  public lab.semgate.AtomicCheck();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static void callDownstream();\n    Code:\n         0: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n         3: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n         6: istore_0\n         7: getstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n        10: iload_0\n        11: invokedynamic #22,  0             // InvokeDynamic #0:applyAsInt:()Ljava/util/function/IntBinaryOperator;\n        16: invokevirtual #26                 // Method java/util/concurrent/atomic/AtomicInteger.accumulateAndGet:(ILjava/util/function/IntBinaryOperator;)I\n        19: pop\n        20: ldc2_w        #30                 // long 1850000l\n        23: invokestatic  #32                 // Method java/util/concurrent/locks/LockSupport.parkNanos:(J)V\n        26: iload_0\n        27: iconst_2\n        28: if_icmpgt     48\n        31: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        34: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n        37: iconst_2\n        38: if_icmpgt     48\n        41: getstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n        44: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n        47: pop\n        48: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        51: invokevirtual #44                 // Method java/util/concurrent/atomic/AtomicInteger.decrementAndGet:()I\n        54: pop\n        55: return\n\n  static void enterGate();\n    Code:\n         0: getstatic     #47                 // Field active:Ljava/util/concurrent/atomic/AtomicInteger;\n         3: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n         6: iconst_2\n         7: if_icmpge     41\n        10: getstatic     #47                 // Field active:Ljava/util/concurrent/atomic/AtomicInteger;\n        13: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n        16: pop\n        17: invokestatic  #50                 // Method callDownstream:()V\n        20: getstatic     #47                 // Field active:Ljava/util/concurrent/atomic/AtomicInteger;\n        23: invokevirtual #44                 // Method java/util/concurrent/atomic/AtomicInteger.decrementAndGet:()I\n        26: pop\n        27: goto          40\n        30: astore_0\n        31: getstatic     #47                 // Field active:Ljava/util/concurrent/atomic/AtomicInteger;\n        34: invokevirtual #44                 // Method java/util/concurrent/atomic/AtomicInteger.decrementAndGet:()I\n        37: pop\n        38: aload_0\n        39: athrow\n        40: return\n        41: invokestatic  #53                 // Method java/lang/Thread.yield:()V\n        44: goto          0\n      Exception table:\n         from    to  target type\n            17    20    30   any\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #58                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: new           #64                 // class java/util/concurrent/CyclicBarrier\n        10: dup\n        11: iload_1\n        12: invokespecial #66                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(I)V\n        15: astore_2\n        16: iload_1\n        17: anewarray     #54                 // class java/lang/Thread\n        20: astore_3\n        21: invokestatic  #69                 // Method java/lang/System.nanoTime:()J\n        24: lstore        4\n        26: iconst_0\n        27: istore        6\n        29: iload         6\n        31: iload_1\n        32: if_icmpge     65\n        35: aload_3\n        36: iload         6\n        38: new           #54                 // class java/lang/Thread\n        41: dup\n        42: aload_2\n        43: invokedynamic #75,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n        48: invokespecial #79                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        51: aastore\n        52: aload_3\n        53: iload         6\n        55: aaload\n        56: invokevirtual #82                 // Method java/lang/Thread.start:()V\n        59: iinc          6, 1\n        62: goto          29\n        65: aload_3\n        66: astore        6\n        68: aload         6\n        70: arraylength\n        71: istore        7\n        73: iconst_0\n        74: istore        8\n        76: iload         8\n        78: iload         7\n        80: if_icmpge     101\n        83: aload         6\n        85: iload         8\n        87: aaload\n        88: astore        9\n        90: aload         9\n        92: invokevirtual #85                 // Method java/lang/Thread.join:()V\n        95: iinc          8, 1\n        98: goto          76\n       101: invokestatic  #69                 // Method java/lang/System.nanoTime:()J\n       104: lload         4\n       106: lsub\n       107: ldc2_w        #88                 // long 1000000l\n       110: ldiv\n       111: lstore        6\n       113: getstatic     #90                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       116: getstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n       119: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       122: invokedynamic #94,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       127: invokevirtual #98                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       130: getstatic     #90                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: iload_1\n       134: bipush        12\n       136: imul\n       137: invokedynamic #104,  0            // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n       142: invokevirtual #98                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       145: getstatic     #90                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       148: getstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n       151: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       154: invokedynamic #105,  0            // InvokeDynamic #4:makeConcatWithConstants:(I)Ljava/lang/String;\n       159: invokevirtual #98                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       162: getstatic     #90                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       165: lload         6\n       167: invokedynamic #106,  0            // InvokeDynamic #5:makeConcatWithConstants:(J)Ljava/lang/String;\n       172: invokevirtual #98                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       175: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: bipush        12\n         5: if_icmpge     22\n         8: aload_0\n         9: invokevirtual #109                // Method java/util/concurrent/CyclicBarrier.await:()I\n        12: pop\n        13: invokestatic  #112                // Method enterGate:()V\n        16: iinc          1, 1\n        19: goto          2\n        22: goto          35\n        25: astore_1\n        26: new           #117                // class java/lang/RuntimeException\n        29: dup\n        30: aload_1\n        31: invokespecial #119                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        34: athrow\n        35: return\n      Exception table:\n         from    to  target type\n             0    22    25   Class java/lang/Exception\n\n  static {};\n    Code:\n         0: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n         3: dup\n         4: invokespecial #122                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n         7: putstatic     #47                 // Field active:Ljava/util/concurrent/atomic/AtomicInteger;\n        10: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n        13: dup\n        14: invokespecial #122                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        17: putstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        20: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n        23: dup\n        24: invokespecial #122                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        27: putstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n        30: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n        33: dup\n        34: invokespecial #122                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        37: putstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n        40: return\n}"},"SyncOne":{"hash":"dcab9ef92be5436a","repeat":20,"runs":{"2":[{"okCalls":24,"expected":24,"peak":1,"ms":36},{"okCalls":24,"expected":24,"peak":1,"ms":37},{"okCalls":24,"expected":24,"peak":1,"ms":36},{"okCalls":24,"expected":24,"peak":1,"ms":39},{"okCalls":24,"expected":24,"peak":1,"ms":35},{"okCalls":24,"expected":24,"peak":1,"ms":36},{"okCalls":24,"expected":24,"peak":1,"ms":35},{"okCalls":24,"expected":24,"peak":1,"ms":38},{"okCalls":24,"expected":24,"peak":1,"ms":40},{"okCalls":24,"expected":24,"peak":1,"ms":40},{"okCalls":24,"expected":24,"peak":1,"ms":39},{"okCalls":24,"expected":24,"peak":1,"ms":34},{"okCalls":24,"expected":24,"peak":1,"ms":38},{"okCalls":24,"expected":24,"peak":1,"ms":36},{"okCalls":24,"expected":24,"peak":1,"ms":37},{"okCalls":24,"expected":24,"peak":1,"ms":38},{"okCalls":24,"expected":24,"peak":1,"ms":37},{"okCalls":24,"expected":24,"peak":1,"ms":37},{"okCalls":24,"expected":24,"peak":1,"ms":37},{"okCalls":24,"expected":24,"peak":1,"ms":39}],"4":[{"okCalls":48,"expected":48,"peak":1,"ms":67},{"okCalls":48,"expected":48,"peak":1,"ms":71},{"okCalls":48,"expected":48,"peak":1,"ms":71},{"okCalls":48,"expected":48,"peak":1,"ms":66},{"okCalls":48,"expected":48,"peak":1,"ms":67},{"okCalls":48,"expected":48,"peak":1,"ms":70},{"okCalls":48,"expected":48,"peak":1,"ms":69},{"okCalls":48,"expected":48,"peak":1,"ms":71},{"okCalls":48,"expected":48,"peak":1,"ms":67},{"okCalls":48,"expected":48,"peak":1,"ms":69},{"okCalls":48,"expected":48,"peak":1,"ms":71},{"okCalls":48,"expected":48,"peak":1,"ms":71},{"okCalls":48,"expected":48,"peak":1,"ms":71},{"okCalls":48,"expected":48,"peak":1,"ms":68},{"okCalls":48,"expected":48,"peak":1,"ms":69},{"okCalls":48,"expected":48,"peak":1,"ms":76},{"okCalls":48,"expected":48,"peak":1,"ms":71},{"okCalls":48,"expected":48,"peak":1,"ms":69},{"okCalls":48,"expected":48,"peak":1,"ms":63},{"okCalls":48,"expected":48,"peak":1,"ms":69}],"8":[{"okCalls":96,"expected":96,"peak":1,"ms":138},{"okCalls":96,"expected":96,"peak":1,"ms":130},{"okCalls":96,"expected":96,"peak":1,"ms":127},{"okCalls":96,"expected":96,"peak":1,"ms":137},{"okCalls":96,"expected":96,"peak":1,"ms":138},{"okCalls":96,"expected":96,"peak":1,"ms":144},{"okCalls":96,"expected":96,"peak":1,"ms":137},{"okCalls":96,"expected":96,"peak":1,"ms":139},{"okCalls":96,"expected":96,"peak":1,"ms":131},{"okCalls":96,"expected":96,"peak":1,"ms":135},{"okCalls":96,"expected":96,"peak":1,"ms":140},{"okCalls":96,"expected":96,"peak":1,"ms":148},{"okCalls":96,"expected":96,"peak":1,"ms":135},{"okCalls":96,"expected":96,"peak":1,"ms":135},{"okCalls":96,"expected":96,"peak":1,"ms":137},{"okCalls":96,"expected":96,"peak":1,"ms":131},{"okCalls":96,"expected":96,"peak":1,"ms":141},{"okCalls":96,"expected":96,"peak":1,"ms":135},{"okCalls":96,"expected":96,"peak":1,"ms":138},{"okCalls":96,"expected":96,"peak":1,"ms":142}],"12":[{"okCalls":144,"expected":144,"peak":1,"ms":209},{"okCalls":144,"expected":144,"peak":1,"ms":204},{"okCalls":144,"expected":144,"peak":1,"ms":214},{"okCalls":144,"expected":144,"peak":1,"ms":202},{"okCalls":144,"expected":144,"peak":1,"ms":205},{"okCalls":144,"expected":144,"peak":1,"ms":202},{"okCalls":144,"expected":144,"peak":1,"ms":186},{"okCalls":144,"expected":144,"peak":1,"ms":198},{"okCalls":144,"expected":144,"peak":1,"ms":179},{"okCalls":144,"expected":144,"peak":1,"ms":193},{"okCalls":144,"expected":144,"peak":1,"ms":198},{"okCalls":144,"expected":144,"peak":1,"ms":207},{"okCalls":144,"expected":144,"peak":1,"ms":196},{"okCalls":144,"expected":144,"peak":1,"ms":203},{"okCalls":144,"expected":144,"peak":1,"ms":200},{"okCalls":144,"expected":144,"peak":1,"ms":209},{"okCalls":144,"expected":144,"peak":1,"ms":213},{"okCalls":144,"expected":144,"peak":1,"ms":199},{"okCalls":144,"expected":144,"peak":1,"ms":209},{"okCalls":144,"expected":144,"peak":1,"ms":204}]},"inside":"Compiled from \"SyncOne.java\"\npublic class lab.semgate.SyncOne {\n  static final int LIMIT;\n\n  static final int WAVES;\n\n  static final java.lang.Object LOCK;\n\n  static final java.util.concurrent.atomic.AtomicInteger inFlight;\n\n  static final java.util.concurrent.atomic.AtomicInteger peak;\n\n  static final java.util.concurrent.atomic.AtomicInteger okCalls;\n\n  public lab.semgate.SyncOne();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static void callDownstream();\n    Code:\n         0: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n         3: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n         6: istore_0\n         7: getstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n        10: iload_0\n        11: invokedynamic #22,  0             // InvokeDynamic #0:applyAsInt:()Ljava/util/function/IntBinaryOperator;\n        16: invokevirtual #26                 // Method java/util/concurrent/atomic/AtomicInteger.accumulateAndGet:(ILjava/util/function/IntBinaryOperator;)I\n        19: pop\n        20: ldc2_w        #30                 // long 1850000l\n        23: invokestatic  #32                 // Method java/util/concurrent/locks/LockSupport.parkNanos:(J)V\n        26: iload_0\n        27: iconst_2\n        28: if_icmpgt     48\n        31: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        34: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n        37: iconst_2\n        38: if_icmpgt     48\n        41: getstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n        44: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n        47: pop\n        48: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        51: invokevirtual #44                 // Method java/util/concurrent/atomic/AtomicInteger.decrementAndGet:()I\n        54: pop\n        55: return\n\n  static void enterGate();\n    Code:\n         0: getstatic     #47                 // Field LOCK:Ljava/lang/Object;\n         3: dup\n         4: astore_0\n         5: monitorenter\n         6: invokestatic  #51                 // Method callDownstream:()V\n         9: aload_0\n        10: monitorexit\n        11: goto          19\n        14: astore_1\n        15: aload_0\n        16: monitorexit\n        17: aload_1\n        18: athrow\n        19: return\n      Exception table:\n         from    to  target type\n             6    11    14   any\n            14    17    14   any\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #54                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: new           #60                 // class java/util/concurrent/CyclicBarrier\n        10: dup\n        11: iload_1\n        12: invokespecial #62                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(I)V\n        15: astore_2\n        16: iload_1\n        17: anewarray     #65                 // class java/lang/Thread\n        20: astore_3\n        21: invokestatic  #67                 // Method java/lang/System.nanoTime:()J\n        24: lstore        4\n        26: iconst_0\n        27: istore        6\n        29: iload         6\n        31: iload_1\n        32: if_icmpge     65\n        35: aload_3\n        36: iload         6\n        38: new           #65                 // class java/lang/Thread\n        41: dup\n        42: aload_2\n        43: invokedynamic #73,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n        48: invokespecial #77                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        51: aastore\n        52: aload_3\n        53: iload         6\n        55: aaload\n        56: invokevirtual #80                 // Method java/lang/Thread.start:()V\n        59: iinc          6, 1\n        62: goto          29\n        65: aload_3\n        66: astore        6\n        68: aload         6\n        70: arraylength\n        71: istore        7\n        73: iconst_0\n        74: istore        8\n        76: iload         8\n        78: iload         7\n        80: if_icmpge     101\n        83: aload         6\n        85: iload         8\n        87: aaload\n        88: astore        9\n        90: aload         9\n        92: invokevirtual #83                 // Method java/lang/Thread.join:()V\n        95: iinc          8, 1\n        98: goto          76\n       101: invokestatic  #67                 // Method java/lang/System.nanoTime:()J\n       104: lload         4\n       106: lsub\n       107: ldc2_w        #86                 // long 1000000l\n       110: ldiv\n       111: lstore        6\n       113: getstatic     #88                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       116: getstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n       119: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       122: invokedynamic #92,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       127: invokevirtual #96                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       130: getstatic     #88                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: iload_1\n       134: bipush        12\n       136: imul\n       137: invokedynamic #102,  0            // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n       142: invokevirtual #96                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       145: getstatic     #88                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       148: getstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n       151: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       154: invokedynamic #103,  0            // InvokeDynamic #4:makeConcatWithConstants:(I)Ljava/lang/String;\n       159: invokevirtual #96                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       162: getstatic     #88                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       165: lload         6\n       167: invokedynamic #104,  0            // InvokeDynamic #5:makeConcatWithConstants:(J)Ljava/lang/String;\n       172: invokevirtual #96                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       175: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: bipush        12\n         5: if_icmpge     22\n         8: aload_0\n         9: invokevirtual #107                // Method java/util/concurrent/CyclicBarrier.await:()I\n        12: pop\n        13: invokestatic  #110                // Method enterGate:()V\n        16: iinc          1, 1\n        19: goto          2\n        22: goto          35\n        25: astore_1\n        26: new           #115                // class java/lang/RuntimeException\n        29: dup\n        30: aload_1\n        31: invokespecial #117                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        34: athrow\n        35: return\n      Exception table:\n         from    to  target type\n             0    22    25   Class java/lang/Exception\n\n  static {};\n    Code:\n         0: new           #2                  // class java/lang/Object\n         3: dup\n         4: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         7: putstatic     #47                 // Field LOCK:Ljava/lang/Object;\n        10: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n        13: dup\n        14: invokespecial #120                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        17: putstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        20: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n        23: dup\n        24: invokespecial #120                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        27: putstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n        30: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n        33: dup\n        34: invokespecial #120                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        37: putstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n        40: return\n}"},"SemGate":{"hash":"e95e64e3e8ff52e2","repeat":20,"runs":{"2":[{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":25},{"okCalls":24,"expected":24,"peak":2,"ms":24},{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":21},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":22},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":24},{"okCalls":24,"expected":24,"peak":2,"ms":20},{"okCalls":24,"expected":24,"peak":2,"ms":26},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":24},{"okCalls":24,"expected":24,"peak":2,"ms":24},{"okCalls":24,"expected":24,"peak":2,"ms":25},{"okCalls":24,"expected":24,"peak":2,"ms":23},{"okCalls":24,"expected":24,"peak":2,"ms":23}],"4":[{"okCalls":48,"expected":48,"peak":2,"ms":39},{"okCalls":48,"expected":48,"peak":2,"ms":37},{"okCalls":48,"expected":48,"peak":2,"ms":34},{"okCalls":48,"expected":48,"peak":2,"ms":40},{"okCalls":48,"expected":48,"peak":2,"ms":37},{"okCalls":48,"expected":48,"peak":2,"ms":36},{"okCalls":48,"expected":48,"peak":2,"ms":39},{"okCalls":48,"expected":48,"peak":2,"ms":38},{"okCalls":48,"expected":48,"peak":2,"ms":41},{"okCalls":48,"expected":48,"peak":2,"ms":38},{"okCalls":48,"expected":48,"peak":2,"ms":39},{"okCalls":48,"expected":48,"peak":2,"ms":37},{"okCalls":48,"expected":48,"peak":2,"ms":38},{"okCalls":48,"expected":48,"peak":2,"ms":39},{"okCalls":48,"expected":48,"peak":2,"ms":39},{"okCalls":48,"expected":48,"peak":2,"ms":40},{"okCalls":48,"expected":48,"peak":2,"ms":41},{"okCalls":48,"expected":48,"peak":2,"ms":43},{"okCalls":48,"expected":48,"peak":2,"ms":38},{"okCalls":48,"expected":48,"peak":2,"ms":41}],"8":[{"okCalls":96,"expected":96,"peak":2,"ms":73},{"okCalls":96,"expected":96,"peak":2,"ms":73},{"okCalls":96,"expected":96,"peak":2,"ms":71},{"okCalls":96,"expected":96,"peak":2,"ms":71},{"okCalls":96,"expected":96,"peak":2,"ms":75},{"okCalls":96,"expected":96,"peak":2,"ms":74},{"okCalls":96,"expected":96,"peak":2,"ms":78},{"okCalls":96,"expected":96,"peak":2,"ms":73},{"okCalls":96,"expected":96,"peak":2,"ms":75},{"okCalls":96,"expected":96,"peak":2,"ms":77},{"okCalls":96,"expected":96,"peak":2,"ms":77},{"okCalls":96,"expected":96,"peak":2,"ms":72},{"okCalls":96,"expected":96,"peak":2,"ms":70},{"okCalls":96,"expected":96,"peak":2,"ms":75},{"okCalls":96,"expected":96,"peak":2,"ms":77},{"okCalls":96,"expected":96,"peak":2,"ms":70},{"okCalls":96,"expected":96,"peak":2,"ms":73},{"okCalls":96,"expected":96,"peak":2,"ms":72},{"okCalls":96,"expected":96,"peak":2,"ms":74},{"okCalls":96,"expected":96,"peak":2,"ms":76}],"12":[{"okCalls":144,"expected":144,"peak":2,"ms":106},{"okCalls":144,"expected":144,"peak":2,"ms":105},{"okCalls":144,"expected":144,"peak":2,"ms":108},{"okCalls":144,"expected":144,"peak":2,"ms":110},{"okCalls":144,"expected":144,"peak":2,"ms":107},{"okCalls":144,"expected":144,"peak":2,"ms":106},{"okCalls":144,"expected":144,"peak":2,"ms":108},{"okCalls":144,"expected":144,"peak":2,"ms":109},{"okCalls":144,"expected":144,"peak":2,"ms":111},{"okCalls":144,"expected":144,"peak":2,"ms":109},{"okCalls":144,"expected":144,"peak":2,"ms":107},{"okCalls":144,"expected":144,"peak":2,"ms":107},{"okCalls":144,"expected":144,"peak":2,"ms":102},{"okCalls":144,"expected":144,"peak":2,"ms":105},{"okCalls":144,"expected":144,"peak":2,"ms":109},{"okCalls":144,"expected":144,"peak":2,"ms":104},{"okCalls":144,"expected":144,"peak":2,"ms":116},{"okCalls":144,"expected":144,"peak":2,"ms":107},{"okCalls":144,"expected":144,"peak":2,"ms":109},{"okCalls":144,"expected":144,"peak":2,"ms":108}]},"inside":"Compiled from \"SemGate.java\"\npublic class lab.semgate.SemGate {\n  static final int LIMIT;\n\n  static final int WAVES;\n\n  static final java.util.concurrent.Semaphore sem;\n\n  static final java.util.concurrent.atomic.AtomicInteger inFlight;\n\n  static final java.util.concurrent.atomic.AtomicInteger peak;\n\n  static final java.util.concurrent.atomic.AtomicInteger okCalls;\n\n  public lab.semgate.SemGate();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"\u003cinit>\":()V\n         4: return\n\n  static void callDownstream();\n    Code:\n         0: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n         3: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n         6: istore_0\n         7: getstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n        10: iload_0\n        11: invokedynamic #22,  0             // InvokeDynamic #0:applyAsInt:()Ljava/util/function/IntBinaryOperator;\n        16: invokevirtual #26                 // Method java/util/concurrent/atomic/AtomicInteger.accumulateAndGet:(ILjava/util/function/IntBinaryOperator;)I\n        19: pop\n        20: ldc2_w        #30                 // long 1850000l\n        23: invokestatic  #32                 // Method java/util/concurrent/locks/LockSupport.parkNanos:(J)V\n        26: iload_0\n        27: iconst_2\n        28: if_icmpgt     48\n        31: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        34: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n        37: iconst_2\n        38: if_icmpgt     48\n        41: getstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n        44: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n        47: pop\n        48: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        51: invokevirtual #44                 // Method java/util/concurrent/atomic/AtomicInteger.decrementAndGet:()I\n        54: pop\n        55: return\n\n  static void enterGate() throws java.lang.InterruptedException;\n    Code:\n         0: getstatic     #47                 // Field sem:Ljava/util/concurrent/Semaphore;\n         3: invokevirtual #51                 // Method java/util/concurrent/Semaphore.acquire:()V\n         6: invokestatic  #56                 // Method callDownstream:()V\n         9: getstatic     #47                 // Field sem:Ljava/util/concurrent/Semaphore;\n        12: invokevirtual #59                 // Method java/util/concurrent/Semaphore.release:()V\n        15: goto          27\n        18: astore_0\n        19: getstatic     #47                 // Field sem:Ljava/util/concurrent/Semaphore;\n        22: invokevirtual #59                 // Method java/util/concurrent/Semaphore.release:()V\n        25: aload_0\n        26: athrow\n        27: return\n      Exception table:\n         from    to  target type\n             6     9    18   any\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #62                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: new           #68                 // class java/util/concurrent/CyclicBarrier\n        10: dup\n        11: iload_1\n        12: invokespecial #70                 // Method java/util/concurrent/CyclicBarrier.\"\u003cinit>\":(I)V\n        15: astore_2\n        16: iload_1\n        17: anewarray     #73                 // class java/lang/Thread\n        20: astore_3\n        21: invokestatic  #75                 // Method java/lang/System.nanoTime:()J\n        24: lstore        4\n        26: iconst_0\n        27: istore        6\n        29: iload         6\n        31: iload_1\n        32: if_icmpge     65\n        35: aload_3\n        36: iload         6\n        38: new           #73                 // class java/lang/Thread\n        41: dup\n        42: aload_2\n        43: invokedynamic #81,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n        48: invokespecial #85                 // Method java/lang/Thread.\"\u003cinit>\":(Ljava/lang/Runnable;)V\n        51: aastore\n        52: aload_3\n        53: iload         6\n        55: aaload\n        56: invokevirtual #88                 // Method java/lang/Thread.start:()V\n        59: iinc          6, 1\n        62: goto          29\n        65: aload_3\n        66: astore        6\n        68: aload         6\n        70: arraylength\n        71: istore        7\n        73: iconst_0\n        74: istore        8\n        76: iload         8\n        78: iload         7\n        80: if_icmpge     101\n        83: aload         6\n        85: iload         8\n        87: aaload\n        88: astore        9\n        90: aload         9\n        92: invokevirtual #91                 // Method java/lang/Thread.join:()V\n        95: iinc          8, 1\n        98: goto          76\n       101: invokestatic  #75                 // Method java/lang/System.nanoTime:()J\n       104: lload         4\n       106: lsub\n       107: ldc2_w        #94                 // long 1000000l\n       110: ldiv\n       111: lstore        6\n       113: getstatic     #96                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       116: getstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n       119: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       122: invokedynamic #100,  0            // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       127: invokevirtual #104                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       130: getstatic     #96                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: iload_1\n       134: bipush        12\n       136: imul\n       137: invokedynamic #110,  0            // InvokeDynamic #3:makeConcatWithConstants:(I)Ljava/lang/String;\n       142: invokevirtual #104                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       145: getstatic     #96                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       148: getstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n       151: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       154: invokedynamic #111,  0            // InvokeDynamic #4:makeConcatWithConstants:(I)Ljava/lang/String;\n       159: invokevirtual #104                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       162: getstatic     #96                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       165: lload         6\n       167: invokedynamic #112,  0            // InvokeDynamic #5:makeConcatWithConstants:(J)Ljava/lang/String;\n       172: invokevirtual #104                // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       175: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iload_1\n         3: bipush        12\n         5: if_icmpge     22\n         8: aload_0\n         9: invokevirtual #115                // Method java/util/concurrent/CyclicBarrier.await:()I\n        12: pop\n        13: invokestatic  #118                // Method enterGate:()V\n        16: iinc          1, 1\n        19: goto          2\n        22: goto          35\n        25: astore_1\n        26: new           #123                // class java/lang/RuntimeException\n        29: dup\n        30: aload_1\n        31: invokespecial #125                // Method java/lang/RuntimeException.\"\u003cinit>\":(Ljava/lang/Throwable;)V\n        34: athrow\n        35: return\n      Exception table:\n         from    to  target type\n             0    22    25   Class java/lang/Exception\n\n  static {};\n    Code:\n         0: new           #52                 // class java/util/concurrent/Semaphore\n         3: dup\n         4: iconst_2\n         5: invokespecial #128                // Method java/util/concurrent/Semaphore.\"\u003cinit>\":(I)V\n         8: putstatic     #47                 // Field sem:Ljava/util/concurrent/Semaphore;\n        11: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n        14: dup\n        15: invokespecial #129                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        18: putstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n        21: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n        24: dup\n        25: invokespecial #129                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        28: putstatic     #19                 // Field peak:Ljava/util/concurrent/atomic/AtomicInteger;\n        31: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n        34: dup\n        35: invokespecial #129                // Method java/util/concurrent/atomic/AtomicInteger.\"\u003cinit>\":()V\n        38: putstatic     #41                 // Field okCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n        41: return\n}"}},"env":{"runtime":"JDK 25.0.4","cores":32,"os":"win32 10.0.26200","date":"2026-11-15"}}}},"terms":{"Semaphore":"计数信号量，管一叠共 n 张通行证，拿不到就等，放回就唤醒别人","permit":"信号量里的通行证，有多少张就允许多少个线程同时进门","acquire":"向 Semaphore 领一张通行证，当前余数为 0 时阻塞等待","release":"把通行证还回 Semaphore，余数加 1 并唤醒等待中的线程","AtomicInteger":"支持单个操作原子的整数类，但把它的 get 和自增拆两步就不原子","Thread.yield":"提示调度器让出当前 CPU，让同优先级其他线程先跑一轮","synchronized":"Java 互斥关键字，同一时刻只让 1 个线程进入受保护代码块","getstatic":"字节码指令：从类静态字段读取对象引用并压上操作数栈","invokevirtual":"字节码指令：调用对象实例方法，每次调用都是独立执行点","iconst_2":"字节码指令：把常量整数 2 压上操作数栈，准备与当前值比较","if_icmpge":"字节码指令：比较栈顶两整数，若前值大于等于后值则跳转出分支","finally":"异常安全收尾块，不管下游调成或抛错都保证执行归还动作","CyclicBarrier":"循环栅栏，让几条并发测试线程到齐后再同一声令下冲出去","LockSupport.parkNanos":"把当前线程挂起指定纳秒，模拟下游接口短暂处理耗时"},"slides":[{"beat":"open","title":"脆弱的风控接口，最多扛两个","blocks":[{"t":"text","md":"下游风控与支付接口一次最多扛 **2 个**并发请求；一旦第 3 个同时挤进去，下游直接报错拒单。","say":"这课解决的不是让所有线程排单队，而是把并发精准卡在上限 2 个。","key":"并发精确卡死在上限 2 个"},{"t":"text","md":"写代码的人常先查当前在途人数不到 2 再自增放行，可为什么还是会打超？","say":"顺便看清大家常用的原子类先查再加和互斥锁各差在哪里。"}]},{"beat":"open","title":"先拉回三件旧工具对比一下","bridge":"上手写网关限流前，先把第 1、2 课和第 14 课摸过的三个规律拉回来。","blocks":[{"t":"recall","say":"快速回忆三个旧结论：检查再改的缝、原子只保单步、互斥锁只放 1 人。","items":[{"have":"第 2 课：库存检查","q":"线程 A 刚查完有余量，切线程 B 又查一遍，会怎样？","options":["两个都通过，最后超卖","后来的自动排队等前一个","JVM 自动报错拦截"],"answer":0,"why":"先查再改分两步，切走瞬间别人也能看见旧余量，两个人一起冲进去。"},{"have":"第 14 课：限流上限","q":"为何只把单次加一换成原子类，还拦不住超上限？","options":["原子只保一步，查加间仍有缝","原子类根本不支持多线程","原子类只能在单核 CPU 用"],"answer":0,"why":"第 14 课见过，单个方法原子不等于整段检查加扣减原子，缝里还会挤进人。"},{"have":"第 1、8 课：互斥锁","q":"用一把 synchronized 锁护住下游，能卡住几个并发？","options":["每次只能进 1 个，2 个也拦","刚好同时放 2 个线程","按 CPU 核数自动放行"],"answer":0,"why":"互斥锁只认 1 个持有者，能防超限，但白白把 2 个名额腰斩成 1 个。"}]}]},{"beat":"open","title":"想象地铁只有两个闸机口","bridge":"把风控接口换成地铁站闸机，看看只靠门卫抬头数人头为什么会挤爆。","blocks":[{"t":"scene","story":"下游通道窄，最多同时走 2 位乘客。两个门卫同时抬头看牌子上的在途人数为 1，各自放自己面前的乘客进门后再去改牌子，结果瞬间挤进 3 个人。","say":"两个动作一拆开，门卫乙在门卫甲改牌前抬头，两人看到的就都是旧数字。","picture":{"kind":"share","actors":["门卫甲","门卫乙"],"shared":{"name":"在途数","value":"1/2"}},"map":[{"scene":"走廊最多容 2 人","code":"LIMIT = 2","say":"定死下游最多同时扛两个请求，第 3 个进来就超载。","on":"shared","tag":"上限值 2"},{"scene":"门口挂一块数字牌","code":"active = 0","say":"记录此刻已经放进去几个线程，没走出来前不减掉。","on":"shared","tag":"共享在途数"},{"scene":"两个门卫各自放行","code":"Thread 0 / 1","say":"多个请求线程在门口同时抢名额，看谁先抬手看牌子。","on":"actors","tag":"并发请求"},{"scene":"看一眼未满就放人","code":"if (active \u003c 2) active++","say":"看牌子和改牌子中间有空档，两人同看 1 就一起放行。","on":"action","tag":"检查再进入"}]}]},{"beat":"hook","title":"先把普通计数放上去试试","bridge":"把场景落回代码里，先运行最直觉的普通 int 计数看它会漏多少单。","blocks":[{"t":"experiment","lab":"semgate","show":["Plain"],"at":"8","knob":false,"say":"8 条线程同时起跑 12 轮，一共要做 96 次合规下游调用才算过关。","focusLines":[]},{"t":"try","say":"点开运行看 20 轮测试，注意在 8 个线程抢名额时合规数是否次次掉队。"}]},{"beat":"code","title":"先看普通版的拦截长什么样","bridge":"看清楚刚才为什么一跑就漏单，先把门口代码和下游检测拆开盯一遍。","blocks":[{"t":"code","of":"semgate.Plain","focus":["LIMIT = 2","if (active \u003c LIMIT)"],"say":"逐行盯住门口逻辑：判断不到 2、自增进门、结束再在收尾块里减 1。","walk":[{"focus":["LIMIT = 2"],"say":"定死下游安全红线是 2 个并发，只要同时在里面超过 2 个就判超限。","focusLines":[8]},{"focus":["if (active \u003c LIMIT)","active++;"],"say":"门口先判断当前人数不够 2，再自己加 1 后放行，最后在 finally 减 1。","focusLines":[27,28]},{"focus":["int cur = inFlight.incrementAndGet();","cur \u003c= LIMIT"],"say":"下游入口拿原子计数抓现行，只要任意一次峰值冲破 2，合规调用就追不上期望。","focusLines":[16,19]}],"source":"package lab.semgate;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\nimport java.util.concurrent.locks.LockSupport;\n\npublic class Plain {\n    static final int LIMIT = 2;\n    static final int WAVES = 12;\n    static int active = 0;\n    static final AtomicInteger inFlight = new AtomicInteger();\n    static final AtomicInteger peak = new AtomicInteger();\n    static final AtomicInteger okCalls = new AtomicInteger();\n\n    static void callDownstream() {\n        int cur = inFlight.incrementAndGet();\n        peak.accumulateAndGet(cur, Math::max);\n        LockSupport.parkNanos(1_850_000L);\n        if (cur \u003c= LIMIT && inFlight.get() \u003c= LIMIT) {\n            okCalls.incrementAndGet();\n        }\n        inFlight.decrementAndGet();\n    }\n\n    static void enterGate() {\n        for (int i = 0; i \u003c 60_000; i++) {\n            if (active \u003c LIMIT) {\n                active++;\n                try {\n                    callDownstream();\n                } finally {\n                    active--;\n                }\n                return;\n            }\n            Thread.yield();\n        }\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        CyclicBarrier barrier = new CyclicBarrier(threads);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        enterGate();\n                    }\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"okCalls=\" + okCalls.get());\n        System.out.println(\"expected=\" + (threads * WAVES));\n        System.out.println(\"peak=\" + peak.get());\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/semgate/Plain.java","lang":"java","focusLines":[8,27]}]},{"beat":"code","title":"换 AtomicInteger 能修好吗","bridge":"很多人第一反应是把普通变量换成原子类，看看这一步改动到底够不够。","blocks":[{"t":"code","of":"semgate.AtomicCheck","focus":["AtomicInteger active","active.get() \u003c LIMIT"],"say":"只换掉在途计数类型，把普通加减变成原子类方法，其余门卫流程原封不动。","walk":[{"focus":["AtomicInteger active"],"say":"把门口的数字牌换成 `AtomicInteger`，每一步读写都自带内存可见性与单步原子。","focusLines":[10]},{"focus":["active.get() \u003c LIMIT","active.incrementAndGet();"],"say":"先用 get 读出在途数小于 2，再调 incrementAndGet 加 1，看起来已经无懈可击。","focusLines":[27,28]}],"source":"package lab.semgate;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\nimport java.util.concurrent.locks.LockSupport;\n\npublic class AtomicCheck {\n    static final int LIMIT = 2;\n    static final int WAVES = 12;\n    static final AtomicInteger active = new AtomicInteger();\n    static final AtomicInteger inFlight = new AtomicInteger();\n    static final AtomicInteger peak = new AtomicInteger();\n    static final AtomicInteger okCalls = new AtomicInteger();\n\n    static void callDownstream() {\n        int cur = inFlight.incrementAndGet();\n        peak.accumulateAndGet(cur, Math::max);\n        LockSupport.parkNanos(1_850_000L);\n        if (cur \u003c= LIMIT && inFlight.get() \u003c= LIMIT) {\n            okCalls.incrementAndGet();\n        }\n        inFlight.decrementAndGet();\n    }\n\n    static void enterGate() {\n        for (;;) {\n            if (active.get() \u003c LIMIT) {\n                active.incrementAndGet();\n                try {\n                    callDownstream();\n                } finally {\n                    active.decrementAndGet();\n                }\n                return;\n            }\n            Thread.yield();\n        }\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        CyclicBarrier barrier = new CyclicBarrier(threads);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        enterGate();\n                    }\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"okCalls=\" + okCalls.get());\n        System.out.println(\"expected=\" + (threads * WAVES));\n        System.out.println(\"peak=\" + peak.get());\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/semgate/AtomicCheck.java","lang":"java","focusLines":[10,27]}]},{"beat":"predict","title":"先别点运行，猜猜这次错几轮","bridge":"普通 int 会算丢、也会不可见，那换成原子类以后还会在 8 线程下超限吗？","blocks":[{"t":"predict","id":"atomic-8","q":"把 active 换成 AtomicInteger 后，8 线程跑 20 轮会怎样？","say":"先押一注你觉得换上原子计数后，下游到底还超不超上限。","options":["照样次次把下游打超，几乎全错","偶尔超 1 到 2 轮，大部分稳过","彻底修好，20 轮稳拿 0 错","全卡死在门外一个都进不去"],"answer":0}]},{"beat":"run","title":"直接跑一次看预测对不对","bridge":"先不换锁，切到 8 线程只跑原子类版本，拿 20 轮实测结果对照刚才的判断。","blocks":[{"t":"experiment","lab":"semgate","show":["AtomicCheck"],"at":"8","knob":false,"hand":true,"say":"按着跑完 20 轮，盯着错误轮数和合规调用数，看原子类是不是挡住了第 3 个线程。","focusLines":[]},{"t":"reveal","of":"atomic-8","say":"就算把计数全换成原子类，在 8 线程抢进门时还是会一轮轮把下游冲爆，根本靠不住。"}]},{"beat":"run","title":"换不同线程数试试边界条件","bridge":"高并发下挤门口都会冲爆，可只放 2 个线程会怎样？切旋钮亲自跑一遍。","blocks":[{"t":"experiment","lab":"semgate","show":["Plain","AtomicCheck"],"select":"AtomicCheck","say":"切 2、4、8、12 四档线程各跑一次，留意低并发怎样把 Bug 藏起来。","focusLines":[]},{"t":"try","say":"把上方线程旋钮分别拨到 2、4、8、12 运行，看哪一档永远不超限、哪几档一跑就漏。"}]},{"beat":"run","title":"到代码里点出那两行罪魁祸首","bridge":"4 线程以上一冲就超限，但 2 线程又全对——问题到底藏在门卫代码的哪两行？","blocks":[{"t":"spot","of":"semgate.AtomicCheck","q":"点出 AtomicCheck 里导致多线程同时挤破 2 个名额的两行。","say":"在代码里点选出那组先看人数、再改人数的分步动作。","answer":["if (active.get() \u003c LIMIT) {","active.incrementAndGet();"],"hint":"别只看变量类型，盯住 enterGate 里先把人放过去、再回头改牌子的那两句。","found":"就是这两句：get 判小于 2 和自增占坑是两条独立调用，各自原子也管不住跨步。","source":"package lab.semgate;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\nimport java.util.concurrent.locks.LockSupport;\n\npublic class AtomicCheck {\n    static final int LIMIT = 2;\n    static final int WAVES = 12;\n    static final AtomicInteger active = new AtomicInteger();\n    static final AtomicInteger inFlight = new AtomicInteger();\n    static final AtomicInteger peak = new AtomicInteger();\n    static final AtomicInteger okCalls = new AtomicInteger();\n\n    static void callDownstream() {\n        int cur = inFlight.incrementAndGet();\n        peak.accumulateAndGet(cur, Math::max);\n        LockSupport.parkNanos(1_850_000L);\n        if (cur \u003c= LIMIT && inFlight.get() \u003c= LIMIT) {\n            okCalls.incrementAndGet();\n        }\n        inFlight.decrementAndGet();\n    }\n\n    static void enterGate() {\n        for (;;) {\n            if (active.get() \u003c LIMIT) {\n                active.incrementAndGet();\n                try {\n                    callDownstream();\n                } finally {\n                    active.decrementAndGet();\n                }\n                return;\n            }\n            Thread.yield();\n        }\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        CyclicBarrier barrier = new CyclicBarrier(threads);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        enterGate();\n                    }\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"okCalls=\" + okCalls.get());\n        System.out.println(\"expected=\" + (threads * WAVES));\n        System.out.println(\"peak=\" + peak.get());\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/semgate/AtomicCheck.java","lang":"java","answerLines":[27,28]}]},{"beat":"why","title":"拆开字节码看它到底拆成几步","bridge":"口头上写在一对大括号里，机器跑的时候真的是绑在一起吗？直接看真实字节码切片。","blocks":[{"t":"inside","of":"semgate.AtomicCheck","within":"static void enterGate();","from":"0: getstatic","to":"17: invokestatic","say":"这段真实字节码切片把两步之间的空隙拆得清清楚楚，没有一条原子指令能同时包住判断和加一。","walk":[{"focus":["getstatic","AtomicInteger.get:()I"],"label":"1. 读出当前数","say":"先执行 `getstatic` 拿到对象，再靠 `invokevirtual` 调一次 get 读出当前在途数。","focusLines":[1,2,5]},{"focus":["iconst_2","if_icmpge"],"label":"2. 比是否小于2","say":"`iconst_2` 把上限 2 压栈，`if_icmpge` 只负责比较跳转，过了判断并不会锁住门。","focusLines":[3,4]},{"focus":["AtomicInteger.incrementAndGet:()I"],"label":"3. 第二次才加一","say":"隔了好几条指令才第二次 `invokevirtual` 调自增，两条方法调用之间随时能被抢占。","focusLines":[6]}],"source":" 0: getstatic     #47                 // Field active:Ljava/util/concurrent/atomic/AtomicInteger;\n 3: invokevirtual #38                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n 6: iconst_2\n 7: if_icmpge     41\n10: getstatic     #47                 // Field active:Ljava/util/concurrent/atomic/AtomicInteger;\n13: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n16: pop\n17: invokestatic  #50                 // Method callDownstream:()V","command":"javap -c -p -cp out lab.semgate.AtomicCheck"}]},{"beat":"why","title":"两条线程怎么一起钻过安检门","bridge":"看清字节码是两次独立调用，再把时间轴拉慢，看两条刚排队的线程如何同时撞进去。","blocks":[{"t":"lanes","expr":"if (active.get() \u003c 2) active.inc()","parts":{"read":"get()\u003c2","calc":"过门不占坑","write":"inc()+1"},"lanes":["线程 A","线程 B"],"shared":{"name":"active","start":1},"say":"门里本就已经有 1 个请求在跑（active=1），外面的线程 A 和线程 B 同时抢最后一个空位。","steps":[{"lane":0,"op":"read","text":"读 active=1","say":"门里已占 1 个名额，线程 A 调 get 读到 1。"},{"lane":1,"op":"read","text":"读 active=1","say":"此时线程 A 还没自增，线程 B 也调 get 读到了 1。"},{"lane":0,"op":"calc","text":"1\u003c2 放行","say":"线程 A 比较 1 小于 2 成立，安检门对它放行。"},{"lane":1,"op":"calc","text":"1\u003c2 也放行","say":"线程 B 同样拿自己读到的 1 比小于 2 成立，也被安检门放行。"},{"lane":0,"op":"write","value":2,"text":"自增成 2","say":"线程 A 先调用 incrementAndGet 把在途数改成 2，看起来刚好满员。"},{"lane":1,"op":"write","value":3,"text":"自增冲到 3","say":"早就过门的线程 B 接着调用 incrementAndGet 再加 1。","ask":{"q":"线程 A 刚把 active 加到 2，线程 B 也已过门槛，它加 1 后是多少？","options":["直接冲到 3","自动退回 2","报异常停住"],"answer":0,"say":"线程 B 早就越过小于 2 的判断，只能继续执行自增，在途数直接变成 3！"}},{"lane":1,"op":"note","tone":"fail","text":"在途峰值=3！","say":"算上原本在里面跑的那 1 个，下游此刻同时挤进 3 条线程，当场打超。"}],"verdict":"两条线程同过检查再先后自增，峰值冲到 3","verdictSay":"先查再加哪怕每步都是原子操作，门里只剩 1 个空位时还是会被几个人同时抢到，根本锁不住名额。"}]},{"beat":"why","title":"为何 2 线程不超、4 线程必崩","bridge":"这就解释了旋钮拨到不同档位时的反差：为什么人数刚够 2 看不出毛病，人一多就次次炸？","blocks":[{"t":"text","md":"当总线程只有 2 条时，就算两人都挤进来最多也才 2 个在途；从 4 线程起门外总有等待者同时抢那一个释放出来的空位，峰值必然冲破 2。","say":"这也提醒我们：并发缺陷常在低并发测试时完全隐身，一上压力才把隐患全暴露出来。"}]},{"beat":"fix","title":"第一反应上 synchronized 锁？","bridge":"既然判断和占坑不能分两步，最省事的念头就是拿一把互斥锁整个包起来。","blocks":[{"t":"code","of":"semgate.SyncOne","focus":["synchronized (LOCK)"],"say":"对比普通版，这一版用一把全局互斥锁整块包住下游调用，彻底消灭门卫空档。","walk":[{"focus":["Object LOCK"],"say":"准备一把全局锁对象，所有想进下游的线程都得先来抢同一把钥匙。","focusLines":[10]},{"focus":["synchronized (LOCK)"],"say":"进入和退出自动绑成原子块，绝不会同时漏放超 2 个——但也因为只有 1 把钥匙，一次只进 1 个。","focusLines":[26]}],"source":"package lab.semgate;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.atomic.AtomicInteger;\nimport java.util.concurrent.locks.LockSupport;\n\npublic class SyncOne {\n    static final int LIMIT = 2;\n    static final int WAVES = 12;\n    static final Object LOCK = new Object();\n    static final AtomicInteger inFlight = new AtomicInteger();\n    static final AtomicInteger peak = new AtomicInteger();\n    static final AtomicInteger okCalls = new AtomicInteger();\n\n    static void callDownstream() {\n        int cur = inFlight.incrementAndGet();\n        peak.accumulateAndGet(cur, Math::max);\n        LockSupport.parkNanos(1_850_000L);\n        if (cur \u003c= LIMIT && inFlight.get() \u003c= LIMIT) {\n            okCalls.incrementAndGet();\n        }\n        inFlight.decrementAndGet();\n    }\n\n    static void enterGate() {\n        synchronized (LOCK) {\n            callDownstream();\n        }\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        CyclicBarrier barrier = new CyclicBarrier(threads);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        enterGate();\n                    }\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"okCalls=\" + okCalls.get());\n        System.out.println(\"expected=\" + (threads * WAVES));\n        System.out.println(\"peak=\" + peak.get());\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/semgate/SyncOne.java","lang":"java","focusLines":[26]}]},{"beat":"fix","title":"想要稳稳放 2 个：上 Semaphore","bridge":"能进 2 个却硬被互斥锁压成 1 个，耗时白白翻倍；怎么把通行名额精确发成两张？","blocks":[{"t":"code","of":"semgate.SemGate","focus":["new Semaphore(LIMIT)","sem.acquire();","sem.release();"],"say":"把全局互斥锁换成发 2 张通行证的信号量，进门领证、异常也归还。","walk":[{"focus":["new Semaphore(LIMIT)"],"say":"初始化 `Semaphore` 时传入许可数 2，相当于门口柜台放好两张通行证。","focusLines":[11]},{"focus":["sem.acquire();"],"say":"每次进下游前先调 `acquire` 领证：拿得到就减一放行，柜台空了就在门外安心挂起等待。","focusLines":[27]},{"focus":["finally {","sem.release();"],"say":"不管下游成功还是抛异常，都在 `finally` 里调 `release` 把通行证还回去，防名额越用越少。","focusLines":[30,31]}],"source":"package lab.semgate;\n\nimport java.util.concurrent.CyclicBarrier;\nimport java.util.concurrent.Semaphore;\nimport java.util.concurrent.atomic.AtomicInteger;\nimport java.util.concurrent.locks.LockSupport;\n\npublic class SemGate {\n    static final int LIMIT = 2;\n    static final int WAVES = 12;\n    static final Semaphore sem = new Semaphore(LIMIT);\n    static final AtomicInteger inFlight = new AtomicInteger();\n    static final AtomicInteger peak = new AtomicInteger();\n    static final AtomicInteger okCalls = new AtomicInteger();\n\n    static void callDownstream() {\n        int cur = inFlight.incrementAndGet();\n        peak.accumulateAndGet(cur, Math::max);\n        LockSupport.parkNanos(1_850_000L);\n        if (cur \u003c= LIMIT && inFlight.get() \u003c= LIMIT) {\n            okCalls.incrementAndGet();\n        }\n        inFlight.decrementAndGet();\n    }\n\n    static void enterGate() throws InterruptedException {\n        sem.acquire();\n        try {\n            callDownstream();\n        } finally {\n            sem.release();\n        }\n    }\n\n    public static void main(String[] args) throws Exception {\n        int threads = Integer.parseInt(args[0]);\n        CyclicBarrier barrier = new CyclicBarrier(threads);\n        Thread[] workers = new Thread[threads];\n        long start = System.nanoTime();\n        for (int t = 0; t \u003c threads; t++) {\n            workers[t] = new Thread(() -> {\n                try {\n                    for (int w = 0; w \u003c WAVES; w++) {\n                        barrier.await();\n                        enterGate();\n                    }\n                } catch (Exception e) {\n                    throw new RuntimeException(e);\n                }\n            });\n            workers[t].start();\n        }\n        for (Thread w : workers) w.join();\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"okCalls=\" + okCalls.get());\n        System.out.println(\"expected=\" + (threads * WAVES));\n        System.out.println(\"peak=\" + peak.get());\n        System.out.println(\"ms=\" + ms);\n    }\n}","path":"src/lab/semgate/SemGate.java","lang":"java","focusLines":[11,27,31]}]},{"beat":"fix","title":"四套写法放一起实测对比","bridge":"现在把前两个出错写法和后两个稳健写法同台跑满 20 轮，看错误率和耗时各自走哪边。","blocks":[{"t":"experiment","lab":"semgate","show":["Plain","AtomicCheck","SyncOne","SemGate"],"say":"四套实现一起上线对比：4 线程起前两个都会超限扣分，后两个全程零错里看谁耗时近乎减半。","focusLines":[]},{"t":"try","say":"依次切换 2、4、8、12 线程点运行，对照下方耗时，重点比较两个零错版本谁更快。"}]},{"beat":"fix","title":"从耗时图看清两倍吞吐差","bridge":"错误率清零之后，看同一档并发下互斥锁和信号量到底差了多少时间。","blocks":[{"t":"chart","of":"semgate","say":"在保证合规全过的前提下，信号量吃满两条并行通道，每一档耗时都几乎减半。","walk":[{"focus":"AtomicCheck","say":"不加锁强行抢进门虽然快，但只要超过 2 个线程就把下游打超，合规数达不到预期。"},{"focus":"SyncOne","say":"互斥锁全程 0 错守住底线，但 2 个名额只敢用 1 个，高并发下线程只能挨个排单队。"},{"focus":"SemGate","say":"同样全程 0 错，因为放开两条通道并行干活，各档并发耗时都只有互斥锁的约一半。"}]}]},{"beat":"fix","title":"看看 Semaphore 怎么发牌收牌","bridge":"为什么信号量既不超载又不卡死成单线？再看一眼它内部把通行证当成原子门栓的过程。","blocks":[{"t":"lanes","expr":"sem.acquire() / sem.release()","parts":{"read":"抢 1 张证","calc":"余 0 就等","write":"归还+1"},"lanes":["线程 A","线程 B"],"shared":{"name":"permits","start":2},"say":"柜台初始有 2 张通行证，线程 A 和 B 各领一张同时进下游，第 3 个来只能排队等归还。","steps":[{"lane":0,"op":"write","value":1,"text":"领证进门(余1)","say":"线程 A 调 acquire，检查并扣减在一步里原子完成，余下 1 张。"},{"lane":1,"op":"write","value":0,"text":"领证进门(余0)","say":"线程 B 调 acquire 领走最后 1 张，余证变成 0。"},{"lane":0,"op":"note","tone":"ok","text":"双通道并发中","say":"A 与 B 同时在下游里执行，恰好吃满允许的 2 路并发。"},{"lane":1,"op":"note","tone":"wait","text":"若来C则余0等","say":"此时就算再来第 3 条线程 C，看见余 0 也只能原地挂起等。"},{"lane":0,"op":"write","value":1,"text":"finally归还","say":"线程 A 完成调用后进入收尾块，调 release 把通行证还回柜台（余 1）。"},{"lane":1,"op":"write","value":2,"text":"双双安全还证","say":"线程 B 随后也调 release 归还，通行证稳稳回到 2 张。"}],"verdict":"判断余量和扣减在信号量里原子完成，最多稳进 2 人","verdictSay":"它不是在门外先看再进，而是内部用原子状态一气呵成抢走 `permit`，没拿到就直接入队挂起，把并发稳稳卡在 2。"}]},{"beat":"choose","title":"四种写法放在一起怎么选","bridge":"原理摸清了，把四份代码按守住上限、吞吐成本和适用场合排一张账单。","blocks":[{"t":"choose","say":"把四套写法摊开比成本与正确性：唯一既零错又吃满双并发的就是信号量。","options":[{"name":"普通 int 检查","solves":"不解决，低并发看似没事高并发就失守","cost":"8 线程下 38 ms","when":"绝不用于限流门，只能当反面教材","say":"无同步读写加非原子计数，并发一上来要么算漏要么同时放行破限。"},{"name":"原子类先查再加","solves":"只保单步原子，仍保不住复合检查进门","cost":"8 线程下 49 ms","when":"不要拿它当并发限流阀使用","say":"读计数与加一分两步仍有缝，多条线程一齐过闸立刻挤爆下游。"},{"name":"synchronized 互斥锁","solves":"守住不超过上限，且写法简单不易漏还","cost":"8 线程下 137 ms","when":"下游每次真的只能进 1 个并发时选用","say":"只发 1 把钥匙，保护绝对严密，可一旦下游能抗多并发就会白白丢掉一半吞吐。"},{"name":"Semaphore 信号量","solves":"把并发稳卡在上限 N，同时吃满 N 路并行","cost":"8 线程下 74 ms","when":"连接池、下游接口允许固定 N 并发时用","say":"按允许名额发通行证，既不超载又能满编并发跑，记得配 finally 归还。"}],"rule":"只需进 1 个用互斥锁；要卡死在 N 个并行，用 Semaphore(N)。","ruleSay":"先分清资源到底允许同时进 1 个还是 N 个，再挑对应门栓；永远别用先查再自增手搓限流器。"}]},{"beat":"choose","layout":"split","title":"遇上真实限流场景你挑哪把尺","bridge":"账单看完了，试着按右侧的判定标尺，给左边三个线上的常见场景各选对一把门锁。","blocks":[{"t":"decide","q":"最大允许并发数是多少？","say":"先定清资源一次能进 1 个、进 N 个，还是压根不限制同时进来几个。","branches":[{"when":"只能进 1 个（独占）","pick":"synchronized","eg":"写本地同一份文件"},{"when":"最多进 N 个（N > 1）","pick":"Semaphore(N)","eg":"风控接口、连接池上限"},{"when":"只需要计数统计总量","pick":"AtomicInteger","eg":"统计总请求次数"}]},{"t":"cases","say":"给左边三道真实需求各配对一件工具，看自己能不能一眼分清。","tools":["synchronized","Semaphore(N)","AtomicInteger"],"items":[{"text":"第三方短信通道限制同一账号最多 5 条并发推送，再多就报 429 限流。","answer":1,"why":"上限 N=5 既要卡死不能到 6，又要让 5 路一起发提升吞吐，正好上 Semaphore(5)。"},{"text":"内存里的共享配置账本一次只能由一条线程修改，不能有任何并行写入。","answer":0,"why":"要求严格独占（N=1），用 synchronized 最简洁，进出大括号自动释放。"},{"text":"网关每收到一条请求就把当天访问总量加 1，并不限制下游同时跑几条。","answer":2,"why":"这里不需要卡在途并发人数，只是单纯累加计数，单步原子自增就够了。"}]}]},{"beat":"name","title":"给今天的主角正式挂上名牌","bridge":"把跑出两倍速度差还守住上限的工具原理浓缩成一句话，记住它真正的名字和常见问法。","blocks":[{"t":"name","term":"Semaphore 信号量","alias":"计数信号量 / 并发通行证闸门","oneLine":"用一组共 N 张通行证控制同时访问资源的线程上限为 N。","say":"下次遇到限制并发数、连接池借还或流量闸门问题，脑子里直接浮现这个词。","asked":["为何先 get() \u003c N 再自增防不住超限？","Semaphore 和 synchronized 的核心区别？","忘写 finally release() 会出什么事故？"]}]},{"beat":"check","title":"随堂测 1：原子类错在哪","bridge":"合上刚才的实验图和字节码，检验一下有没有真看穿先查再加的陷阱。","blocks":[{"t":"quiz","q":"把在途数从 int 换成 AtomicInteger，为何仍会让超过 2 个线程进下游？","say":"回想 enterGate 里那两条独立的方法调用，挑出唯一说到点子上的解释。","options":[{"text":"get() 和自增分成两步，中间有空档","ok":true,"why":"单步原子挡不住跨步插队，几个线程一起读到小于 2 后再先后加 1 照样冲爆。"},{"text":"AtomicInteger 的自增操作也会算丢","ok":false,"why":"单次自增本身通过 CAS 是原子的，不会算丢，坏在它前面的判断是另外一步。"},{"text":"AtomicInteger 只能把上限设为 1","ok":false,"why":"它只是个原子整数容器，根本没有限制并行人数上限的作用。"}]}]},{"beat":"check","title":"随堂测 2：锁和信号量差在哪","bridge":"再考一题辨析：同样在实验里跑出 0 错，互斥锁和信号量在能力上有何不同？","blocks":[{"t":"quiz","q":"下游最多允许 2 个并发，用 synchronized 和 Semaphore(2) 差在哪？","say":"想想它们各自能同时放几个线程进下游，以及耗时为什么差一倍。","options":[{"text":"互斥锁只放 1 个，Semaphore(2) 能放 2 个并行","ok":true,"why":"互斥锁把并行度强行压成 1，信号量按许可数发牌，把两个并行槽位吃满。"},{"text":"Semaphore(2) 报错不释放，比锁更慢","ok":false,"why":"恰恰相反，允许双通道并行时它耗时大约减半；只要放进 finally 就能确保归还。"},{"text":"两者耗时一样，只是 Semaphore 写法更短","ok":false,"why":"并发能力从 1 翻倍到 2，吞吐和总耗时立刻拉开接近两倍的差距。"}]}]},{"beat":"check","title":"随堂测 3：漏写归还会怎样","bridge":"最后查一查最容易踩坑的线上事故点：发出去的通行证如果忘了还回柜台会怎样？","blocks":[{"t":"quiz","q":"如果在 SemGate 里去掉 finally，只在正常返回后调 release() 会怎样？","say":"想象下游偶发超时抛了运行期异常，没走最后一行归还会留下什么后果。","options":[{"text":"一旦下游抛异常，可用许可永久少 1，最终全卡死","ok":true,"why":"异常跳出时来不及还证，两张通行证漏完后所有后续请求都会无限阻塞。"},{"text":"Java GC 会自动帮线程把通行证收回来","ok":false,"why":"信号量只计数不管谁借的，只要没调 release()，这张证就永远补不回来。"},{"text":"顶多当前线程多等一会，其他线程不受影响","ok":false,"why":"通行证是全局共享的，前人漏还 1 张，整个接口的并发上限就永久少 1。"}]}]},{"beat":"say","title":"用 30 秒向面试官讲清这事","bridge":"题目全过关后，把整节课压缩成面试官最想听的一段口述，按这 4 个要点连起来说。","blocks":[{"t":"say","prompt":"下游接口限并发 2，你会怎么实现？为什么不用先判断再加或普通锁？","say":"照这 4 步先讲坑、再讲互斥锁退化、再点出信号量与兜底释放，半分钟稳稳拿下。","points":["先用 get 判小于 2 再自增仍非复合原子，多路过检照样打超","用 synchronized 能兜底不超限，但把并发度压成 1，耗时翻倍","改用 Semaphore(2) 管两张通行证，拿不到证就阻塞排队","务必把 release 放进 finally 块，防止异常导致通行证泄露"],"model":"我用 Semaphore(2) 控制并发上限。自己写 if (active.get() \u003c 2) 再 incrementAndGet() 看似用了原子类，其实判断和占坑是两条独立调用，多线程同时读到小于 2 再先后自增照样打爆下游；直接上 synchronized 虽安全却只放 1 条进门、浪费一半吞吐。Semaphore(2) 把拿证判断与扣减做成原子同步，既卡死上限 2 又跑满双并行，再用 try-finally 调 release() 兜底防异常漏还。"}]},{"beat":"take","title":"带走这三张随手翻的记忆卡","bridge":"最后把本课最关键的三句结论压进卡片，以后写限流网关和准备面试直接拿出来用。","blocks":[{"t":"cards","say":"把这三组问答存进记忆卡，出门前再翻一遍就能把整课串起来。","items":[{"q":"为什么 AtomicInteger 先查再加拦不住并发上限？","a":"get() 和自增是两次独立调用，并发线程会同时越过判断再先后自增冲破上限。"},{"q":"Semaphore(2) 比 synchronized 强在什么地方？","a":"互斥锁每次只放 1 个；Semaphore(2) 用两张通行证把在途数卡死在 2，高并发耗时几乎减半。"},{"q":"用 Semaphore 必须守住哪条代码纪律？","a":"acquire() 成功后立刻接 try-finally，在 finally 里调 release()，防止异常漏还许可卡死服务。"}]}]}],"beats":[{"id":"open","label":"开场"},{"id":"hook","label":"问题"},{"id":"code","label":"代码"},{"id":"predict","label":"先猜"},{"id":"run","label":"跑一跑"},{"id":"why","label":"为什么"},{"id":"fix","label":"改一处"},{"id":"choose","label":"怎么选"},{"id":"name","label":"名字"},{"id":"check","label":"小测"},{"id":"say","label":"开口讲"},{"id":"take","label":"带走"}]}</script>
+<script>
+/* Shared pieces of the lesson page: element building, inline marks, Java colouring, the code view, a line diff, saved state.
+   Text always goes in as text nodes; nothing a lesson writes is parsed as HTML. */
+(function () {
+  "use strict";
+  const L = (window.Lesson = { blocks: {} });
+
+  /** h("div.a.b", { text, on: { click }, attr: {…} }, child, child…) */
+  L.h = function (spec, props, ...kids) {
+    const [tag, ...classes] = spec.split(".");
+    const el = document.createElement(tag || "div");
+    if (classes.length) el.className = classes.join(" ");
+    if (props) {
+      if (props.text !== undefined) el.textContent = props.text;
+      for (const [name, value] of Object.entries(props.attr || {})) el.setAttribute(name, value);
+      for (const [name, fn] of Object.entries(props.on || {})) el.addEventListener(name, fn);
+    }
+    for (const kid of kids.flat()) if (kid) el.append(kid);
+    return el;
+  };
+
+  L.num = (value) => Number(value).toLocaleString("en-US");
+
+  /** **bold**, `code` and ==mark== inside a sentence. */
+  L.md = function (text) {
+    const out = document.createDocumentFragment();
+    const pattern = /\*\*([^*]+)\*\*|`([^`]+)`|==([^=]+)==/g;
+    let last = 0;
+    for (let hit = pattern.exec(text); hit; hit = pattern.exec(text)) {
+      out.append(text.slice(last, hit.index));
+      out.append(hit[1] ? L.h("b", { text: hit[1] }) : hit[2] ? L.term(hit[2], L.h("code", { text: hit[2] })) : L.h("mark", { text: hit[3] }));
+      last = pattern.lastIndex;
+    }
+    out.append(text.slice(last));
+    return out;
+  };
+
+  const JAVA = new Set("abstract boolean break byte case catch char class continue default do double else enum extends final finally float for if implements import instanceof int interface long new null package private protected public record return short static super switch synchronized this throw throws try var void volatile while true false".split(" "));
+  const PYTHON = new Set("and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield True False None".split(" "));
+  const LANGS = { java: { words: JAVA, comment: "//" }, python: { words: PYTHON, comment: "#" }, text: { words: new Set(), comment: "\n" } };
+  const TOKEN = /(\/\/.*$|#.*$)|("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)')|\b(\d[\d_]*(?:\.\d+)?[LlFfDd]?)\b|\b([A-Za-z_]\w*)\b/g;
+
+  /** One line of code as coloured spans. */
+  L.colour = function (line, lang) {
+    const { words, comment } = LANGS[lang] || LANGS.text;
+    const out = document.createDocumentFragment();
+    let last = 0;
+    TOKEN.lastIndex = 0;
+    for (let hit = TOKEN.exec(line); hit; hit = TOKEN.exec(line)) {
+      const kind = hit[1] ? (hit[1].startsWith(comment) ? "c" : "") : hit[2] || hit[3] ? "s" : hit[4] ? "n" : words.has(hit[5]) ? "k" : "";
+      out.append(line.slice(last, hit.index));
+      out.append(kind ? L.h(`span.tk-${kind}`, { text: hit[0] }) : hit[0]);
+      last = TOKEN.lastIndex;
+    }
+    out.append(line.slice(last));
+    return out;
+  };
+
+  /* Reminders at the moment of need: a word the learner may not know is explained where it stands, on hover, focus or tap. */
+  L.glossary = {};
+  const tip = L.h("div.tip", { attr: { role: "tooltip", id: "lesson-tip", hidden: "" } });
+  let tipFor = null, tipTimer = 0;
+  function showTip(anchor, word) {
+    clearTimeout(tipTimer);
+    tipFor = anchor;
+    tip.replaceChildren(L.h("b.mono", { text: word }), L.h("span", null, L.md(L.glossary[word])));
+    tip.hidden = false;
+    if (!tip.isConnected) document.body.append(tip);
+    const box = anchor.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
+    tip.style.left = `${Math.max(8, Math.min(window.innerWidth - width - 8, box.left + box.width / 2 - width / 2))}px`;
+    tip.style.top = `${box.bottom + height + 14 > window.innerHeight ? box.top - height - 8 : box.bottom + 8}px`;
+  }
+  L.hideTip = function () { clearTimeout(tipTimer); tip.hidden = true; tipFor = null; };
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") L.hideTip(); });
+  document.addEventListener("click", (event) => { if (tipFor && !tipFor.contains(event.target)) L.hideTip(); });
+
+  /** Wraps `content` as an explainable word when the glossary knows it; otherwise returns the content unchanged. */
+  L.term = function (word, content) {
+    if (!L.glossary[word]) return content;
+    return L.h("span.term", {
+      attr: { tabindex: "0", role: "button", "aria-describedby": "lesson-tip" },
+      on: {
+        mouseenter(event) { const anchor = event.currentTarget; tipTimer = setTimeout(() => showTip(anchor, word), 140); },
+        mouseleave: L.hideTip,
+        focus(event) { showTip(event.currentTarget, word); },
+        blur: L.hideTip,
+        click(event) { event.stopPropagation(); if (tipFor === event.currentTarget) L.hideTip(); else showTip(event.currentTarget, word); },
+      },
+    }, content);
+  };
+
+  /** A line of code with the glossary's words made explainable (longest word first; nothing inside a comment). */
+  L.codeLine = function (line, lang) {
+    const words = Object.keys(L.glossary).sort((a, b) => b.length - a.length);
+    const comment = line.indexOf((LANGS[lang] || LANGS.text).comment);
+    const limit = comment < 0 ? line.length : comment;
+    const out = document.createDocumentFragment();
+    let from = 0;
+    for (let at = 0; at < limit;) {
+      const word = words.find((candidate) => line.startsWith(candidate, at)
+        && !(/\w/.test(candidate[0]) && /\w/.test(line[at - 1] || ""))
+        && !(/\w/.test(candidate.at(-1)) && /\w/.test(line[at + candidate.length] || "")));
+      if (!word) { at++; continue; }
+      out.append(L.colour(line.slice(from, at), lang), L.term(word, L.h("span", null, L.colour(word, lang))));
+      at += word.length;
+      from = at;
+    }
+    out.append(L.colour(line.slice(from), lang));
+    return out;
+  };
+
+  /** The 1-based numbers of the lines of `other` that are not in `base` (longest common subsequence). */
+  L.changedLines = function (base, other) {
+    const a = base.split("\n"), b = other.split("\n");
+    const table = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+    for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
+    const changed = [];
+    for (let i = 0, j = 0; j < b.length;) {
+      if (i < a.length && a[i] === b[j]) { i++; j++; } else if (i < a.length && table[i + 1][j] >= table[i][j + 1]) i++; else changed.push(++j);
+    }
+    return changed;
+  };
+
+  /** A source file with line numbers. show(source, { focus, changed }) redraws it and scrolls the first marked line into view. */
+  L.codeView = function () {
+    const scroll = L.h("div.code__scroll", { attr: { tabindex: "0" } });
+    const label = L.h("div.code__path");
+    const el = L.h("div.code", null, label, scroll);
+    return {
+      el,
+      /** Calls fn(lineNumber) when the learner presses a line. */
+      onLine(fn) { scroll.addEventListener("click", (event) => { const row = event.target.closest(".code__line"); if (row) fn([...scroll.children].indexOf(row) + 1); }); },
+      show(source, { path = "", lang = "text", focus = [], changed = [], wrong = [], tags = {} } = {}) {
+        label.textContent = path;
+        el.classList.toggle("has-focus", focus.length > 0);
+        scroll.replaceChildren(...source.split("\n").map((line, i) => {
+          const state = changed.includes(i + 1) ? ".is-changed" : focus.includes(i + 1) ? ".is-focus" : wrong.includes(i + 1) ? ".is-wrong" : "";
+          return L.h(`div.code__line${state}`, null, L.h("span.code__no", { text: String(i + 1) }), L.h("span", null, L.codeLine(line, lang)), tags[i + 1] ? L.h("span.code__tag", { text: tags[i + 1] }) : null);
+        }));
+        const place = () => {
+          const first = scroll.querySelector(".is-changed, .is-focus");
+          if (first) scroll.scrollTop = Math.max(0, first.offsetTop - scroll.offsetTop - scroll.clientHeight / 3);
+        };
+        place();
+        requestAnimationFrame(place); // a view built before it is on the page has no size yet
+      },
+    };
+  };
+
+  /** A row of mutually exclusive choices. `options` are { id, label }. */
+  L.segmented = function (label, options, selected, onPick) {
+    const buttons = options.map((option) => L.h("button", { text: option.label, attr: { type: "button", "aria-pressed": String(option.id === selected) }, on: { click() { pick(option.id); onPick(option.id); } } }));
+    function pick(id) { buttons.forEach((button, i) => button.setAttribute("aria-pressed", String(options[i].id === id))); }
+    return { el: L.h("div.seg", null, label ? L.h("span", { text: label }) : null, L.h("div.seg__set", { attr: { role: "group", "aria-label": label || "选择" } }, buttons)), pick };
+  };
+
+  /** What the learner did, kept across reloads; quietly does nothing where storage is unavailable. */
+  L.memory = function (key) {
+    let data = {};
+    try { data = JSON.parse(localStorage.getItem(key) || "{}"); } catch { data = {}; }
+    return {
+      get: (name, fallback) => (name in data ? data[name] : fallback),
+      set(name, value) { data[name] = value; try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* private window */ } },
+    };
+  };
+})();
+
+</script>
+<script>
+/* The plain blocks of a lesson. Each maker takes (block, ctx) and returns { el, steps?, set?, ready?, refresh? }:
+   steps = teacher sentences for moments inside the block after it has appeared; set(k) shows it as of step k;
+   ready() false means the learner still has to act before the lesson moves on; refresh() runs each time the block is revealed. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const KEYS = "ABCD";
+
+  L.blocks.text = (block) => ({ el: h("p.text", null, L.md(block.md)) });
+
+  /** A row of small answer buttons. paint(picked, right) locks them once an answer is in and marks the right and the wrong one. */
+  function picks(labels, onPick, extra = "") {
+    const buttons = labels.map((text, i) => h(`button.pick${extra}`, { attr: { type: "button" }, on: { click: () => onPick(i) } }, L.md(text)));
+    return {
+      el: h("div.picks", null, buttons),
+      paint(picked, right) {
+        buttons.forEach((button, i) => {
+          button.disabled = picked !== undefined;
+          button.classList.toggle("is-right", picked !== undefined && i === right);
+          button.classList.toggle("is-wrong", picked === i && i !== right);
+        });
+      },
+    };
+  }
+
+  /** Several small questions answered on the spot. make(item, i) gives each row's content; the answers survive a reload. */
+  function answered(block, ctx, name, make, sum) {
+    const key = `${name}:${block.items.length}:${block.items[0].q || block.items[0].text}`;
+    const answers = ctx.memory.get(key, {});
+    const score = h(`p.${name}__score`, { attr: { "aria-live": "polite" } });
+    const rows = block.items.map((item, i) => {
+      const why = h(`p.${name}__why`, { attr: { hidden: "" } }, L.md(item.why));
+      const row = make(item, (j) => { answers[i] = j; ctx.memory.set(key, answers); paint(); (done() ? score : why).scrollIntoView({ block: "nearest", behavior: "smooth" }); });
+      return { item, why, pick: row.pick, el: h(`div.${name}__item`, null, row.head, row.pick.el, why) };
+    });
+    const done = () => rows.every((row, i) => answers[i] !== undefined);
+    function paint() {
+      rows.forEach((row, i) => { row.pick.paint(answers[i], row.item.answer); row.why.hidden = answers[i] === undefined; });
+      score.textContent = done() ? sum(rows.filter((row, i) => answers[i] === row.item.answer).length, rows.length) : "";
+    }
+    paint();
+    return { el: h(`div.${name}`, null, rows.map((row) => row.el), score), ready: done, waitSay: "先把这几道都点一下再往下。点错没关系；实在想跳过，再按一次。" };
+  }
+
+  /** "You have met these before": a quick question per thing the lesson builds on, with the one sentence needed if it has faded. */
+  L.blocks.recall = (block, ctx) => answered(block, ctx, "recall",
+    (item, onPick) => ({ head: [h("span.recall__have", null, L.md(item.have)), h("p.recall__q", null, L.md(item.q))], pick: picks(item.options, onPick) }),
+    (right, total) => (right === total ? `${total} 样都记得，可以开始了。` : `${total} 样里记得 ${right} 样。没记住的，把它下面那句话再看一眼，这节课够用了。`));
+
+  /** Apply the rule just learned: for each situation, pick the tool. */
+  L.blocks.cases = (block, ctx) => answered(block, ctx, "cases",
+    (item, onPick) => ({ head: [h("p.cases__text", null, L.md(item.text))], pick: picks(block.tools, (j) => { onPick(j); document.dispatchEvent(new CustomEvent("lesson:picked", { detail: { name: block.tools[item.answer] } })); }, ".pick--tool") }),
+    (right, total) => (right === total ? `${total} 个场景都选对了。这条规则是你的了。` : `${total} 个里选对 ${right} 个。看一眼没选对的那条理由，再回想那句规则。`));
+
+  /** A picture to hang the lesson on: a short everyday story, then what each thing in it is called in the program. */
+  L.blocks.scene = (block) => {
+    const rows = block.map.map((pair) => h("div.scene__row", null, h("span", null, L.md(pair.scene)), h("span.scene__arrow", { text: "→" }), h("span.scene__to", null, L.md(pair.code))));
+    const table = h("div.scene__map", null, h("div.scene__head", null, h("span", { text: "场景里" }), h("span"), h("span", { text: "程序里" })), rows);
+    const picture = block.picture ? L.sharePicture({ actors: block.picture.actors, shared: block.picture.shared.name, hands: false }) : null;
+    /* The picture starts as the everyday scene; each row that is reached pins the program's word onto the part it names. */
+    const draw = (k) => {
+      const tags = { actors: [], shared: [], action: "" };
+      block.map.slice(0, k).forEach((pair) => { if (pair.on === "action") tags.action = pair.tag; else if (pair.on) tags[pair.on].push(pair.tag); });
+      picture.set({ value: block.picture.shared.value, tags, hot: k ? block.map[k - 1].on || null : null });
+    };
+    const set = (k) => { table.classList.toggle("is-waiting", k === 0); rows.forEach((row, i) => { row.classList.toggle("is-waiting", i >= k); row.classList.toggle("is-now", i === k - 1); }); if (picture) draw(k); };
+    set(0);
+    return { el: h("div.scene", null, h("p.scene__story", null, L.md(block.story)), h(`div.scene__body${picture ? ".has-picture" : ""}`, null, table, picture?.el)), steps: block.map.map((pair) => ({ say: pair.say })), set };
+  };
+
+  /** "Which line is it?" The learner presses the line they suspect, on the real source. */
+  L.blocks.spot = (block, ctx) => {
+    const key = `spot:${block.of}:${block.answerLines.join("-")}`;
+    const view = L.codeView();
+    const out = h("p.spot__out", { attr: { "aria-live": "polite" } });
+    let found = ctx.memory.get(key, false), wrong = [];
+    function paint() {
+      view.show(block.source, { path: block.path, lang: block.lang, focus: found ? block.answerLines : [], wrong });
+      view.el.classList.toggle("is-pickable", !found);
+      out.className = `spot__out${found ? ".is-ok" : wrong.length ? ".is-miss" : ""}`.replace(/\./g, " ");
+      out.replaceChildren(found ? L.md(block.found) : wrong.length ? L.md(block.hint) : "");
+    }
+    view.onLine((n) => {
+      if (found) return;
+      if (block.answerLines.includes(n)) { found = true; wrong = []; ctx.memory.set(key, true); } else wrong = [n];
+      paint();
+    });
+    paint();
+    return {
+      el: h("div.spot", null, h("p.spot__q", null, L.md(block.q)), view.el, h("div.spot__side", null, h("p.spot__how", { text: "在左边的代码上，点你怀疑的那一行。" }), out)),
+      ready: () => found,
+      waitSay: "先在代码上点一行你怀疑的。点错会有提示；实在想跳过，再按一次。",
+      pass() { found = true; wrong = []; paint(); },
+    };
+  };
+
+  /** Evidence: what the built program looks like inside, as the lab's inspect command printed it. Labels are added as the teacher names each part. */
+  L.blocks.inside = (block) => {
+    const view = L.codeView();
+    const show = (k) => view.show(block.source, {
+      path: block.command, lang: "text", focus: k ? block.walk[k - 1].focusLines : [],
+      tags: Object.fromEntries(block.walk.slice(0, k).map((step) => [step.focusLines.at(-1), step.label])),
+    });
+    show(0);
+    return { el: h("div.inside", null, h("p.inside__what", { text: "这是工具打印出来的真实输出，不是示意图。" }), view.el), steps: block.walk.map((step) => ({ say: step.say, key: step.key })), set: show };
+  };
+
+  /** The teacher hands over the controls: nothing new appears, the switches of the experiment on this slide light up once. */
+  L.blocks.try = () => {
+    const el = h("span.try");
+    return {
+      el,
+      refresh() {
+        for (const exp of el.closest(".slide").querySelectorAll(".exp")) { exp.classList.remove("is-invited"); void exp.offsetWidth; exp.classList.add("is-invited"); }
+      },
+    };
+  };
+
+  L.blocks.points = (block) => ({ el: h("ul.points", null, block.items.map((item) => h("li", null, h("span", null, L.md(item))))) });
+
+  L.blocks.callout = (block) => ({ el: h(`div.callout.callout--${block.tone}`, null, h("h4", { text: block.title }), h("p", null, L.md(block.md))) });
+
+  L.blocks.code = (block) => {
+    const view = L.codeView();
+    const walk = block.walk || [];
+    const show = (focus) => view.show(block.source, { path: block.path, lang: block.lang, focus });
+    show(block.focusLines);
+    return { el: view.el, steps: walk.map((step) => ({ say: step.say, key: step.key })), set(k) { show(k ? walk[k - 1].focusLines : block.focusLines); } };
+  };
+
+  function option(index, text, onPick) {
+    const tag = h("span.opt__tag");
+    const el = h("button.opt", { attr: { type: "button" }, on: { click: () => onPick(index) } }, h("span.opt__key", { text: KEYS[index] }), h("span", null, L.md(text)), tag);
+    return { el, tag };
+  }
+
+  /** Guess first. Nothing is confirmed here: the answer comes from the run, in the matching reveal block. */
+  L.blocks.predict = (block, ctx) => {
+    const key = `predict:${block.id}`;
+    const options = block.options.map((text, i) => option(i, text, pick));
+    function paint() {
+      const picked = ctx.memory.get(key);
+      options.forEach((item, i) => { item.el.classList.toggle("is-picked", i === picked); item.tag.textContent = i === picked ? "你的猜测" : ""; });
+    }
+    function pick(index) { ctx.memory.set(key, index); paint(); }
+    paint();
+    return { el: h("div.predict", null, h("p.predict__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => ctx.memory.get(key) !== undefined };
+  };
+
+  /** After the run: the learner's guess beside what really happened. The explaining is the teacher's job, not this block's. */
+  L.blocks.reveal = (block, ctx) => {
+    const predict = ctx.predicts[block.of];
+    const guess = h("dd");
+    return {
+      el: h("div.reveal", null, h("dl", null, h("dt", { text: "你猜的" }), guess), h("dl", null, h("dt", { text: "实际" }), h("dd.is-ok", null, L.md(predict.options[predict.answer])))),
+      refresh() {
+        const picked = ctx.memory.get(`predict:${block.of}`);
+        guess.className = picked === undefined ? "" : picked === predict.answer ? "is-ok" : "is-miss";
+        guess.replaceChildren(picked === undefined ? "刚才没猜" : L.md(predict.options[picked]));
+      },
+    };
+  };
+
+  /** Several tools side by side: what each solves, what it costs, when to reach for it. The teacher goes through them one row at a
+      time, and the rule to choose by comes last, after every row has been talked through. */
+  L.blocks.choose = (block) => {
+    const rows = block.options.map((option) => h("div.choose__row", null,
+      h("span.choose__name", null, L.term(option.name, h("span", { text: option.name }))),
+      h("span", { attr: { "data-label": "解决什么" } }, L.md(option.solves)),
+      h("span", { attr: { "data-label": "代价" } }, L.md(option.cost)),
+      h("span", { attr: { "data-label": "什么时候用" } }, L.md(option.when))));
+    const rule = h("p.choose__rule", null, L.md(block.rule));
+    const el = h("div.choose", null,
+      h("div.choose__head", null, h("span"), h("span", { text: "解决什么" }), h("span", { text: "代价" }), h("span", { text: "什么时候用" })), rows, rule);
+    const set = (k) => {
+      const walking = k >= 1 && k <= rows.length;
+      el.classList.toggle("is-walking", walking);
+      rows.forEach((row, i) => row.classList.toggle("is-now", walking && i === k - 1));
+      rule.classList.toggle("is-waiting", k <= rows.length);
+    };
+    set(0);
+    return { el, steps: block.options.map((option) => ({ say: option.say })).concat({ say: block.ruleSay, key: block.ruleKey }), set };
+  };
+
+  L.blocks.name = (block) => ({
+    el: h("div.name", null,
+      h("h2.name__term", { text: block.term }),
+      block.alias ? h("p.name__alias", { text: block.alias }) : null,
+      h("p.name__line", null, L.md(block.oneLine)),
+      h("div.name__asked", null, h("h4", { text: "面试里它长这样" }), h("ul", null, block.asked.map((question) => h("li", { text: `「${question}」` })))),
+    ),
+  });
+
+  /** Answered on the spot: the picked option and the right one both show why. */
+  L.blocks.quiz = (block) => {
+    let done = false;
+    const options = block.options.map((item, i) => option(i, item.text, pick));
+    function pick(index) {
+      if (done) return;
+      done = true;
+      block.options.forEach((item, i) => {
+        if (i !== index && !item.ok) return;
+        options[i].el.classList.add(item.ok ? "is-right" : "is-wrong");
+        options[i].tag.textContent = item.ok ? "对" : "不对";
+        options[i].el.append(h("span.opt__why", null, L.md(item.why)));
+      });
+    }
+    return { el: h("div.quiz", null, h("p.quiz__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => done };
+  };
+
+  /** Say it aloud against a clock, then tick off what you covered. The points stay hidden until the learner has spoken. */
+  L.blocks.say = (block) => {
+    const total = block.seconds || 120;
+    let left = total, timer = 0;
+    const clock = h("span.say__clock");
+    const score = h("p.say__score");
+    const boxes = block.points.map((point) => h("input", { attr: { type: "checkbox" }, on: { change: count } }));
+    const points = h("ul.say__points", { attr: { hidden: "" } }, block.points.map((point, i) => h("li", null, h("label", null, boxes[i], h("span", null, L.md(point))))), score);
+    const start = h("button.btn", { text: "开始讲", attr: { type: "button" }, on: { click: toggle } });
+    const model = h("p.say__model", { attr: { hidden: "" } }, L.md(block.model));
+    const showModel = h("button.btn", { text: "看一份参考回答", attr: { type: "button", hidden: "" }, on: { click() { model.hidden = !model.hidden; showModel.textContent = model.hidden ? "看一份参考回答" : "收起参考回答"; if (!model.hidden) model.scrollIntoView({ block: "nearest", behavior: "smooth" }); } } });
+    const check = h("button.btn.btn--primary", { text: "讲完了，对要点", attr: { type: "button" }, on: { click() { stop(); points.hidden = false; check.hidden = true; showModel.hidden = false; count(); } } });
+    function draw() { clock.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`; }
+    function stop() { clearInterval(timer); timer = 0; start.textContent = left === total ? "开始讲" : "接着讲"; }
+    function toggle() {
+      if (timer) return stop();
+      if (left === 0) left = total;
+      start.textContent = "暂停";
+      timer = setInterval(() => { left -= 1; draw(); if (left === 0) stop(); }, 1000);
+      draw();
+    }
+    function count() { score.textContent = `${block.points.length} 个要点，你讲到了 ${boxes.filter((box) => box.checked).length} 个。没讲到的，回到对应那一页再看一遍。`; }
+    draw();
+    return { el: h("div.say", null, h("p.say__prompt", null, L.md(block.prompt)), h("div.say__row", null, clock, start, check, showModel), points, model) };
+  };
+
+  L.blocks.cards = (block) => ({
+    el: h("div.cards", null, block.items.map((card) => {
+      const answer = h("p.card__a", { attr: { hidden: "" } }, L.md(card.a));
+      const button = h("button.btn.btn--quiet", { text: "看答案", attr: { type: "button" }, on: { click() { answer.hidden = !answer.hidden; button.textContent = answer.hidden ? "看答案" : "收起"; } } });
+      return h("div.card", null, h("p.card__q", null, L.md(card.q)), button, answer);
+    })),
+  });
+})();
+
+</script>
+<script>
+/* Things that are drawn instead of described. Three of them:
+   - the shared-thing picture: two actors, what each holds in hand, and the one thing they share. A scene uses it to show the
+     everyday story; `lanes` puts the same picture beside its rows, so every step is also seen in space, not only in time;
+   - `chart`: the recorded runs as lines, one per way of writing the code, along the experiment's knob;
+   - `decide`: the rule for choosing, drawn as a small tree.
+   Every number in a chart is read from the recorded runs. Colour names a series and nothing else; right or wrong is the marker's shape. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const NS = "http://www.w3.org/2000/svg";
+  const s = (tag, attrs, ...kids) => {
+    const el = document.createElementNS(NS, tag);
+    for (const [name, value] of Object.entries(attrs || {})) el.setAttribute(name, value);
+    el.append(...kids.flat().filter(Boolean));
+    return el;
+  };
+
+  /* ---------- two actors and the thing they share ---------- */
+
+  const PIC = { width: 300, height: 300 };
+  const FIGURE = () => s("svg", { viewBox: "0 0 44 40", class: "pic__figure", "aria-hidden": "true" },
+    s("circle", { cx: 22, cy: 10, r: 8.5 }), s("path", { d: "M4 40v-4a18 14 0 0 1 36 0v4" }));
+
+  /** A straight arrow from (x1, y1) to (x2, y2), stopping a little short at both ends. */
+  function arrow(x1, y1, x2, y2) {
+    const length = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / length, uy = (y2 - y1) / length;
+    const tipX = x2 - ux * 3, tipY = y2 - uy * 3, backX = tipX - ux * 9, backY = tipY - uy * 9;
+    return s("g", { class: "pic__arrow" },
+      s("line", { x1: x1 + ux * 3, y1: y1 + uy * 3, x2: backX, y2: backY }),
+      s("polygon", { points: `${tipX},${tipY} ${backX - uy * 4.5},${backY + ux * 4.5} ${backX + uy * 4.5},${backY - ux * 4.5}` }));
+  }
+
+  /** actors: two names; shared: its name; hands: whether each actor holds a value (the scene's story has no need of it). */
+  L.sharePicture = function ({ actors, shared, hands = true }) {
+    const side = ["a", "b"];
+    const value = h("b.pic__value");
+    const boardTags = h("div.pic__tags");
+    const board = h("div.pic__board", null, value);
+    const boardName = h("div.pic__over", null, h("span.pic__name", { text: shared }), boardTags);
+    const action = h("span.pic__action");
+    const people = actors.map((name, i) => {
+      const tags = h("div.pic__tags");
+      const note = h("span.pic__note");
+      const held = h("b");
+      return {
+        tags, note, held,
+        el: h(`div.pic__actor.pic__actor--${side[i]}`, null, FIGURE(), h("span.pic__name", { text: name }), tags, note),
+        hand: hands ? h(`div.pic__hand.pic__hand--${side[i]}`, null, h("small", { text: "手里" }), held) : null,
+      };
+    });
+    /* With hands the arrows run between the board and a hand; without, between an actor and the board. */
+    const ends = hands ? [[124, 110, 104, 144], [176, 110, 196, 144]] : [[122, 110, 62, 192], [178, 110, 238, 192]];
+    const arrows = ends.map(([bx, by, px, py]) => ({ in: arrow(bx, by, px, py), out: arrow(px, py, bx, by) }));
+    const lines = s("svg", { viewBox: `0 0 ${PIC.width} ${PIC.height}`, class: "pic__lines", "aria-hidden": "true" }, arrows.flatMap((pair) => [pair.in, pair.out]));
+    const el = h(`div.pic${hands ? "" : ".pic--plain"}`, { attr: { role: "img" } }, lines, boardName, board, action, people.flatMap((person) => [person.hand, person.el]));
+
+    const fill = (box, texts) => box.replaceChildren(...(texts || []).map((text) => h("span", { text })));
+    return {
+      el,
+      /** state: { value, hands: [text|null ×2], notes: [{ text, tone }|null ×2], move: { lane, op }|null,
+          tags: { actors: [], shared: [], action: text }, hot: "actors"|"shared"|"action"|null } */
+      set(state) {
+        const move = state.move, tags = state.tags || {};
+        value.textContent = String(state.value);
+        board.classList.toggle("is-now", move?.op === "write" || state.hot === "shared");
+        fill(boardTags, tags.shared);
+        action.textContent = tags.action || "";
+        action.classList.toggle("is-now", state.hot === "action");
+        people.forEach((person, i) => {
+          const mine = move?.lane === i;
+          if (person.hand) {
+            const text = state.hands?.[i];
+            person.held.textContent = text ?? "";
+            person.hand.classList.toggle("is-empty", text === null || text === undefined);
+            person.hand.classList.toggle("is-now", mine && (move.op === "read" || move.op === "calc"));
+          }
+          const note = state.notes?.[i];
+          person.note.textContent = note?.text || "";
+          person.note.className = `pic__note${note?.tone ? ` pic__note--${note.tone}` : ""}${mine && move.op === "note" ? " is-now" : ""}`;
+          person.el.classList.toggle("is-now", state.hot === "actors" || (mine && move.op === "note"));
+          fill(person.tags, tags.actors);
+          arrows[i].in.classList.toggle("is-on", mine && move.op === "read");
+          arrows[i].out.classList.toggle("is-on", (mine && move.op === "write") || Boolean(tags.action));
+        });
+        const holding = (state.hands || []).map((text, i) => (text === null || text === undefined ? "" : `${actors[i]}手里是 ${text}`)).filter(Boolean).join("，");
+        el.setAttribute("aria-label", `${actors.join("和")}共用${shared}，现在是 ${state.value}${holding ? `；${holding}` : ""}`);
+      },
+    };
+  };
+
+  /** What the picture shows after each step of a `lanes` walk: frame 0 is the start, frame k is after step k. */
+  L.shareFrames = function (steps, start) {
+    const frames = [{ value: start, hands: [null, null], notes: [null, null], move: null }];
+    for (const step of steps) {
+      const last = frames.at(-1);
+      const frame = { value: last.value, hands: [...last.hands], notes: last.notes.map((note) => (note?.tone === "fail" ? null : note)), move: { lane: step.lane, op: step.op } };
+      if (step.op === "read") frame.hands[step.lane] = String(frame.value);
+      else if (step.op === "calc") frame.hands[step.lane] = step.text.includes("=") ? step.text.split("=").pop().trim() : step.text;
+      else if (step.op === "write") { frame.value = step.value; frame.hands[step.lane] = null; }
+      else frame.notes[step.lane] = { text: step.text, tone: step.tone };
+      frames.push(frame);
+    }
+    return frames.concat({ ...frames.at(-1), move: null });
+  };
+
+  /* ---------- the recorded runs as a line chart ---------- */
+
+  const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+  const VIEW = { width: 640, height: 300, left: 44, right: 178, top: 14, bottom: 34, inset: 18, labelGap: 19 };
+
+  function step(max, ticks = 4) {
+    const raw = max / ticks, power = 10 ** Math.floor(Math.log10(raw));
+    return [1, 2, 5, 10].find((unit) => unit * power >= raw) * power;
+  }
+
+  /** Label heights that keep the order of `wanted` but never sit closer than `gap`, inside [top, bottom]. */
+  function spread(wanted, gap, top, bottom) {
+    const order = wanted.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y);
+    order.forEach((item, n) => { item.y = Math.max(item.y, n ? order[n - 1].y + gap : top); });
+    for (let n = order.length - 1; n >= 0; n--) order[n].y = Math.min(order[n].y, n === order.length - 1 ? bottom : order[n + 1].y - gap);
+    const out = [];
+    order.forEach((item) => { out[item.i] = item.y; });
+    return out;
+  }
+
+  L.blocks.chart = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.of];
+    const y = { label: "耗时", ...(block.y || exp.time) };
+    const xs = exp.knob.values;
+    const base = exp.variants[0];
+    const series = exp.variants.filter((variant) => !block.show || block.show.includes(variant.id)).slice(0, 4).map((variant) => ({
+      variant,
+      slot: exp.variants.indexOf(variant) + 1, // colour follows the way of writing, not its place in this chart
+      points: xs.map((x) => {
+        const runs = exp.results.variants[variant.id].runs[x];
+        return { x, value: median(runs.map((run) => run[y.key])), wrong: runs.filter((run) => run[exp.metric.key] !== run[exp.metric.expectKey]).length, total: runs.length };
+      }),
+    }));
+    const tick = step(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))));
+    const top = tick * Math.ceil(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))) / tick);
+    const plot = { width: VIEW.width - VIEW.left - VIEW.right, height: VIEW.height - VIEW.top - VIEW.bottom };
+    const px = (i) => VIEW.left + VIEW.inset + (i * (plot.width - 2 * VIEW.inset)) / (xs.length - 1);
+    const py = (value) => VIEW.top + plot.height - (value / top) * plot.height;
+    const verdict = (point) => (point.wrong === 0 ? `${point.total} 次全对` : point.wrong === point.total ? `${point.total} 次全错` : `错了 ${point.wrong} 次`);
+    let focus = null;
+
+    const grid = [];
+    for (let value = 0; value <= top; value += tick) {
+      grid.push(s("line", { class: value ? "chart__grid" : "chart__base", x1: VIEW.left, x2: VIEW.left + plot.width, y1: py(value), y2: py(value) }));
+      grid.push(s("text", { class: "chart__tick", x: VIEW.left - 8, y: py(value) + 4, "text-anchor": "end" }, String(value)));
+    }
+    const xLabels = xs.map((x, i) => s("text", { class: "chart__tick", x: px(i), y: VIEW.height - 14, "text-anchor": "middle" }, String(x)));
+    const xTitle = s("text", { class: "chart__tick", x: VIEW.left + plot.width + 12, y: VIEW.height - 14 }, exp.knob.label);
+    const labelY = spread(series.map((one) => py(one.points.at(-1).value)), VIEW.labelGap, VIEW.top + 6, VIEW.top + plot.height);
+    const endX = px(xs.length - 1);
+
+    series.forEach((one, n) => {
+      const last = one.points.at(-1);
+      one.el = s("g", { class: `chart__series chart__series--${one.slot}` },
+        s("polyline", { class: "chart__line", points: one.points.map((point, i) => `${px(i)},${py(point.value)}`).join(" ") }),
+        s("polyline", { class: "chart__lead", points: `${endX + 8},${py(last.value)} ${endX + 20},${labelY[n]} ${endX + 30},${labelY[n]}` }),
+        one.points.map((point, i) => s("circle", { class: `chart__dot${point.wrong ? " is-wrong" : ""}`, cx: px(i), cy: py(point.value), r: 5 })),
+        s("text", { class: "chart__name", x: endX + 35, y: labelY[n] + 4 }, s("tspan", { class: "chart__label" }, `${one.variant.label} `), s("tspan", { class: "chart__end" }, String(last.value))));
+    });
+
+    const cross = s("line", { class: "chart__cross", y1: VIEW.top, y2: VIEW.top + plot.height });
+    const tip = h("div.chart__tip", { attr: { hidden: "" } });
+    function point(i) {
+      cross.setAttribute("x1", px(i)); cross.setAttribute("x2", px(i));
+      cross.classList.add("is-on");
+      tip.replaceChildren(h("b", { text: `${exp.knob.label} ${xs[i]}` }), ...[...series].sort((a, b) => b.points[i].value - a.points[i].value).map((one) => h(`div.chart__row${focus && focus !== one.variant.id ? ".is-dim" : ""}`, null,
+        h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label }), h("span.num", { text: `${one.points[i].value} ${y.unit}` }), h(`span${one.points[i].wrong ? ".is-wrong" : ""}`, { text: verdict(one.points[i]) }))));
+      tip.hidden = false;
+      const half = i >= xs.length / 2;
+      tip.style.left = half ? "" : `${((px(i) + 14) / VIEW.width) * 100}%`;
+      tip.style.right = half ? `${100 - ((px(i) - 14) / VIEW.width) * 100}%` : "";
+    }
+    function leave() { cross.classList.remove("is-on"); tip.hidden = true; }
+    const width = (plot.width - 2 * VIEW.inset) / (xs.length - 1);
+    const hits = xs.map((x, i) => {
+      const hit = s("rect", { class: "chart__hit", x: px(i) - width / 2, y: VIEW.top, width, height: plot.height + VIEW.bottom, tabindex: 0, role: "button", "aria-label": `${exp.knob.label} ${x}，读这一列` });
+      for (const name of ["pointerenter", "focus", "click"]) hit.addEventListener(name, () => point(i));
+      hit.addEventListener("blur", leave);
+      return hit;
+    });
+    const svg = s("svg", { viewBox: `0 0 ${VIEW.width} ${VIEW.height}`, class: "chart__svg", role: "img", "aria-label": `${y.label}随${exp.knob.label}的变化，${series.length} 种写法，数据在下面的表里` },
+      grid, xLabels, xTitle, cross, series.map((one) => one.el), hits);
+    svg.addEventListener("pointerleave", leave);
+
+    const read = h("p.chart__read", { attr: { "aria-live": "polite" } });
+    const buttons = series.map((one) => h("button.chart__pick", { attr: { type: "button", "aria-pressed": "false" }, on: { click: () => look(focus === one.variant.id ? null : one.variant.id) } },
+      h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label })));
+    function look(id) {
+      focus = id;
+      series.forEach((one, n) => { one.el.classList.toggle("is-dim", Boolean(id) && one.variant.id !== id); one.el.classList.toggle("is-on", one.variant.id === id); buttons[n].setAttribute("aria-pressed", String(one.variant.id === id)); });
+      const one = series.find((candidate) => candidate.variant.id === id);
+      if (!one) return read.replaceChildren("点上面的写法名，只看那一条线；把鼠标移到图上（手机上点一下），读那一列的每个数。");
+      const last = one.points.at(-1), first = one.points[0];
+      const basePoint = exp.results.variants[base.id].runs[last.x];
+      const ratio = one.variant.id === base.id ? "" : `，是「${base.label}」的 ${(last.value / median(basePoint.map((run) => run[y.key]))).toFixed(1)} 倍`;
+      const wrongAt = one.points.filter((item) => item.wrong).map((item) => item.x);
+      read.replaceChildren(L.md(`${one.variant.label}：${exp.knob.label} ${first.x} 时 **${first.value} ${y.unit}**，到 ${last.x} 时 **${last.value} ${y.unit}**${ratio}。${wrongAt.length ? `==${exp.knob.label}为 ${wrongAt.join("、")} 时结果有错==。` : "每一组结果都对。"}`));
+    }
+    look(null);
+
+    const table = h("details.chart__table", null, h("summary", { text: "看数据表" }), h("table", null,
+      h("thead", null, h("tr", null, h("th", { text: `${exp.knob.label} →` }), xs.map((x) => h("th", { text: String(x) })))),
+      h("tbody", null, series.map((one) => h("tr", null, h("th", { text: one.variant.label }), one.points.map((item) => h("td", { text: `${item.value} ${y.unit}${item.wrong ? "（有错）" : ""}` })))))));
+
+    return {
+      el: h("figure.chart", null,
+        h("figcaption.chart__cap", null, h("b", { text: `${y.label}（${y.unit}）` }), h("span", { text: `每个点是 ${exp.repeat} 次真实运行的中位数` }),
+          h("span.chart__marks", null, h("i.chart__mark"), "这一组结果全对", h("i.chart__mark.is-wrong"), "有错")),
+        h("div.chart__plot", null, svg, tip),
+        h("div.chart__side", null, h("div.chart__picks", { attr: { role: "group", "aria-label": "只看一种写法" } }, buttons), read, table)),
+      steps: block.walk.map((item) => ({ say: item.say, key: item.key })),
+      set(k) { look(k ? block.walk[k - 1].focus : null); },
+    };
+  };
+
+  /* ---------- the rule for choosing, as a tree ---------- */
+
+  L.blocks.decide = (block) => {
+    const branches = block.branches.map((branch) => ({
+      pick: branch.pick,
+      el: h("li.decide__branch", null,
+        h("span.decide__when", null, L.md(branch.when)),
+        h("span.decide__pick", null, L.term(branch.pick, h("span", { text: branch.pick }))),
+        branch.eg ? h("small.decide__eg", { text: `比如：${branch.eg}` }) : null),
+    }));
+    /* When the learner answers a `cases` item on the same slide, the branch that item belongs to lights up. */
+    const onPicked = (event) => {
+      const hit = branches.find((branch) => branch.pick === event.detail.name);
+      if (!hit || !hit.el.isConnected) return;
+      branches.forEach((branch) => branch.el.classList.remove("is-hit"));
+      void hit.el.offsetWidth; // restart the flash when the same branch is hit twice
+      hit.el.classList.add("is-hit", "is-used");
+    };
+    document.addEventListener("lesson:picked", onPicked);
+    return { el: h("div.decide", null, h("p.decide__q", null, L.md(block.q)), h("ul.decide__list", null, branches.map((branch) => branch.el))) };
+  };
+})();
+
+</script>
+<script>
+/* The experiment block: the code on the left (switch what was changed), what really happened on the right.
+   Every dot is one recorded run on the learner's own machine; the page never invents a number. Switching the code or the knob
+   moves the same dots, so the learner sees the effect of one change as data. Touch a dot to read that single run. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const AXIS_ROOM = 1.04, BIN = 1.2, DROP_MS = 45;
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  const median = (values) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.floor(sorted.length / 2)]; };
+
+  /** worst: the largest miss of the target, signed (negative = came out too low, positive = too high). */
+  function summary(runs, metric) {
+    const misses = runs.map((run) => run[metric.key] - run[metric.expectKey]);
+    return { wrong: misses.filter(Boolean).length, total: runs.length, worst: misses.reduce((far, miss) => (Math.abs(miss) > Math.abs(far) ? miss : far), 0), expected: runs[0][metric.expectKey] };
+  }
+  const missed = (miss) => `${miss > 0 ? "多了" : "少了"} ${L.num(Math.abs(miss))}`;
+
+  L.blocks.experiment = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.lab];
+    const shown = exp.variants.filter((variant) => block.show.includes(variant.id));
+    const base = exp.variants[0];
+    const metric = exp.metric, time = exp.time;
+    let variant = block.select || shown[0].id;
+    let knob = block.at || (exp.knob ? exp.knob.default : "-");
+    let played = false;
+    let seen = block.hand ? 0 : exp.repeat; // hand: the learner lets the recorded runs out one press at a time
+
+    const runsOf = (id) => exp.results.variants[id].runs[knob];
+    const view = L.codeView();
+    const note = h("p.exp__note");
+    const question = h("p.exp__q");
+    const finding = h("p.exp__finding", { attr: { "aria-live": "polite" } });
+    const probe = h("span.exp__probe");
+    const command = h("code.cmd");
+    const ticks = h("div.plot__ticks", null, h("span", { text: "0" }), h("span.is-expect"));
+
+    const rows = shown.map((item) => {
+      const dots = Array.from({ length: exp.repeat }, (unused, i) => h("i.dot.is-waiting", { on: { mouseenter: () => read(item, i), click: () => read(item, i) } }));
+      const sum = h("span.plot__sum");
+      const label = h("button.plot__label", { text: item.label, attr: { type: "button" }, on: { click: () => choose(item.id) } });
+      return { item, dots, sum, track: h("div.plot__track", null, dots), el: null, label };
+    });
+    rows.forEach((row) => { row.el = h("div.plot__row", null, row.label, row.track, row.sum); });
+
+    function read(item, i) {
+      const run = runsOf(item.id)[i];
+      probe.textContent = `${item.label} · 第 ${i + 1} 次：${metric.key} = ${L.num(run[metric.key])}${time ? `，${run[time.key]} ${time.unit}` : ""}`;
+    }
+
+    /* The far end of the axis: the largest result or target among everything this block can show. */
+    const reachable = exp.knob && block.knob !== false ? exp.knob.values : [knob];
+    const axisTop = AXIS_ROOM * Math.max(...shown.flatMap((item) => reachable.flatMap((value) => exp.results.variants[item.id].runs[value].flatMap((run) => [run[metric.key], run[metric.expectKey]]))));
+
+    function place(row) {
+      const runs = runsOf(row.item.id);
+      const info = summary(runs, metric);
+      const bins = new Map();
+      row.track.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      runs.forEach((run, i) => {
+        const percent = (run[metric.key] / axisTop) * 100;
+        const bin = Math.round(percent / BIN);
+        const seat = bins.get(bin) || 0;
+        bins.set(bin, seat + 1);
+        row.dots[i].style.left = `${percent}%`;
+        row.dots[i].style.transform = `translate(${-Math.floor(seat / 3) * 7}px, ${[0, -11, 11][seat % 3]}px)`;
+        row.dots[i].classList.toggle("is-ok", run[metric.key] === run[metric.expectKey]);
+      });
+      row.sum.replaceChildren(
+        h(`b${info.wrong ? "" : ".is-ok"}`, { text: info.wrong === 0 ? `${info.total} 次全对` : info.wrong === info.total ? `${info.total} 次全错` : `错了 ${info.wrong} 次` }),
+        time ? h("span.num", { text: `中位 ${median(runs.map((run) => run[time.key]))} ${time.unit}` }) : null,
+      );
+      row.el.classList.toggle("is-on", row.item.id === variant);
+      return info;
+    }
+
+    function tell(info, item) {
+      const runs = runsOf(item.id);
+      const speed = time ? `中位耗时 **${median(runs.map((run) => run[time.key]))} ${time.unit}**` : "";
+      if (info.wrong === 0) {
+        const slower = time && item.id !== base.id ? `，${base.label}是 ${median(runsOf(base.id).map((run) => run[time.key]))} ${time.unit}` : "";
+        return `${item.label}：${info.total} 次==全对==。${speed}${slower}。`;
+      }
+      const share = Math.round((Math.abs(info.worst) / info.expected) * 100);
+      return `${item.label}：${info.total} 次里 ==${info.wrong} 次不对==。${info.worst > 0 ? "最多到了" : "最少只到"} **${L.num(info.expected + info.worst)}**，${missed(info.worst)}${share ? `（${share}%）` : ""}。${speed}。`;
+    }
+
+    function draw() {
+      const item = exp.variants.find((candidate) => candidate.id === variant);
+      const source = exp.sources[variant];
+      view.show(source, { path: exp.paths[variant], lang: exp.lang, changed: variant === base.id ? [] : L.changedLines(exp.sources[base.id], source), focus: variant === base.id ? block.focusLines || [] : [] });
+      note.textContent = item.note || "";
+      let info = null;
+      for (const row of rows) { const result = place(row); if (row.item.id === variant) info = result; }
+      ticks.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      ticks.lastChild.textContent = `应该是 ${L.num(info.expected)}`;
+      question.replaceChildren(L.md(`每种写法跑 **${exp.repeat} 次**，一个点是一次的「${metric.label}」。`));
+      finding.replaceChildren(L.md(tell(info, item)));
+      command.textContent = `${exp.shown[variant]}${knob === "-" ? "" : ` ${knob}`}`;
+      probe.textContent = "";
+      if (block.hand) paintHand();
+    }
+
+    /* Hand mode: nothing is summed up until every run has been seen, so the surprise is the learner's own. */
+    const more = h("button.btn.btn--primary", { attr: { type: "button" }, on: { click: () => letOut(1) } });
+    const rest = h("button.btn", { attr: { type: "button" }, on: { click: () => letOut(exp.repeat) } });
+    const hand = block.hand ? h("div.exp__hand", null, more, rest) : null;
+    function paintHand() {
+      const row = rows[0], runs = runsOf(row.item.id), pending = seen < exp.repeat;
+      row.dots.forEach((dot, i) => dot.classList.toggle("is-waiting", i >= seen));
+      row.sum.classList.toggle("is-held", pending);
+      hand.hidden = !pending;
+      if (!pending) return;
+      more.textContent = seen === 0 ? "看第 1 次运行" : "再看一次";
+      rest.textContent = `把剩下的 ${exp.repeat - seen} 次一起放出来`;
+      rest.hidden = seen < 2;
+      if (seen === 0) return finding.replaceChildren("还一次都没看。点下面的按钮，看第 1 次跑出了多少。");
+      const last = runs[seen - 1], value = last[metric.key], expected = last[metric.expectKey];
+      const same = seen > 1 && runs[seen - 2][metric.key] === value;
+      finding.replaceChildren(L.md(`第 ${seen} 次：**${L.num(value)}**。${value === expected ? "和应该的一样。" : `应该是 ${L.num(expected)}，==${missed(value - expected)}==。`}${seen > 1 ? (same ? "和上一次一样。" : "和上一次还不一样。") : ""}`));
+    }
+    function letOut(n) {
+      const from = seen;
+      seen = Math.min(exp.repeat, seen + n);
+      draw();
+      if (seen - from > 1 && !still.matches) rows[0].dots.forEach((dot, i) => { if (i >= from) { dot.classList.add("is-waiting"); setTimeout(() => dot.classList.remove("is-waiting"), 80 + (i - from) * DROP_MS); } });
+    }
+
+    function play() {
+      played = true;
+      if (seen < exp.repeat) return;
+      const all = rows.flatMap((row) => row.dots);
+      all.forEach((dot) => dot.classList.add("is-waiting"));
+      if (still.matches) return all.forEach((dot) => dot.classList.remove("is-waiting"));
+      rows.forEach((row) => row.dots.forEach((dot, i) => setTimeout(() => dot.classList.remove("is-waiting"), 260 + i * DROP_MS)));
+    }
+
+    function choose(id) { variant = id; tabs?.pick(id); draw(); }
+    const tabs = shown.length > 1 ? L.segmented("写法", shown.map((item) => ({ id: item.id, label: item.label })), variant, choose) : null;
+    const dial = exp.knob && block.knob !== false ? L.segmented(exp.knob.label, exp.knob.values.map((value) => ({ id: value, label: value })), knob, (value) => { knob = value; draw(); }) : null;
+    const copy = h("button.btn.btn--quiet", { text: "复制", attr: { type: "button" }, on: { click() { navigator.clipboard?.writeText(command.textContent).then(() => { copy.textContent = "已复制"; }, () => {}); } } });
+    const env = exp.results.env;
+
+    draw();
+    return {
+      el: h("div.exp", null,
+        tabs || dial ? h("div.exp__bar", null, tabs?.el, dial?.el) : null,
+        h("div.exp__body", null,
+          h("div", null, view.el, note),
+          h("div.exp__data", null, question, h("div.plot", null, rows.map((row) => row.el), h("div.plot__axis", null, h("span"), ticks, h("span"))), finding, hand,
+            h("div.exp__foot", null,
+              h("span", { text: `真实记录 · 这台电脑 · ${env.runtime} · ${env.cores} 个逻辑核 · ${env.date}` }),
+              h("button.btn.btn--quiet", { text: "再放一遍", attr: { type: "button" }, on: { click: play } }),
+              h("span", null, "自己跑：", command), copy, probe))),
+      ),
+      refresh() { if (!played) play(); },
+      waitSay: "先自己看：点「看第 1 次运行」，一次一次把结果放出来。实在想跳过，再按一次。",
+      ready: () => seen >= exp.repeat,
+      pass() { if (seen < exp.repeat) letOut(exp.repeat); },
+    };
+  };
+})();
+
+</script>
+<script>
+/* Two actors and the one thing they share, with time running downward.
+   `lanes` is the teacher's walk through one fixed order of steps; a step may end in a question the learner answers before the next
+   step shows what really happens. `schedule` hands the order to the learner: they press which actor moves next and watch what the
+   shared value becomes, with a lock they can switch on. Both draw rows the same way. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const OPS = ["read", "calc", "write"];
+
+  /** One row: a step in its actor's lane, an arrow to or from the shared value when the step touches it.
+      A `note` step touches nothing: the actor waits, gives up, takes or releases something. */
+  function row(step, shared) {
+    const touches = step.op === "read" || step.op === "write";
+    const inward = step.op === "write";
+    const arrow = h(`span.arrow.arrow--${!touches ? "none" : (step.lane === 0) === inward ? "right" : "left"}`);
+    const chip = h(`span.chip${step.op === "note" && step.tone ? `.chip--${step.tone}` : ""}`, { text: step.text });
+    const cells = [h("div.lcell.lcell--a"), h("div.lcell.lcell--mid"), h("div.lcell.lcell--b")];
+    cells[step.lane === 0 ? 0 : 2].append(...(step.lane === 0 ? [chip, arrow] : [arrow, chip]));
+    if (touches) cells[1].append(h(`span.val${inward ? ".val--write" : ""}`, { text: String(shared) }));
+    return h("div.lrow", null, cells);
+  }
+
+  function grid(names, sharedName, rows) {
+    return h("div.lanes__grid", null,
+      h("div.lanes__head.lanes__head--a", { text: names[0] }), h("div.lanes__head.lanes__head--mid", { text: sharedName }), h("div.lanes__head.lanes__head--b", { text: names[1] }),
+      rows);
+  }
+
+  L.blocks.lanes = (block, ctx) => {
+    let shared = block.shared.start, now = 0;
+    const key = `lanes:${block.expr}:${block.steps.length}`;
+    const answers = ctx.memory.get(key, {});
+    const parts = OPS.map((op) => h("span.part", { text: block.parts[op] }));
+    const rows = block.steps.map((step) => { if (step.op === "write") shared = step.value; return row(step, shared); });
+    const verdict = h("p.lanes__verdict.is-waiting", null, L.md(block.verdict));
+    const askBox = h("div.lanes__ask", { attr: { hidden: "" } });
+    const askNow = () => (now >= 1 && now <= rows.length ? block.steps[now - 1].ask : null);
+    /* The same steps seen in space: who holds what, and what the shared thing is right now. */
+    const picture = L.sharePicture({ actors: block.lanes, shared: block.shared.name });
+    const frames = L.shareFrames(block.steps, block.shared.start);
+
+    /* The question that closes a step: what will the next step do? Answered here, shown for real by the next press. */
+    function paintAsk() {
+      const ask = askNow();
+      askBox.hidden = !ask;
+      if (!ask) return;
+      const picked = answers[now - 1];
+      const buttons = ask.options.map((text, i) => {
+        const button = h("button.pick", { attr: { type: "button" }, on: { click() { answers[now - 1] = i; ctx.memory.set(key, answers); paintAsk(); } } }, L.md(text));
+        button.disabled = picked !== undefined;
+        if (picked !== undefined && i === ask.answer) button.classList.add("is-right");
+        if (picked === i && i !== ask.answer) button.classList.add("is-wrong");
+        return button;
+      });
+      const out = picked === undefined ? "" : picked === ask.answer ? "对。按下一步，看它是怎么发生的。" : "不是这个。按下一步，看实际发生了什么。";
+      askBox.replaceChildren(h("p", null, L.md(ask.q)), h("div.picks", null, buttons), h("p.ask__out", { text: out }));
+    }
+
+    return {
+      el: h(`div.lanes${rows.length > 7 ? ".lanes--long" : ""}`, null,
+        h("div.lanes__main", null,
+          h("div.lanes__expr", null, h("code.lanes__code", { text: block.expr }), h("div.lanes__parts", null, parts[0], "→", parts[1], "→", parts[2])),
+          grid(block.lanes, block.shared.name, rows), askBox, verdict),
+        h("div.lanes__side", null, h("p.lanes__now", { text: "此刻" }), picture.el)),
+      steps: block.steps.map((step) => ({ say: step.say, key: step.key })).concat({ say: block.verdictSay, key: block.verdictKey }),
+      waitSay: "先猜一下再往下：点一个你觉得会发生的。实在想跳过，再按一次。",
+      ready: () => !askNow() || answers[now - 1] !== undefined,
+      set(k) {
+        now = k;
+        rows.forEach((el, i) => { el.classList.toggle("is-waiting", i >= k); el.classList.toggle("is-now", i === k - 1); });
+        const op = k >= 1 && k <= rows.length ? block.steps[k - 1].op : null;
+        parts.forEach((part, i) => part.classList.toggle("is-now", OPS[i] === op));
+        verdict.classList.toggle("is-waiting", k <= rows.length);
+        picture.set(frames[Math.min(k, frames.length - 1)]);
+        paintAsk();
+      },
+      /** The part that just changed, so a long walk keeps its newest row on screen. */
+      spot: () => (now > rows.length ? verdict : askNow() ? askBox : rows[now - 1]?.firstChild),
+    };
+  };
+
+  L.blocks.schedule = (block) => {
+    const name = block.shared.name;
+    const hint = { read: `读 ${name}`, calc: "算出新值", write: `写回 ${name}` };
+    const reached = new Set();
+    let shared, actors, owner, locked = false;
+
+    const rows = h("div.lrow-list");
+    const value = h("span.val");
+    const buttons = [0, 1].map((lane) => h("button.btn", { attr: { type: "button" }, on: { click: () => move(lane) } }));
+    const result = h("p.sched__result", { attr: { "aria-live": "polite" } });
+    const goals = block.goals.map((goal) => h("li.goal", { text: goal.label }));
+    const lock = block.lock ? L.segmented("", [{ id: "off", label: "不加锁" }, { id: "on", label: block.lock.label }], "off", (id) => { locked = id === "on"; reset(); }) : null;
+    const allReached = () => block.goals.every((goal) => reached.has(goal.value));
+
+    function paint() {
+      value.textContent = String(shared);
+      buttons.forEach((button, lane) => {
+        const actor = actors[lane];
+        const waits = locked && owner !== null && owner !== lane;
+        button.disabled = actor.pc === OPS.length || waits;
+        button.textContent = actor.pc === OPS.length ? `${block.lanes[lane]} 走完了` : waits ? `${block.lanes[lane]} 在等锁` : `${block.lanes[lane]} 走一步：${hint[OPS[actor.pc]]}`;
+      });
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      if (actors.some((actor) => actor.pc < OPS.length)) { result.textContent = ""; return; }
+      reached.add(shared);
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      const lost = (block.shared.start + 2 * block.delta - shared) / block.delta;
+      const outcome = `两边都走完了：${name} = ${shared}。${lost ? `有 ${lost} 次白加了。` : "一次都没丢。"}`;
+      result.replaceChildren(L.md(allReached() ? `${outcome}${block.done}` : `${outcome}点「重来」，换一种顺序试试。`));
+    }
+
+    function move(lane) {
+      const actor = actors[lane], op = OPS[actor.pc];
+      let text;
+      if (op === "read") { actor.local = shared; owner = lane; text = `读到 ${shared}`; }
+      else if (op === "calc") { text = `${actor.local} ${block.delta < 0 ? "−" : "+"} ${Math.abs(block.delta)} = ${actor.local + block.delta}`; actor.local += block.delta; }
+      else { shared = actor.local; owner = null; text = `写回 ${shared}`; }
+      actor.pc += 1;
+      rows.append(row({ lane, op, text }, shared));
+      rows.lastChild.scrollIntoView({ block: "nearest" });
+      paint();
+    }
+
+    function reset() {
+      shared = block.shared.start;
+      actors = [{ pc: 0, local: null }, { pc: 0, local: null }];
+      owner = null;
+      rows.replaceChildren();
+      paint();
+    }
+
+    reset();
+    return {
+      el: h("div.sched", null,
+        h("div.sched__bar", null, h("ul.goals", null, goals), lock?.el, h("button.btn.btn--quiet", { text: "重来", attr: { type: "button" }, on: { click: reset } })),
+        grid(block.lanes, name, [rows,
+          h("div.lrow.lrow--controls", null, h("div.lcell.lcell--a", null, buttons[0]), h("div.lcell.lcell--mid", null, value), h("div.lcell.lcell--b", null, buttons[1]))]),
+        result),
+      waitSay: "先自己排一排：点两边的按钮，把上面几种结果都排出来。实在想跳过，再按一次。",
+      ready: allReached,
+    };
+  };
+})();
+
+</script>
+<script>
+/* The lesson as a sequence of moments. A moment is one teacher sentence plus one visible change: a block appearing, or one step
+   inside a block. → / space goes to the next moment, ← back; the track at the top shows where the lesson is in its arc.
+   A block that waits for the learner (a guess, a quiz) holds the lesson once, then lets a second press pass.
+   Deep link: #4 opens slide 4, #4.end opens it with every moment shown. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const lesson = JSON.parse(document.getElementById("lesson-data").textContent);
+  const memory = L.memory(`lesson:${lesson.id}`);
+  const predicts = {};
+  for (const slide of lesson.slides) for (const block of slide.blocks) if (block.t === "predict") predicts[block.id] = block;
+  const ctx = { lesson, memory, predicts };
+  L.glossary = lesson.terms || {};
+
+  const $ = (id) => document.getElementById(id);
+  const stage = $("stage"), line = $("line"), keyLine = $("key"), prev = $("prev"), next = $("next"), count = $("count"), notes = $("notes"), notesList = $("notes-list");
+  const beats = lesson.beats.map((beat) => h("button.beat", { text: beat.label, attr: { type: "button" }, on: { click: () => go(lesson.slides.findIndex((slide) => slide.beat === beat.id), 0) } }));
+  $("beats").append(...beats);
+  $("title").textContent = `${lesson.course} · ${lesson.title}`;
+
+  let at = { s: 0, m: 0 }, current = null, nudged = false;
+
+  function build(index) {
+    const slide = lesson.slides[index];
+    const items = slide.blocks.map((block) => { const made = L.blocks[block.t](block, ctx); return { block, made, wrap: h("div.block.is-waiting", null, made.el), seen: false }; });
+    const moments = slide.bridge ? [{ b: -1, k: 0, say: slide.bridge }] : [];
+    items.forEach((item, b) => {
+      moments.push({ b, k: 0, say: item.block.say, key: item.block.key });
+      (item.made.steps || []).forEach((step, i) => moments.push({ b, k: i + 1, say: step.say ?? step, key: step.key }));
+    });
+    const hook = index === 0;
+    const meta = hook ? h("div.hook__meta", null,
+      h("div", null, h("h3", { text: "需要先会" }), h("ul", null, lesson.needs.map((item) => h("li", { text: item })))),
+      h("div", null, h("h3", { text: `学完你能（约 ${lesson.minutes} 分钟）` }), h("ul", null, lesson.after.map((item) => h("li", { text: item }))))) : null;
+    const el = h(`section.slide${hook ? ".slide--hook" : ""}${slide.layout === "split" ? ".slide--split" : ""}`, null,
+      h("h1.slide__title", { text: slide.title }), h("div.slide__blocks", null, items.map((item) => item.wrap)), meta);
+    return { index, items, moments, el };
+  }
+
+  function remember(key) {
+    const keys = memory.get("keys", []);
+    if (keys.includes(key)) return;
+    memory.set("keys", keys.concat(key));
+    notes.classList.remove("is-flash");
+    void notes.offsetWidth;
+    notes.classList.add("is-flash");
+  }
+
+  function paintNotes() {
+    const keys = memory.get("keys", []);
+    notes.textContent = `要点 ${keys.length}`;
+    notesList.replaceChildren(...(keys.length ? keys.map((key) => h("li", { text: key })) : [h("li.is-empty", { text: "讲到关键结论时，会自动记在这里。" })]));
+  }
+
+  function show(spoken) {
+    L.hideTip();
+    if (!current || current.index !== at.s) { current = build(at.s); stage.replaceChildren(current.el); stage.scrollTop = 0; }
+    at.m = Math.min(at.m, current.moments.length - 1);
+    const now = current.moments[at.m];
+    current.items.forEach((item, b) => {
+      const reached = current.moments.filter((moment, i) => i <= at.m && moment.b === b);
+      item.wrap.classList.toggle("is-waiting", reached.length === 0);
+      if (!reached.length) { item.seen = false; return; }
+      item.made.set?.(reached.at(-1).k);
+      if (!item.seen) { item.seen = true; item.made.refresh?.(); }
+    });
+    line.replaceChildren(h("span", null, L.md(spoken || now.say)));
+    line.classList.remove("is-fresh");
+    void line.offsetWidth;
+    line.classList.add("is-fresh");
+    keyLine.hidden = !now.key || Boolean(spoken);
+    if (now.key && !spoken) { keyLine.textContent = `已记入要点：${now.key}`; remember(now.key); }
+    paintNotes();
+    // keep what just changed in view: the block says which part of it that is, or it is the block itself
+    const changed = current.items[now.b];
+    if (at.m > 0 && changed) (changed.made.spot?.() || changed.wrap).scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const beat = lesson.beats.findIndex((item) => item.id === lesson.slides[at.s].beat);
+    beats.forEach((el, i) => { el.classList.toggle("is-now", i === beat); el.classList.toggle("is-done", i < beat); el.setAttribute("aria-current", i === beat ? "step" : "false"); });
+    count.textContent = `${at.s + 1} / ${lesson.slides.length}`;
+    const last = at.s === lesson.slides.length - 1 && at.m === current.moments.length - 1;
+    prev.disabled = at.s === 0 && at.m === 0;
+    next.disabled = last;
+    memory.set("at", at);
+  }
+
+  function go(s, m) { if (s < 0) return; at = { s, m }; nudged = false; show(); }
+
+  function forward() {
+    const item = current.items[current.moments[at.m].b];
+    if (item?.made.ready && !item.made.ready()) {
+      if (!nudged) { nudged = true; return show(item.made.waitSay || "先选一个再往下。猜错没关系；实在想跳过，再按一次。"); }
+      item.made.pass?.(); // the learner chose to skip: the block shows what it was holding back
+    }
+    if (at.m < current.moments.length - 1) return go(at.s, at.m + 1);
+    if (at.s < lesson.slides.length - 1) go(at.s + 1, 0);
+  }
+
+  function back() {
+    if (at.m > 0) return go(at.s, at.m - 1);
+    if (at.s > 0) go(at.s - 1, Number.MAX_SAFE_INTEGER);
+  }
+
+  next.addEventListener("click", forward);
+  prev.addEventListener("click", back);
+  document.addEventListener("keydown", (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const typing = event.target.closest?.("button, input, [role=button], .code__scroll");
+    if (event.key === "ArrowRight" || event.key === "PageDown" || (event.key === " " && !typing)) { event.preventDefault(); forward(); }
+    else if (event.key === "ArrowLeft" || event.key === "PageUp") { event.preventDefault(); back(); }
+  });
+
+  notes.addEventListener("click", (event) => { event.stopPropagation(); notesList.hidden = !notesList.hidden; });
+  document.addEventListener("click", (event) => { if (!notesList.contains(event.target)) notesList.hidden = true; });
+
+  const root = document.documentElement, themeButton = $("theme");
+  const dark = () => (root.dataset.theme ? root.dataset.theme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const paintTheme = () => { themeButton.textContent = dark() ? "浅色" : "深色"; };
+  themeButton.addEventListener("click", () => { root.dataset.theme = dark() ? "light" : "dark"; try { localStorage.setItem("lesson-theme", root.dataset.theme); } catch { /* private window */ } paintTheme(); });
+  paintTheme();
+
+  const link = /^#(\d+)(\.end)?$/.exec(location.hash);
+  const saved = memory.get("at", { s: 0, m: 0 });
+  if (link) go(Math.min(Number(link[1]), lesson.slides.length) - 1, link[2] ? Number.MAX_SAFE_INTEGER : 0);
+  else go(Math.min(saved.s, lesson.slides.length - 1), saved.m);
+})();
+
+</script>
+</body>
+</html>

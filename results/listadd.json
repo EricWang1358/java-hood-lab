@@ -1,0 +1,1671 @@
+{
+ "id": "listadd",
+ "variants": {
+  "Plain": {
+   "hash": "b272590771b369c4",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 9
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 6
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 9
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 9
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 9
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 10
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 13
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 13
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 15
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 12
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 9
+     }
+    ],
+    "2": [
+     {
+      "valid": 166162,
+      "expected": 200000,
+      "ms": 17
+     },
+     {
+      "valid": 165267,
+      "expected": 200000,
+      "ms": 16
+     },
+     {
+      "valid": 159335,
+      "expected": 200000,
+      "ms": 18
+     },
+     {
+      "valid": 165134,
+      "expected": 200000,
+      "ms": 18
+     },
+     {
+      "valid": 168348,
+      "expected": 200000,
+      "ms": 18
+     },
+     {
+      "valid": 172911,
+      "expected": 200000,
+      "ms": 19
+     },
+     {
+      "valid": 164411,
+      "expected": 200000,
+      "ms": 29
+     },
+     {
+      "valid": 166055,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "valid": 166975,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "valid": 165733,
+      "expected": 200000,
+      "ms": 25
+     },
+     {
+      "valid": 165929,
+      "expected": 200000,
+      "ms": 26
+     },
+     {
+      "valid": 169355,
+      "expected": 200000,
+      "ms": 15
+     },
+     {
+      "valid": 158293,
+      "expected": 200000,
+      "ms": 17
+     },
+     {
+      "valid": 167990,
+      "expected": 200000,
+      "ms": 19
+     },
+     {
+      "valid": 164109,
+      "expected": 200000,
+      "ms": 19
+     },
+     {
+      "valid": 162978,
+      "expected": 200000,
+      "ms": 27
+     },
+     {
+      "valid": 165548,
+      "expected": 200000,
+      "ms": 19
+     },
+     {
+      "valid": 166769,
+      "expected": 200000,
+      "ms": 41
+     },
+     {
+      "valid": 157975,
+      "expected": 200000,
+      "ms": 67
+     },
+     {
+      "valid": 179991,
+      "expected": 200000,
+      "ms": 54
+     }
+    ],
+    "4": [
+     {
+      "valid": 189075,
+      "expected": 400000,
+      "ms": 94
+     },
+     {
+      "valid": 232932,
+      "expected": 400000,
+      "ms": 94
+     },
+     {
+      "valid": 206049,
+      "expected": 400000,
+      "ms": 100
+     },
+     {
+      "valid": 206353,
+      "expected": 400000,
+      "ms": 111
+     },
+     {
+      "valid": 341116,
+      "expected": 400000,
+      "ms": 98
+     },
+     {
+      "valid": 180983,
+      "expected": 400000,
+      "ms": 107
+     },
+     {
+      "valid": 200636,
+      "expected": 400000,
+      "ms": 72
+     },
+     {
+      "valid": 203523,
+      "expected": 400000,
+      "ms": 80
+     },
+     {
+      "valid": 200940,
+      "expected": 400000,
+      "ms": 92
+     },
+     {
+      "valid": 184603,
+      "expected": 400000,
+      "ms": 75
+     },
+     {
+      "valid": 180530,
+      "expected": 400000,
+      "ms": 52
+     },
+     {
+      "valid": 183504,
+      "expected": 400000,
+      "ms": 59
+     },
+     {
+      "valid": 187148,
+      "expected": 400000,
+      "ms": 69
+     },
+     {
+      "valid": 205788,
+      "expected": 400000,
+      "ms": 91
+     },
+     {
+      "valid": 171132,
+      "expected": 400000,
+      "ms": 61
+     },
+     {
+      "valid": 179978,
+      "expected": 400000,
+      "ms": 71
+     },
+     {
+      "valid": 208688,
+      "expected": 400000,
+      "ms": 59
+     },
+     {
+      "valid": 186652,
+      "expected": 400000,
+      "ms": 81
+     },
+     {
+      "valid": 181635,
+      "expected": 400000,
+      "ms": 79
+     },
+     {
+      "valid": 180087,
+      "expected": 400000,
+      "ms": 71
+     }
+    ],
+    "8": [
+     {
+      "valid": 286616,
+      "expected": 800000,
+      "ms": 149
+     },
+     {
+      "valid": 275785,
+      "expected": 800000,
+      "ms": 122
+     },
+     {
+      "valid": 251197,
+      "expected": 800000,
+      "ms": 110
+     },
+     {
+      "valid": 290546,
+      "expected": 800000,
+      "ms": 115
+     },
+     {
+      "valid": 184711,
+      "expected": 800000,
+      "ms": 90
+     },
+     {
+      "valid": 268118,
+      "expected": 800000,
+      "ms": 156
+     },
+     {
+      "valid": 238763,
+      "expected": 800000,
+      "ms": 110
+     },
+     {
+      "valid": 288211,
+      "expected": 800000,
+      "ms": 135
+     },
+     {
+      "valid": 302122,
+      "expected": 800000,
+      "ms": 112
+     },
+     {
+      "valid": 275121,
+      "expected": 800000,
+      "ms": 103
+     },
+     {
+      "valid": 340928,
+      "expected": 800000,
+      "ms": 93
+     },
+     {
+      "valid": 256283,
+      "expected": 800000,
+      "ms": 88
+     },
+     {
+      "valid": 300082,
+      "expected": 800000,
+      "ms": 116
+     },
+     {
+      "valid": 256856,
+      "expected": 800000,
+      "ms": 78
+     },
+     {
+      "valid": 276003,
+      "expected": 800000,
+      "ms": 66
+     },
+     {
+      "valid": 298584,
+      "expected": 800000,
+      "ms": 74
+     },
+     {
+      "valid": 184345,
+      "expected": 800000,
+      "ms": 66
+     },
+     {
+      "valid": 288063,
+      "expected": 800000,
+      "ms": 51
+     },
+     {
+      "valid": 285672,
+      "expected": 800000,
+      "ms": 81
+     },
+     {
+      "valid": 280939,
+      "expected": 800000,
+      "ms": 112
+     }
+    ]
+   },
+   "inside": "Compiled from \"Plain.java\"\npublic class lab.listadd.Plain {\n  static final int ROUNDS;\n\n  static java.util.List<java.lang.String> logs;\n\n  public lab.listadd.Plain();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static void append(java.lang.String);\n    Code:\n         0: getstatic     #7                  // Field logs:Ljava/util/List;\n         3: aload_0\n         4: invokeinterface #13,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n         9: pop\n        10: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #19                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: iload_1\n         8: ldc           #25                 // int 100000\n        10: imul\n        11: istore_2\n        12: new           #26                 // class java/util/ArrayList\n        15: dup\n        16: iload_2\n        17: bipush        64\n        19: iadd\n        20: invokespecial #28                 // Method java/util/ArrayList.\"<init>\":(I)V\n        23: putstatic     #7                  // Field logs:Ljava/util/List;\n        26: iload_1\n        27: anewarray     #31                 // class java/lang/Thread\n        30: astore_3\n        31: invokestatic  #33                 // Method java/lang/System.nanoTime:()J\n        34: lstore        4\n        36: iconst_0\n        37: istore        6\n        39: iload         6\n        41: iload_1\n        42: if_icmpge     74\n        45: aload_3\n        46: iload         6\n        48: new           #31                 // class java/lang/Thread\n        51: dup\n        52: invokedynamic #39,  0             // InvokeDynamic #0:run:()Ljava/lang/Runnable;\n        57: invokespecial #43                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n        60: aastore\n        61: aload_3\n        62: iload         6\n        64: aaload\n        65: invokevirtual #46                 // Method java/lang/Thread.start:()V\n        68: iinc          6, 1\n        71: goto          39\n        74: aload_3\n        75: astore        6\n        77: aload         6\n        79: arraylength\n        80: istore        7\n        82: iconst_0\n        83: istore        8\n        85: iload         8\n        87: iload         7\n        89: if_icmpge     110\n        92: aload         6\n        94: iload         8\n        96: aaload\n        97: astore        9\n        99: aload         9\n       101: invokevirtual #49                 // Method java/lang/Thread.join:()V\n       104: iinc          8, 1\n       107: goto          85\n       110: invokestatic  #33                 // Method java/lang/System.nanoTime:()J\n       113: lload         4\n       115: lsub\n       116: ldc2_w        #52                 // long 1000000l\n       119: ldiv\n       120: lstore        6\n       122: iconst_0\n       123: istore        8\n       125: getstatic     #7                  // Field logs:Ljava/util/List;\n       128: invokeinterface #54,  1           // InterfaceMethod java/util/List.size:()I\n       133: istore        9\n       135: iconst_0\n       136: istore        10\n       138: iload         10\n       140: iload         9\n       142: if_icmpge     172\n       145: getstatic     #7                  // Field logs:Ljava/util/List;\n       148: iload         10\n       150: invokeinterface #58,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;\n       155: ifnull        161\n       158: iinc          8, 1\n       161: goto          166\n       164: astore        11\n       166: iinc          10, 1\n       169: goto          138\n       172: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       175: iload         8\n       177: invokedynamic #68,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n       182: invokevirtual #72                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       185: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       188: iload_2\n       189: invokedynamic #78,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       194: invokevirtual #72                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       197: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       200: lload         6\n       202: invokedynamic #79,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       207: invokevirtual #72                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       210: return\n      Exception table:\n         from    to  target type\n           145   161   164   Class java/lang/Exception\n\n  private static void lambda$main$0();\n    Code:\n         0: iconst_0\n         1: istore_0\n         2: iload_0\n         3: ldc           #25                 // int 100000\n         5: if_icmpge     19\n         8: ldc           #82                 // String ok\n        10: invokestatic  #84                 // Method append:(Ljava/lang/String;)V\n        13: iinc          0, 1\n        16: goto          2\n        19: return\n}"
+  },
+  "VolatileList": {
+   "hash": "d03d0cec5720d0f1",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 16
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 12
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 12
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 14
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 10
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 10
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 10
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 12
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 13
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 13
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 11
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 13
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 12
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 15
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 13
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 18
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 26
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 19
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 19
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 26
+     }
+    ],
+    "2": [
+     {
+      "valid": 167931,
+      "expected": 200000,
+      "ms": 27
+     },
+     {
+      "valid": 165060,
+      "expected": 200000,
+      "ms": 30
+     },
+     {
+      "valid": 181804,
+      "expected": 200000,
+      "ms": 28
+     },
+     {
+      "valid": 170347,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "valid": 182034,
+      "expected": 200000,
+      "ms": 22
+     },
+     {
+      "valid": 167692,
+      "expected": 200000,
+      "ms": 30
+     },
+     {
+      "valid": 170247,
+      "expected": 200000,
+      "ms": 33
+     },
+     {
+      "valid": 161605,
+      "expected": 200000,
+      "ms": 27
+     },
+     {
+      "valid": 181304,
+      "expected": 200000,
+      "ms": 26
+     },
+     {
+      "valid": 172467,
+      "expected": 200000,
+      "ms": 28
+     },
+     {
+      "valid": 170738,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "valid": 181597,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "valid": 163998,
+      "expected": 200000,
+      "ms": 46
+     },
+     {
+      "valid": 176729,
+      "expected": 200000,
+      "ms": 34
+     },
+     {
+      "valid": 171409,
+      "expected": 200000,
+      "ms": 39
+     },
+     {
+      "valid": 169685,
+      "expected": 200000,
+      "ms": 36
+     },
+     {
+      "valid": 169055,
+      "expected": 200000,
+      "ms": 20
+     },
+     {
+      "valid": 173689,
+      "expected": 200000,
+      "ms": 20
+     },
+     {
+      "valid": 168661,
+      "expected": 200000,
+      "ms": 26
+     },
+     {
+      "valid": 168330,
+      "expected": 200000,
+      "ms": 22
+     }
+    ],
+    "4": [
+     {
+      "valid": 273807,
+      "expected": 400000,
+      "ms": 35
+     },
+     {
+      "valid": 287503,
+      "expected": 400000,
+      "ms": 47
+     },
+     {
+      "valid": 277126,
+      "expected": 400000,
+      "ms": 38
+     },
+     {
+      "valid": 300158,
+      "expected": 400000,
+      "ms": 32
+     },
+     {
+      "valid": 263144,
+      "expected": 400000,
+      "ms": 36
+     },
+     {
+      "valid": 271247,
+      "expected": 400000,
+      "ms": 32
+     },
+     {
+      "valid": 251644,
+      "expected": 400000,
+      "ms": 34
+     },
+     {
+      "valid": 271853,
+      "expected": 400000,
+      "ms": 41
+     },
+     {
+      "valid": 270646,
+      "expected": 400000,
+      "ms": 34
+     },
+     {
+      "valid": 277322,
+      "expected": 400000,
+      "ms": 37
+     },
+     {
+      "valid": 273075,
+      "expected": 400000,
+      "ms": 36
+     },
+     {
+      "valid": 275763,
+      "expected": 400000,
+      "ms": 31
+     },
+     {
+      "valid": 276086,
+      "expected": 400000,
+      "ms": 39
+     },
+     {
+      "valid": 282195,
+      "expected": 400000,
+      "ms": 46
+     },
+     {
+      "valid": 257130,
+      "expected": 400000,
+      "ms": 69
+     },
+     {
+      "valid": 265192,
+      "expected": 400000,
+      "ms": 60
+     },
+     {
+      "valid": 256151,
+      "expected": 400000,
+      "ms": 102
+     },
+     {
+      "valid": 277027,
+      "expected": 400000,
+      "ms": 67
+     },
+     {
+      "valid": 262891,
+      "expected": 400000,
+      "ms": 61
+     },
+     {
+      "valid": 259369,
+      "expected": 400000,
+      "ms": 52
+     }
+    ],
+    "8": [
+     {
+      "valid": 400517,
+      "expected": 800000,
+      "ms": 84
+     },
+     {
+      "valid": 321232,
+      "expected": 800000,
+      "ms": 116
+     },
+     {
+      "valid": 321008,
+      "expected": 800000,
+      "ms": 120
+     },
+     {
+      "valid": 372156,
+      "expected": 800000,
+      "ms": 123
+     },
+     {
+      "valid": 355079,
+      "expected": 800000,
+      "ms": 145
+     },
+     {
+      "valid": 357413,
+      "expected": 800000,
+      "ms": 154
+     },
+     {
+      "valid": 407466,
+      "expected": 800000,
+      "ms": 141
+     },
+     {
+      "valid": 365079,
+      "expected": 800000,
+      "ms": 110
+     },
+     {
+      "valid": 355257,
+      "expected": 800000,
+      "ms": 105
+     },
+     {
+      "valid": 368072,
+      "expected": 800000,
+      "ms": 100
+     },
+     {
+      "valid": 387747,
+      "expected": 800000,
+      "ms": 111
+     },
+     {
+      "valid": 332202,
+      "expected": 800000,
+      "ms": 143
+     },
+     {
+      "valid": 323326,
+      "expected": 800000,
+      "ms": 148
+     },
+     {
+      "valid": 385715,
+      "expected": 800000,
+      "ms": 121
+     },
+     {
+      "valid": 359441,
+      "expected": 800000,
+      "ms": 153
+     },
+     {
+      "valid": 310299,
+      "expected": 800000,
+      "ms": 127
+     },
+     {
+      "valid": 378050,
+      "expected": 800000,
+      "ms": 91
+     },
+     {
+      "valid": 376391,
+      "expected": 800000,
+      "ms": 71
+     },
+     {
+      "valid": 509620,
+      "expected": 800000,
+      "ms": 65
+     },
+     {
+      "valid": 481813,
+      "expected": 800000,
+      "ms": 84
+     }
+    ]
+   },
+   "inside": "Compiled from \"VolatileList.java\"\npublic class lab.listadd.VolatileList {\n  static final int ROUNDS;\n\n  static volatile java.util.List<java.lang.String> logs;\n\n  public lab.listadd.VolatileList();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static void append(java.lang.String);\n    Code:\n         0: getstatic     #7                  // Field logs:Ljava/util/List;\n         3: aload_0\n         4: invokeinterface #13,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n         9: pop\n        10: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #19                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: iload_1\n         8: ldc           #25                 // int 100000\n        10: imul\n        11: istore_2\n        12: new           #26                 // class java/util/ArrayList\n        15: dup\n        16: iload_2\n        17: bipush        64\n        19: iadd\n        20: invokespecial #28                 // Method java/util/ArrayList.\"<init>\":(I)V\n        23: putstatic     #7                  // Field logs:Ljava/util/List;\n        26: iload_1\n        27: anewarray     #31                 // class java/lang/Thread\n        30: astore_3\n        31: invokestatic  #33                 // Method java/lang/System.nanoTime:()J\n        34: lstore        4\n        36: iconst_0\n        37: istore        6\n        39: iload         6\n        41: iload_1\n        42: if_icmpge     74\n        45: aload_3\n        46: iload         6\n        48: new           #31                 // class java/lang/Thread\n        51: dup\n        52: invokedynamic #39,  0             // InvokeDynamic #0:run:()Ljava/lang/Runnable;\n        57: invokespecial #43                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n        60: aastore\n        61: aload_3\n        62: iload         6\n        64: aaload\n        65: invokevirtual #46                 // Method java/lang/Thread.start:()V\n        68: iinc          6, 1\n        71: goto          39\n        74: aload_3\n        75: astore        6\n        77: aload         6\n        79: arraylength\n        80: istore        7\n        82: iconst_0\n        83: istore        8\n        85: iload         8\n        87: iload         7\n        89: if_icmpge     110\n        92: aload         6\n        94: iload         8\n        96: aaload\n        97: astore        9\n        99: aload         9\n       101: invokevirtual #49                 // Method java/lang/Thread.join:()V\n       104: iinc          8, 1\n       107: goto          85\n       110: invokestatic  #33                 // Method java/lang/System.nanoTime:()J\n       113: lload         4\n       115: lsub\n       116: ldc2_w        #52                 // long 1000000l\n       119: ldiv\n       120: lstore        6\n       122: iconst_0\n       123: istore        8\n       125: getstatic     #7                  // Field logs:Ljava/util/List;\n       128: invokeinterface #54,  1           // InterfaceMethod java/util/List.size:()I\n       133: istore        9\n       135: iconst_0\n       136: istore        10\n       138: iload         10\n       140: iload         9\n       142: if_icmpge     172\n       145: getstatic     #7                  // Field logs:Ljava/util/List;\n       148: iload         10\n       150: invokeinterface #58,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;\n       155: ifnull        161\n       158: iinc          8, 1\n       161: goto          166\n       164: astore        11\n       166: iinc          10, 1\n       169: goto          138\n       172: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       175: iload         8\n       177: invokedynamic #68,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n       182: invokevirtual #72                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       185: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       188: iload_2\n       189: invokedynamic #78,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       194: invokevirtual #72                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       197: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       200: lload         6\n       202: invokedynamic #79,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       207: invokevirtual #72                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       210: return\n      Exception table:\n         from    to  target type\n           145   161   164   Class java/lang/Exception\n\n  private static void lambda$main$0();\n    Code:\n         0: iconst_0\n         1: istore_0\n         2: iload_0\n         3: ldc           #25                 // int 100000\n         5: if_icmpge     19\n         8: ldc           #82                 // String ok\n        10: invokestatic  #84                 // Method append:(Ljava/lang/String;)V\n        13: iinc          0, 1\n        16: goto          2\n        19: return\n}"
+  },
+  "SyncList": {
+   "hash": "c2bfa5f6e333c7e8",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 10
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 10
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 10
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 10
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 9
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 9
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 8
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 6
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 7
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 7
+     }
+    ],
+    "2": [
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 20
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 17
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 18
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 19
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 18
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 22
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 20
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 22
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 25
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 28
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 51
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 26
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 35
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 27
+     }
+    ],
+    "4": [
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 40
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 32
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 36
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 36
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 62
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 59
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 41
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 36
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 37
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 35
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 40
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 124
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 112
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 38
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 41
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 33
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 30
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 37
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 41
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 35
+     }
+    ],
+    "8": [
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 87
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 69
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 77
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 55
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 60
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 47
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 73
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 53
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 75
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 80
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 80
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 69
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 60
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 49
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 51
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 60
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 73
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 65
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 55
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 64
+     }
+    ]
+   },
+   "inside": "Compiled from \"SyncList.java\"\npublic class lab.listadd.SyncList {\n  static final int ROUNDS;\n\n  static java.util.List<java.lang.String> logs;\n\n  public lab.listadd.SyncList();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static void append(java.lang.String);\n    Code:\n         0: getstatic     #7                  // Field logs:Ljava/util/List;\n         3: aload_0\n         4: invokeinterface #13,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n         9: pop\n        10: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #19                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: iload_1\n         8: ldc           #25                 // int 100000\n        10: imul\n        11: istore_2\n        12: new           #26                 // class java/util/ArrayList\n        15: dup\n        16: iload_2\n        17: bipush        64\n        19: iadd\n        20: invokespecial #28                 // Method java/util/ArrayList.\"<init>\":(I)V\n        23: invokestatic  #31                 // Method java/util/Collections.synchronizedList:(Ljava/util/List;)Ljava/util/List;\n        26: putstatic     #7                  // Field logs:Ljava/util/List;\n        29: iload_1\n        30: anewarray     #37                 // class java/lang/Thread\n        33: astore_3\n        34: invokestatic  #39                 // Method java/lang/System.nanoTime:()J\n        37: lstore        4\n        39: iconst_0\n        40: istore        6\n        42: iload         6\n        44: iload_1\n        45: if_icmpge     77\n        48: aload_3\n        49: iload         6\n        51: new           #37                 // class java/lang/Thread\n        54: dup\n        55: invokedynamic #45,  0             // InvokeDynamic #0:run:()Ljava/lang/Runnable;\n        60: invokespecial #49                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n        63: aastore\n        64: aload_3\n        65: iload         6\n        67: aaload\n        68: invokevirtual #52                 // Method java/lang/Thread.start:()V\n        71: iinc          6, 1\n        74: goto          42\n        77: aload_3\n        78: astore        6\n        80: aload         6\n        82: arraylength\n        83: istore        7\n        85: iconst_0\n        86: istore        8\n        88: iload         8\n        90: iload         7\n        92: if_icmpge     113\n        95: aload         6\n        97: iload         8\n        99: aaload\n       100: astore        9\n       102: aload         9\n       104: invokevirtual #55                 // Method java/lang/Thread.join:()V\n       107: iinc          8, 1\n       110: goto          88\n       113: invokestatic  #39                 // Method java/lang/System.nanoTime:()J\n       116: lload         4\n       118: lsub\n       119: ldc2_w        #58                 // long 1000000l\n       122: ldiv\n       123: lstore        6\n       125: iconst_0\n       126: istore        8\n       128: getstatic     #7                  // Field logs:Ljava/util/List;\n       131: invokeinterface #60,  1           // InterfaceMethod java/util/List.size:()I\n       136: istore        9\n       138: iconst_0\n       139: istore        10\n       141: iload         10\n       143: iload         9\n       145: if_icmpge     175\n       148: getstatic     #7                  // Field logs:Ljava/util/List;\n       151: iload         10\n       153: invokeinterface #64,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;\n       158: ifnull        164\n       161: iinc          8, 1\n       164: goto          169\n       167: astore        11\n       169: iinc          10, 1\n       172: goto          141\n       175: getstatic     #70                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       178: iload         8\n       180: invokedynamic #74,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n       185: invokevirtual #78                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       188: getstatic     #70                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       191: iload_2\n       192: invokedynamic #84,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       197: invokevirtual #78                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       200: getstatic     #70                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       203: lload         6\n       205: invokedynamic #85,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       210: invokevirtual #78                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       213: return\n      Exception table:\n         from    to  target type\n           148   164   167   Class java/lang/Exception\n\n  private static void lambda$main$0();\n    Code:\n         0: iconst_0\n         1: istore_0\n         2: iload_0\n         3: ldc           #25                 // int 100000\n         5: if_icmpge     19\n         8: ldc           #88                 // String ok\n        10: invokestatic  #90                 // Method append:(Ljava/lang/String;)V\n        13: iinc          0, 1\n        16: goto          2\n        19: return\n}"
+  },
+  "Queue": {
+   "hash": "840f87bbc44fbe53",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 19
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 15
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 13
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 11
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 13
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 13
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 11
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 11
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 12
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 13
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 13
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 12
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 11
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 12
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 15
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 16
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 19
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 18
+     },
+     {
+      "valid": 100000,
+      "expected": 100000,
+      "ms": 16
+     }
+    ],
+    "2": [
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 27
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 25
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 26
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 20
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 20
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 25
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 20
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 20
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 22
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 26
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 27
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 27
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 45
+     },
+     {
+      "valid": 200000,
+      "expected": 200000,
+      "ms": 58
+     }
+    ],
+    "4": [
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 88
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 69
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 68
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 62
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 62
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 75
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 56
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 69
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 73
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 52
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 54
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 62
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 57
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 62
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 56
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 56
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 62
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 64
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 55
+     },
+     {
+      "valid": 400000,
+      "expected": 400000,
+      "ms": 54
+     }
+    ],
+    "8": [
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 147
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 164
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 159
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 164
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 193
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 157
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 180
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 216
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 257
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 221
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 169
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 190
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 163
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 143
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 163
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 185
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 155
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 181
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 256
+     },
+     {
+      "valid": 800000,
+      "expected": 800000,
+      "ms": 226
+     }
+    ]
+   },
+   "inside": "Compiled from \"Queue.java\"\npublic class lab.listadd.Queue {\n  static final int ROUNDS;\n\n  static java.util.concurrent.ConcurrentLinkedQueue<java.lang.String> logs;\n\n  public lab.listadd.Queue();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static void append(java.lang.String);\n    Code:\n         0: getstatic     #7                  // Field logs:Ljava/util/concurrent/ConcurrentLinkedQueue;\n         3: aload_0\n         4: invokevirtual #13                 // Method java/util/concurrent/ConcurrentLinkedQueue.add:(Ljava/lang/Object;)Z\n         7: pop\n         8: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #19                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: iload_1\n         8: ldc           #25                 // int 100000\n        10: imul\n        11: istore_2\n        12: new           #14                 // class java/util/concurrent/ConcurrentLinkedQueue\n        15: dup\n        16: invokespecial #26                 // Method java/util/concurrent/ConcurrentLinkedQueue.\"<init>\":()V\n        19: putstatic     #7                  // Field logs:Ljava/util/concurrent/ConcurrentLinkedQueue;\n        22: iload_1\n        23: anewarray     #27                 // class java/lang/Thread\n        26: astore_3\n        27: invokestatic  #29                 // Method java/lang/System.nanoTime:()J\n        30: lstore        4\n        32: iconst_0\n        33: istore        6\n        35: iload         6\n        37: iload_1\n        38: if_icmpge     70\n        41: aload_3\n        42: iload         6\n        44: new           #27                 // class java/lang/Thread\n        47: dup\n        48: invokedynamic #35,  0             // InvokeDynamic #0:run:()Ljava/lang/Runnable;\n        53: invokespecial #39                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n        56: aastore\n        57: aload_3\n        58: iload         6\n        60: aaload\n        61: invokevirtual #42                 // Method java/lang/Thread.start:()V\n        64: iinc          6, 1\n        67: goto          35\n        70: aload_3\n        71: astore        6\n        73: aload         6\n        75: arraylength\n        76: istore        7\n        78: iconst_0\n        79: istore        8\n        81: iload         8\n        83: iload         7\n        85: if_icmpge     106\n        88: aload         6\n        90: iload         8\n        92: aaload\n        93: astore        9\n        95: aload         9\n        97: invokevirtual #45                 // Method java/lang/Thread.join:()V\n       100: iinc          8, 1\n       103: goto          81\n       106: invokestatic  #29                 // Method java/lang/System.nanoTime:()J\n       109: lload         4\n       111: lsub\n       112: ldc2_w        #48                 // long 1000000l\n       115: ldiv\n       116: lstore        6\n       118: iconst_0\n       119: istore        8\n       121: getstatic     #7                  // Field logs:Ljava/util/concurrent/ConcurrentLinkedQueue;\n       124: invokevirtual #50                 // Method java/util/concurrent/ConcurrentLinkedQueue.iterator:()Ljava/util/Iterator;\n       127: astore        9\n       129: aload         9\n       131: invokeinterface #54,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n       136: ifeq          162\n       139: aload         9\n       141: invokeinterface #60,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n       146: checkcast     #64                 // class java/lang/String\n       149: astore        10\n       151: aload         10\n       153: ifnull        159\n       156: iinc          8, 1\n       159: goto          129\n       162: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       165: iload         8\n       167: invokedynamic #70,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n       172: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       175: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       178: iload_2\n       179: invokedynamic #80,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       184: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       187: getstatic     #66                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       190: lload         6\n       192: invokedynamic #81,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       197: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       200: return\n\n  private static void lambda$main$0();\n    Code:\n         0: iconst_0\n         1: istore_0\n         2: iload_0\n         3: ldc           #25                 // int 100000\n         5: if_icmpge     19\n         8: ldc           #84                 // String ok\n        10: invokestatic  #86                 // Method append:(Ljava/lang/String;)V\n        13: iinc          0, 1\n        16: goto          2\n        19: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 25.0.4",
+  "cores": 32,
+  "os": "win32 10.0.26200",
+  "date": "2026-11-14"
+ }
+}

@@ -1,0 +1,1671 @@
+{
+ "id": "singleton",
+ "variants": {
+  "Plain": {
+   "hash": "709cbaf79416c32c",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 25
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     }
+    ],
+    "2": [
+     {
+      "okOrders": 78144,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 77745,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "okOrders": 78241,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "okOrders": 78927,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 80163,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "okOrders": 77795,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 81247,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 80703,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "okOrders": 78276,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 79005,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 78068,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "okOrders": 79047,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 79403,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 77331,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 79234,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "okOrders": 77849,
+      "expected": 100000,
+      "ms": 27
+     },
+     {
+      "okOrders": 79656,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "okOrders": 78629,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "okOrders": 83380,
+      "expected": 100000,
+      "ms": 28
+     },
+     {
+      "okOrders": 80300,
+      "expected": 100000,
+      "ms": 26
+     }
+    ],
+    "4": [
+     {
+      "okOrders": 103587,
+      "expected": 200000,
+      "ms": 27
+     },
+     {
+      "okOrders": 106077,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 109113,
+      "expected": 200000,
+      "ms": 22
+     },
+     {
+      "okOrders": 110169,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 120499,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 159746,
+      "expected": 200000,
+      "ms": 35
+     },
+     {
+      "okOrders": 100116,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "okOrders": 100167,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 106767,
+      "expected": 200000,
+      "ms": 25
+     },
+     {
+      "okOrders": 106944,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 126085,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 98980,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "okOrders": 111445,
+      "expected": 200000,
+      "ms": 22
+     },
+     {
+      "okOrders": 109331,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "okOrders": 101949,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 104762,
+      "expected": 200000,
+      "ms": 25
+     },
+     {
+      "okOrders": 106437,
+      "expected": 200000,
+      "ms": 22
+     },
+     {
+      "okOrders": 102531,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "okOrders": 116304,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "okOrders": 108925,
+      "expected": 200000,
+      "ms": 21
+     }
+    ],
+    "8": [
+     {
+      "okOrders": 314721,
+      "expected": 400000,
+      "ms": 45
+     },
+     {
+      "okOrders": 292193,
+      "expected": 400000,
+      "ms": 37
+     },
+     {
+      "okOrders": 334336,
+      "expected": 400000,
+      "ms": 51
+     },
+     {
+      "okOrders": 321880,
+      "expected": 400000,
+      "ms": 49
+     },
+     {
+      "okOrders": 260587,
+      "expected": 400000,
+      "ms": 31
+     },
+     {
+      "okOrders": 309745,
+      "expected": 400000,
+      "ms": 35
+     },
+     {
+      "okOrders": 254782,
+      "expected": 400000,
+      "ms": 31
+     },
+     {
+      "okOrders": 287126,
+      "expected": 400000,
+      "ms": 37
+     },
+     {
+      "okOrders": 309031,
+      "expected": 400000,
+      "ms": 47
+     },
+     {
+      "okOrders": 316193,
+      "expected": 400000,
+      "ms": 45
+     },
+     {
+      "okOrders": 295570,
+      "expected": 400000,
+      "ms": 50
+     },
+     {
+      "okOrders": 323685,
+      "expected": 400000,
+      "ms": 45
+     },
+     {
+      "okOrders": 273025,
+      "expected": 400000,
+      "ms": 36
+     },
+     {
+      "okOrders": 252111,
+      "expected": 400000,
+      "ms": 36
+     },
+     {
+      "okOrders": 336501,
+      "expected": 400000,
+      "ms": 46
+     },
+     {
+      "okOrders": 271613,
+      "expected": 400000,
+      "ms": 31
+     },
+     {
+      "okOrders": 283788,
+      "expected": 400000,
+      "ms": 47
+     },
+     {
+      "okOrders": 270162,
+      "expected": 400000,
+      "ms": 41
+     },
+     {
+      "okOrders": 294872,
+      "expected": 400000,
+      "ms": 43
+     },
+     {
+      "okOrders": 311672,
+      "expected": 400000,
+      "ms": 45
+     }
+    ]
+   },
+   "inside": "Compiled from \"Plain.java\"\npublic class lab.singleton.Plain {\n  static final int ORDERS;\n\n  static final lab.singleton.Plain SERVICE;\n\n  static final java.util.concurrent.atomic.AtomicInteger okOrders;\n\n  int pendingPrice;\n\n  public lab.singleton.Plain();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static int calcFee(int);\n    Code:\n         0: iload_0\n         1: istore_1\n         2: iconst_0\n         3: istore_2\n         4: iload_2\n         5: sipush        200\n         8: if_icmpge     29\n        11: iload_1\n        12: bipush        31\n        14: imul\n        15: iload_1\n        16: bipush        7\n        18: iushr\n        19: iload_2\n        20: iadd\n        21: ixor\n        22: istore_1\n        23: iinc          2, 1\n        26: goto          4\n        29: iload_1\n        30: bipush        31\n        32: iand\n        33: bipush        10\n        35: iadd\n        36: ireturn\n\n  int quote(int);\n    Code:\n         0: aload_0\n         1: iload_1\n         2: putfield      #7                  // Field pendingPrice:I\n         5: iload_1\n         6: invokestatic  #13                 // Method calcFee:(I)I\n         9: istore_2\n        10: aload_0\n        11: getfield      #7                  // Field pendingPrice:I\n        14: iload_2\n        15: iadd\n        16: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #17                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: iload_1\n         8: anewarray     #23                 // class java/lang/Thread\n        11: astore_2\n        12: invokestatic  #25                 // Method java/lang/System.nanoTime:()J\n        15: lstore_3\n        16: iconst_0\n        17: istore        5\n        19: iload         5\n        21: iload_1\n        22: if_icmpge     66\n        25: iload         5\n        27: iconst_1\n        28: iadd\n        29: sipush        1000\n        32: imul\n        33: istore        6\n        35: aload_2\n        36: iload         5\n        38: new           #23                 // class java/lang/Thread\n        41: dup\n        42: iload         6\n        44: invokedynamic #31,  0             // InvokeDynamic #0:run:(I)Ljava/lang/Runnable;\n        49: invokespecial #35                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n        52: aastore\n        53: aload_2\n        54: iload         5\n        56: aaload\n        57: invokevirtual #38                 // Method java/lang/Thread.start:()V\n        60: iinc          5, 1\n        63: goto          19\n        66: aload_2\n        67: astore        5\n        69: aload         5\n        71: arraylength\n        72: istore        6\n        74: iconst_0\n        75: istore        7\n        77: iload         7\n        79: iload         6\n        81: if_icmpge     102\n        84: aload         5\n        86: iload         7\n        88: aaload\n        89: astore        8\n        91: aload         8\n        93: invokevirtual #41                 // Method java/lang/Thread.join:()V\n        96: iinc          7, 1\n        99: goto          77\n       102: invokestatic  #25                 // Method java/lang/System.nanoTime:()J\n       105: lload_3\n       106: lsub\n       107: ldc2_w        #44                 // long 1000000l\n       110: ldiv\n       111: lstore        5\n       113: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       116: getstatic     #50                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n       119: invokevirtual #54                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       122: invokedynamic #60,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n       127: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       130: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: iload_1\n       134: ldc           #70                 // int 50000\n       136: imul\n       137: invokedynamic #71,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       142: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       145: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       148: lload         5\n       150: invokedynamic #72,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       155: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       158: return\n\n  private static void lambda$main$0(int);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iconst_0\n         3: istore_2\n         4: iload_2\n         5: ldc           #70                 // int 50000\n         7: if_icmpge     46\n        10: iload_0\n        11: iload_2\n        12: bipush        63\n        14: iand\n        15: iadd\n        16: istore_3\n        17: iload_3\n        18: iload_3\n        19: invokestatic  #13                 // Method calcFee:(I)I\n        22: iadd\n        23: istore        4\n        25: getstatic     #75                 // Field SERVICE:Llab/singleton/Plain;\n        28: iload_3\n        29: invokevirtual #79                 // Method quote:(I)I\n        32: iload         4\n        34: if_icmpne     40\n        37: iinc          1, 1\n        40: iinc          2, 1\n        43: goto          4\n        46: getstatic     #50                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n        49: iload_1\n        50: invokevirtual #82                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n        53: pop\n        54: return\n\n  static {};\n    Code:\n         0: new           #8                  // class lab/singleton/Plain\n         3: dup\n         4: invokespecial #85                 // Method \"<init>\":()V\n         7: putstatic     #75                 // Field SERVICE:Llab/singleton/Plain;\n        10: new           #55                 // class java/util/concurrent/atomic/AtomicInteger\n        13: dup\n        14: invokespecial #86                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n        17: putstatic     #50                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n        20: return\n}"
+  },
+  "VolatileField": {
+   "hash": "93807277598814b6",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 21
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 21
+     }
+    ],
+    "2": [
+     {
+      "okOrders": 69981,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 74208,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "okOrders": 67929,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 64879,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "okOrders": 62242,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 71171,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 68829,
+      "expected": 100000,
+      "ms": 27
+     },
+     {
+      "okOrders": 56615,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 63520,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 60946,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 71253,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 65294,
+      "expected": 100000,
+      "ms": 21
+     },
+     {
+      "okOrders": 64051,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 63589,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 65467,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 66247,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 65467,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 65397,
+      "expected": 100000,
+      "ms": 21
+     },
+     {
+      "okOrders": 52340,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 61515,
+      "expected": 100000,
+      "ms": 22
+     }
+    ],
+    "4": [
+     {
+      "okOrders": 18740,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 36991,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 28907,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "okOrders": 35660,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "okOrders": 26951,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "okOrders": 49215,
+      "expected": 200000,
+      "ms": 27
+     },
+     {
+      "okOrders": 38789,
+      "expected": 200000,
+      "ms": 32
+     },
+     {
+      "okOrders": 58136,
+      "expected": 200000,
+      "ms": 32
+     },
+     {
+      "okOrders": 32520,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "okOrders": 60937,
+      "expected": 200000,
+      "ms": 28
+     },
+     {
+      "okOrders": 33262,
+      "expected": 200000,
+      "ms": 22
+     },
+     {
+      "okOrders": 38307,
+      "expected": 200000,
+      "ms": 25
+     },
+     {
+      "okOrders": 22257,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "okOrders": 29904,
+      "expected": 200000,
+      "ms": 40
+     },
+     {
+      "okOrders": 27326,
+      "expected": 200000,
+      "ms": 25
+     },
+     {
+      "okOrders": 20053,
+      "expected": 200000,
+      "ms": 22
+     },
+     {
+      "okOrders": 19790,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 31347,
+      "expected": 200000,
+      "ms": 25
+     },
+     {
+      "okOrders": 21387,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "okOrders": 22050,
+      "expected": 200000,
+      "ms": 23
+     }
+    ],
+    "8": [
+     {
+      "okOrders": 122035,
+      "expected": 400000,
+      "ms": 47
+     },
+     {
+      "okOrders": 126977,
+      "expected": 400000,
+      "ms": 55
+     },
+     {
+      "okOrders": 64944,
+      "expected": 400000,
+      "ms": 53
+     },
+     {
+      "okOrders": 45267,
+      "expected": 400000,
+      "ms": 42
+     },
+     {
+      "okOrders": 114436,
+      "expected": 400000,
+      "ms": 47
+     },
+     {
+      "okOrders": 132847,
+      "expected": 400000,
+      "ms": 48
+     },
+     {
+      "okOrders": 117196,
+      "expected": 400000,
+      "ms": 47
+     },
+     {
+      "okOrders": 130444,
+      "expected": 400000,
+      "ms": 48
+     },
+     {
+      "okOrders": 106662,
+      "expected": 400000,
+      "ms": 45
+     },
+     {
+      "okOrders": 121545,
+      "expected": 400000,
+      "ms": 47
+     },
+     {
+      "okOrders": 50960,
+      "expected": 400000,
+      "ms": 39
+     },
+     {
+      "okOrders": 42884,
+      "expected": 400000,
+      "ms": 36
+     },
+     {
+      "okOrders": 50937,
+      "expected": 400000,
+      "ms": 40
+     },
+     {
+      "okOrders": 137336,
+      "expected": 400000,
+      "ms": 48
+     },
+     {
+      "okOrders": 45691,
+      "expected": 400000,
+      "ms": 37
+     },
+     {
+      "okOrders": 146490,
+      "expected": 400000,
+      "ms": 43
+     },
+     {
+      "okOrders": 45540,
+      "expected": 400000,
+      "ms": 37
+     },
+     {
+      "okOrders": 147270,
+      "expected": 400000,
+      "ms": 51
+     },
+     {
+      "okOrders": 126286,
+      "expected": 400000,
+      "ms": 51
+     },
+     {
+      "okOrders": 125554,
+      "expected": 400000,
+      "ms": 52
+     }
+    ]
+   },
+   "inside": "Compiled from \"VolatileField.java\"\npublic class lab.singleton.VolatileField {\n  static final int ORDERS;\n\n  static final lab.singleton.VolatileField SERVICE;\n\n  static final java.util.concurrent.atomic.AtomicInteger okOrders;\n\n  volatile int pendingPrice;\n\n  public lab.singleton.VolatileField();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static int calcFee(int);\n    Code:\n         0: iload_0\n         1: istore_1\n         2: iconst_0\n         3: istore_2\n         4: iload_2\n         5: sipush        200\n         8: if_icmpge     29\n        11: iload_1\n        12: bipush        31\n        14: imul\n        15: iload_1\n        16: bipush        7\n        18: iushr\n        19: iload_2\n        20: iadd\n        21: ixor\n        22: istore_1\n        23: iinc          2, 1\n        26: goto          4\n        29: iload_1\n        30: bipush        31\n        32: iand\n        33: bipush        10\n        35: iadd\n        36: ireturn\n\n  int quote(int);\n    Code:\n         0: aload_0\n         1: iload_1\n         2: putfield      #7                  // Field pendingPrice:I\n         5: iload_1\n         6: invokestatic  #13                 // Method calcFee:(I)I\n         9: istore_2\n        10: aload_0\n        11: getfield      #7                  // Field pendingPrice:I\n        14: iload_2\n        15: iadd\n        16: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #17                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: iload_1\n         8: anewarray     #23                 // class java/lang/Thread\n        11: astore_2\n        12: invokestatic  #25                 // Method java/lang/System.nanoTime:()J\n        15: lstore_3\n        16: iconst_0\n        17: istore        5\n        19: iload         5\n        21: iload_1\n        22: if_icmpge     66\n        25: iload         5\n        27: iconst_1\n        28: iadd\n        29: sipush        1000\n        32: imul\n        33: istore        6\n        35: aload_2\n        36: iload         5\n        38: new           #23                 // class java/lang/Thread\n        41: dup\n        42: iload         6\n        44: invokedynamic #31,  0             // InvokeDynamic #0:run:(I)Ljava/lang/Runnable;\n        49: invokespecial #35                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n        52: aastore\n        53: aload_2\n        54: iload         5\n        56: aaload\n        57: invokevirtual #38                 // Method java/lang/Thread.start:()V\n        60: iinc          5, 1\n        63: goto          19\n        66: aload_2\n        67: astore        5\n        69: aload         5\n        71: arraylength\n        72: istore        6\n        74: iconst_0\n        75: istore        7\n        77: iload         7\n        79: iload         6\n        81: if_icmpge     102\n        84: aload         5\n        86: iload         7\n        88: aaload\n        89: astore        8\n        91: aload         8\n        93: invokevirtual #41                 // Method java/lang/Thread.join:()V\n        96: iinc          7, 1\n        99: goto          77\n       102: invokestatic  #25                 // Method java/lang/System.nanoTime:()J\n       105: lload_3\n       106: lsub\n       107: ldc2_w        #44                 // long 1000000l\n       110: ldiv\n       111: lstore        5\n       113: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       116: getstatic     #50                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n       119: invokevirtual #54                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       122: invokedynamic #60,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n       127: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       130: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: iload_1\n       134: ldc           #70                 // int 50000\n       136: imul\n       137: invokedynamic #71,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       142: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       145: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       148: lload         5\n       150: invokedynamic #72,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       155: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       158: return\n\n  private static void lambda$main$0(int);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iconst_0\n         3: istore_2\n         4: iload_2\n         5: ldc           #70                 // int 50000\n         7: if_icmpge     46\n        10: iload_0\n        11: iload_2\n        12: bipush        63\n        14: iand\n        15: iadd\n        16: istore_3\n        17: iload_3\n        18: iload_3\n        19: invokestatic  #13                 // Method calcFee:(I)I\n        22: iadd\n        23: istore        4\n        25: getstatic     #75                 // Field SERVICE:Llab/singleton/VolatileField;\n        28: iload_3\n        29: invokevirtual #79                 // Method quote:(I)I\n        32: iload         4\n        34: if_icmpne     40\n        37: iinc          1, 1\n        40: iinc          2, 1\n        43: goto          4\n        46: getstatic     #50                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n        49: iload_1\n        50: invokevirtual #82                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n        53: pop\n        54: return\n\n  static {};\n    Code:\n         0: new           #8                  // class lab/singleton/VolatileField\n         3: dup\n         4: invokespecial #85                 // Method \"<init>\":()V\n         7: putstatic     #75                 // Field SERVICE:Llab/singleton/VolatileField;\n        10: new           #55                 // class java/util/concurrent/atomic/AtomicInteger\n        13: dup\n        14: invokespecial #86                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n        17: putstatic     #50                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n        20: return\n}"
+  },
+  "SyncMethod": {
+   "hash": "a7a4d38537ee8bd9",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 25
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 26
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 25
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 25
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 29
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 26
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 25
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 29
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 27
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 25
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     }
+    ],
+    "2": [
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 30
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 30
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 30
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 28
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 32
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 30
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 30
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 30
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 30
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 28
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 28
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 31
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 30
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 29
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 31
+     }
+    ],
+    "4": [
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 60
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 58
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 60
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 60
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 57
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 57
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 58
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 57
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 58
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 57
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 60
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 66
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 70
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 73
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 69
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 61
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 60
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 61
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 59
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 60
+     }
+    ],
+    "8": [
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 110
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 114
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 106
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 105
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 110
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 103
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 106
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 107
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 107
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 113
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 110
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 104
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 106
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 109
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 119
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 134
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 136
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 115
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 121
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 112
+     }
+    ]
+   },
+   "inside": "Compiled from \"SyncMethod.java\"\npublic class lab.singleton.SyncMethod {\n  static final int ORDERS;\n\n  static final lab.singleton.SyncMethod SERVICE;\n\n  static final java.util.concurrent.atomic.AtomicInteger okOrders;\n\n  int pendingPrice;\n\n  public lab.singleton.SyncMethod();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static int calcFee(int);\n    Code:\n         0: iload_0\n         1: istore_1\n         2: iconst_0\n         3: istore_2\n         4: iload_2\n         5: sipush        200\n         8: if_icmpge     29\n        11: iload_1\n        12: bipush        31\n        14: imul\n        15: iload_1\n        16: bipush        7\n        18: iushr\n        19: iload_2\n        20: iadd\n        21: ixor\n        22: istore_1\n        23: iinc          2, 1\n        26: goto          4\n        29: iload_1\n        30: bipush        31\n        32: iand\n        33: bipush        10\n        35: iadd\n        36: ireturn\n\n  synchronized int quote(int);\n    Code:\n         0: aload_0\n         1: iload_1\n         2: putfield      #7                  // Field pendingPrice:I\n         5: iload_1\n         6: invokestatic  #13                 // Method calcFee:(I)I\n         9: istore_2\n        10: aload_0\n        11: getfield      #7                  // Field pendingPrice:I\n        14: iload_2\n        15: iadd\n        16: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #17                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: iload_1\n         8: anewarray     #23                 // class java/lang/Thread\n        11: astore_2\n        12: invokestatic  #25                 // Method java/lang/System.nanoTime:()J\n        15: lstore_3\n        16: iconst_0\n        17: istore        5\n        19: iload         5\n        21: iload_1\n        22: if_icmpge     66\n        25: iload         5\n        27: iconst_1\n        28: iadd\n        29: sipush        1000\n        32: imul\n        33: istore        6\n        35: aload_2\n        36: iload         5\n        38: new           #23                 // class java/lang/Thread\n        41: dup\n        42: iload         6\n        44: invokedynamic #31,  0             // InvokeDynamic #0:run:(I)Ljava/lang/Runnable;\n        49: invokespecial #35                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n        52: aastore\n        53: aload_2\n        54: iload         5\n        56: aaload\n        57: invokevirtual #38                 // Method java/lang/Thread.start:()V\n        60: iinc          5, 1\n        63: goto          19\n        66: aload_2\n        67: astore        5\n        69: aload         5\n        71: arraylength\n        72: istore        6\n        74: iconst_0\n        75: istore        7\n        77: iload         7\n        79: iload         6\n        81: if_icmpge     102\n        84: aload         5\n        86: iload         7\n        88: aaload\n        89: astore        8\n        91: aload         8\n        93: invokevirtual #41                 // Method java/lang/Thread.join:()V\n        96: iinc          7, 1\n        99: goto          77\n       102: invokestatic  #25                 // Method java/lang/System.nanoTime:()J\n       105: lload_3\n       106: lsub\n       107: ldc2_w        #44                 // long 1000000l\n       110: ldiv\n       111: lstore        5\n       113: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       116: getstatic     #50                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n       119: invokevirtual #54                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       122: invokedynamic #60,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n       127: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       130: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: iload_1\n       134: ldc           #70                 // int 50000\n       136: imul\n       137: invokedynamic #71,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       142: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       145: getstatic     #46                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       148: lload         5\n       150: invokedynamic #72,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       155: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       158: return\n\n  private static void lambda$main$0(int);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iconst_0\n         3: istore_2\n         4: iload_2\n         5: ldc           #70                 // int 50000\n         7: if_icmpge     46\n        10: iload_0\n        11: iload_2\n        12: bipush        63\n        14: iand\n        15: iadd\n        16: istore_3\n        17: iload_3\n        18: iload_3\n        19: invokestatic  #13                 // Method calcFee:(I)I\n        22: iadd\n        23: istore        4\n        25: getstatic     #75                 // Field SERVICE:Llab/singleton/SyncMethod;\n        28: iload_3\n        29: invokevirtual #79                 // Method quote:(I)I\n        32: iload         4\n        34: if_icmpne     40\n        37: iinc          1, 1\n        40: iinc          2, 1\n        43: goto          4\n        46: getstatic     #50                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n        49: iload_1\n        50: invokevirtual #82                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n        53: pop\n        54: return\n\n  static {};\n    Code:\n         0: new           #8                  // class lab/singleton/SyncMethod\n         3: dup\n         4: invokespecial #85                 // Method \"<init>\":()V\n         7: putstatic     #75                 // Field SERVICE:Llab/singleton/SyncMethod;\n        10: new           #55                 // class java/util/concurrent/atomic/AtomicInteger\n        13: dup\n        14: invokespecial #86                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n        17: putstatic     #50                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n        20: return\n}"
+  },
+  "LocalParam": {
+   "hash": "888e4cc50a6e6c8c",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 26
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 26
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 30
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 26
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 22
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 24
+     },
+     {
+      "okOrders": 50000,
+      "expected": 50000,
+      "ms": 23
+     }
+    ],
+    "2": [
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 23
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 21
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 21
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 22
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 25
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 24
+     },
+     {
+      "okOrders": 100000,
+      "expected": 100000,
+      "ms": 24
+     }
+    ],
+    "4": [
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 26
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 35
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 36
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 21
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 28
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 25
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 30
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 40
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 27
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 32
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 27
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 27
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 23
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 22
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 24
+     },
+     {
+      "okOrders": 200000,
+      "expected": 200000,
+      "ms": 22
+     }
+    ],
+    "8": [
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 26
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 38
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 41
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 45
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 38
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 34
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 36
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 38
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 32
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 37
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 37
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 32
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 40
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 39
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 38
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 35
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 41
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 29
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 23
+     },
+     {
+      "okOrders": 400000,
+      "expected": 400000,
+      "ms": 38
+     }
+    ]
+   },
+   "inside": "Compiled from \"LocalParam.java\"\npublic class lab.singleton.LocalParam {\n  static final int ORDERS;\n\n  static final lab.singleton.LocalParam SERVICE;\n\n  static final java.util.concurrent.atomic.AtomicInteger okOrders;\n\n  public lab.singleton.LocalParam();\n    Code:\n         0: aload_0\n         1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n         4: return\n\n  static int calcFee(int);\n    Code:\n         0: iload_0\n         1: istore_1\n         2: iconst_0\n         3: istore_2\n         4: iload_2\n         5: sipush        200\n         8: if_icmpge     29\n        11: iload_1\n        12: bipush        31\n        14: imul\n        15: iload_1\n        16: bipush        7\n        18: iushr\n        19: iload_2\n        20: iadd\n        21: ixor\n        22: istore_1\n        23: iinc          2, 1\n        26: goto          4\n        29: iload_1\n        30: bipush        31\n        32: iand\n        33: bipush        10\n        35: iadd\n        36: ireturn\n\n  int quote(int);\n    Code:\n         0: iload_1\n         1: istore_2\n         2: iload_2\n         3: invokestatic  #7                  // Method calcFee:(I)I\n         6: istore_3\n         7: iload_2\n         8: iload_3\n         9: iadd\n        10: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n         0: aload_0\n         1: iconst_0\n         2: aaload\n         3: invokestatic  #13                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n         6: istore_1\n         7: iload_1\n         8: anewarray     #19                 // class java/lang/Thread\n        11: astore_2\n        12: invokestatic  #21                 // Method java/lang/System.nanoTime:()J\n        15: lstore_3\n        16: iconst_0\n        17: istore        5\n        19: iload         5\n        21: iload_1\n        22: if_icmpge     66\n        25: iload         5\n        27: iconst_1\n        28: iadd\n        29: sipush        1000\n        32: imul\n        33: istore        6\n        35: aload_2\n        36: iload         5\n        38: new           #19                 // class java/lang/Thread\n        41: dup\n        42: iload         6\n        44: invokedynamic #27,  0             // InvokeDynamic #0:run:(I)Ljava/lang/Runnable;\n        49: invokespecial #31                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n        52: aastore\n        53: aload_2\n        54: iload         5\n        56: aaload\n        57: invokevirtual #34                 // Method java/lang/Thread.start:()V\n        60: iinc          5, 1\n        63: goto          19\n        66: aload_2\n        67: astore        5\n        69: aload         5\n        71: arraylength\n        72: istore        6\n        74: iconst_0\n        75: istore        7\n        77: iload         7\n        79: iload         6\n        81: if_icmpge     102\n        84: aload         5\n        86: iload         7\n        88: aaload\n        89: astore        8\n        91: aload         8\n        93: invokevirtual #37                 // Method java/lang/Thread.join:()V\n        96: iinc          7, 1\n        99: goto          77\n       102: invokestatic  #21                 // Method java/lang/System.nanoTime:()J\n       105: lload_3\n       106: lsub\n       107: ldc2_w        #40                 // long 1000000l\n       110: ldiv\n       111: lstore        5\n       113: getstatic     #42                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       116: getstatic     #46                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n       119: invokevirtual #50                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n       122: invokedynamic #56,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n       127: invokevirtual #60                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       130: getstatic     #42                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       133: iload_1\n       134: ldc           #66                 // int 50000\n       136: imul\n       137: invokedynamic #67,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n       142: invokevirtual #60                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       145: getstatic     #42                 // Field java/lang/System.out:Ljava/io/PrintStream;\n       148: lload         5\n       150: invokedynamic #68,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n       155: invokevirtual #60                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n       158: return\n\n  private static void lambda$main$0(int);\n    Code:\n         0: iconst_0\n         1: istore_1\n         2: iconst_0\n         3: istore_2\n         4: iload_2\n         5: ldc           #66                 // int 50000\n         7: if_icmpge     46\n        10: iload_0\n        11: iload_2\n        12: bipush        63\n        14: iand\n        15: iadd\n        16: istore_3\n        17: iload_3\n        18: iload_3\n        19: invokestatic  #7                  // Method calcFee:(I)I\n        22: iadd\n        23: istore        4\n        25: getstatic     #71                 // Field SERVICE:Llab/singleton/LocalParam;\n        28: iload_3\n        29: invokevirtual #75                 // Method quote:(I)I\n        32: iload         4\n        34: if_icmpne     40\n        37: iinc          1, 1\n        40: iinc          2, 1\n        43: goto          4\n        46: getstatic     #46                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n        49: iload_1\n        50: invokevirtual #78                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n        53: pop\n        54: return\n\n  static {};\n    Code:\n         0: new           #8                  // class lab/singleton/LocalParam\n         3: dup\n         4: invokespecial #81                 // Method \"<init>\":()V\n         7: putstatic     #71                 // Field SERVICE:Llab/singleton/LocalParam;\n        10: new           #51                 // class java/util/concurrent/atomic/AtomicInteger\n        13: dup\n        14: invokespecial #82                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n        17: putstatic     #46                 // Field okOrders:Ljava/util/concurrent/atomic/AtomicInteger;\n        20: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 25.0.4",
+  "cores": 32,
+  "os": "win32 10.0.26200",
+  "date": "2026-11-14"
+ }
+}
