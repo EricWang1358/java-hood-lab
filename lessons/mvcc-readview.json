@@ -1,0 +1,322 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "mvcc-readview",
+  "course": "MySQL 索引、事务与锁",
+  "title": "不加锁的快照读，怎么做到读写互不阻塞？",
+  "lead": "写事务正在改这一行并拿着 X 锁，为什么普通 SELECT 却一毫秒都不等直接返回旧值？掀开 ReadView 可见性算法！",
+  "minutes": 35,
+  "needs": [
+    "知道 Undo Log 存历史版本"
+  ],
+  "after": [
+    "手算 ReadView 四步可见性判断规则（creator_trx_id / min_trx_id / max_trx_id / m_ids）",
+    "分清「快照读（普通 SELECT）」和「当前读（FOR UPDATE / UPDATE / DELETE）」"
+  ],
+  "terms": {
+    "ReadView": "事务快照读时拍下的一张「活跃事务名单」，含 `m_ids`（活跃未提交事务列表）、`min_trx_id`、`max_trx_id`（将分配的下一个 id）、`creator_trx_id`。",
+    "Undo 版本链": "每次更新行记录，旧版本被写入 Undo Log 并通过 `roll_ptr` 指针串成链表，记录着每次修改的 `trx_id`。",
+    "快照读 vs 当前读": "普通 SELECT 是快照读（不加锁读历史版本）；UPDATE/DELETE/FOR UPDATE 是当前读（加锁读最新已提交版）。"
+  },
+  "experiments": {
+    "readview": {
+      "runner": "java",
+      "home": "lab.readview",
+      "variants": [
+        {
+          "id": "TableLockBlocking",
+          "label": "无 MVCC (读写互斥)",
+          "note": "写线程拿锁时，所有读线程全部阻塞排队！"
+        },
+        {
+          "id": "MvccSnapshotRead",
+          "label": "MVCC 快照读 (0 阻塞)",
+          "note": "沿 Undo 链 + ReadView 判定可见性，读写完全不阻塞！"
+        },
+        {
+          "id": "RcSnapshot",
+          "label": "RC 快照读 (0 阻塞)",
+          "note": "同样走 Undo 链，只是每次重拍 ReadView。"
+        },
+        {
+          "id": "CurrentReadLock",
+          "label": "当前读 FOR UPDATE",
+          "note": "需要最新数据并加锁，必须等写锁释放！"
+        }
+      ],
+      "knob": {
+        "label": "并发读写次数",
+        "values": [
+          "100",
+          "500",
+          "1000",
+          "2000"
+        ],
+        "default": "1000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "blockedReads",
+        "expectKey": "expected",
+        "label": "读被写阻塞次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "不加锁的快照读，怎么做到读写互不阻塞？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "在传统读写锁模型里，「写时不能读，读时不能写」是天经地义的。但 InnoDB 凭着 **MVCC（多版本并发控制）**，硬是让普通 `SELECT` 和 `UPDATE` 井水不犯河水。",
+          "say": "今天我们把 ReadView 的 4 行核心判断代码写出来跑一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "活跃事务列表 [102, 105]，当前版本 trx_id=105 能看吗？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "写事务 105 正在改这行还没提交。并发读事务 103 跑来 `SELECT`，会被阻塞吗？",
+          "say": "看 `MvccSnapshotRead` 的 `isVisible` 方法。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 TableLockBlocking 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "readview.TableLockBlocking",
+          "say": "这 4 行就是 InnoDB ReadView 可见性算法的全部核心逻辑。",
+          "walk": [
+            {
+              "focus": [
+                "if (rowTrxId == creatorTrxId || rowTrxId < minTrxId) return true;"
+              ],
+              "say": "规则 1 & 2：是自己改的，或者比所有活跃事务都老（早提交了），**可见**！"
+            },
+            {
+              "focus": [
+                "if (rowTrxId >= maxTrxId) return false;",
+                "for (int id : activeIds) if (id == rowTrxId) return false;"
+              ],
+              "say": "规则 3 & 4：比拍照时最大 id 还新，或在活跃名单 `m_ids` 里（还没提交），**不可见**，顺着 `roll_ptr` 找上一个版本！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "快照读 `creator=103`、`min=102`、`max=106`、`m_ids=[102, 105]`。某行最新版本 `trx_id=105`，上一版本 `trx_id=98`。它最终会读到哪个版本？",
+          "options": [
+            "阻塞等待 105 提交",
+            "直接读到 105 的修改",
+            "跳过 105（在活跃名单中），无锁返回 98（< minTrxId）"
+          ],
+          "answer": 2,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "readview",
+          "show": [
+            "TableLockBlocking"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "`MvccSnapshotRead` 全程 0 次阻塞！而加了 `FOR UPDATE` 的 `CurrentReadLock` 全部被阻塞。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "readview.TableLockBlocking",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "这就是「快照读」和「当前读」的分界线：只要你不加 `FOR UPDATE` / `LOCK IN SHARE MODE`，普通 `SELECT` 永远不会去抢写锁，而是优雅地退一步读 Undo 链里的历史版本。",
+          "walk": [
+            {
+              "focus": [
+                "isVisible"
+              ],
+              "say": "纯内存整数比较，快且完全无锁。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "readview",
+          "show": [
+            "TableLockBlocking",
+            "MvccSnapshotRead",
+            "RcSnapshot",
+            "CurrentReadLock"
+          ],
+          "select": "MvccSnapshotRead",
+          "say": "日常读接口放心地用普通 `SELECT` 享受 MVCC 无锁红利；只有像「扣库存前先锁余额」这种写前读，才用当前读或直接 `UPDATE ... WHERE stock >= 1`。"
+        },
+        {
+          "t": "chart",
+          "of": "readview",
+          "say": "MVCC 快照读 0 阻塞，读写吞吐量彻底解耦。",
+          "walk": [
+            {
+              "focus": [
+                "TableLockBlocking",
+                "MvccSnapshotRead"
+              ],
+              "say": "背熟 ReadView 四步规则，面试必考。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "分清何时用快照读（95% 查询接口）、何时用当前读（扣减更新）。",
+          "options": [
+            {
+              "name": "快照读 (普通 SELECT)",
+              "solves": "读写互不阻塞，高并发读",
+              "cost": "0 阻塞：{ms:readview.MvccSnapshotRead} ms",
+              "when": "所有展示列表、详情查询",
+              "say": "走 MVCC + ReadView。"
+            },
+            {
+              "name": "当前读 (FOR UPDATE / UPDATE)",
+              "solves": "读取最新已提交数据并加排他锁",
+              "cost": "会阻塞等待写锁：{ms:readview.CurrentReadLock} ms",
+              "when": "先查后改的强一致扣款/库存场景",
+              "say": "绕过 ReadView，直接读最新版并加锁。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "事务 103 拍照得到 ReadView：`m_ids=[101, 104]`, `min_trx_id=101`, `max_trx_id=106`。下面哪个 `trx_id` 的行版本对事务 103 **不可见**？",
+          "options": [
+            {
+              "text": "`trx_id = 104`",
+              "ok": true,
+              "why": "104 在活跃数组 `m_ids` 中，说明拍照时它还没提交，不可见！"
+            },
+            {
+              "text": "`trx_id = 102`",
+              "ok": false,
+              "why": "102 在 `[101, 106)` 之间且不在 `m_ids` 中，说明拍照前已提交，可见！"
+            },
+            {
+              "text": "`trx_id = 99`",
+              "ok": false,
+              "why": "99 < min_trx_id(101)，早于所有活跃事务，肯定已提交，可见！"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "MVCC 与 ReadView",
+          "alias": "Multi-Version Concurrency Control",
+          "oneLine": "通过==行隐藏列 (`trx_id`、`roll_ptr`) + Undo 版本链 + ReadView 四步可见性判断==，实现普通 `SELECT` 无锁并发。",
+          "asked": [
+            "MVCC 的底层原理是什么？",
+            "ReadView 包含哪些核心字段？怎么判断版本可见性？",
+            "什么是快照读和当前读？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚 InnoDB 的 MVCC 是如何通过版本链和 ReadView 实现读写不阻塞的？",
+          "points": [
+            "每行有隐藏列 trx_id（最近修改事务）和 roll_ptr（指向 Undo Log 旧版本链表）",
+            "普通 SELECT 生成 ReadView（m_ids、min_trx_id、max_trx_id、creator_trx_id）",
+            "可见性四步：==creator 可见；< min 可见；>= max 不可见；在 m_ids 内不可见，否则可见",
+            "不可见就顺着 roll_ptr 往前找，全程不加锁，因此读写互不阻塞"
+          ],
+          "model": "InnoDB 的 MVCC 主要靠隐藏列、Undo Log 版本链和 ReadView 三样东西配合。每行记录都有隐藏列 trx_id 和 roll_ptr，每次更新会把旧版本放进 Undo Log 串成一条链。当普通 SELECT 做快照读时，会生成一个 ReadView，里面记录着当前活跃事务列表 m_ids、最小活跃 min_trx_id、下一个将分配的 max_trx_id 以及当前事务 creator_trx_id。判断某版本是否可见时：如果是自己改的或小于 min_trx_id 就可见；大于等于 max_trx_id 或在 m_ids 里（说明当时还没提交）就不可见，顺着 roll_ptr 找上一个版本。全程不需要加锁，所以做到了读写互不阻塞。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "MVCC 靠哪三大核心组件？",
+              "a": "隐藏列（trx_id, roll_ptr）、Undo Log 版本链、ReadView。"
+            },
+            {
+              "q": "ReadView 判断可见性口诀？",
+              "a": "自己改的或 < min 可见；>= max 或在活跃列表 m_ids 内不可见，沿链找旧版。"
+            },
+            {
+              "q": "哪些操作是当前读？",
+              "a": "INSERT、UPDATE、DELETE、SELECT ... FOR UPDATE / LOCK IN SHARE MODE。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,871 @@
+{
+ "id": "longtrx",
+ "variants": {
+  "LongTxHoldingView": {
+   "hash": "45f7776ce5d5fbdb",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "unpurgedUndo": 5000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 5000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 5000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 5000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 5000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 5000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 5000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 5000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 5000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 5000,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "20000": [
+     {
+      "unpurgedUndo": 20000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 20000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 20000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 20000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 20000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 20000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 20000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 20000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 20000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 20000,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "unpurgedUndo": 50000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 50000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 50000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 50000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 50000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 50000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 50000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 50000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 50000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 50000,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "unpurgedUndo": 100000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 100000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 100000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 100000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 100000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 100000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 100000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 100000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 100000,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 100000,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"LongTxHoldingView.java\"\npublic class lab.longtrx.LongTxHoldingView {\n  public lab.longtrx.LongTxHoldingView();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iload_1\n      12: istore        4\n      14: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      17: lload_2\n      18: lsub\n      19: ldc2_w        #19                 // long 1000000l\n      22: ldiv\n      23: lstore        5\n      25: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      28: iload         4\n      30: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      35: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      38: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      41: ldc           #35                 // String expected=0\n      43: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      46: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      49: lload         5\n      51: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      56: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      59: return\n}"
+  },
+  "ShortTxPurge": {
+   "hash": "2908d72090437bbb",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "20000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"ShortTxPurge.java\"\npublic class lab.longtrx.ShortTxPurge {\n  public lab.longtrx.ShortTxPurge();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      17: lload_2\n      18: lsub\n      19: ldc2_w        #19                 // long 1000000l\n      22: ldiv\n      23: lstore        5\n      25: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      28: iload         4\n      30: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      35: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      38: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      41: ldc           #35                 // String expected=0\n      43: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      46: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      49: lload         5\n      51: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      56: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      59: return\n}"
+  },
+  "BatchCommit": {
+   "hash": "7c341038de12f8de",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "20000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"BatchCommit.java\"\npublic class lab.longtrx.BatchCommit {\n  public lab.longtrx.BatchCommit();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      17: lload_2\n      18: lsub\n      19: ldc2_w        #19                 // long 1000000l\n      22: ldiv\n      23: lstore        5\n      25: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      28: iload         4\n      30: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      35: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      38: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      41: ldc           #35                 // String expected=0\n      43: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      46: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      49: lload         5\n      51: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      56: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      59: return\n}"
+  },
+  "ReadOnlyReplica": {
+   "hash": "8c64e1a508ac68c2",
+   "repeat": 10,
+   "runs": {
+    "5000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "20000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     },
+     {
+      "unpurgedUndo": 0,
+      "expected": 0,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"ReadOnlyReplica.java\"\npublic class lab.longtrx.ReadOnlyReplica {\n  public lab.longtrx.ReadOnlyReplica();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      17: lload_2\n      18: lsub\n      19: ldc2_w        #19                 // long 1000000l\n      22: ldiv\n      23: lstore        5\n      25: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      28: iload         4\n      30: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      35: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      38: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      41: ldc           #35                 // String expected=0\n      43: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      46: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      49: lload         5\n      51: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n      56: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      59: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}
