@@ -1,0 +1,263 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "http-keepalive",
+  "course": "网络与操作系统",
+  "title": "关掉 Keep-Alive，接口怎么慢了这么多？",
+  "lead": "同样的 HTTP/1.1 接口，每次带 Connection: close 断开 vs 长连接复用，耗时差多少？",
+  "minutes": 35,
+  "needs": ["知道 HTTP 请求与响应报文", "知道 TCP 三次握手", "见过 Connection 请求头"],
+  "after": [
+    "讲清 HTTP/1.0 与 HTTP/1.1 在 Keep-Alive 上的默认差异",
+    "解释为什么 HTTP/1.1 长连接复用能大幅降低延迟，却存在队头阻塞（HOL）",
+    "区分单连接复用、连接池并发与 HTTP/2 多路复用的演进脉络"
+  ],
+  "terms": {
+    "Keep-Alive": "HTTP 长连接：复用同一条底层 TCP 连接连续发送多个 HTTP 请求，免去重复三次握手。",
+    "Connection: close": "HTTP 头：明确告诉对端「本次响应发完就关闭 TCP 连接」。",
+    "队头阻塞": "Head-of-Line Blocking：HTTP/1.1 同一条连接上必须按序一问一答，前一个慢请求会堵住后面的请求。",
+    "HttpClient 连接池": "客户端同时维护多条长连接，既免握手又避免单连接串行排队。"
+  },
+  "experiments": {
+    "keepalive": {
+      "runner": "java",
+      "home": "lab.keepalive",
+      "variants": [
+        { "id": "CloseConn", "code": "CloseConn.java", "label": "短连接 Connection: close", "note": "每次请求带 Connection: close，服务端回完立即关闭，下轮重新三次握手。" },
+        { "id": "KeepAlive", "code": "KeepAlive.java", "label": "单条 Keep-Alive 复用", "note": "只建 1 条 TCP 连接，循环发收 N 次 HTTP 请求后再关闭。" },
+        { "id": "PooledHttp", "code": "PooledHttp.java", "label": "4 连接 HTTP 池", "note": "预先建立 4 条长连接并发/轮询发收，兼具免握手与并发能力。" },
+        { "id": "Pipelined", "code": "Pipelined.java", "label": "HTTP 管线连续发", "note": "在一条连接上连续写出全部请求再按序读取响应（演示减少 RTT）。" }
+      ],
+      "knob": { "label": "HTTP 请求数", "values": ["50", "100", "200", "400"], "default": "200" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "HTTP 200 成功数" },
+      "time": { "key": "ms", "label": "总耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "关掉 Keep-Alive，接口怎么慢了这么多？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**同样是发 200 次 `GET /ping`，为什么加了一个 `Connection: close` 响应头，接口总耗时就翻了好几倍？**",
+          "say": "很多同学只知道浏览器和 Nginx 默认开 Keep-Alive，但没对比过关掉它到底慢在哪里、开着它又为什么需要 HTTP/2。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：HTTP 和 TCP 是什么关系？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先确认三个 HTTP/1.1 的基础事实。",
+          "items": [
+            {
+              "have": "默认行为",
+              "q": "HTTP/1.1 协议默认开启还是关闭 Keep-Alive？",
+              "options": ["默认关闭", "默认开启（除非显式带 Connection: close）", "只有 HTTPS 才开启"],
+              "answer": 1,
+              "why": "HTTP/1.0 默认短连接；从 HTTP/1.1 起默认持久连接。"
+            },
+            {
+              "have": "Nginx 上游",
+              "q": "Nginx 反向代理转发给后端 Tomcat 时，默认使用的是 HTTP/1.0 还是 HTTP/1.1？",
+              "options": ["HTTP/1.0（每次都关连接，需手动配 proxy_http_version 1.1）", "HTTP/2", "UDP"],
+              "answer": 0,
+              "why": "这是线上经典坑！Nginx 默认 `proxy_http_version 1.0`，如果不改配置，Nginx 到后端全是短连接，TIME_WAIT 直接爆炸。"
+            },
+            {
+              "have": "队头阻塞",
+              "q": "在一条 HTTP/1.1 长连接上，请求 A 耗时 2 秒，紧随其后的请求 B 会怎样？",
+              "options": ["B 先返回", "B 必须等 A 完整响应回来后才能轮到它（队头阻塞）", "自动开新连接"],
+              "answer": 1,
+              "why": "HTTP/1.1 没有请求 ID（Stream ID），响应只能严格按请求顺序排队回来。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「窗口点餐」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["浏览器/网关", "后端服务"], "shared": { "name": "TCP 窗口", "value": "keep-alive" } },
+          "story": "短连接就像买完一杯水就走出店门、下次再重新排队进门；`Keep-Alive` 是站在窗口前连续点 200 杯水不退场；连接池则是同时开 4 个窗口并行点餐。",
+          "say": "HTTP 报文跑在 TCP 之上，省掉一次次进出门（三次握手），速度自然飙升。",
+          "map": [
+            { "scene": "每次出门再进门", "on": "actors", "tag": "Connection: close", "code": "`Connection: close`", "say": "回完 200 OK 就关连接，下一次重新握手。" },
+            { "scene": "站着不走连点 200 次", "on": "shared", "tag": "Keep-Alive", "code": "`Connection: keep-alive`", "say": "一条 TCP 连接复用到底，但同一时刻只能一问一答。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "现场对比：Connection: close 拖垮吞吐",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "keepalive.CloseConn",
+          "say": "看 `CloseConn.java`：每次发 `GET /ping` 都带上 `Connection: close`，服务端回完就关掉 Socket。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：200 次 HTTP 请求，短连接比长连接慢多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "200 次 `GET /ping` 请求，`CloseConn` 和 `KeepAlive` 在本机回环的耗时大概差几倍？",
+          "options": ["差不多", "短连接慢 4～6 倍以上", "长连接更慢"],
+          "answer": 1,
+          "say": "200 次完整 TCP 建连+挥手加上 HTTP 解析，耗时会比单条 Keep-Alive 长连接高出数倍。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测对比：60+ms vs 12ms",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "keepalive",
+          "show": ["CloseConn", "KeepAlive"],
+          "knob": "200",
+          "hand": "CloseConn",
+          "focus": "ms",
+          "say": "20 轮实测：`CloseConn` 稳定在 60ms 左右，而 `KeepAlive` 只需十几毫秒。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "HTTP Keep-Alive 省去每次请求的 TCP 握手/挥手成本",
+          "say": "在有跨机房延迟或 HTTPS TLS 握手时，这个差距还会再放大一个数量级。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的循环建连",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "keepalive.CloseConn",
+          "within": "main(",
+          "from": "new           #13",
+          "to": "Thread.start",
+          "say": "服务端在循环里反复 `accept()` 接新连接并关闭，而 `KeepAlive` 只 `accept()` 一次并在同一个流里循环解析请求头。",
+          "walk": [
+            { "focus": ["Thread.start"], "label": "反复接断连接", "say": "短连接把建连和销毁成本乘以了 N 倍。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "工程演进：连接池与多路复用",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "keepalive.PooledHttp",
+          "say": "`PooledHttp` 维护 4 条持久连接并发复用；`Pipelined` 演示一次发多个请求减少 RTT（现代生产则用 HTTP/2 二进制分帧多路复用替代易阻塞的 Pipelining）。"
+        },
+        {
+          "t": "experiment",
+          "lab": "keepalive",
+          "show": ["CloseConn", "KeepAlive", "PooledHttp", "Pipelined"],
+          "knob": "200",
+          "hand": "PooledHttp",
+          "focus": "ms",
+          "say": "三条复用方案全部把耗时压到极低。"
+        },
+        {
+          "t": "try",
+          "key": "keepalive",
+          "say": "拉到 400 次请求，看 `CloseConn` 和复用方案的斜率对比。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "HTTP 连接策略怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "结合网关与微服务调用场景选型。",
+          "options": [
+            { "name": "HTTP/1.1 连接池", "solves": "免握手 + 多连接并发规避单连接队头阻塞", "cost": "{ms:keepalive.PooledHttp} ms", "when": "Nginx→后端、微服务 RestTemplate/WebClient", "say": "注意 Nginx 必须配 `proxy_http_version 1.1` 和 `proxy_set_header Connection \"\"`。" },
+            { "name": "HTTP/2 多路复用", "solves": "单条 TCP 连接上用 Stream ID 并发交错收发，彻底消除 HTTP 层队头阻塞", "cost": "单连接全双工并发", "when": "gRPC、现代浏览器与 CDN 接入层", "say": "注意 HTTP/2 解决了应用层队头阻塞，但底层 TCP 丢包重传仍会阻塞。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住这个核心概念",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "HTTP Keep-Alive 与队头阻塞",
+          "alias": "Persistent Connection & HOL Blocking",
+          "oneLine": "HTTP/1.1 默认复用 TCP 长连接免握手，但同一连接必须按序响应（队头阻塞），故需连接池或升级 HTTP/2 多路复用。",
+          "asked": "HTTP/1.1 Keep-Alive 有什么问题？HTTP/2 是怎么解决的？",
+          "say": "答出「应用层队头阻塞」和「HTTP/2 二进制分帧 + Stream ID 多路复用」。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Nginx 反向代理后端 Java 服务时，为了开启长连接复用，必须配置什么？",
+          "options": [
+            { "text": "upstream 配 keepalive，且 location 里配 proxy_http_version 1.1 与清空 Connection 头", "ok": true, "why": "正确！Nginx 默认用 HTTP/1.0 转发，不改版本就会每次短连接。" },
+            { "text": "把后端端口改成 443", "ok": false, "why": "端口与是否复用长连接无关。" },
+            { "text": "在响应里强制加 Connection: close", "ok": false, "why": "这会直接关掉长连接。" }
+          ],
+          "say": "这是运维与后端联调最高频的真实配置题。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：HTTP 长连接与演进",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：讲讲 HTTP/1.0、1.1、2.0 在连接复用上的演进？",
+          "points": [
+            "HTTP/1.0：默认短连接，每次请求都要 TCP 三次握手，耗时高",
+            "HTTP/1.1：默认 Keep-Alive 长连接复用，但存在应用层队头阻塞（同一连接响应必须排队），工程上靠多连接池缓解",
+            "HTTP/2：引入二进制分帧和 Stream ID，一条连接上并发交错收发多个请求响应，消灭 HTTP 队头阻塞"
+          ],
+          "model": "HTTP/1.0 默认是短连接，每次请求都要走三次握手和四次挥手，吞吐很差；HTTP/1.1 默认开启 Keep-Alive 复用同一条 TCP 连接，省掉了握手成本，但因为没有请求编号，同一条连接上的响应必须严格按请求顺序返回，前一个慢请求会堵住后面的请求，这就是 HTTP/1.1 的队头阻塞，所以客户端通常要开 4～8 条连接池来并发。到了 HTTP/2，协议层引入二进制分帧和 Stream ID 多路复用，一条连接上可以交错并发跑几十个请求，彻底解决了应用层的队头阻塞。",
+          "say": "把 1.0 → 1.1 → 2.0 的演进逻辑一口气讲透。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "记住这三张卡，HTTP 连接问题一网打尽。",
+          "items": [
+            { "front": "HTTP/1.1 默认连接模式？", "back": "默认 Keep-Alive 长连接，除非显式带 Connection: close。" },
+            { "front": "Nginx 上游长连接坑？", "back": "默认 proxy_http_version 1.0，必须显式改 1.1 + keepalive。" },
+            { "front": "HTTP/2 解决了什么？", "back": "靠二进制分帧 + Stream ID 多路复用，消灭 HTTP/1.1 应用层队头阻塞。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

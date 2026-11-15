@@ -1,0 +1,263 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "http-cors",
+  "course": "网络与操作系统",
+  "title": "发个 POST 怎么先发一次 OPTIONS？",
+  "lead": "前端带个自定义头发跨域 POST，后端日志怎么每次收到双倍请求？CORS 预检与缓存实测。",
+  "minutes": 30,
+  "needs": ["知道 HTTP 请求方法 GET/POST/OPTIONS", "知道请求头与响应头", "见过跨域报错"],
+  "after": [
+    "分清浏览器同源策略、简单请求与非简单请求（预检 OPTIONS）的触发条件",
+    "用实测数据看到未缓存预检时 HTTP 往返翻倍的开销",
+    "掌握 Access-Control-Max-Age 缓存预检与 Nginx 同源代理两种工程解法"
+  ],
+  "terms": {
+    "同源策略": "浏览器的安全基线：协议、域名、端口三者必须完全一致，否则拦截跨域响应。",
+    "CORS": "Cross-Origin Resource Sharing：服务端通过响应头声明允许哪些跨站来源、方法与请求头。",
+    "Preflight": "预检请求：浏览器在发非简单请求前先发一个 OPTIONS 询问服务端是否允许，通过才发真请求。",
+    "Access-Control-Max-Age": "CORS 响应头：告诉浏览器把本次 OPTIONS 预检结果缓存多少秒，期间不再重复发 OPTIONS。"
+  },
+  "experiments": {
+    "corspreflight": {
+      "runner": "java",
+      "home": "lab.corspreflight",
+      "variants": [
+        { "id": "PreflightEvery", "code": "PreflightEvery.java", "label": "每次触发 OPTIONS 预检", "note": "带自定义头 X-Token 且未配 Max-Age，160 次业务请求实际发出 320 次 HTTP。" },
+        { "id": "SimpleReq", "code": "SimpleReq.java", "label": "改用简单请求", "note": "使用 POST + Content-Type: text/plain 且无自定义头，零预检直发 160 次。" },
+        { "id": "MaxAgeCache", "code": "MaxAgeCache.java", "label": "Max-Age 缓存预检", "note": "服务端返回 Access-Control-Max-Age: 86400，只发 1 次 OPTIONS + 160 次 POST。" },
+        { "id": "SameOriginProxy", "code": "SameOriginProxy.java", "label": "Nginx 同源代理", "note": "前后端走同一域名由网关反代，彻底绕开浏览器 CORS 与 OPTIONS。" }
+      ],
+      "knob": { "label": "业务 POST 次数", "values": ["40", "80", "160", "320"], "default": "160" },
+      "repeat": 20,
+      "metric": { "key": "httpCalls", "expectKey": "expected", "label": "实际 HTTP 请求总数" },
+      "time": { "key": "ms", "label": "总耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "发个 POST 怎么先发一次 OPTIONS？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**为什么前后端分离时，前端发一次 `POST /api/pay` 带上 `Authorization` 或 `X-Token`，浏览器却先发了一个 `OPTIONS`，让网关请求数直接翻倍？**",
+          "say": "很多后端同学看监控发现接口 QPS 莫名其妙多出一半的 `OPTIONS 204`，甚至把耗时翻倍。这就是 CORS 预检机制。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：同源与预检触发条件",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先确认三个关于浏览器跨域的常识。",
+          "items": [
+            {
+              "have": "同源判断",
+              "q": "`https://app.example.com:443` 请求 `https://api.example.com:443` 算跨域吗？",
+              "options": ["不算，主域名相同", "算跨域，子域名不同就不同源", "只有端口不同才算"],
+              "answer": 1,
+              "why": "协议 + 完整域名 + 端口必须一模一样才同源。"
+            },
+            {
+              "have": "触发预检",
+              "q": "以下哪个请求**不会**触发浏览器发 `OPTIONS` 预检？",
+              "options": ["带自定义头 X-Token 的 POST", "Content-Type: application/json 的 POST", "GET 或 Content-Type: text/plain 的简单 POST"],
+              "answer": 2,
+              "why": "只要用了 `application/json` 或自定义头（如 `Authorization`、`X-Token`），就属于非简单请求，必然触发预检。"
+            },
+            {
+              "have": "服务端责任",
+              "q": "如果后端只放行了 `POST` 却忘了放行 `OPTIONS`（或拦截器把 `OPTIONS` 拦下来要登录态），会怎样？",
+              "options": ["浏览器照样发 POST", "预检失败，浏览器直接拦截，真 POST 根本发不出去", "自动降级为 GET"],
+              "answer": 1,
+              "why": "Spring Boot 拦截器忘放行 `OPTIONS` 是前后端联调最常见的 CORS 报错原因。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「进门先问保安」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["浏览器", "API 网关"], "shared": { "name": "请求次数", "value": "2×N" } },
+          "story": "每次带特殊包裹（`X-Token` / `application/json`）去别人家送货，浏览器规定必须先空手跑一趟问「能带 `X-Token` 吗」（`OPTIONS`），得到允许再真正送货（`POST`）。如果网关不给通行证有效期（`Max-Age`），送 160 次货就要跑 320 趟！",
+          "say": "只要网关在通行证上写一句 `Access-Control-Max-Age: 86400`，一天之内只需问一次。",
+          "map": [
+            { "scene": "每次先空手跑一趟问", "on": "actors", "tag": "OPTIONS 预检", "code": "`OPTIONS /api/pay`", "say": "无缓存时每次业务请求前都多一次 RTT。" },
+            { "scene": "贴一天有效通行证", "on": "shared", "tag": "Max-Age 缓存", "code": "`Access-Control-Max-Age: 86400`", "say": "浏览器缓存预检结果，后续直发 POST。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "现场复现：160 次业务请求，打出了 320 次 HTTP",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "corspreflight.PreflightEvery",
+          "say": "看 `PreflightEvery.java`：每次 POST 带上 `X-Token`，且服务端响应没有 `Access-Control-Max-Age`，客户端每次都得先发 `OPTIONS`。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：发 160 次业务 POST，服务端实际收到几次 HTTP？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`PreflightEvery` 执行 160 次带 `X-Token` 的跨域 POST，服务端 `httpCalls` 统计是多少？",
+          "options": ["160 次", "320 次（翻倍）", "161 次"],
+          "answer": 1,
+          "say": "每一次 POST 前面都跟着一次 OPTIONS，服务端实打实扛了双倍请求量！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测撞车：httpCalls = 320 / 160",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "corspreflight",
+          "show": ["PreflightEvery", "MaxAgeCache"],
+          "knob": "160",
+          "hand": "PreflightEvery",
+          "focus": "httpCalls",
+          "say": "`PreflightEvery` 整整打出 320 次请求；加上 `Access-Control-Max-Age: 86400` 后，降回 161 次（1 次预检 + 160 次 POST）。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "未缓存 CORS 预检会让接口 RTT 与请求数直接翻倍",
+          "say": "弱网移动端跨洋 RTT 200ms 时，多一次 OPTIONS 就多白等 200ms！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的双倍往返",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "corspreflight.PreflightEvery",
+          "within": "main(",
+          "from": "OutputStream.write",
+          "to": "readHeaders",
+          "say": "循环体里连续写了 `optReq` 和 `postReq` 两次网络请求与两次 `readHeaders`，这就是客户端浏览器被迫多走一趟的真相。",
+          "walk": [
+            { "focus": ["OutputStream.write"], "label": "先写 OPTIONS", "say": "必须等预检响应回来确认允许，才能发真正的 POST。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "三种解法：简单请求、Max-Age 缓存、同源反代",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "corspreflight.MaxAgeCache",
+          "say": "`SimpleReq` 退回简单请求（但现代 JSON API 一般需要 `application/json` 和 `Authorization`）；`MaxAgeCache` 配上 `Access-Control-Max-Age`；`SameOriginProxy` 用 Nginx 反代消除跨域。"
+        },
+        {
+          "t": "experiment",
+          "lab": "corspreflight",
+          "show": ["PreflightEvery", "SimpleReq", "MaxAgeCache", "SameOriginProxy"],
+          "knob": "160",
+          "hand": "SameOriginProxy",
+          "focus": "httpCalls",
+          "say": "三种优化全部把请求次数拉回 160 附近，省掉一半无效往返。"
+        },
+        {
+          "t": "try",
+          "key": "corspreflight",
+          "say": "拖动请求数到 320，对比 640 次 vs 320 次的差距。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "前后端联调怎么配最稳？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "两种生产主流方案，看项目架构二选一。",
+          "options": [
+            { "name": "Nginx 同源反向代理", "solves": "前后端同域名下，彻底消灭跨域与 OPTIONS", "cost": "0 次预检（{ms:corspreflight.SameOriginProxy} ms）", "when": "前后端同域名部署（如 /api 反代到后端）", "say": "最干净，连带解决了跨站 Cookie 问题。" },
+            { "name": "CORS + Access-Control-Max-Age", "solves": "必须跨域名调用时，把预检缓存一天", "cost": "仅 1 次预检（{ms:corspreflight.MaxAgeCache} ms）", "when": "独立 API 域名或开放平台", "say": "记得在 Spring Boot 鉴权拦截器里放行 `OPTIONS` 请求！" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住这个机制名",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "CORS 预检请求（Preflight）",
+          "alias": "OPTIONS + Access-Control-Max-Age",
+          "oneLine": "带自定义头或 application/json 的跨域请求会触发浏览器先发 OPTIONS 预检；用 Access-Control-Max-Age 缓存或 Nginx 同源反代消除翻倍开销。",
+          "asked": "什么情况下会触发 CORS 预检请求？怎么减少预检次数？",
+          "say": "记住两点：触发条件（非简单方法或非简单头如 Authorization/application/json）和减负方案（Max-Age 或同源代理）。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "前后端分离项目跨域携带 `Authorization: Bearer ...` 请求后端，后端配了 CORS 但每次请求还是多发一次 OPTIONS，最该补上什么响应头？",
+          "options": [
+            { "text": "Access-Control-Max-Age: 86400", "ok": true, "why": "正确！让浏览器缓存预检结果，避免每次请求都重发 OPTIONS。" },
+            { "text": "Connection: close", "ok": false, "why": "这会关掉 TCP 长连接，更慢。" },
+            { "text": "Cache-Control: no-store", "ok": false, "why": "这只管业务响应缓存，管不了 CORS 预检缓存。" }
+          ],
+          "say": "选出专门缓存预检结果的响应头。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：CORS 与预检优化",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：什么是跨域？为什么有时会先发 OPTIONS 请求？怎么解决与优化？",
+          "points": [
+            "同源策略：协议、域名、端口任一不同即跨域，由浏览器拦截响应",
+            "预检触发：非简单请求（如 PUT/DELETE、Content-Type: application/json、自定义头 Authorization）会先发 OPTIONS 询问",
+            "解决优化：后端返回 CORS 允许头并配 Access-Control-Max-Age 缓存预检，且鉴权拦截器要放行 OPTIONS；或用 Nginx 同源反代彻底消除跨域"
+          ],
+          "model": "同源策略要求协议、域名、端口完全一致，否则浏览器会拦截跨域响应。解决跨域靠服务端配置 CORS 响应头。如果前端发的是非简单请求——比如带了 Authorization 头或 Content-Type 为 application/json——浏览器会先发一次 OPTIONS 预检请求确认权限。为了避免每次接口调用都多一次 RTT，服务端应该配置 Access-Control-Max-Age 缓存预检结果，并且注意在 Spring 拦截器里直接放行 OPTIONS；如果条件允许，用 Nginx 做同源反向代理能彻底消灭跨域和预检。",
+          "say": "讲清楚同源策略、触发条件和两个优化动作。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "收好这三张卡，跨域联调不踩坑。",
+          "items": [
+            { "front": "啥时候触发 OPTIONS？", "back": "跨域且带非简单方法/非简单头（如 application/json、Authorization）。" },
+            { "front": "Spring 拦截器常见坑？", "back": "拦截器把预检 OPTIONS 当成未登录请求拦了，导致浏览器报跨域失败。" },
+            { "front": "怎么避免双倍请求？", "back": "配 Access-Control-Max-Age 缓存预检，或 Nginx 同源反代。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

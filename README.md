@@ -110,6 +110,17 @@
 | M3-04 | **连发 100 条消息，怎么粘成一坨还缺半截？** | TCP 是无边界的字节流，连发 100 条 `"MSG-i"`，为什么接收方按 `read(buf)` 读出来个数不对？ | `lab.sticky` | [网页课件](./pages/tcp-sticky.html) · [JSON](./lessons/tcp-sticky.json) · [源码](./src/lab/sticky/) |
 | M3-05 | **小包发得越勤反而越慢？** | 连续发送小数据包并等待确认时，为什么 Nagle 算法撞上延迟 ACK 会让耗时暴涨？ | `lab.nagle` | [网页课件](./pages/tcp-nagle.html) · [JSON](./lessons/tcp-nagle.json) · [源码](./src/lab/nagle/) |
 
+### 模块三 · 第二章：HTTP、HTTPS 与认证机制（M3-06～M3-09）
+
+实测 HTTP/1.1 Keep-Alive 与队头阻塞、TLS 非对称握手 vs 会话复用代价、CORS 预检翻倍往返与 Session/JWT 并发鉴权取舍。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M3-06 | **关掉 Keep-Alive，接口怎么慢了这么多？** | 同样的 HTTP/1.1 接口，每次带 `Connection: close` 断开 vs 长连接复用，耗时差多少？ | `lab.keepalive` | [网页课件](./pages/http-keepalive.html) · [JSON](./lessons/http-keepalive.json) · [源码](./src/lab/keepalive/) |
+| M3-07 | **换上 HTTPS，首包到底多花多少毫秒？** | 非对称签名验签 + ECDH 密钥协商 + AES-GCM 加密，TLS 握手到底贵在哪里，怎么加速？ | `lab.tlscost` | [网页课件](./pages/https-tls.html) · [JSON](./lessons/https-tls.json) · [源码](./src/lab/tlscost/) |
+| M3-08 | **发个 POST 怎么先发一次 OPTIONS？** | 前端带个自定义头发跨域 POST，后端日志怎么每次收到双倍请求？CORS 预检与缓存实测。 | `lab.corspreflight` | [网页课件](./pages/http-cors.html) · [JSON](./lessons/http-cors.json) · [源码](./src/lab/corspreflight/) |
+| M3-09 | **Session 查表 vs 无状态 JWT，怎么选？** | 全局锁 Session 表、`ConcurrentHashMap`、无状态 HMAC-SHA256 验签与短效缓存黑名单，性能与扩展性差多少？ | `lab.authjwt` | [网页课件](./pages/auth-jwt.html) · [JSON](./lessons/auth-jwt.json) · [源码](./src/lab/authjwt/) |
+
 ### 模块四 · 第一章：SQL 必知必会、联表与深分页改写（第 33～37 课）
 
 | # | 课程标题 | 一句话引子 | 代码包 | 入口 |

@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>85</strong> 节循序渐进实验课</span>
-        <span><strong>340</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>89</strong> 节循序渐进实验课</span>
+        <span><strong>356</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -373,17 +373,18 @@
 
     <div class="controls">
       <div class="search-row">
-        <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 85 / 85 课</span>
+        <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
+        <span id="shownCount" class="count-note">显示 89 / 89 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (85)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (89)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
         <button type="button" class="pill" data-filter="ch4">第四章 · 线程封闭与线程池 (6)</button>
         <button type="button" class="pill" data-filter="ch5">第五章 · 工程模式与新特性 (11)</button>
         <button type="button" class="pill" data-filter="m3ch1">网络 1 · TCP 与 Socket (5)</button>
+        <button type="button" class="pill" data-filter="m3ch2">网络 2 · HTTP 与认证 (4)</button>
         <button type="button" class="pill" data-filter="m4ch1">MySQL 1 · SQL 与深分页 (5)</button>
         <button type="button" class="pill" data-filter="m4ch2">MySQL 2 · B+ 树与索引 (7)</button>
         <button type="button" class="pill" data-filter="m4ch3">MySQL 3 · EXPLAIN 与失效 (5)</button>
@@ -887,6 +888,63 @@
           </div>
           <h3 class="card__title">小包发得越勤反而越慢？</h3>
           <p class="card__lead">连续发送小数据包并等待确认时，为什么 Nagle 算法撞上延迟 ACK 会让耗时暴涨？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m3ch2">
+        <div class="chapter__head">
+          <h2>模块三 · 第二章：HTTP、HTTPS 与认证机制（M3-06～M3-09）</h2>
+          <p>实测 HTTP/1.1 Keep-Alive 与队头阻塞、TLS 非对称握手 vs 会话复用代价、CORS 预检翻倍往返与 Session/JWT 并发鉴权取舍。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/http-keepalive.html" data-ch="m3ch2" data-search="m3-06 http-keepalive 关掉 keep-alive，接口怎么慢了这么多？ 同样的 http/1.1 接口，每次带 connection: close 断开 vs 长连接复用，耗时差多少？ lab.keepalive">
+          <div class="card__top">
+            <span class="card__num">#M3-06</span>
+            <span class="card__pkg">lab.keepalive</span>
+          </div>
+          <h3 class="card__title">关掉 Keep-Alive，接口怎么慢了这么多？</h3>
+          <p class="card__lead">同样的 HTTP/1.1 接口，每次带 Connection: close 断开 vs 长连接复用，耗时差多少？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/https-tls.html" data-ch="m3ch2" data-search="m3-07 https-tls 换上 https，首包到底多花多少毫秒？ 非对称签名验签 + ecdh 密钥协商 + aes-gcm 加密，tls 握手到底贵在哪里，怎么加速？ lab.tlscost">
+          <div class="card__top">
+            <span class="card__num">#M3-07</span>
+            <span class="card__pkg">lab.tlscost</span>
+          </div>
+          <h3 class="card__title">换上 HTTPS，首包到底多花多少毫秒？</h3>
+          <p class="card__lead">非对称签名验签 + ECDH 密钥协商 + AES-GCM 加密，TLS 握手到底贵在哪里，怎么加速？</p>
+          <div class="card__foot">
+            <span>13 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/http-cors.html" data-ch="m3ch2" data-search="m3-08 http-cors 发个 post 怎么先发一次 options？ 前端带个自定义头发跨域 post，后端日志怎么每次收到双倍请求？cors 预检与缓存实测。 lab.corspreflight">
+          <div class="card__top">
+            <span class="card__num">#M3-08</span>
+            <span class="card__pkg">lab.corspreflight</span>
+          </div>
+          <h3 class="card__title">发个 POST 怎么先发一次 OPTIONS？</h3>
+          <p class="card__lead">前端带个自定义头发跨域 POST，后端日志怎么每次收到双倍请求？CORS 预检与缓存实测。</p>
+          <div class="card__foot">
+            <span>13 页 · 约 30 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/auth-jwt.html" data-ch="m3ch2" data-search="m3-09 auth-jwt session 查表 vs 无状态 jwt，怎么选？ 全局锁 session 表、concurrenthashmap、无状态 hmac-sha256 验签与短效缓存黑名单，性能与扩展性差多少？ lab.authjwt">
+          <div class="card__top">
+            <span class="card__num">#M3-09</span>
+            <span class="card__pkg">lab.authjwt</span>
+          </div>
+          <h3 class="card__title">Session 查表 vs 无状态 JWT，怎么选？</h3>
+          <p class="card__lead">全局锁 Session 表、ConcurrentHashMap、无状态 HMAC-SHA256 验签与短效缓存黑名单，性能与扩展性差多少？</p>
           <div class="card__foot">
             <span>13 页 · 约 35 分钟</span>
             <span class="card__go">进入实验 →</span>
