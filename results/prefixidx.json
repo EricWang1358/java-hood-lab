@@ -9,7 +9,7 @@
      {
       "extraReads": 20,
       "expected": 10,
-      "ms": 0
+      "ms": 2
      },
      {
       "extraReads": 20,
@@ -39,7 +39,7 @@
      {
       "extraReads": 20,
       "expected": 10,
-      "ms": 0
+      "ms": 1
      },
      {
       "extraReads": 20,
@@ -91,17 +91,17 @@
      {
       "extraReads": 100,
       "expected": 10,
-      "ms": 0
-     },
-     {
-      "extraReads": 100,
-      "expected": 10,
-      "ms": 0
-     },
-     {
-      "extraReads": 100,
-      "expected": 10,
       "ms": 1
+     },
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "extraReads": 100,
+      "expected": 10,
+      "ms": 0
      },
      {
       "extraReads": 100,
@@ -153,7 +153,7 @@
      {
       "extraReads": 200,
       "expected": 10,
-      "ms": 0
+      "ms": 2
      },
      {
       "extraReads": 200,
@@ -180,7 +180,12 @@
      {
       "extraReads": 400,
       "expected": 10,
-      "ms": 1
+      "ms": 0
+     },
+     {
+      "extraReads": 400,
+      "expected": 10,
+      "ms": 0
      },
      {
       "extraReads": 400,
@@ -196,11 +201,6 @@
       "extraReads": 400,
       "expected": 10,
       "ms": 1
-     },
-     {
-      "extraReads": 400,
-      "expected": 10,
-      "ms": 0
      },
      {
       "extraReads": 400,
