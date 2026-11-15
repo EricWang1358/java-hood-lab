@@ -1,0 +1,243 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "auth-jwt",
+  "course": "网络与操作系统",
+  "title": "Session 查表 vs 无状态 JWT，怎么选？",
+  "lead": "全局锁 Session 表、ConcurrentHashMap、无状态 HMAC-SHA256 验签与短效缓存黑名单，性能与扩展性差多少？",
+  "minutes": 35,
+  "needs": ["知道 Cookie 与 Session", "知道 HMAC/哈希签名", "知道线程并发竞争"],
+  "after": [
+    "讲清 Session-Cookie 与无状态 JWT 的本质区别与各自短板",
+    "用实测数据对比全局锁查表、无锁内存表与 HMAC-SHA256 验签的 CPU 代价",
+    "掌握「短效 AccessToken + RefreshToken + 吊销黑名单」的工业界落地架构"
+  ],
+  "terms": {
+    "Session": "服务端保存登录状态，只给客户端发一个随机 SessionId（通常放 HttpOnly Cookie）。",
+    "JWT": "JSON Web Token：把用户 ID 与过期时间编码后加 HMAC/RSA 签名直接发给客户端，服务端不存状态。",
+    "HmacSHA256": "对称密钥消息认证码：JWT 最常用的签名算法，防篡改但每次验签都要跑一遍哈希运算。",
+    "踢人下线": "强制让已签发的未过期 Token 失效；纯无状态 JWT 无法直接撤销，需配合黑名单或短有效期。"
+  },
+  "experiments": {
+    "authjwt": {
+      "runner": "java",
+      "home": "lab.authjwt",
+      "variants": [
+        { "id": "SyncSessionMap", "code": "SyncSessionMap.java", "label": "synchronized 查 Session", "note": "用全局 synchronized 锁住 HashMap 查 Session，并发一高全线程排队。" },
+        { "id": "ConcurrentSession", "code": "ConcurrentSession.java", "label": "ConcurrentHashMap 查表", "note": "并发无锁读本地 Session 表，极快但单机内存受限、跨机需 Redis。" },
+        { "id": "StatelessJwt", "code": "StatelessJwt.java", "label": "纯无状态 HMAC 验签", "note": "每次请求跑 HmacSHA256 验签，零服务端存储、天然水平扩展，但 CPU 开销较高。" },
+        { "id": "CachedJwt", "code": "CachedJwt.java", "label": "JWT + 验签缓存/黑名单", "note": "热点 Token 命中本地验签缓存 + 查吊销黑名单，兼顾无状态扩展与极致吞吐。" }
+      ],
+      "knob": { "label": "并发线程数", "values": ["1", "2", "4", "8"], "default": "4" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "成功鉴权次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "Session 查表 vs 无状态 JWT，怎么选？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**用 Session 还是用 JWT，到底是在「服务端存储/跨机共享」和「CPU 验签/踢人下线」之间做什么交换？**",
+          "say": "几乎所有登录鉴权面试都会问 Session 和 JWT 的优缺点。今天我们把四种实现跑在 1/2/4/8 并发下，直接看真刀真枪的耗时曲线。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：Cookie、Session、JWT 分工",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先确认三个鉴权基础概念。",
+          "items": [
+            {
+              "have": "Cookie vs Session",
+              "q": "Cookie 存在哪里？Session 存在哪里？",
+              "options": ["都在服务端", "Cookie 存在浏览器（可配 HttpOnly 防 XSS）；Session 数据存在服务端内存或 Redis", "都在 URL 里"],
+              "answer": 1,
+              "why": "Cookie 只是浏览器自动携带的小纸条，Session 才是服务端那本登记簿。"
+            },
+            {
+              "have": "JWT 载荷",
+              "q": "JWT 的中间段 Payload（如 userId、role）是加密的还是仅 Base64 编码？",
+              "options": ["AES 强加密，别人看不见", "只是 Base64Url 编码，任何人都能解码看到内容，签名只防篡改不防偷看", "不可逆哈希"],
+              "answer": 1,
+              "why": "千万不能往 JWT Payload 里放密码、身份证号等敏感明文！"
+            },
+            {
+              "have": "CSRF vs XSS",
+              "q": "把 Token 放进 `HttpOnly` Cookie 可以防住哪种攻击，又需要注意防范哪种攻击？",
+              "options": ["防 XSS 偷取，但需注意防 CSRF", "防 CSRF，但不防 XSS", "两种都防不住"],
+              "answer": 0,
+              "why": "`HttpOnly` 让 JS 读不到 Cookie（防 XSS 窃取），但浏览器会自动带上 Cookie，所以要配 `SameSite` 或 CSRF Token。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「查花名册 vs 验防伪钢印」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["4 个网关线程", "鉴权中心"], "shared": { "name": "登录凭证", "value": "Session / JWT" } },
+          "story": "Session 就像保安手里拿着花名册（内存/Redis）：客人报编号，保安查表就知道是谁，想踢人直接从花名册划掉就行，但多台机器得共享这本册子；JWT 就像给客人发一张盖了防伪钢印（`HMAC-SHA256`）的通行证：保安不用查花名册，现场验钢印就能放行，但每验一次都要费眼神算一遍钢印，而且通行证没过期前很难当场作废。",
+          "say": "一边是查表状态好控制，一边是无状态免查表但验签耗 CPU 且难撤销。",
+          "map": [
+            { "scene": "锁住花名册排队查", "on": "actors", "tag": "synchronized Session", "code": "`synchronized (SESSIONS)`", "say": "并发一高全卡在锁上。" },
+            { "scene": "现场算防伪钢印", "on": "shared", "tag": "无状态 JWT", "code": "`Mac.getInstance(\"HmacSHA256\")`", "say": "免查库可水平扩展，但每次都要算一遍 HMAC。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "现场对比：四种鉴权实现",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "authjwt.StatelessJwt",
+          "say": "看 `StatelessJwt.java`：每次请求都用 `HmacSHA256` + `MessageDigest.isEqual` 常量时间比对签名（防时序攻击）。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：4 线程各验 5 万次，谁最慢？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "4 个线程各跑 5 万次鉴权，`ConcurrentSession`（内存查表）和 `StatelessJwt`（每次算 HmacSHA256）谁耗时更长？",
+          "options": ["ConcurrentSession 更慢", "StatelessJwt 更慢（CPU 计算 HMAC 比内存查表重得多）", "完全一样"],
+          "answer": 1,
+          "say": "内存哈希查表是纳秒级，而 HMAC-SHA256 密码学哈希每次要算多轮位运算和 Base64 解码，CPU 耗时高出一个量级！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测撞车：CPU 验签税 vs 锁竞争",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "authjwt",
+          "show": ["SyncSessionMap", "ConcurrentSession", "StatelessJwt", "CachedJwt"],
+          "knob": "4",
+          "hand": "StatelessJwt",
+          "focus": "ms",
+          "say": "看 4 线程实测：`StatelessJwt` 因为每次都要算 HMAC，耗时三百多毫秒；`SyncSessionMap` 因为锁竞争随线程数爬升；而 `CachedJwt` 既保留了 JWT 架构又跑出了十几毫秒！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "无状态 JWT 用 CPU 算力换掉了服务端存储，高频热 Token 可做短缓存+黑名单",
+          "say": "这也是为什么高并发 API 网关往往会在本地内存短缓存已验签通过的 JWT。"
+        },
+        {
+          "t": "try",
+          "key": "authjwt",
+          "say": "切到 1、2、4、8 线程，观察 `SyncSessionMap` 锁竞争如何恶化，而 `StatelessJwt` 随多核线性分摊。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "把耗时随并发的变化画成折线",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "authjwt",
+          "show": ["SyncSessionMap", "ConcurrentSession", "StatelessJwt", "CachedJwt"],
+          "say": "横轴是并发线程数，纵轴是 20 轮耗时中位数。",
+          "walk": [
+            { "focus": "SyncSessionMap", "say": "线程一多，全局锁立刻成为瓶颈。", "key": "绝不用全局互斥锁保护高频只读 Session 表" },
+            { "focus": "StatelessJwt", "say": "无状态不争锁，但单次密码学计算基数高。" },
+            { "focus": "CachedJwt", "say": "本地短缓存 + 吊销黑名单兼得两头优势。", "key": "双 Token + 局部黑名单/缓存是工业界最优解" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "Session vs JWT 怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有绝对银弹，按业务控制力需求选。",
+          "options": [
+            { "name": "Redis + Session", "solves": "随时强踢下线、权限即时生效、不暴露载荷", "cost": "每次请求多 1 次 Redis 网络 IO", "when": "后台管理系统、金融强风控", "say": "需要秒级踢人或改权限立刻生效时首选。" },
+            { "name": "双 Token（短 Access JWT + 长 Refresh）", "solves": "微服务网关无状态水平扩展 + 可控续期/吊销", "cost": "需配合短有效期（如 15 分钟）或 Redis 黑名单", "when": "前后端分离、App、分布式微服务", "say": "Project A 企业后台实战用的正是这套双 Token 方案！" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住这个权衡模型",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "有状态 Session vs 无状态 JWT",
+          "alias": "Stateful vs Stateless Auth",
+          "oneLine": "Session 服务端存状态易控制但跨机需 Redis；JWT 靠签名自包含可水平扩展，但有 CPU 验签开销且难立即撤销，常配双 Token + 黑名单。",
+          "asked": "JWT 的缺点是什么？怎么实现 JWT 的主动退出/踢人下线？",
+          "say": "答清「Payload 不加密」「难主动失效」以及「短 AccessToken + RefreshToken + Redis 黑名单」。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "使用 JWT 鉴权时，用户点击「修改密码」或管理员「强制踢下线」，怎么让未过期的旧 JWT 立刻失效？",
+          "options": [
+            { "text": "把旧 JWT 的 jti（或用户版本号）写入 Redis 黑名单，有效期设到原 JWT 剩余过期时间，同时配合短效 AccessToken", "ok": true, "why": "正确！黑名单只存极少数被吊销的 Token，且到期自动淘汰，体积很小。" },
+            { "text": "让前端删掉 localStorage 就够了", "ok": false, "why": "如果 Token 已被盗走，后端不拉黑依然能继续访问。" },
+            { "text": "在 JWT Payload 里加一个 isValid=true 字段", "ok": false, "why": "已签发的 Token 内容无法被服务端远程修改。" }
+          ],
+          "say": "这是 JWT 面试最核心的追问题。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：Session 与 JWT 选型",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：Cookie、Session、JWT 有什么区别？实际项目怎么选？",
+          "points": [
+            "机制区别：Session 服务端存状态（单机内存或 Redis），客户端只拿 SessionId；JWT 把用户信息和过期时间放 Payload 并加签名，服务端无状态验签",
+            "性能与扩展：Session 跨机要查 Redis；JWT 天然水平扩展但每次验签有 HMAC/RSA CPU 开销，且 Payload 仅 Base64 编码不可放敏感明文",
+            "落地方案：工业界常用「短效 AccessToken (JWT) + 长效 RefreshToken (存库/Redis) + 吊销黑名单」，既享无状态扩展，又能踢人下线"
+          ],
+          "model": "Cookie 是浏览器自动携带的存储载体，Session 是服务端保存登录态的方案，客户端只拿一个随机 SessionId；而 JWT 是无状态令牌，把用户标识和过期时间放在 Payload 里并用 HMAC 或 RSA 签名，网关不用查库就能直接验签放行。但 JWT 有两个明显短板：一是 Payload 只是 Base64 编码并不是加密，不能放敏感信息；二是签发后在过期前很难主动撤销。因此实际项目往往采用双 Token 架构：AccessToken 用短有效期 JWT（如 15 分钟）保证网关无状态高并发，RefreshToken 存 Redis 控制续期，真遇到改密或踢人就把旧 Token 写入带 TTL 的 Redis 黑名单。",
+          "say": "把双 Token + 黑名单的闭环讲出来，面试官会觉得你有真实工程经验。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "收好这三张卡，鉴权设计题稳拿。",
+          "items": [
+            { "front": "JWT Payload 安全吗？", "back": "只是 Base64Url 编码，签名防篡改不防偷看，绝不放密码/隐私。" },
+            { "front": "JWT 怎么踢人下线？", "back": "短效 AccessToken + Redis 吊销黑名单（TTL 设到原过期时间）。" },
+            { "front": "Session vs JWT？", "back": "强控选 Redis Session；分布式高扩展选双 Token JWT + 本地热缓存。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
