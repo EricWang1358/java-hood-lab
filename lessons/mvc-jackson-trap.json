@@ -1,0 +1,107 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "mvc-jackson-trap",
+  "course": "Spring 全家桶与持久层",
+  "title": "前后端传 Long 主键与金额：为什么前端收到 ID 尾数全变 0 了？",
+  "lead": "后端雪花算法生成 19 位 Long 主键，传到前端 JSON.parse 后最后三位全变成 0；用 double 算金额，0.1 + 0.2 竟不等于 0.3！",
+  "minutes": 25,
+  "needs": ["知道 Java Long 是 64 位整数", "知道 JS Number 是双精度浮点（安全整数上限 2^53 - 1）"],
+  "after": ["讲清雪花 ID 超过 JS MAX_SAFE_INTEGER 导致精度丢失的原因", "掌握 Jackson 全局 Long 转 String 与 BigDecimal 字符串构造", "知道金额存储「整数分」或 BigDecimal 的工程规范"],
+  "terms": {
+    "MAX_SAFE_INTEGER": "JavaScript Number 最大安全整数 9007199254740991（16 位）；19 位雪花 ID 必超限丢精度。",
+    "ToStringSerializer": "Jackson 序列化器：把 Long/BigInteger 转成 JSON 字符串输出，避免前端精度丢失。",
+    "BigDecimal": "Java 精确十进制小数类：必须用字符串构造 new BigDecimal(\"0.1\")，绝不能 new BigDecimal(0.1)。"
+  },
+  "experiments": {
+    "jsontrap": {
+      "runner": "java",
+      "home": "lab.jsontrap",
+      "variants": [
+        { "id": "JsUnsafeLong", "label": "19位Long直传JS", "note": "超过 2^53-1，强转 double 往返后尾数丢失。" },
+        { "id": "FloatDoubleMoney", "label": "double 算金额", "note": "0.1 + 0.2 == 0.30000000000000004，对账直接不平。" },
+        { "id": "LongAsStringBigDecimal", "label": "Long转String+BigDecimal", "note": "Jackson Long 转 String + BigDecimal 字符串构造，100% 精确。" },
+        { "id": "IsoDateFormatter", "label": "整数分+Long转String", "note": "金额存整数「分」+ 主键转 String，最快且零误差。" }
+      ],
+      "knob": { "label": "订单数(千)", "values": ["1", "2", "4", "8"], "default": "2" },
+      "repeat": 20,
+      "metric": { "key": "exact", "expectKey": "expected", "label": "无精度丢失订单数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "前后端传 Long 主键与金额：为什么前端收到 ID 尾数全变 0 了？",
+      "blocks": [{ "t": "text", "md": "上线雪花算法主键后，前端拿 `id` 回来查详情总是 404——抓包一看，`1789234567890123457` 到了前端变成 `1789234567890123500`！", "say": "这不是后端算错了，是 JS 的 `Number` 只有 53 位有效尾数。" }]
+    },
+    {
+      "beat": "hook",
+      "title": "2000 笔订单往返，几笔保住了精确值？",
+      "bridge": "预期精确订单 `exact = 2000`。",
+      "blocks": [{ "t": "text", "md": "看 `JsUnsafeLong` 的模拟。", "say": "查看代码。" }]
+    },
+    {
+      "beat": "code",
+      "title": "看清 64 位 Long 塞进 53 位尾数的瞬间",
+      "bridge": "JS `JSON.parse` 把所有数字都按 IEEE-754 `double` 解析。",
+      "blocks": [{ "t": "code", "of": "jsontrap.JsUnsafeLong", "say": "看第 10-12 行。", "walk": [{ "focus": ["double jsNumber = (double) id;"], "say": "19 位雪花 ID 远超 `2^53 - 1`（16 位），放进 `double` 立刻被四舍五入抹掉末位。", "key": "19 位雪花 Long 传前端必须序列化为 String" }] }]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：`JsUnsafeLong` 精确保留了几笔？",
+      "bridge": "跑之前下注。",
+      "blocks": [{ "t": "predict", "id": "jt_guess", "q": "运行 `JsUnsafeLong`（2000 笔），精确保留的订单数是？", "options": ["2000", "只有极少数（绝大部分尾数被抹掉）"], "answer": 1, "say": "选出你的判断。" }]
+    },
+    {
+      "beat": "run",
+      "title": "四种序列化与金额方案对比",
+      "bridge": "20 次运行全部放出来。",
+      "blocks": [
+        { "t": "experiment", "lab": "jsontrap", "show": ["JsUnsafeLong", "FloatDoubleMoney", "LongAsStringBigDecimal", "IsoDateFormatter"], "select": "JsUnsafeLong", "say": "`JsUnsafeLong` 和 `FloatDoubleMoney` 全军覆没；`LongAsStringBigDecimal` 与 `IsoDateFormatter` 100% 精确。" },
+        { "t": "reveal", "of": "jt_guess", "say": "后端全局配置 Jackson `ToStringSerializer` 把 `Long` 转 `String`，金额用 `BigDecimal(String)` 或整数「分」。", "key": "Long 序列化成 String；金额用整数分或 BigDecimal(String)" },
+        { "t": "try", "say": "切换挡位 4 和 8 观察。" }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "耗时对比",
+      "bridge": "四种写法耗时折线。",
+      "blocks": [{ "t": "chart", "of": "jsontrap", "say": "整数「分」甚至比 `BigDecimal` 更快更省内存。", "walk": [{ "focus": "IsoDateFormatter", "say": "整数分无浮点误差。" }] }]
+    },
+    {
+      "beat": "choose",
+      "title": "工程规范",
+      "layout": "split",
+      "bridge": "Jackson 与金额怎么配？",
+      "blocks": [
+        { "t": "decide", "q": "接口数据类型怎么定？", "branches": [{ "when": "雪花算法 / 分布式 64 位主键", "pick": "Jackson 全局 Long 转 String", "eg": "ToStringSerializer.instance" }, { "when": "金额计算与存储", "pick": "BigDecimal(String) 或整数分", "eg": "DECIMAL(12,2) / BIGINT cents" }], "say": "两条铁律保平安。" },
+        { "t": "cases", "tools": ["Jackson Long 转 String", "BigDecimal 字符串构造", "整数分存储"], "say": "三个场景选最合适的。", "items": [{ "text": "前端拿到的雪花 ID 总是末位变 0。", "answer": 0, "why": "配置 `Jackson2ObjectMapperBuilderCustomizer` 将 `Long` 序列化为 `String`。" }, { "text": "写促销满减计算：`new BigDecimal(0.1)` 算出 `0.10000000000000000555...`。", "answer": 1, "why": "永远用 `new BigDecimal(\"0.1\")` 或 `BigDecimal.valueOf(0.1)`。" }, { "text": "高频清结算系统要求极致性能且零小数误差。", "answer": 2, "why": "全链路用 `long` 存「分」，展示层再除以 100。" }] }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "面试标准术语",
+      "bridge": "对准高频提问。",
+      "blocks": [{ "t": "name", "term": "Jackson 精度丢失与金额规范", "alias": "MAX_SAFE_INTEGER · ToStringSerializer · BigDecimal", "oneLine": "JS Number 仅安全支持到 `2^53-1`，64 位雪花 ID 须==序列化为 String==；金额禁止 `double`，须用 `BigDecimal(String)` 或整数分。", "asked": ["雪花 ID 传给前端为什么会精度丢失？怎么解决？", "为什么金额不能用 float/double？"], "say": "两问全拿下。" }]
+    },
+    {
+      "beat": "check",
+      "title": "小测一下",
+      "bridge": "快速检验。",
+      "blocks": [{ "t": "quiz", "q": "以下哪种创建 `BigDecimal` 的方式**不会**引入二进制浮点误差？", "options": [{ "text": "new BigDecimal(\"0.1\")", "ok": true, "why": "正确！字符串构造精确解析十进制。" }, { "text": "new BigDecimal(0.1)", "ok": false, "why": "传入的 `0.1` 已经是 `double` 近似值了。" }], "say": "选出正确构造方式。" }]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲一遍",
+      "bridge": "一分钟脱稿复述。",
+      "blocks": [{ "t": "say", "prompt": "雪花 ID 传到前端为什么会失真？金额用什么类型？", "points": ["JS Number 是双精度浮点，安全整数上限 2^53-1（16位），19位雪花 ID 必丢尾数", "解决：Jackson 全局配置 ToStringSerializer 将 Long 转为 String 输出", "金额禁止 float/double，用 BigDecimal(\"0.1\") 字符串构造或直接存整数分"], "model": "JS 的 `Number` 底层是 IEEE-754 双精度浮点，最大安全整数只有 `2^53 - 1`（约 16 位），而雪花算法生成的 64 位 `Long` 有 19 位，传到前端解析后末几位会失真变成 0。后端需要在 Jackson 全局配置 `ToStringSerializer` 把 `Long` 序列化为 `String`。同样，金额计算禁止使用 `float`/`double`，必须用 `BigDecimal`（且用字符串构造或 `valueOf`）或直接用 `long` 存「分」。", "say": "点击开始自述。" }]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张卡",
+      "bridge": "核心回顾。",
+      "blocks": [{ "t": "cards", "items": [{ "q": "为什么雪花 ID 传前端尾数变 0？", "a": "超出 JS `Number.MAX_SAFE_INTEGER`（`2^53 - 1`），应全局序列化为 `String`。" }, { "q": "怎么正确构造 `BigDecimal`？", "a": "用 `new BigDecimal(\"0.1\")` 或 `BigDecimal.valueOf(0.1)`，禁用 `new BigDecimal(double)`。" }, { "q": "高并发账务金额怎么存最快最稳？", "a": "用 `long` 存「分」（最小货币单位），展示时再格式化。" }], "say": "三张卡收好。" }]
+    }
+  ]
+}
