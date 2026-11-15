@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "col-arraylist-grow",
+  "course": "Java 工程语法与集合",
+  "title": "ArrayList 1.5 倍扩容 vs LinkedList：随机访问慢在哪？",
+  "lead": "面试都说「LinkedList 适合增删、ArrayList 适合查询」，可为什么用 for(i) 调 LinkedList.get(i) 遍历 4 万条数据直接卡成几百毫秒？",
+  "minutes": 25,
+  "needs": ["知道 ArrayList 底层是动态数组", "知道 LinkedList 底层是双向链表"],
+  "after": [
+    "说清 ArrayList 默认初始容量 10、1.5 倍（oldCap + (oldCap >> 1)）扩容与 Arrays.copyOf 拷贝代价",
+    "用实测耗时对比 LinkedList.get(i) O(N²) 退化与 ArrayList O(1) 随机访问的百倍差距",
+    "记住：即便真用 LinkedList，遍历也必须用增强 for（Iterator），严禁下标 get(i)"
+  ],
+  "terms": {
+    "1.5 倍扩容": "`ArrayList` 初始容量为 0（首次 add 扩到 10），满时按 `oldCap + (oldCap >> 1)` 即 1.5 倍申请新数组并 `Arrays.copyOf` 全量拷贝。",
+    "RandomAccess": "`ArrayList` 实现的标记接口，代表支持 O(1) 连续内存下标访问；CPU 缓存行预取极其友好。",
+    "LinkedList.get(i) 退化": "链表没有连续下标，每次 `get(i)` 都要从头或尾顺着 `next/prev` 指针走 O(N/2) 步，for 循环调用 N 次变成 O(N²)！"
+  },
+  "experiments": {
+    "arraygrow": {
+      "runner": "java",
+      "home": "lab.arraygrow",
+      "variants": [
+        { "id": "LinkedListRandomGet", "code": "LinkedListRandomGet.java", "label": "LinkedList 下标 get(i) 随机访问（O(N²)）", "note": "每次 get(i) 都要顺着链表节点指针跳半程，4 万条数据直接慢出两个数量级。" },
+        { "id": "ArrayListDefaultGrow", "code": "ArrayListDefaultGrow.java", "label": "ArrayList 默认容量（多次 1.5 倍扩容）", "note": "随机访问 O(1) 极快，仅插入阶段经历若干次 1.5 倍数组拷贝。" },
+        { "id": "ArrayListPreSized", "code": "ArrayListPreSized.java", "label": "ArrayList(n) 预分配容量（零扩容）", "note": "一次分配到位，全程零扩容拷贝，访问与构建都是最快。" },
+        { "id": "LinkedListIterWalk", "code": "LinkedListIterWalk.java", "label": "LinkedList 迭代器顺序遍历（O(N)）", "note": "改用 Iterator 游标向后移动，避开 O(N²) 重复寻址。" }
+      ],
+      "knob": { "label": "集合元素数量 N", "values": ["5000", "10000", "20000", "40000"], "default": "20000" },
+      "repeat": 20,
+      "metric": { "key": "count", "expectKey": "expected", "label": "访问校验元素数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "ArrayList 扩容与 LinkedList 对比",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天用真实压测打破一个教材误区：**生产中 99% 的场景都该用 `ArrayList` 而不是 `LinkedList`**——不仅因为 `LinkedList.get(i)` 是 O(N²)，还因为链表每个 `Node` 对象多占 24 字节且 CPU 缓存局部性极差！",
+          "say": "顺便看清 `new ArrayList<>(n)` 预分配容量省掉了多少次数组拷贝。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：ArrayList 与 LinkedList 基础",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先测两道高频基础题。",
+          "items": [
+            {
+              "have": "扩容倍数",
+              "q": "`ArrayList` 每次扩容时，新容量是旧容量的多少倍？",
+              "options": ["1.5 倍（oldCapacity + (oldCapacity >> 1)）", "2 倍", "1.25 倍"],
+              "answer": 0,
+              "why": "1.5 倍在内存浪费和扩容次数之间取得了平衡（HashMap 是 2 倍以便按位与取模）。"
+            },
+            {
+              "have": "懒初始化",
+              "q": "JDK 8+ 执行 `new ArrayList<>()`（无参构造）时，底层 `elementData` 数组长度是多少？",
+              "options": ["0（空数组，第一次 add 时才分配容量 10）", "10", "16"],
+              "answer": 0,
+              "why": "延迟分配避免大量创建了却没塞元素的空列表浪费堆内存。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：LinkedListRandomGet vs ArrayListPreSized",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "arraygrow",
+          "variants": ["LinkedListRandomGet", "ArrayListPreSized"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：4 万条数据间隔下标访问，LinkedList 比 ArrayList 慢多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "arraygrow",
+          "question": "N=40000 时，`LinkedListRandomGet` vs `ArrayListPreSized` 耗时差距大约是？",
+          "options": ["慢上百倍（几十到上百 ms vs < 1 ms）", "慢 2 倍", "一样快"],
+          "answer": 0,
+          "why": "`LinkedList.node(index)` 虽然会判断 `index < size >> 1` 从头或从尾折半找，依然是 O(N) 步，循环 1 万次就是上亿次指针跳跃！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种写法耗时实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "arraygrow",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：List.get(i) 接口分派背后的天壤之别",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "arraygrow",
+          "variant": "LinkedListRandomGet",
+          "explain": "源码里同样的 `invokeinterface List.get(I)`，`ArrayList` 直接 `elementData[index]` 一次内存偏移寻址；`LinkedList` 则进入 `for (int i = 0; i < index; i++) x = x.next` 链表遍历。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：预分配 ArrayList(n) 与迭代器遍历",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "arraygrow",
+          "variants": ["ArrayListPreSized", "LinkedListIterWalk"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：5 千 → 4 万扩展曲线",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "arraygrow",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "List 选型黄金法则",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**① 默认一律用 `ArrayList`，已知大致元素个数时传 `new ArrayList<>(expectedSize)` 避免多次 1.5 倍扩容；② 需要双端队列/栈时用 `ArrayDeque`（循环数组，比 `LinkedList` 更省内存更快）；③ 只有极少见「已持有节点迭代器且频繁在中间插入删除」时才考虑 `LinkedList`。**",
+          "say": "记住：连 `LinkedList` 作者本人都在公开场合说「我自己几乎从不用 LinkedList」。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个源码细节。",
+          "items": [
+            {
+              "have": "中间插入",
+              "q": "`ArrayList.add(int index, E e)` 在列表中间插入元素时，底层靠什么把后面元素整体后移？",
+              "options": ["System.arraycopy（C++ 本地内存块批量移动）", "for 循环逐个赋值", "新建链表"],
+              "answer": 0,
+              "why": "`System.arraycopy` 是 JVM intrinsic 连续内存块拷贝，在中小规模列表上甚至比链表分配 Node 还快！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) ArrayList 的底层结构与 1.5 倍扩容流程；2) ArrayList 和 LinkedList 的核心区别；3) 为什么实际工程中几乎总是优先用 ArrayList 和 ArrayDeque 而不是 LinkedList。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "1.5 倍扩容", "v": "无参构造初始为空，首次 add 扩到 10，满后按 1.5 倍 `Arrays.copyOf`。" },
+            { "k": "链表禁用 get(i)", "v": "`LinkedList` 下标遍历是 O(N²) 灾难，必须用 `Iterator`/增强 for。" },
+            { "k": "首选 ArrayList", "v": "随机访问 O(1) + CPU 缓存友好；队列/栈优先 `ArrayDeque`。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

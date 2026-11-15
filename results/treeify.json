@@ -1,0 +1,1671 @@
+{
+ "id": "treeify",
+ "variants": {
+  "BadHashNoComparable": {
+   "hash": "b8bd2893af89350f",
+   "repeat": 20,
+   "runs": {
+    "500": [
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 4
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 4
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 3
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 3
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 3
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 5
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 3
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 4
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 4
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 4
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 3
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 4
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 4
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 5
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 4
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 4
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 4
+     }
+    ],
+    "1000": [
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 8
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 6
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 7
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 8
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 8
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 6
+     }
+    ],
+    "2000": [
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 46
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 19
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 44
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 20
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 21
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 45
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 45
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 45
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 19
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 45
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 20
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 22
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 45
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 20
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 44
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 45
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 44
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 19
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 20
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 36
+     }
+    ],
+    "4000": [
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 78
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 75
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 80
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 79
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 80
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 79
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 78
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 79
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 80
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 76
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 79
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 75
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 78
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 79
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 78
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 77
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 77
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 79
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 83
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 77
+     }
+    ]
+   },
+   "inside": "Compiled from \"BadHashNoComparable.java\"\npublic class lab.treeify.BadHashNoComparable {\n  public lab.treeify.BadHashNoComparable();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/HashMap\n      10: dup\n      11: sipush        128\n      14: invokespecial #15                 // Method java/util/HashMap.\"<init>\":(I)V\n      17: astore_2\n      18: iload_1\n      19: anewarray     #18                 // class lab/treeify/BadHashNoComparable$BadKey\n      22: astore_3\n      23: iconst_0\n      24: istore        4\n      26: iload         4\n      28: iload_1\n      29: if_icmpge     67\n      32: aload_3\n      33: iload         4\n      35: new           #18                 // class lab/treeify/BadHashNoComparable$BadKey\n      38: dup\n      39: iload         4\n      41: invokespecial #20                 // Method lab/treeify/BadHashNoComparable$BadKey.\"<init>\":(I)V\n      44: aastore\n      45: aload_2\n      46: aload_3\n      47: iload         4\n      49: aaload\n      50: iload         4\n      52: invokestatic  #21                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      55: invokeinterface #25,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      60: pop\n      61: iinc          4, 1\n      64: goto          26\n      67: invokestatic  #31                 // Method java/lang/System.nanoTime:()J\n      70: lstore        4\n      72: iconst_0\n      73: istore        6\n      75: iconst_0\n      76: istore        7\n      78: iload         7\n      80: iload_1\n      81: if_icmpge     106\n      84: aload_2\n      85: aload_3\n      86: iload         7\n      88: aaload\n      89: invokeinterface #37,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n      94: ifnull        100\n      97: iinc          6, 1\n     100: iinc          7, 1\n     103: goto          78\n     106: invokestatic  #31                 // Method java/lang/System.nanoTime:()J\n     109: lload         4\n     111: lsub\n     112: ldc2_w        #41                 // long 1000000l\n     115: ldiv\n     116: lstore        7\n     118: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     121: iload         6\n     123: invokedynamic #47,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     128: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     131: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     134: iload_1\n     135: invokedynamic #57,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     140: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     143: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     146: lload         7\n     148: invokedynamic #58,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     153: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     156: return\n}"
+  },
+  "BadHashComparableTree": {
+   "hash": "c429304d80b13809",
+   "repeat": 20,
+   "runs": {
+    "500": [
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 3
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 3
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     }
+    ],
+    "1000": [
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 3
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 3
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 3
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     }
+    ],
+    "2000": [
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 5
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 1
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 2
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 4
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 2
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 2
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 2
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 4
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 4
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 2
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 2
+     }
+    ],
+    "4000": [
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 5
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 5
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 5
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 5
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     }
+    ]
+   },
+   "inside": "Compiled from \"BadHashComparableTree.java\"\npublic class lab.treeify.BadHashComparableTree {\n  public lab.treeify.BadHashComparableTree();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/HashMap\n      10: dup\n      11: sipush        128\n      14: invokespecial #15                 // Method java/util/HashMap.\"<init>\":(I)V\n      17: astore_2\n      18: iload_1\n      19: anewarray     #18                 // class lab/treeify/BadHashComparableTree$CmpKey\n      22: astore_3\n      23: iconst_0\n      24: istore        4\n      26: iload         4\n      28: iload_1\n      29: if_icmpge     67\n      32: aload_3\n      33: iload         4\n      35: new           #18                 // class lab/treeify/BadHashComparableTree$CmpKey\n      38: dup\n      39: iload         4\n      41: invokespecial #20                 // Method lab/treeify/BadHashComparableTree$CmpKey.\"<init>\":(I)V\n      44: aastore\n      45: aload_2\n      46: aload_3\n      47: iload         4\n      49: aaload\n      50: iload         4\n      52: invokestatic  #21                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      55: invokeinterface #25,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      60: pop\n      61: iinc          4, 1\n      64: goto          26\n      67: invokestatic  #31                 // Method java/lang/System.nanoTime:()J\n      70: lstore        4\n      72: iconst_0\n      73: istore        6\n      75: iconst_0\n      76: istore        7\n      78: iload         7\n      80: iload_1\n      81: if_icmpge     106\n      84: aload_2\n      85: aload_3\n      86: iload         7\n      88: aaload\n      89: invokeinterface #37,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n      94: ifnull        100\n      97: iinc          6, 1\n     100: iinc          7, 1\n     103: goto          78\n     106: invokestatic  #31                 // Method java/lang/System.nanoTime:()J\n     109: lload         4\n     111: lsub\n     112: ldc2_w        #41                 // long 1000000l\n     115: ldiv\n     116: lstore        7\n     118: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     121: iload         6\n     123: invokedynamic #47,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     128: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     131: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     134: iload_1\n     135: invokedynamic #57,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     140: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     143: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     146: lload         7\n     148: invokedynamic #58,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     153: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     156: return\n}"
+  },
+  "SmallTableResizeFirst": {
+   "hash": "f308552024888e26",
+   "repeat": 20,
+   "runs": {
+    "500": [
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 3
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 2
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 1
+     }
+    ],
+    "1000": [
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 3
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 3
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 4
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 3
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 3
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 1
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 2
+     }
+    ],
+    "2000": [
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 5
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 4
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 4
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 4
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 2
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 4
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 2
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 7
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 2
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 5
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 5
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 3
+     }
+    ],
+    "4000": [
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 2
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 2
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 5
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 2
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 3
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 4
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 5
+     }
+    ]
+   },
+   "inside": "Compiled from \"SmallTableResizeFirst.java\"\npublic class lab.treeify.SmallTableResizeFirst {\n  public lab.treeify.SmallTableResizeFirst();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/HashMap\n      10: dup\n      11: iconst_4\n      12: invokespecial #15                 // Method java/util/HashMap.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #18                 // class lab/treeify/SmallTableResizeFirst$CmpKey\n      20: astore_3\n      21: iconst_0\n      22: istore        4\n      24: iload         4\n      26: iload_1\n      27: if_icmpge     65\n      30: aload_3\n      31: iload         4\n      33: new           #18                 // class lab/treeify/SmallTableResizeFirst$CmpKey\n      36: dup\n      37: iload         4\n      39: invokespecial #20                 // Method lab/treeify/SmallTableResizeFirst$CmpKey.\"<init>\":(I)V\n      42: aastore\n      43: aload_2\n      44: aload_3\n      45: iload         4\n      47: aaload\n      48: iload         4\n      50: invokestatic  #21                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      53: invokeinterface #25,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      58: pop\n      59: iinc          4, 1\n      62: goto          24\n      65: invokestatic  #31                 // Method java/lang/System.nanoTime:()J\n      68: lstore        4\n      70: iconst_0\n      71: istore        6\n      73: iconst_0\n      74: istore        7\n      76: iload         7\n      78: iload_1\n      79: if_icmpge     104\n      82: aload_2\n      83: aload_3\n      84: iload         7\n      86: aaload\n      87: invokeinterface #37,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n      92: ifnull        98\n      95: iinc          6, 1\n      98: iinc          7, 1\n     101: goto          76\n     104: invokestatic  #31                 // Method java/lang/System.nanoTime:()J\n     107: lload         4\n     109: lsub\n     110: ldc2_w        #41                 // long 1000000l\n     113: ldiv\n     114: lstore        7\n     116: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     119: iload         6\n     121: invokedynamic #47,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     126: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     129: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     132: iload_1\n     133: invokedynamic #57,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     138: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     141: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     144: lload         7\n     146: invokedynamic #58,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     151: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     154: return\n}"
+  },
+  "SpreadHashUniform": {
+   "hash": "595675ad9fdaeb67",
+   "repeat": 20,
+   "runs": {
+    "500": [
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     },
+     {
+      "hits": 500,
+      "expected": 500,
+      "ms": 0
+     }
+    ],
+    "1000": [
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     },
+     {
+      "hits": 1000,
+      "expected": 1000,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 1
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 1
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     },
+     {
+      "hits": 2000,
+      "expected": 2000,
+      "ms": 0
+     }
+    ],
+    "4000": [
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 1
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 1
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     },
+     {
+      "hits": 4000,
+      "expected": 4000,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"SpreadHashUniform.java\"\npublic class lab.treeify.SpreadHashUniform {\n  public lab.treeify.SpreadHashUniform();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/HashMap\n      10: dup\n      11: iload_1\n      12: iconst_2\n      13: imul\n      14: invokespecial #15                 // Method java/util/HashMap.\"<init>\":(I)V\n      17: astore_2\n      18: iload_1\n      19: anewarray     #18                 // class lab/treeify/SpreadHashUniform$GoodKey\n      22: astore_3\n      23: iconst_0\n      24: istore        4\n      26: iload         4\n      28: iload_1\n      29: if_icmpge     67\n      32: aload_3\n      33: iload         4\n      35: new           #18                 // class lab/treeify/SpreadHashUniform$GoodKey\n      38: dup\n      39: iload         4\n      41: invokespecial #20                 // Method lab/treeify/SpreadHashUniform$GoodKey.\"<init>\":(I)V\n      44: aastore\n      45: aload_2\n      46: aload_3\n      47: iload         4\n      49: aaload\n      50: iload         4\n      52: invokestatic  #21                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      55: invokeinterface #25,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      60: pop\n      61: iinc          4, 1\n      64: goto          26\n      67: invokestatic  #31                 // Method java/lang/System.nanoTime:()J\n      70: lstore        4\n      72: iconst_0\n      73: istore        6\n      75: iconst_0\n      76: istore        7\n      78: iload         7\n      80: iload_1\n      81: if_icmpge     106\n      84: aload_2\n      85: aload_3\n      86: iload         7\n      88: aaload\n      89: invokeinterface #37,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;\n      94: ifnull        100\n      97: iinc          6, 1\n     100: iinc          7, 1\n     103: goto          78\n     106: invokestatic  #31                 // Method java/lang/System.nanoTime:()J\n     109: lload         4\n     111: lsub\n     112: ldc2_w        #41                 // long 1000000l\n     115: ldiv\n     116: lstore        7\n     118: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     121: iload         6\n     123: invokedynamic #47,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     128: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     131: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     134: iload_1\n     135: invokedynamic #57,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     140: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     143: getstatic     #43                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     146: lload         7\n     148: invokedynamic #58,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     153: invokevirtual #51                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     156: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux",
+  "date": "2026-11-15"
+ }
+}

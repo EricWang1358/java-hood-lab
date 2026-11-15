@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>158</strong> 节循序渐进实验课</span>
-        <span><strong>632</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>162</strong> 节循序渐进实验课</span>
+        <span><strong>648</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,10 +374,10 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 158 / 158 课</span>
+        <span id="shownCount" class="count-note">显示 162 / 162 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (158)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (162)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
@@ -386,6 +386,7 @@
         <button type="button" class="pill" data-filter="m1ch1">基础 1 · 值传递与精度 (5)</button>
         <button type="button" class="pill" data-filter="m1ch2">基础 2 · 对象与泛型 (5)</button>
         <button type="button" class="pill" data-filter="m1ch3">基础 3 · 异常与反射 (6)</button>
+        <button type="button" class="pill" data-filter="m1ch4">基础 4 · 集合与 Stream (4)</button>
         <button type="button" class="pill" data-filter="m2ch1">JVM 1 · 类加载与栈堆 (4)</button>
         <button type="button" class="pill" data-filter="m2ch2">JVM 2 · 锁升级与 GC (5)</button>
         <button type="button" class="pill" data-filter="m2ch3">JVM 3 · OOM 与排障 (5)</button>
@@ -1048,6 +1049,63 @@
           </div>
           <h3 class="card__title">变长参数数组分配、重载静态分派与装箱优先级</h3>
           <p class="card__lead">写了个便捷方法 sum(int... nums)，在热循环里每次传 2 个参数竟然都在偷偷 new int[2]！更迷惑的是 Base ref = new Sub(); 调重载方法 tag(ref) 到底走哪个？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m1ch4">
+        <div class="chapter__head">
+          <h2>模块一 · 第四章：集合底层原理与 Stream 陷阱（M1-17～M1-20）</h2>
+          <p>实测 ArrayList 扩容 vs LinkedList 随机访问、fail-fast 与 removeIf、HashMap 预分配容量与 8/64 红黑树化。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/col-arraylist-grow.html" data-ch="m1ch4" data-search="m1-17 col-arraylist-grow arraylist 1.5 倍扩容 vs linkedlist：随机访问慢在哪？ 面试都说「linkedlist 适合增删、arraylist 适合查询」，可为什么用 for(i) 调 linkedlist.get(i) 遍历 4 万条数据直接卡成几百毫秒？ lab.arraygrow">
+          <div class="card__top">
+            <span class="card__num">#M1-17</span>
+            <span class="card__pkg">lab.arraygrow</span>
+          </div>
+          <h3 class="card__title">ArrayList 1.5 倍扩容 vs LinkedList：随机访问慢在哪？</h3>
+          <p class="card__lead">面试都说「LinkedList 适合增删、ArrayList 适合查询」，可为什么用 for(i) 调 LinkedList.get(i) 遍历 4 万条数据直接卡成几百毫秒？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/col-fail-fast.html" data-ch="m1ch4" data-search="m1-18 col-fail-fast fail-fast 快速失败：为什么 for-each 里删元素会炸 concurrentmodificationexception？ 单线程好端端地遍历一个 arraylist，顺手删掉偶数元素就立刻炸出 concurrentmodificationexception；换成下标正序删又不报错了，结果竟悄悄漏删了一半！ lab.failfast">
+          <div class="card__top">
+            <span class="card__num">#M1-18</span>
+            <span class="card__pkg">lab.failfast</span>
+          </div>
+          <h3 class="card__title">fail-fast 快速失败：为什么 for-each 里删元素会炸 ConcurrentModificationException？</h3>
+          <p class="card__lead">单线程好端端地遍历一个 ArrayList，顺手删掉偶数元素就立刻炸出 ConcurrentModificationException；换成下标正序删又不报错了，结果竟悄悄漏删了一半！</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/col-hashmap-resize.html" data-ch="m1ch4" data-search="m1-19 col-hashmap-resize hashmap 初始容量与负载因子：new hashmap<>(10000) 为什么还是会扩容？ 明明知道要往 hashmap 里放 10000 条数据，贴心地写了 new hashmap<>(10000)，可源码算下来竟然还是在放第 7501 条时触发了一次全表扩容！ lab.mapresize">
+          <div class="card__top">
+            <span class="card__num">#M1-19</span>
+            <span class="card__pkg">lab.mapresize</span>
+          </div>
+          <h3 class="card__title">HashMap 初始容量与负载因子：new HashMap&lt;&gt;(10000) 为什么还是会扩容？</h3>
+          <p class="card__lead">明明知道要往 HashMap 里放 10000 条数据，贴心地写了 new HashMap&lt;&gt;(10000)，可源码算下来竟然还是在放第 7501 条时触发了一次全表扩容！</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/col-hashmap-treeify.html" data-ch="m1ch4" data-search="m1-20 col-hashmap-treeify hashmap 哈希碰撞与红黑树化：为什么 8 和 64 两个阈值缺一不可？ 故意让 4000 个 key 的 hashcode 全部撞进同一个桶，为什么 key 实现 comparable 时查询快如闪电，没实现 comparable 时却慢成几十倍？ lab.treeify">
+          <div class="card__top">
+            <span class="card__num">#M1-20</span>
+            <span class="card__pkg">lab.treeify</span>
+          </div>
+          <h3 class="card__title">HashMap 哈希碰撞与红黑树化：为什么 8 和 64 两个阈值缺一不可？</h3>
+          <p class="card__lead">故意让 4000 个 Key 的 hashCode 全部撞进同一个桶，为什么 Key 实现 Comparable 时查询快如闪电，没实现 Comparable 时却慢成几十倍？</p>
           <div class="card__foot">
             <span>12 页 · 约 25 分钟</span>
             <span class="card__go">进入实验 →</span>

@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "col-fail-fast",
+  "course": "Java 工程语法与集合",
+  "title": "fail-fast 快速失败：为什么 for-each 里删元素会炸 ConcurrentModificationException？",
+  "lead": "单线程好端端地遍历一个 ArrayList，顺手删掉偶数元素就立刻炸出 ConcurrentModificationException；换成下标正序删又不报错了，结果竟悄悄漏删了一半！",
+  "minutes": 25,
+  "needs": ["知道增强 for 循环底层是 Iterator", "知道 modCount 修改计数器"],
+  "after": [
+    "说清 fail-fast 机制：modCount vs expectedModCount 校验原理",
+    "看穿「普通 for 下标正序删」漏删相邻元素的隐蔽 Bug",
+    "掌握 Iterator.remove()、倒序删除与 JDK 8 list.removeIf() 批量删除的正确用法"
+  ],
+  "terms": {
+    "fail-fast (快速失败)": "集合内部维护修改次数 `modCount`，迭代器创建时记录 `expectedModCount = modCount`；每次 `next()` 发现两者不等就立刻抛 `ConcurrentModificationException`。",
+    "下标正序漏删": "删掉下标 `i` 后，后面元素整体左移一格补位，但循环接着执行 `i++`，直接跳过了紧挨着的下一个元素！",
+    "list.removeIf()": "JDK 8 引入的批量过滤方法，底层只遍历一次数组把保留元素原地前移，时间复杂度从逐个删的 O(N²) 降到 O(N)！"
+  },
+  "experiments": {
+    "failfast": {
+      "runner": "java",
+      "home": "lab.failfast",
+      "variants": [
+        { "id": "ForEachRemoveCrash", "code": "ForEachRemoveCrash.java", "label": "for-each 里调用 list.remove()（炸异常）", "note": "触发 fail-fast 直接抛出 ConcurrentModificationException，成功数 0。" },
+        { "id": "IndexForwardSkipBug", "code": "IndexForwardSkipBug.java", "label": "正序 for(i) 边删边 i++（漏删一半）", "note": "不报错也不崩，但每删一个就跳过紧邻的下一个元素，只删掉一半！" },
+        { "id": "IteratorRemoveSafe", "code": "IteratorRemoveSafe.java", "label": "Iterator.remove() 安全删除", "note": "同步更新 expectedModCount 并回退游标，100% 删对（但 ArrayList 仍为 O(N²) 移位）。" },
+        { "id": "RemoveIfBatchFast", "code": "RemoveIfBatchFast.java", "label": "list.removeIf()（O(N) 原地双指针）", "note": "100% 删对，且单趟双指针覆盖，大列表比 Iterator.remove 快几十倍！" }
+      ],
+      "knob": { "label": "列表元素数量 N", "values": ["5000", "10000", "20000", "40000"], "default": "20000" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "正确保留/删除数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "fail-fast 快速失败与安全删除",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "哪怕只有**单线程**，在增强 `for-each` 里调 `list.remove()` 一样会炸出 `ConcurrentModificationException`！今天既要看清 `modCount` 的底层校验，也要顺手抓出「正序下标删漏一半」和 `removeIf()` O(N) 提速几十倍的实战技巧。",
+          "say": "这是笔试改错和面试集合必考题。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：fail-fast 与 fail-safe",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先测两个核心概念。",
+          "items": [
+            {
+              "have": "异常本质",
+              "q": "单线程在 `for (Integer x : list)` 里调用 `list.remove(x)` 为什么会报 ConcurrentModificationException？",
+              "options": ["list.remove() 让 modCount++，但迭代器的 expectedModCount 没同步更新", "多线程抢锁", "JVM 语法禁止"],
+              "answer": 0,
+              "why": "`for-each` 编译后就是 `Iterator` 遍历，调集合自身的 `remove` 绕开了迭代器。"
+            },
+            {
+              "have": "fail-safe",
+              "q": "以下哪个集合的迭代器属于 fail-safe（安全失败，遍历时修改不抛 CME）？",
+              "options": ["CopyOnWriteArrayList / ConcurrentHashMap", "ArrayList", "HashMap"],
+              "answer": 0,
+              "why": "`CopyOnWriteArrayList` 遍历的是快照数组，修改会拷贝新数组，互不干扰。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：ForEachRemoveCrash vs IndexForwardSkipBug",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "failfast",
+          "variants": ["ForEachRemoveCrash", "IndexForwardSkipBug"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：20000 个 0 用正序 for(i) 全删，能删掉几个？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "failfast",
+          "question": "`IndexForwardSkipBug` 往列表放了 20000 个 0，用 `for (int i = 0; i < list.size(); i++)` 遇到 0 就 `list.remove(i)`，最终能删掉多少个？",
+          "options": ["10000 个（整整漏掉一半！）", "20000 个全删光", "抛异常"],
+          "answer": 0,
+          "why": "每次删掉 `i` 后元素左移，紧接着 `i++` 跳过了补位到 `i` 的下一个 0，刚好隔一个漏一个！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种删除方式正确性与耗时实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "failfast",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：for-each 编译成 Iterator.next()",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "failfast",
+          "variant": "ForEachRemoveCrash",
+          "explain": "`ForEachRemoveCrash` 的增强 for 循环被编译器展开为 `list.iterator()` -> `hasNext()` -> `next()`；在 `next()` 内部调用 `checkForComodification()` 发现 `modCount != expectedModCount` 立即抛出异常。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：Iterator.remove vs removeIf",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "failfast",
+          "variants": ["IteratorRemoveSafe", "RemoveIfBatchFast"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：O(N²) Iterator.remove vs O(N) removeIf",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "failfast",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "集合遍历删除首选方案",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**JDK 8+ 删除集合中满足条件的元素，首选 `list.removeIf(predicate)`**：语义最清晰、零 CME 风险，且底层用 `BitSet` + 双指针单趟前移，复杂度从 `Iterator.remove()` 的 O(N²) 降为 O(N)！",
+          "say": "如果是自己实现复杂逻辑不能用 `removeIf`，就用 `Iterator.remove()` 或倒序 `for (int i = list.size() - 1; i >= 0; i--)`。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个经典坑。",
+          "items": [
+            {
+              "have": "倒数第二个元素",
+              "q": "为什么在 `for-each` 里偶尔删除「倒数第二个元素」居然没有抛 ConcurrentModificationException？",
+              "options": ["删完倒数第二个后 cursor == size()，hasNext() 返回 false 直接退出循环，没机会调 next() 检查 modCount！", "倒数第二个不加 modCount", "JVM bug"],
+              "answer": 0,
+              "why": "非常经典的面试追问！没抛异常不代表安全，只是恰好没进下一次 `next()` 检查。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) fail-fast 的底层原理（modCount 与 expectedModCount）；2) 为什么正序下标删除会漏元素；3) Iterator.remove() 和 list.removeIf() 的性能差异。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "fail-fast 原理", "v": "`modCount != expectedModCount` 即抛 `ConcurrentModificationException`。" },
+            { "k": "正序漏删坑", "v": "删完元素左移 + `i++` 会跳过紧邻元素；手动下标删必须倒序。" },
+            { "k": "首选 removeIf", "v": "JDK 8 `list.removeIf()` 双指针单趟 O(N) 完成批量删除，比 `Iterator.remove()` 快一个量级。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
