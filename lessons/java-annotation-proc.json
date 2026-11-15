@@ -5,8 +5,11 @@
   "course": "Java 工程语法与集合",
   "title": "注解 Retention 生命周期与运行时解析缓存",
   "lead": "自定义了一个权限注解加在接口上，为什么运行时 getAnnotation() 竟然返回 null？如果每次请求都反射读注解，又会多出多少开销？",
-  "minutes": 25,
-  "needs": ["知道 @Retention 的三种策略", "知道反射读取 RUNTIME 注解的流程"],
+  "minutes": 30,
+  "needs": [
+    "知道 @Retention 的三种策略",
+    "知道反射读取 RUNTIME 注解的流程"
+  ],
   "after": [
     "区分 SOURCE / CLASS / RUNTIME 三种 RetentionPolicy 的可见阶段（@Override vs Lombok vs Spring）",
     "说清注解本质是「继承 java.lang.annotation.Annotation 的动态代理接口」",
@@ -22,21 +25,59 @@
       "runner": "java",
       "home": "lab.annocache",
       "variants": [
-        { "id": "SourceRetentionMissed", "code": "SourceRetentionMissed.java", "label": "忘写 RUNTIME（SOURCE/CLASS 丢失）", "note": "RetentionPolicy 不是 RUNTIME，运行期 getAnnotation() 全返回 null，命中 0。" },
-        { "id": "ScanAnnotationEveryCall", "code": "ScanAnnotationEveryCall.java", "label": "每次请求反射 getAnnotation()", "note": "虽然能拿到注解，但每次都要查注解元数据表并做代理属性读取。" },
-        { "id": "ConcurrentMapMetaCache", "code": "ConcurrentMapMetaCache.java", "label": "ConcurrentHashMap 缓存解析结果", "note": "只解析一次并缓存路由字符串，热路径直接走 O(1) Map 查询。" },
-        { "id": "ClassValueMetaCache", "code": "ClassValueMetaCache.java", "label": "JDK ClassValue 绑定类缓存", "note": "随 Class 卸载自动回收，零内存泄漏风险，速度极快。" }
+        {
+          "id": "SourceRetentionMissed",
+          "code": "SourceRetentionMissed.java",
+          "label": "忘写 RUNTIME（SOURCE/CLASS 丢失）",
+          "note": "RetentionPolicy 不是 RUNTIME，运行期 getAnnotation() 全返回 null，命中 0。"
+        },
+        {
+          "id": "ScanAnnotationEveryCall",
+          "code": "ScanAnnotationEveryCall.java",
+          "label": "每次请求反射 getAnnotation()",
+          "note": "虽然能拿到注解，但每次都要查注解元数据表并做代理属性读取。"
+        },
+        {
+          "id": "ConcurrentMapMetaCache",
+          "code": "ConcurrentMapMetaCache.java",
+          "label": "ConcurrentHashMap 缓存解析结果",
+          "note": "只解析一次并缓存路由字符串，热路径直接走 O(1) Map 查询。"
+        },
+        {
+          "id": "ClassValueMetaCache",
+          "code": "ClassValueMetaCache.java",
+          "label": "JDK ClassValue 绑定类缓存",
+          "note": "随 Class 卸载自动回收，零内存泄漏风险，速度极快。"
+        }
       ],
-      "knob": { "label": "请求路由解析次数 N", "values": ["50000", "200000", "500000", "1000000"], "default": "500000" },
+      "knob": {
+        "label": "请求路由解析次数 N",
+        "values": [
+          "50000",
+          "200000",
+          "500000",
+          "1000000"
+        ],
+        "default": "500000"
+      },
       "repeat": 20,
-      "metric": { "key": "matched", "expectKey": "expected", "label": "成功解析路由次数" },
-      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+      "metric": {
+        "key": "matched",
+        "expectKey": "expected",
+        "label": "成功解析路由次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
     }
   },
   "slides": [
     {
       "beat": "open",
-      "title": "注解生命周期与解析缓存",
+      "title": "注解 Retention 生命周期与运行时解析缓存",
+      "bridge": "自定义了一个权限注解加在接口上，为什么运行时 getAnnotation() 竟然返回 null？如果每次请求都反射读注解，又会多出多少开销？",
       "blocks": [
         {
           "t": "text",
@@ -47,123 +88,43 @@
     },
     {
       "beat": "open",
-      "title": "热身：@Retention 三剑客",
+      "title": "热身：先把几条底层直觉拿稳",
+      "bridge": "动手跑实验前，先用 2~3 道小题校准直觉。",
       "blocks": [
         {
           "t": "recall",
-          "say": "先测一下注解生命周期。",
+          "say": "每题选一个最符合 JVM/Java 规范的答案。",
           "items": [
             {
               "have": "默认策略",
               "q": "自定义 `@interface Route {}` 如果忘了写 `@Retention(...)`，默认策略是什么？",
-              "options": ["RetentionPolicy.CLASS（运行期反射读不到！）", "RetentionPolicy.RUNTIME", "RetentionPolicy.SOURCE"],
+              "options": [
+                "RetentionPolicy.CLASS（运行期反射读不到！）",
+                "RetentionPolicy.RUNTIME",
+                "RetentionPolicy.SOURCE"
+              ],
               "answer": 0,
               "why": "默认是 `CLASS`！所以给 Spring AOP 用的注解必须显式加上 `@Retention(RetentionPolicy.RUNTIME)`。"
             },
             {
               "have": "注解本质",
               "q": "在 Java 里，运行期拿到的 `@Route` 注解对象本质上是什么？",
-              "options": ["JDK 动态代理生成的 Proxy 实例，实现了 Route 接口", "一个普通结构体", "字符串常量"],
+              "options": [
+                "JDK 动态代理生成的 Proxy 实例，实现了 Route 接口",
+                "一个普通结构体",
+                "字符串常量"
+              ],
               "answer": 0,
               "why": "从常量池注解属性表解析出键值对后，用 `AnnotationParser.annotationForMap` 包成动态代理。"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "beat": "hook",
-      "title": "看代码：SourceRetentionMissed vs ScanAnnotationEveryCall",
-      "blocks": [
-        {
-          "t": "code",
-          "exp": "annocache",
-          "variants": ["SourceRetentionMissed", "ScanAnnotationEveryCall"]
-        }
-      ]
-    },
-    {
-      "beat": "predict",
-      "title": "先猜：SourceRetentionMissed 反射读注解，能读到几次？",
-      "blocks": [
-        {
-          "t": "predict",
-          "exp": "annocache",
-          "question": "`SourceRetentionMissed` 的 `@Route` 标了 `RetentionPolicy.SOURCE`，运行期 `getAnnotation` 能匹配几次？",
-          "options": ["0 次（编译后注解已被丢弃，class 文件里根本不存在）", "500000 次", "报错"],
-          "answer": 0,
-          "why": "`SOURCE` 注解在 `javac` 语法检查完后就扔掉了，`.class` 字节码里连影子都没有。"
-        }
-      ]
-    },
-    {
-      "beat": "run",
-      "title": "跑一跑：4 种写法命中与耗时实测",
-      "blocks": [
-        {
-          "t": "result",
-          "exp": "annocache",
-          "kind": "correctness"
-        }
-      ]
-    },
-    {
-      "beat": "why",
-      "title": "掀开字节码：RuntimeVisibleAnnotations 属性",
-      "blocks": [
-        {
-          "t": "inside",
-          "exp": "annocache",
-          "variant": "ScanAnnotationEveryCall",
-          "explain": "只有标了 `RUNTIME` 的注解才会被写进 `.class` 的 `RuntimeVisibleAnnotations` 属性段；`ConcurrentMapMetaCache` 和 `ClassValueMetaCache` 在首次解析后直接缓存结果，后续彻底绕开反射。"
-        }
-      ]
-    },
-    {
-      "beat": "fix",
-      "title": "改一处：ConcurrentHashMap 与 ClassValue 缓存",
-      "blocks": [
-        {
-          "t": "code",
-          "exp": "annocache",
-          "variants": ["ConcurrentMapMetaCache", "ClassValueMetaCache"]
-        }
-      ]
-    },
-    {
-      "beat": "choose",
-      "title": "怎么选：5 万 → 100 万次耗时对比",
-      "blocks": [
-        {
-          "t": "result",
-          "exp": "annocache",
-          "kind": "scaling"
-        }
-      ]
-    },
-    {
-      "beat": "name",
-      "title": "注解工程两条铁律",
-      "blocks": [
-        {
-          "t": "text",
-          "md": "**① 运行期反射读取的注解必加 `@Retention(RetentionPolicy.RUNTIME)` 和 `@Target(...)`；② 框架层解析注解元数据必须做类级别缓存（`ConcurrentHashMap` 或 `ClassValue`），绝不在每次 HTTP 请求里重复扫注解。**",
-          "say": "如果是动态代理类（如 CGLIB 子类），还要注意 `AnnotatedElementUtils.findMergedAnnotation` 才能穿透父类/接口拿到注解。"
-        }
-      ]
-    },
-    {
-      "beat": "check",
-      "title": "小测：30 秒巩固",
-      "blocks": [
-        {
-          "t": "recall",
-          "say": "再查一个 Spring 常见坑。",
-          "items": [
+            },
             {
               "have": "ClassValue 优势",
               "q": "相比静态 `ConcurrentHashMap<Class<?>, Meta>`，JDK 7 的 `ClassValue<Meta>` 有什么独特优势？",
-              "options": ["弱引用绑定在 Class 对象上，类被热部署卸载时缓存自动跟着 GC 回收，不泄漏 Metaspace", "不需要哈希", "支持持久化"],
+              "options": [
+                "弱引用绑定在 Class 对象上，类被热部署卸载时缓存自动跟着 GC 回收，不泄漏 Metaspace",
+                "不需要哈希",
+                "支持持久化"
+              ],
               "answer": 0,
               "why": "静态 `Map<Class<?>, ...>` 强引用着 `Class`，热部署插件频繁加载新类时容易导致旧类无法卸载。"
             }
@@ -172,27 +133,482 @@
       ]
     },
     {
+      "beat": "open",
+      "title": "先看透底层结构与内存模型",
+      "bridge": "把抽象概念映射到具体的数据流与对象关系上。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "踩坑写法 (SourceRetentionMissed)",
+              "安全写法 (ClassValueMetaCache)"
+            ],
+            "shared": {
+              "name": "成功解析路由次数",
+              "value": "目标 500000"
+            }
+          },
+          "story": "自定义了一个权限注解加在接口上，为什么运行时 getAnnotation() 竟然返回 null？如果每次请求都反射读注解，又会多出多少开销？",
+          "say": "对照下面的映射表，把「现象」和「底层代码」一一对应起来。",
+          "map": [
+            {
+              "scene": "RetentionPolicy.SOURCE",
+              "on": "shared",
+              "tag": "RetentionPol",
+              "code": "`SourceRetentionMissed` vs `ClassValueMetaCache`",
+              "say": "注解只留在源码里，编译成 `.class` 时直接丢弃（如 `@Override`、`@SuppressWarnings`、Lombok）。"
+            },
+            {
+              "scene": "RetentionPolicy.CLASS",
+              "on": "shared",
+              "tag": "RetentionPol",
+              "code": "`SourceRetentionMissed` vs `ClassValueMetaCache`",
+              "say": "写进 `.class` 字节码但 JVM 加载时不保留到运行期（如字节码插桩工具），**这也是自定义注解不写 @Retention 时的默认坑**！"
+            },
+            {
+              "scene": "RetentionPolicy.RUNTIME",
+              "on": "shared",
+              "tag": "RetentionPol",
+              "code": "`SourceRetentionMissed` vs `ClassValueMetaCache`",
+              "say": "保留到运行期可通过反射 `getAnnotation()` 读取；JDK 为其生成动态代理实现类。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "盯紧踩坑代码：`SourceRetentionMissed`",
+      "bridge": "先看最容易写错的基准实现，3 步走完它的执行路径。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "annocache.SourceRetentionMissed",
+          "say": "顺着高亮行看清这段代码到底做了什么。",
+          "walk": [
+            {
+              "focus": [
+                "@Retention(RetentionPolicy.SOURCE)"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "int n = Integer.parseInt(args[0]);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (r != null && \"/orders\".equals(r.path())) matched++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：SourceRetentionMissed 会跑出什么结果？",
+      "bridge": "先猜再跑，记忆才长在脑子里。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`SourceRetentionMissed` 的 `@Route` 标了 `RetentionPolicy.SOURCE`，运行期 `getAnnotation` 能匹配几次？",
+          "options": [
+            "0 次（编译后注解已被丢弃，class 文件里根本不存在）",
+            "500000 次",
+            "报错"
+          ],
+          "answer": 0,
+          "say": "`SOURCE` 注解在 `javac` 语法检查完后就扔掉了，`.class` 字节码里连影子都没有。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "一轮一轮放出来看：SourceRetentionMissed 实测现场",
+      "bridge": "下面是在当前 JVM 上实跑 20 轮的真实数据，点按钮一轮轮放出来。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "annocache",
+          "show": [
+            "SourceRetentionMissed"
+          ],
+          "knob": false,
+          "hand": true,
+          "say": "点「看第 1 次运行」，观察实测指标与预期线之间的落差。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "`SOURCE` 注解在 `javac` 语法检查完后就扔掉了，`.class` 字节码里连影子都没有。",
+          "say": "`SOURCE` 注解在 `javac` 语法检查完后就扔掉了，`.class` 字节码里连影子都没有。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "拨动「请求路由解析次数 N」看规模放大效应",
+      "bridge": "把参数从最小档拨到最大档，观察问题或耗时是如何随规模变化的。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "annocache",
+          "show": [
+            "SourceRetentionMissed",
+            "ClassValueMetaCache"
+          ],
+          "say": "左右拖动「请求路由解析次数 N」滑块，对比 `SourceRetentionMissed` 与 `ClassValueMetaCache` 的变化曲线。"
+        },
+        {
+          "t": "try",
+          "key": "`SourceRetentionMissed`：RetentionPolicy 不是 RUNTIME，运行期 getAnnotation() 全返回 null，命中 0。；`ClassValueMetaCache`：随 Class 卸载自动回收，零内存泄漏风险，速度极快。",
+          "say": "数据不会骗人，规模一放大，错误写法与正确写法的差距一目了然。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到 `SourceRetentionMissed.java` 点出祸首那一行",
+      "bridge": "光知道结论不够，能一眼在源码里指出来才算真会排错。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "annocache.SourceRetentionMissed",
+          "q": "在左边的 `SourceRetentionMissed.java` 里，点出直接导致问题的那一行代码：",
+          "answer": [
+            "@Retention(RetentionPolicy.SOURCE)"
+          ],
+          "hint": "提示：盯紧核心循环或方法调用里触发异常/错误/高耗时的那一行。",
+          "found": "抓准了！正是这一行（`@Retention(RetentionPolicy.SOURCE)`）导致：RetentionPolicy 不是 RUNTIME，运行期 getAnnotation() 全返回 null，命中 0。",
+          "say": "直接点击左侧代码行，点错会有提示。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开 `javap` 字节码：JVM 底层到底干了什么？",
+      "bridge": "源码表面看起来很无辜，编译成字节码后真相藏不住。",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "annocache.SourceRetentionMissed",
+          "within": "main(java.lang.String[])",
+          "say": "这是 `javap -c -p` 反编译出的真实字节码指令流，点下一步逐条核对。",
+          "walk": [
+            {
+              "focus": [
+                "3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I"
+              ],
+              "label": "指令入口与压栈准备",
+              "key": "指令入口与压栈准备",
+              "say": "字节码先把操作数或对象引用压入操作数栈，注意观察这里调用的具体方法签名或对象创建指令。"
+            },
+            {
+              "focus": [
+                "27: invokevirtual #23                 // Method java/lang/Class.getAnnotation:(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;"
+              ],
+              "label": "核心指令执行与分派",
+              "key": "核心指令执行与分派",
+              "say": "这一步对应源码里的核心操作（如方法分派、条件跳转或循环调用），没有额外的隐式魔法。"
+            },
+            {
+              "focus": [
+                "33: astore        6"
+              ],
+              "label": "结果写回或异常/循环控制",
+              "key": "结果写回或异常/循环控制",
+              "say": "最后把结果存回局部变量表或触发跳转，对照源码就能彻底看穿 JVM 底层的真实动作。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：看 `ClassValueMetaCache` 如何彻底修好",
+      "bridge": "对照安全/高效写法，看它改了哪几行核心逻辑。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "annocache.ClassValueMetaCache",
+          "say": "随 Class 卸载自动回收，零内存泄漏风险，速度极快。",
+          "walk": [
+            {
+              "focus": [
+                "@Retention(RetentionPolicy.RUNTIME)"
+              ],
+              "key": "前置准备与参数入口",
+              "say": "先看外层准备和循环控制，明确每次迭代在测什么对象或操作。"
+            },
+            {
+              "focus": [
+                "Route r = type.getAnnotation(Route.class);"
+              ],
+              "key": "核心执行逻辑（关键差异点）",
+              "say": "这里是本变体的核心动作，决定它是触发坑点还是安全/高效完成。"
+            },
+            {
+              "focus": [
+                "if (\"/orders\".equals(ROUTE_VALUE.get(OrderHandler.class))) matched++;"
+              ],
+              "key": "结果校验与统计输出",
+              "say": "最后把结果与预期值 `expected` 对照，真实跑出成功率或耗时差距。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "4 种写法全景对比：工程里怎么选？",
+      "bridge": "把 4 个变体放在同一张图和同一张决策表里横评。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "annocache",
+          "say": "4 条曲线同台对比，兼顾正确性与耗时。"
+        },
+        {
+          "t": "choose",
+          "say": "选型不能只看能跑通，还要看并发安全、内存开销与可维护性。",
+          "options": [
+            {
+              "name": "忘写 RUNTIME（SOURCE/CLASS 丢失）（`SourceRetentionMissed`）",
+              "solves": "RetentionPolicy 不是 RUNTIME，运行期 getAnnotation() 全返回 null，命中 0。",
+              "cost": "实测约 {ms:annocache.SourceRetentionMissed} ms",
+              "when": "反面教材：用于定位事故现场，严禁直接照搬进生产代码",
+              "say": "RetentionPolicy 不是 RUNTIME，运行期 getAnnotation() 全返回 null，命中 0。"
+            },
+            {
+              "name": "每次请求反射 getAnnotation()（`ScanAnnotationEveryCall`）",
+              "solves": "虽然能拿到注解，但每次都要查注解元数据表并做代理属性读取。",
+              "cost": "实测约 {ms:annocache.ScanAnnotationEveryCall} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "虽然能拿到注解，但每次都要查注解元数据表并做代理属性读取。"
+            },
+            {
+              "name": "ConcurrentHashMap 缓存解析结果（`ConcurrentMapMetaCache`）",
+              "solves": "只解析一次并缓存路由字符串，热路径直接走 O(1) Map 查询。",
+              "cost": "实测约 {ms:annocache.ConcurrentMapMetaCache} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "只解析一次并缓存路由字符串，热路径直接走 O(1) Map 查询。"
+            },
+            {
+              "name": "JDK ClassValue 绑定类缓存（`ClassValueMetaCache`）",
+              "solves": "随 Class 卸载自动回收，零内存泄漏风险，速度极快。",
+              "cost": "实测约 {ms:annocache.ClassValueMetaCache} ms",
+              "when": "可按业务场景权衡选用（推荐优先考虑工程安全性与可读性）",
+              "say": "随 Class 卸载自动回收，零内存泄漏风险，速度极快。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "把底层原理凝练成面试高频术语",
+      "bridge": "用面试官最爱听的标准术语把这节课串起来。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "RetentionPolicy.SOURCE",
+          "alias": "Java 工程语法与集合",
+          "oneLine": "注解只留在源码里，编译成 `.class` 时直接丢弃（如 `@Override`、`@SuppressWarnings`、Lombok）。",
+          "asked": [
+            "注解 Retention 生命周期与运行时解析缓存——底层原理是什么？",
+            "为什么 `SourceRetentionMissed` 会踩坑？字节码或内存里发生了什么？",
+            "实际工程里如何用 `ClassValueMetaCache` 规避？有哪些边界代价？"
+          ],
+          "say": "面试被追问时，先抛一句话核心定义，再结合实测数据与字节码展开。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 1/4：实验现象复盘",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "`SourceRetentionMissed` 的 `@Route` 标了 `RetentionPolicy.SOURCE`，运行期 `getAnnotation` 能匹配几次？",
+          "options": [
+            {
+              "text": "0 次（编译后注解已被丢弃，class 文件里根本不存在）",
+              "ok": true,
+              "why": "`SOURCE` 注解在 `javac` 语法检查完后就扔掉了，`.class` 字节码里连影子都没有。"
+            },
+            {
+              "text": "500000 次",
+              "ok": false,
+              "why": "再想一想：`SOURCE` 注解在 `javac` 语法检查完后就扔掉了，`.class` 字节码里连影子都没有。"
+            },
+            {
+              "text": "报错",
+              "ok": false,
+              "why": "再想一想：`SOURCE` 注解在 `javac` 语法检查完后就扔掉了，`.class` 字节码里连影子都没有。"
+            }
+          ],
+          "say": "结合刚才跑出的 20 轮实验数据直接作答。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 2/4：默认策略",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "自定义 `@interface Route {}` 如果忘了写 `@Retention(...)`，默认策略是什么？",
+          "options": [
+            {
+              "text": "RetentionPolicy.CLASS（运行期反射读不到！）",
+              "ok": true,
+              "why": "默认是 `CLASS`！所以给 Spring AOP 用的注解必须显式加上 `@Retention(RetentionPolicy.RUNTIME)`。"
+            },
+            {
+              "text": "RetentionPolicy.RUNTIME",
+              "ok": false,
+              "why": "再想一想：默认是 `CLASS`！所以给 Spring AOP 用的注解必须显式加上 `@Retention(RetentionPolicy.RUNTIME)`。"
+            },
+            {
+              "text": "RetentionPolicy.SOURCE",
+              "ok": false,
+              "why": "再想一想：默认是 `CLASS`！所以给 Spring AOP 用的注解必须显式加上 `@Retention(RetentionPolicy.RUNTIME)`。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 3/4：注解本质",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在 Java 里，运行期拿到的 `@Route` 注解对象本质上是什么？",
+          "options": [
+            {
+              "text": "JDK 动态代理生成的 Proxy 实例，实现了 Route 接口",
+              "ok": true,
+              "why": "从常量池注解属性表解析出键值对后，用 `AnnotationParser.annotationForMap` 包成动态代理。"
+            },
+            {
+              "text": "一个普通结构体",
+              "ok": false,
+              "why": "再想一想：从常量池注解属性表解析出键值对后，用 `AnnotationParser.annotationForMap` 包成动态代理。"
+            },
+            {
+              "text": "字符串常量",
+              "ok": false,
+              "why": "再想一想：从常量池注解属性表解析出键值对后，用 `AnnotationParser.annotationForMap` 包成动态代理。"
+            }
+          ],
+          "say": "巩固底层原理，切忌死记硬背。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测 4/4：工程最佳实践",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "在生产代码里，为什么应该用 `ClassValueMetaCache`（JDK ClassValue 绑定类缓存）替代 `SourceRetentionMissed`（忘写 RUNTIME（SOURCE/CLASS 丢失））？",
+          "options": [
+            {
+              "text": "因为 随 Class 卸载自动回收，零内存泄漏风险，速度极快。",
+              "ok": true,
+              "why": "`SourceRetentionMissed`：RetentionPolicy 不是 RUNTIME，运行期 getAnnotation() 全返回 null，命中 0。；而 `ClassValueMetaCache`：随 Class 卸载自动回收，零内存泄漏风险，速度极快。"
+            },
+            {
+              "text": "因为 `SourceRetentionMissed` 无法通过 javac 编译",
+              "ok": false,
+              "why": "再想一想：`SourceRetentionMissed`：RetentionPolicy 不是 RUNTIME，运行期 getAnnotation() 全返回 null，命中 0。；而 `ClassValueMetaCache`：随 Class 卸载自动回收，零内存泄漏风险，速度极快。"
+            },
+            {
+              "text": "两者运行时完全等价，只是写法风格不同",
+              "ok": false,
+              "why": "再想一想：`SourceRetentionMissed`：RetentionPolicy 不是 RUNTIME，运行期 getAnnotation() 全返回 null，命中 0。；而 `ClassValueMetaCache`：随 Class 卸载自动回收，零内存泄漏风险，速度极快。"
+            }
+          ],
+          "say": "面试官最后一定会追问「那在生产里你怎么写」，答清边界就稳了。"
+        }
+      ]
+    },
+    {
       "beat": "say",
-      "title": "开口讲：2 分钟脱稿自述",
+      "title": "2 分钟开口讲：对着计时器脱稿复述",
+      "bridge": "能自己讲出来，才算真正长在脑子里。",
       "blocks": [
         {
           "t": "say",
           "prompt": "请脱稿向面试官解释：1) 注解的 SOURCE、CLASS、RUNTIME 三种 Retention 分别用在什么场景；2) 注解的底层本质是什么；3) 为什么运行期读注解一定要配合缓存。",
+          "points": [
+            "区分 SOURCE / CLASS / RUNTIME 三种 RetentionPolicy 的可见阶段（@Override vs Lombok vs Spring）",
+            "说清注解本质是「继承 java.lang.annotation.Annotation 的动态代理接口」",
+            "掌握用 ConcurrentHashMap 或 JDK ClassValue 缓存注解解析结果的最佳实践"
+          ],
+          "model": "面试时可以分三步答：**① 先说结论与踩坑现象**：自定义了一个权限注解加在接口上，为什么运行时 getAnnotation() 竟然返回 null？如果每次请求都反射读注解，又会多出多少开销？；**② 再讲底层原理**：RetentionPolicy.SOURCE（注解只留在源码里，编译成 `.class` 时直接丢弃（如 `@Override`、`@SuppressWarnings`、Lombok）。）；RetentionPolicy.CLASS（写进 `.class` 字节码但 JVM 加载时不保留到运行期（如字节码插桩工具），**这也是自定义注解不写 @Retention 时的默认坑**！）；**③ 最后给工程方案**：生产里优先采用「JDK ClassValue 绑定类缓存」（`ClassValueMetaCache`），随 Class 卸载自动回收，零内存泄漏风险，速度极快。。",
           "seconds": 120
         }
       ]
     },
     {
       "beat": "take",
-      "title": "带走 3 张核心卡片",
+      "title": "面试高频速记卡",
+      "bridge": "考前 3 分钟快速过一遍这组问答卡。",
       "blocks": [
         {
-          "t": "take",
-          "cards": [
-            { "k": "默认坑", "v": "注解默认 `RetentionPolicy.CLASS`，运行期反射读不到，必须显式标 `RUNTIME`。" },
-            { "k": "三种生命周期", "v": "`SOURCE` 给编译器/APT、`CLASS` 给字节码插桩、`RUNTIME` 给反射/AOP。" },
-            { "k": "元数据缓存", "v": "用 `ConcurrentHashMap` 或 `ClassValue` 缓存解析结果，热路径零反射。" }
+          "t": "cards",
+          "items": [
+            {
+              "q": "面试官问：什么是「RetentionPolicy.SOURCE」？它在这节课里起了什么关键作用？",
+              "a": "注解只留在源码里，编译成 `.class` 时直接丢弃（如 `@Override`、`@SuppressWarnings`、Lombok）。"
+            },
+            {
+              "q": "面试官问：什么是「RetentionPolicy.CLASS」？它在这节课里起了什么关键作用？",
+              "a": "写进 `.class` 字节码但 JVM 加载时不保留到运行期（如字节码插桩工具），**这也是自定义注解不写 @Retention 时的默认坑**！"
+            },
+            {
+              "q": "面试官问：什么是「RetentionPolicy.RUNTIME」？它在这节课里起了什么关键作用？",
+              "a": "保留到运行期可通过反射 `getAnnotation()` 读取；JDK 为其生成动态代理实现类。"
+            },
+            {
+              "q": "实战避坑：`SourceRetentionMissed` 为什么会出问题，应该怎么改？",
+              "a": "RetentionPolicy 不是 RUNTIME，运行期 getAnnotation() 全返回 null，命中 0。 正确做法是改用 `ClassValueMetaCache`（JDK ClassValue 绑定类缓存）：随 Class 卸载自动回收，零内存泄漏风险，速度极快。"
+            }
+          ],
+          "say": "点开每一张「看答案」自检，答不上来的立刻回前面对应页补齐。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "这节课带走的三条铁律",
+      "blocks": [
+        {
+          "t": "points",
+          "items": [
+            "区分 SOURCE / CLASS / RUNTIME 三种 RetentionPolicy 的可见阶段（@Override vs Lombok vs Spring）",
+            "说清注解本质是「继承 java.lang.annotation.Annotation 的动态代理接口」",
+            "掌握用 ConcurrentHashMap 或 JDK ClassValue 缓存注解解析结果的最佳实践"
           ]
+        },
+        {
+          "t": "callout",
+          "tone": "tip",
+          "title": "工程落地一句话",
+          "md": "避开 `SourceRetentionMissed`（忘写 RUNTIME（SOURCE/CLASS 丢失）），优先选用 `ClassValueMetaCache`（JDK ClassValue 绑定类缓存）：随 Class 卸载自动回收，零内存泄漏风险，速度极快。"
         }
       ]
     }
