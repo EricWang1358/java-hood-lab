@@ -1,0 +1,1644 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>包装类缓存池与拆箱陷阱：为什么 Integer == Integer 127 对 128 错？</title>
+<script>try{var t=localStorage.getItem("lesson-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>
+/* Lesson page. One stage, one teacher line at the bottom: every press brings one sentence and one visible change.
+   Colours follow StudyHub's paper tokens (ui/tokens.css). The accent means "look here, now" and nothing else;
+   green = came out as it should, plum = did not. No shadows beyond a hairline, no gradients, no decoration. */
+:root {
+  --canvas: #f1ede6; --surface: #faf8f4; --raised: #ffffff; --sunken: #e8e3da;
+  --ink: #1e1a15; --ink-2: #453e35; --muted: #635b51; --faint: #7b7368;
+  --rule: #2a1c0e24; --rule-strong: #2a1c0e52;
+  --accent: #c03a1f; --accent-text: #ad4025; --accent-ink: #fffaf5; --accent-wash: #c03a1f14;
+  --ok: #1c6c48; --ok-wash: #1c6c4817; --bad: #a23461; --bad-wash: #a2346114; --info: #346287; --ochre: #8a5a10;
+  --code-k: #8a3b1f;
+  --s1: #1c5cab; --s2: #e0703a; --s3: #16a37a; --s4: #8a5a10;
+  --font: "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --display: "Segoe UI Variable Display", "SF Pro Display", "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Microsoft YaHei UI", monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --canvas: #161412; --surface: #1e1b18; --raised: #26231f; --sunken: #110f0d;
+  --ink: #efe9df; --ink-2: #c5bdb1; --muted: #a59d91; --faint: #958e84;
+  --rule: #fff1dc21; --rule-strong: #fff1dc4d;
+  --accent: #d8492c; --accent-text: #ec6a4a; --accent-ink: #fff8f2; --accent-wash: #ec6a4a1f;
+  --ok: #62c092; --ok-wash: #62c0921f; --bad: #dd8cb9; --bad-wash: #dd8cb91f; --info: #86b4dc; --ochre: #e0a04e;
+  --code-k: #eb9a78;
+  --s1: #3987e5; --s2: #e0703a; --s3: #199e70; --s4: #7b6a0e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { font-size: clamp(16px, .5vw + 10.5px, 19px); -webkit-text-size-adjust: 100%; }
+body { margin: 0; height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden;
+  background: var(--canvas); color: var(--ink); font-family: var(--font); line-height: 1.6; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--mono); }
+p code, li code, .opt code, .voice code { font-size: .9em; background: var(--sunken); padding: .08em .36em; border-radius: 5px; }
+mark { background: none; color: inherit; box-shadow: inset 0 -.5em 0 var(--accent-wash); font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* top: where this lesson is going */
+.top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 1rem; padding: .55rem 1.4rem; border-bottom: 1px solid var(--rule); }
+.top__title { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top__tools { display: flex; justify-content: flex-end; align-items: center; gap: .8rem; font-size: .8rem; color: var(--muted); }
+.beats { display: flex; align-items: center; }
+.beat { display: flex; align-items: center; gap: .4rem; padding: .3rem .55rem; border: 0; background: none; border-radius: 8px; font-size: .78rem; color: var(--faint); cursor: pointer; white-space: nowrap; }
+.beat::before { content: ""; width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid currentColor; }
+.beat:hover { color: var(--ink); }
+.beat.is-done { color: var(--muted); }
+.beat.is-done::before { background: currentColor; }
+.beat.is-now { color: var(--ink); font-weight: 650; }
+.beat.is-now::before { background: var(--accent); border-color: var(--accent); }
+.tool { border: 1px solid var(--rule); background: none; border-radius: 8px; padding: .25rem .6rem; cursor: pointer; }
+.tool:hover { border-color: var(--rule-strong); color: var(--ink); }
+
+/* stage */
+/* no top padding on the scroller itself: a sticky bar inside it must be able to reach the very top */
+.stage { overflow-x: hidden; overflow-y: auto; padding: 0 clamp(1rem, 4vw, 3.4rem) 2rem; }
+.slide { width: 100%; max-width: 68rem; margin: 0 auto; padding-top: clamp(1.4rem, 4vh, 2.8rem); }
+.slide__title { font-family: var(--display); font-size: clamp(1.5rem, 2.6vw, 2.3rem); line-height: 1.22; font-weight: 680; letter-spacing: -.01em; margin: 0 0 1.3rem; text-wrap: balance; }
+.slide__blocks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+.slide--split .slide__blocks { grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); column-gap: 2.4rem; align-items: start; }
+.slide--split .block:first-child { grid-row: 1 / span 4; }
+.block { transition: opacity .28s var(--ease), transform .28s var(--ease); }
+.block.is-waiting { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+.slide--hook .slide__title { font-size: clamp(2.2rem, 5vw, 4rem); line-height: 1.12; font-weight: 720; letter-spacing: -.02em; max-width: 13em; margin-top: clamp(.5rem, 7vh, 4.5rem); margin-bottom: 1.6rem; }
+.hook__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.4rem; margin-top: 2.4rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); max-width: 52rem; }
+.hook__meta h3 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .5rem; }
+.hook__meta ul { margin: 0; padding: 0; list-style: none; font-size: .92rem; color: var(--ink-2); }
+.hook__meta li { padding: .14rem 0; }
+
+.text { font-size: 1.18rem; line-height: 1.65; color: var(--ink-2); margin: 0; max-width: 34em; }
+.slide--hook .text { font-size: 1.4rem; color: var(--ink); }
+.points { margin: 0; padding: 0; list-style: none; display: grid; gap: .7rem; font-size: 1.08rem; line-height: 1.55; }
+.points li { display: grid; grid-template-columns: 1.1rem 1fr; }
+.points li::before { content: ""; width: 6px; height: 6px; margin-top: .62em; background: var(--ink-2); }
+.callout { border-left: 3px solid var(--info); padding: .1rem 0 .1rem 1rem; max-width: 36em; }
+.callout--pitfall { border-left-color: var(--bad); }
+.callout h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.callout p { margin: 0; color: var(--ink-2); }
+
+/* code */
+.code { background: var(--raised); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+.code__path { padding: .55rem 1rem .5rem; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: .68rem; color: var(--faint); }
+.code__scroll { overflow: auto; max-height: min(58vh, 31rem); padding: .5rem 0 .8rem; scrollbar-width: thin; }
+.code__line { display: grid; grid-template-columns: 3em minmax(0, 1fr); font-family: var(--mono); font-size: .78rem; line-height: 1.68; white-space: pre; padding-right: 1rem; border-left: 3px solid transparent; transition: opacity .3s, background-color .3s; }
+.code__no { text-align: right; padding-right: 1em; color: var(--faint); opacity: .7; user-select: none; }
+.code.has-focus .code__line { opacity: .4; }
+.code.has-focus .code__line.is-focus { opacity: 1; background: var(--accent-wash); border-left-color: var(--accent); }
+.code .code__line.is-changed { opacity: 1; background: var(--ok-wash); border-left-color: var(--ok); }
+.tk-k { color: var(--code-k); font-weight: 600; }
+.tk-s { color: var(--ok); }
+.tk-n { color: var(--info); }
+.tk-c { color: var(--faint); font-style: italic; }
+
+/* buttons and segmented choices */
+.btn { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 10px; padding: .5rem 1rem; cursor: pointer; }
+.btn:hover { border-color: var(--ink-2); }
+.btn--primary { background: var(--ink); border-color: var(--ink); color: var(--canvas); font-weight: 600; }
+.btn--primary:hover { border-color: var(--ink); opacity: .86; }
+.btn--quiet { border-color: transparent; background: none; color: var(--muted); padding: .2rem .5rem; font-size: .78rem; }
+.btn--quiet:hover { color: var(--ink); border-color: var(--rule); }
+.btn:disabled { opacity: .4; cursor: default; }
+.seg { display: inline-flex; align-items: center; gap: .6rem; font-size: .82rem; color: var(--muted); }
+.seg__set { display: inline-flex; padding: 3px; background: var(--sunken); border-radius: 10px; }
+.seg__set button { border: 0; background: none; padding: .32rem .8rem; border-radius: 8px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.seg__set button:hover { color: var(--ink); }
+.seg__set button[aria-pressed="true"] { background: var(--raised); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--rule), 0 1px 2px #0000001a; }
+
+/* experiment: the code on the left, what really happened on the right */
+.exp__bar { display: flex; justify-content: space-between; align-items: center; gap: .8rem 1.5rem; flex-wrap: wrap; margin-bottom: .4rem; padding: .5rem 0; position: sticky; top: 0; z-index: 2; background: var(--canvas); }
+.exp__body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 1.6rem; align-items: start; }
+.exp .code__scroll { max-height: min(34vh, 22rem); }
+.block:has(> .try) { display: none; }
+.exp.is-invited .seg__set { animation: invite 2.4s var(--ease); }
+@keyframes invite { 0%, 70% { box-shadow: 0 0 0 2px var(--accent); } }
+.exp__q { margin: .1rem 0 .7rem; font-size: .92rem; color: var(--ink-2); }
+.plot__row { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; align-items: center; gap: .8rem; width: 100%; padding: 0; border: 0; border-top: 1px solid var(--rule); background: none; text-align: left; cursor: pointer; }
+.plot__row[disabled] { cursor: default; }
+.plot__label { font-size: .86rem; color: var(--muted); }
+.plot__row.is-on .plot__label { color: var(--ink); font-weight: 650; }
+.plot__track { position: relative; height: 3.3rem; }
+.plot__track::before { content: ""; position: absolute; inset: 50% 0 auto 0; border-top: 1px solid var(--rule); }
+.plot__track::after { content: ""; position: absolute; top: 0; bottom: 0; left: var(--expect); border-left: 1.5px dashed var(--ok); opacity: .7; }
+.dot { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--bad); z-index: 1;
+  transition: left .55s var(--ease), transform .55s var(--ease), opacity .3s, background-color .3s; }
+.dot.is-ok { background: var(--ok); }
+.dot.is-waiting { opacity: 0; pointer-events: none; }
+.plot__row:not(.is-on) .dot { opacity: .5; }
+.plot__row:not(.is-on) .dot.is-waiting { opacity: 0; }
+.plot__sum { text-align: right; font-size: .8rem; color: var(--muted); line-height: 1.35; }
+.plot__sum b { display: block; font-size: .9rem; color: var(--bad); }
+.plot__sum b.is-ok { color: var(--ok); }
+.plot__axis { display: grid; grid-template-columns: 7.6em minmax(0, 1fr) 6.2em; gap: .8rem; border-top: 1px solid var(--rule); font-size: .72rem; color: var(--faint); }
+.plot__ticks { position: relative; height: 1.6rem; }
+.plot__ticks span { position: absolute; top: .3rem; white-space: nowrap; }
+.plot__ticks .is-expect { left: var(--expect); transform: translateX(-100%); padding-right: .4rem; color: var(--ok); font-weight: 600; }
+.exp__finding { margin: .9rem 0 0; font-size: 1.04rem; line-height: 1.55; min-height: 3.2em; }
+.exp__finding b { font-variant-numeric: tabular-nums; }
+.exp__foot { margin-top: .5rem; display: flex; align-items: center; gap: .3rem .9rem; flex-wrap: wrap; font-size: .72rem; color: var(--faint); }
+.cmd { font-family: var(--mono); background: var(--sunken); color: var(--ink-2); padding: .15rem .5rem; border-radius: 6px; }
+
+/* lanes: two threads and the one thing they share; time runs downward */
+.lanes__expr { display: flex; align-items: center; gap: .6rem 1.4rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.lanes__code { font-family: var(--mono); font-size: 1.5rem; font-weight: 650; }
+.lanes__parts { display: flex; align-items: center; gap: .45rem; font-size: .84rem; color: var(--faint); }
+.part { padding: .2rem .7rem; border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); transition: color .25s, border-color .25s, background-color .25s; }
+.part.is-now { color: var(--accent-text); border-color: var(--accent); background: var(--accent-wash); font-weight: 600; }
+.lanes__grid { display: grid; grid-template-columns: minmax(0, 1fr) 5.4rem minmax(0, 1fr); max-width: 46rem; margin: 0; }
+.lanes__head { font-size: .82rem; color: var(--muted); padding-bottom: .5rem; border-bottom: 1px solid var(--rule); }
+.lanes__head--a { text-align: right; padding-right: 3.6rem; }
+.lanes__head--b { padding-left: 3.6rem; }
+.lanes__head--mid { text-align: center; font-family: var(--mono); color: var(--ink); font-weight: 600; }
+.lcell { min-height: 2.9rem; display: flex; align-items: center; transition: opacity .3s var(--ease); }
+.lcell--a { justify-content: flex-end; }
+.lcell--mid { justify-content: center; position: relative; }
+.lcell--mid::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid var(--rule-strong); }
+.lrow { display: contents; }
+.lrow.is-waiting .lcell > * { opacity: 0; }
+.lcell > * { transition: opacity .3s var(--ease); }
+.chip { font-size: .92rem; padding: .32rem .8rem; border-radius: 8px; background: var(--raised); border: 1px solid var(--rule); white-space: nowrap; }
+.lrow.is-now .chip { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.arrow { flex: 0 0 3rem; height: 0; border-top: 1.5px solid var(--ink-2); position: relative; margin: 0 .3rem; }
+.arrow::after { content: ""; position: absolute; top: -5px; border: 4.25px solid transparent; }
+.arrow--right::after { right: -2px; border-left: 7px solid var(--ink-2); border-right: 0; }
+.arrow--left::after { left: -2px; border-right: 7px solid var(--ink-2); border-left: 0; }
+.arrow--none { border-top-color: transparent; }
+.arrow--none::after { display: none; }
+.val { position: relative; z-index: 1; min-width: 2.7rem; text-align: center; font-family: var(--mono); font-size: .98rem; font-weight: 650; padding: .2rem .6rem; border-radius: 8px; background: var(--canvas); border: 1.5px solid var(--ink-2); }
+.val--write { border-color: var(--accent); color: var(--accent-text); }
+.lanes__verdict { max-width: 46rem; margin: .9rem 0 0; padding-top: .9rem; border-top: 1px solid var(--rule); font-size: 1.15rem; font-weight: 650; transition: opacity .3s; }
+.lanes__verdict.is-waiting { opacity: 0; }
+
+/* guess, then see */
+.predict__q, .quiz__q { font-size: 1.3rem; font-weight: 650; line-height: 1.4; margin: 0 0 1rem; }
+.opts { display: grid; gap: .55rem; max-width: 40rem; }
+.opt { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto; align-items: center; gap: .6rem; width: 100%; text-align: left; padding: .75rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--raised); cursor: pointer; font-size: 1.02rem; }
+.opt:hover { border-color: var(--ink-2); }
+.opt__key { font-family: var(--mono); font-size: .82rem; color: var(--faint); }
+.opt__tag { font-size: .74rem; font-weight: 600; }
+.opt.is-picked { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.opt.is-picked .opt__tag { color: var(--ink-2); }
+.opt.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); }
+.opt.is-right .opt__tag { color: var(--ok); }
+.opt.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
+.opt.is-wrong .opt__tag { color: var(--bad); }
+.opt__why { grid-column: 2 / -1; font-size: .88rem; color: var(--ink-2); }
+.reveal { display: flex; gap: .5rem 2.6rem; flex-wrap: wrap; padding-top: .8rem; border-top: 1px solid var(--rule); max-width: 46rem; }
+.reveal dl { margin: 0; }
+.reveal dt { font-size: .76rem; color: var(--muted); }
+.reveal dd { margin: .1rem 0 0; font-size: 1.02rem; font-weight: 600; }
+.reveal .is-ok { color: var(--ok); }
+.reveal .is-miss { color: var(--bad); }
+
+/* the name comes last */
+.name__term { font-family: var(--display); font-size: clamp(2.4rem, 5.4vw, 4.2rem); line-height: 1.1; font-weight: 720; letter-spacing: -.02em; margin: 0; }
+.name__alias { font-family: var(--mono); font-size: .92rem; color: var(--muted); margin: .5rem 0 0; }
+.name__line { font-size: 1.28rem; line-height: 1.55; margin: 1.1rem 0 0; max-width: 30em; }
+.name__asked { margin: 1.8rem 0 0; padding-top: 1rem; border-top: 1px solid var(--rule); max-width: 40rem; }
+.name__asked h4 { font-size: .78rem; font-weight: 600; color: var(--muted); margin: 0 0 .4rem; }
+.name__asked ul { margin: 0; padding: 0; list-style: none; font-size: 1.02rem; color: var(--ink-2); }
+.name__asked li { padding: .2rem 0; }
+
+/* say it aloud, take three cards */
+.say__prompt { font-size: 1.5rem; font-weight: 650; line-height: 1.4; margin: 0 0 1.2rem; max-width: 26em; text-wrap: balance; }
+.say__row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.say__clock { font-family: var(--mono); font-size: 1.7rem; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 3.4em; }
+.say__points { margin: 1.4rem 0 0; padding: 1rem 0 0; border-top: 1px solid var(--rule); list-style: none; display: grid; gap: .5rem; max-width: 40rem; }
+.say__points label { display: grid; grid-template-columns: 1.4rem 1fr; gap: .5rem; align-items: start; cursor: pointer; font-size: 1.02rem; }
+.say__points input { width: 1.05rem; height: 1.05rem; margin-top: .32rem; accent-color: var(--ok); }
+.say__score { margin: .8rem 0 0; font-size: .92rem; color: var(--muted); }
+.cards { display: grid; gap: 0; max-width: 44rem; border-bottom: 1px solid var(--rule); }
+.card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem 1rem; align-items: baseline; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.card__q { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.card__a { grid-column: 1 / -1; margin: 0; color: var(--ink-2); }
+
+/* the teacher: what a person standing next to you would say right now. It leads; the stage shows. */
+.voice { border-top: 1px solid var(--rule); padding: 1rem clamp(1rem, 4vw, 3.4rem) 1.1rem; }
+.voice__inner { max-width: 68rem; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.6rem; align-items: end; }
+.voice__line { margin: 0; font-size: 1.2rem; line-height: 1.62; min-height: 4.86em; max-width: 43em; }
+.voice__line > span { display: block; }
+.voice__line.is-fresh > span { animation: line-in .32s var(--ease); }
+.voice__nav { display: flex; gap: .5rem; }
+@keyframes line-in { from { opacity: 0; transform: translateY(5px); } }
+
+.voice__key { margin: .4rem 0 0; font-size: .8rem; color: var(--muted); animation: line-in .32s var(--ease); }
+.tool.is-flash { animation: flash 1.2s var(--ease); }
+@keyframes flash { 0%, 40% { background: var(--accent-wash); border-color: var(--accent); color: var(--ink); } }
+
+/* reminders at the moment of need */
+.term { border-bottom: 1.5px dotted var(--ochre); cursor: help; border-radius: 2px; }
+.term:hover, .term:focus-visible { background: var(--accent-wash); }
+.tip { position: fixed; z-index: 20; max-width: 22rem; padding: .6rem .8rem; border-radius: 10px; background: var(--ink); color: var(--canvas); font-size: .86rem; line-height: 1.5; box-shadow: 0 8px 24px -10px #000000a0; }
+.tip b { display: block; font-size: .8rem; opacity: .75; margin-bottom: .1rem; }
+.tip code { background: none; padding: 0; }
+.notes { position: relative; }
+.notes__list { position: absolute; right: 0; top: calc(100% + .5rem); z-index: 15; width: min(22rem, 86vw); margin: 0; padding: .7rem 1rem .7rem 2rem; background: var(--raised); border: 1px solid var(--rule-strong); border-radius: 12px; font-size: .88rem; color: var(--ink); line-height: 1.5; box-shadow: 0 14px 34px -20px #000000a0; }
+.notes__list li { padding: .15rem 0; }
+.notes__list .is-empty { list-style: none; margin-left: -1rem; color: var(--muted); }
+
+.exp__note { margin: .5rem 0 0; font-size: .84rem; color: var(--muted); min-height: 1.4em; }
+button.plot__label { border: 0; background: none; padding: .3rem 0; text-align: left; cursor: pointer; line-height: 1.3; }
+button.plot__label:hover { color: var(--ink); }
+.plot__row { cursor: default; }
+.dot { cursor: pointer; }
+.dot::after { content: ""; position: absolute; inset: -5px; }
+.dot:hover { box-shadow: 0 0 0 3px var(--canvas), 0 0 0 4.5px currentColor; color: var(--ink-2); }
+.exp__probe { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.lrow-list { display: contents; }
+.lrow--controls .lcell { padding-top: .7rem; }
+.lrow--controls .lcell--a { padding-right: .8rem; }
+.lrow--controls .lcell--b { padding-left: .8rem; }
+.sched__bar { display: flex; align-items: center; justify-content: flex-start; gap: .6rem 1.2rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.goals { display: flex; gap: .5rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; font-size: .86rem; }
+.goal { display: flex; align-items: center; gap: .4rem; padding: .22rem .7rem; border: 1px solid var(--rule-strong); border-radius: 999px; color: var(--ink-2); }
+.goal::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid currentColor; }
+.goal.is-done { color: var(--ok); border-color: var(--ok); font-weight: 600; }
+.goal.is-done::before { background: var(--ok); border-color: var(--ok); }
+.sched__result { max-width: 46rem; margin: .9rem 0 0; min-height: 3.2em; font-size: 1.05rem; }
+
+.block > .code { max-width: 46rem; }
+.lrow--controls .btn { border-color: var(--ink-2); font-weight: 600; }
+.lrow--controls .btn:disabled { border-color: var(--rule-strong); font-weight: 400; }
+
+/* small answer buttons, shared by the warm-up, the lanes question and the cases */
+.picks { display: flex; gap: .45rem; flex-wrap: wrap; }
+.pick { border: 1px solid var(--rule-strong); background: var(--raised); border-radius: 9px; padding: .36rem .85rem; font-size: .95rem; cursor: pointer; }
+.pick:hover:not(:disabled) { border-color: var(--ink-2); }
+.pick:disabled { cursor: default; color: var(--muted); }
+.pick.is-right { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); color: var(--ok); font-weight: 600; }
+.pick.is-wrong { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); color: var(--bad); }
+.pick--tool { font-family: var(--mono); font-size: .86rem; }
+
+/* opening: what you already have, then a picture to hang the lesson on */
+.recall, .cases { max-width: 50rem; }
+.recall__item { display: grid; grid-template-columns: 7.4rem minmax(0, 1fr); gap: .4rem 1.2rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.recall__have { grid-row: 1 / span 3; font-size: .82rem; color: var(--muted); padding-top: .2rem; }
+.recall__q, .cases__text { margin: 0; font-size: 1.08rem; font-weight: 600; line-height: 1.5; }
+.recall__why, .cases__why { margin: 0; font-size: .92rem; color: var(--ink-2); }
+.recall__score, .cases__score { margin: 0; padding-top: .8rem; border-top: 1px solid var(--rule); font-size: .92rem; color: var(--muted); min-height: 2.4em; }
+.cases__item { display: grid; gap: .5rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.cases__text { font-weight: 400; }
+.scene__story { margin: 0 0 1.4rem; font-size: 1.28rem; line-height: 1.7; max-width: 33em; }
+.scene__map { max-width: 44rem; transition: opacity .3s var(--ease); }
+.scene__map.is-waiting, .scene__row.is-waiting { opacity: 0; }
+.scene__head, .scene__row { display: grid; grid-template-columns: minmax(0, 1fr) 2.6rem minmax(0, 1.1fr); align-items: center; }
+.scene__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; border-bottom: 1px solid var(--rule); }
+.scene__row { padding: .58rem 0; border-bottom: 1px solid var(--rule); font-size: 1.04rem; transition: opacity .3s var(--ease); }
+.scene__arrow { color: var(--faint); }
+.scene__row.is-now .scene__arrow { color: var(--accent); }
+.scene__to { font-weight: 600; }
+
+/* find the line; look inside */
+.inside { max-width: 46rem; }
+.spot { display: grid; grid-template-columns: minmax(0, 46rem) minmax(13rem, 19rem); gap: 0 2rem; align-items: start; }
+.spot__q { grid-column: 1 / -1; }
+.spot__how { margin: .2rem 0 .8rem; font-size: .92rem; color: var(--muted); }
+.spot__q { margin: 0 0 .8rem; font-size: 1.18rem; font-weight: 650; line-height: 1.45; }
+.spot .code__scroll { max-height: max(12rem, calc(100vh - 21.5rem)); }
+.code.is-pickable .code__line { cursor: pointer; }
+.code.is-pickable .code__line:hover { background: var(--sunken); }
+.code__line.is-wrong { background: var(--bad-wash); border-left-color: var(--bad); }
+.spot__out { margin: 0; font-size: 1rem; line-height: 1.7; color: var(--ink-2); }
+.spot__out.is-ok { color: var(--ok); font-weight: 600; }
+.inside__what { margin: 0 0 .6rem; font-size: .86rem; color: var(--muted); }
+.inside .code__line { position: relative; font-size: .88rem; line-height: 2.2; }
+.code__tag { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); font-family: var(--font); font-size: .78rem; font-weight: 600; line-height: 1.7; padding: 0 .7rem; border-radius: 999px; background: var(--raised); border: 1px solid var(--rule-strong); }
+.code__line.is-focus .code__tag { border-color: var(--accent); color: var(--accent-text); }
+
+/* lanes: a question between two steps; steps that touch nothing */
+.lanes--long .lcell { min-height: 2.5rem; }
+.chip--wait { border-style: dashed; color: var(--muted); }
+.chip--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.chip--ok { border-color: var(--ok); color: var(--ok); }
+.lanes__ask { max-width: 46rem; margin-top: .8rem; padding: .8rem 1rem; border: 1px solid var(--rule-strong); border-radius: 10px; background: var(--surface); display: grid; gap: .5rem; }
+.lanes__ask[hidden] { display: none; }
+.lanes__ask p { margin: 0; font-weight: 600; }
+.lanes__ask .ask__out { font-weight: 400; font-size: .9rem; color: var(--muted); min-height: 1.5em; }
+
+/* runs let out by hand; a reference answer after speaking */
+.exp__hand { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; }
+.exp__hand[hidden] { display: none; }
+.plot__sum.is-held > * { visibility: hidden; }
+.say__model { margin: 1rem 0 0; padding: .9rem 1.1rem; border-left: 3px solid var(--rule-strong); background: var(--surface); font-size: 1rem; line-height: 1.8; max-width: 42rem; }
+
+/* how to choose between the tools just met */
+.choose { max-width: 62rem; }
+.choose__head, .choose__row { display: grid; grid-template-columns: 9.6rem repeat(3, minmax(0, 1fr)); gap: 0 1.6rem; }
+.choose__head { font-size: .76rem; color: var(--muted); padding-bottom: .4rem; }
+.choose__row { padding: .8rem 0; border-top: 1px solid var(--rule); font-size: .98rem; line-height: 1.5; color: var(--ink-2); }
+.choose__row { transition: opacity .3s var(--ease); }
+.choose.is-walking .choose__row:not(.is-now) { opacity: .42; }
+.choose__name { font-family: var(--mono); font-weight: 650; color: var(--ink); }
+.choose__rule.is-waiting { visibility: hidden; }
+.choose__rule { margin: 0; padding-top: .9rem; border-top: 1px solid var(--rule-strong); font-size: 1.12rem; font-weight: 600; }
+
+/* pictures: two actors and the thing they share. Drawn at a fixed size so every part has a known place. */
+.pic { position: relative; width: 300px; height: 300px; flex: none; font-size: 16px; line-height: 1.3; }
+.pic__lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.pic__arrow { opacity: 0; transition: opacity .25s var(--ease); }
+.pic__arrow.is-on { opacity: 1; }
+.pic__arrow line { stroke: var(--accent); stroke-width: 1.75; }
+.pic__arrow polygon { fill: var(--accent); }
+.pic--plain .pic__arrow line { stroke: var(--ink-2); }
+.pic--plain .pic__arrow polygon { fill: var(--ink-2); }
+.pic__over { position: absolute; left: 0; right: 0; bottom: calc(100% - 38px); display: grid; justify-items: center; gap: 3px; }
+.pic__name { font-size: 13px; color: var(--muted); }
+.pic__tags { display: grid; justify-items: center; gap: 3px; }
+.pic__tags span { font-family: var(--mono); font-size: 12.5px; font-weight: 650; color: var(--ink); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--rule-strong); background: var(--surface); white-space: nowrap; }
+.pic__board { position: absolute; left: 90px; top: 44px; width: 120px; height: 62px; display: grid; place-items: center; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .25s, box-shadow .25s; }
+.pic__board.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__value { font-family: var(--mono); font-size: 28px; font-weight: 650; line-height: 1; }
+.pic__board.is-now .pic__value { color: var(--accent-text); }
+.pic__hand { position: absolute; top: 146px; width: 64px; height: 38px; display: grid; place-items: center; border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--raised); font-family: var(--mono); font-size: 16px; transition: border-color .25s, box-shadow .25s; }
+.pic__hand--a { left: 50px; }
+.pic__hand--b { left: 186px; }
+.pic__hand small { position: absolute; left: 0; right: 0; top: -18px; text-align: center; font-family: var(--font); font-size: 11px; color: var(--faint); }
+.pic__hand.is-empty { border-style: dashed; background: none; }
+.pic__hand.is-now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pic__actor { position: absolute; top: 196px; width: 110px; display: grid; justify-items: center; gap: 3px; }
+.pic__actor--a { left: 0; }
+.pic__actor--b { left: 190px; }
+.pic__figure { width: 44px; height: 40px; fill: var(--raised); stroke: var(--ink-2); stroke-width: 1.5; transition: stroke .25s; }
+.pic__actor.is-now .pic__figure { stroke: var(--accent); }
+.pic__note { font-size: 12.5px; padding: 2px 8px; border-radius: 7px; border: 1px solid var(--rule-strong); background: var(--raised); white-space: nowrap; }
+.pic__note:empty { display: none; }
+.pic__note--wait { border-style: dashed; color: var(--muted); }
+.pic__note--fail { border-color: var(--bad); color: var(--bad); background: var(--bad-wash); }
+.pic__note--ok { border-color: var(--ok); color: var(--ok); }
+.pic__note.is-now { box-shadow: 0 0 0 1px currentColor; }
+.pic__action { position: absolute; left: 0; right: 0; top: 138px; text-align: center; font-family: var(--mono); font-weight: 650; font-size: 14px; color: var(--ink); }
+.pic__action.is-now { color: var(--accent-text); }
+.pic__action:empty { display: none; }
+.scene__body.has-picture { display: grid; grid-template-columns: minmax(0, 44rem) 300px; gap: 0 2.4rem; align-items: start; }
+.lanes { display: grid; grid-template-columns: minmax(0, 46rem) 300px; gap: 0 2rem; align-items: start; }
+.lanes__side { position: sticky; top: .6rem; }
+.lanes__now { margin: 0 0 .1rem; font-size: .76rem; color: var(--muted); text-align: center; }
+@media (max-width: 1220px) { .lanes { grid-template-columns: minmax(0, 1fr); } .lanes__side { display: none; } }
+
+/* chart: the recorded runs as lines. Colour names the way of writing; a hollow point means that group came out wrong. */
+.chart { margin: 0; display: grid; grid-template-columns: minmax(0, 44rem) minmax(13rem, 1fr); gap: 0 2rem; align-items: start; }
+.chart__cap { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem 1rem; font-size: .84rem; color: var(--muted); margin-bottom: .5rem; }
+.chart__cap b { font-size: 1rem; color: var(--ink); }
+.chart__marks { display: inline-flex; align-items: center; gap: .4rem; }
+.chart__mark { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--ink-2); border: 2px solid var(--ink-2); }
+.chart__mark.is-wrong { background: transparent; margin-left: .7rem; }
+.chart__picks { display: grid; justify-items: start; gap: .4rem; margin-bottom: 1rem; }
+.chart__pick { display: inline-flex; align-items: center; gap: .5rem; padding: .26rem .75rem; border: 1px solid var(--rule-strong); border-radius: 999px; background: none; font-size: .86rem; color: var(--ink-2); cursor: pointer; }
+.chart__pick:hover { border-color: var(--ink-2); }
+.chart__pick[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); font-weight: 600; background: var(--raised); }
+.chart__key { flex: none; width: 18px; height: 0; border-top: 3px solid var(--s, var(--ink-2)); border-radius: 2px; }
+.chart__key--1, .chart__series--1 { --s: var(--s1); }
+.chart__key--2, .chart__series--2 { --s: var(--s2); }
+.chart__key--3, .chart__series--3 { --s: var(--s3); }
+.chart__key--4, .chart__series--4 { --s: var(--s4); }
+.chart__plot { position: relative; }
+.chart__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart__grid { stroke: var(--rule); stroke-width: 1; }
+.chart__base { stroke: var(--rule-strong); stroke-width: 1; }
+.chart__tick { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.chart__series { transition: opacity .25s var(--ease); }
+.chart__series.is-dim { opacity: .2; }
+.chart__line { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; transition: stroke-width .2s; }
+.chart__series.is-on .chart__line { stroke-width: 3.2; }
+.chart__lead { fill: none; stroke: var(--s, var(--ink-2)); stroke-width: 1; opacity: .55; }
+.chart__dot { fill: var(--s, var(--ink-2)); stroke: var(--canvas); stroke-width: 2; }
+.chart__dot.is-wrong { fill: var(--canvas); stroke: var(--s, var(--ink-2)); }
+.chart__name { font-size: 11.5px; fill: var(--ink-2); }
+.chart__end { font-weight: 650; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.chart__cross { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+.chart__cross.is-on { opacity: .7; }
+.chart__hit { fill: transparent; cursor: crosshair; outline: none; }
+.chart__hit:focus-visible { stroke: var(--ink-2); stroke-dasharray: 2 3; }
+.chart__tip { position: absolute; top: 4%; z-index: 2; min-width: 16rem; padding: .55rem .7rem; border-radius: 10px; background: var(--raised); border: 1px solid var(--rule-strong); box-shadow: 0 8px 22px -14px #000000a0; font-size: .8rem; display: grid; gap: .25rem; pointer-events: none; }
+.chart__tip[hidden] { display: none; }
+.chart__row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto 4.8em; gap: .5rem; align-items: center; }
+.chart__row.is-dim { opacity: .45; }
+.chart__row span:last-child { color: var(--muted); text-align: right; }
+.chart__row span.is-wrong { color: var(--bad); }
+.chart__read { margin: 0 0 .8rem; min-height: 6.4em; font-size: .98rem; line-height: 1.65; color: var(--ink-2); }
+.chart__table { font-size: .8rem; color: var(--muted); }
+.chart__table summary { cursor: pointer; width: max-content; }
+.chart__table table { border-collapse: collapse; margin-top: .4rem; font-variant-numeric: tabular-nums; }
+.chart__table th, .chart__table td { padding: .22rem .5rem; border-bottom: 1px solid var(--rule); text-align: right; font-weight: 400; white-space: nowrap; }
+.chart__table th:first-child { text-align: left; }
+
+/* decide: the rule for choosing, as a small tree */
+.decide { max-width: 19rem; padding: 1rem 1.1rem; border: 1px solid var(--rule-strong); border-radius: 12px; background: var(--surface); }
+.decide__q { margin: 0; font-weight: 650; font-size: 1.02rem; }
+.decide__list { list-style: none; margin: 0; padding: .5rem 0 0 .5rem; }
+.decide__branch { position: relative; display: grid; gap: .2rem; padding: .5rem 0 .6rem 1.4rem; border-left: 1.5px solid var(--ink-2); }
+.decide__branch:last-child { border-left-color: transparent; }
+.decide__branch::before { content: ""; position: absolute; left: -1.5px; top: 0; width: 1rem; height: 1.2rem; border-left: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2); border-bottom-left-radius: 9px; }
+.decide__when { font-size: .92rem; color: var(--ink-2); }
+.decide__pick { justify-self: start; font-family: var(--mono); font-weight: 650; font-size: .92rem; padding: .18rem .6rem; border: 1.5px solid var(--ink-2); border-radius: 8px; background: var(--raised); transition: border-color .3s, color .3s; }
+.decide__eg { font-size: .78rem; color: var(--muted); }
+.decide__branch.is-used .decide__pick { border-color: var(--ok); color: var(--ok); }
+.decide__branch.is-hit .decide__pick { animation: hit 1.6s var(--ease); }
+@keyframes hit { 0%, 55% { box-shadow: 0 0 0 5px var(--ok-wash), 0 0 0 1.5px var(--ok); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr) 19rem; }
+.slide--split .block:has(> .decide) { grid-column: 2; position: sticky; top: .6rem; }
+.slide--split .block:has(> .decide) ~ .block { grid-column: 1; grid-row: 1; }
+
+@media (max-width: 860px) {
+  .top { grid-template-columns: minmax(0, 1fr) auto; padding: .5rem .9rem; }
+  .top__title, #count { display: none; }
+  .beat:not(.is-now) { font-size: 0; gap: 0; padding: .3rem .22rem; }
+  .stage { padding: 0 .9rem 1.4rem; }
+  .slide { padding-top: 1rem; }
+  .exp__bar { position: static; }
+  .slide--split .slide__blocks, .exp__body, .hook__meta { grid-template-columns: minmax(0, 1fr); }
+  .hook__meta { gap: 1.2rem; }
+  .slide--split .block:first-child { grid-row: auto; }
+  .code__scroll, .exp .code__scroll { max-height: 15rem; }
+  .seg, .seg__set { flex-wrap: wrap; }
+  .plot__label { font-size: .72rem; overflow-wrap: anywhere; }
+  .plot__sum { font-size: .72rem; }
+  .plot__sum b { font-size: .8rem; }
+  .lrow--controls .btn { padding: .45rem .5rem; font-size: .8rem; }
+  .lrow--controls .lcell--a { padding-right: .3rem; } .lrow--controls .lcell--b { padding-left: .3rem; }
+  .plot__row, .plot__axis { grid-template-columns: 5.8em minmax(0, 1fr) 4.4em; gap: .4rem; }
+  .lanes__grid { grid-template-columns: minmax(0, 1fr) 3.4rem minmax(0, 1fr); }
+  .lanes__head--a { padding-right: 1.4rem; } .lanes__head--b { padding-left: 1.4rem; }
+  .arrow { flex-basis: 1rem; margin: 0 .15rem; }
+  .chip { font-size: .78rem; padding: .28rem .45rem; }
+  .val { min-width: 2.2rem; padding: .2rem .3rem; font-size: .88rem; }
+  .voice { padding: .7rem .9rem .8rem; }
+  .voice__inner { gap: .7rem; }
+  .voice__line { font-size: 1rem; line-height: 1.55; min-height: 0; }
+  .exp__body > :first-child { order: 2; }
+  .choose__head { display: none; }
+  .recall__item { grid-template-columns: minmax(0, 1fr); }
+  .spot { grid-template-columns: minmax(0, 1fr); }
+  .spot .code__scroll { max-height: 46vh; }
+  .spot__side { margin-top: .7rem; }
+  .spot__how { display: none; }
+  .recall__have { grid-row: auto; }
+  .scene__body.has-picture, .chart { grid-template-columns: minmax(0, 1fr); }
+  .scene__body .pic { order: -1; justify-self: center; margin-bottom: .6rem; }
+  .chart__picks { display: flex; flex-wrap: wrap; margin: .6rem 0; }
+  .chart__pick { font-size: .8rem; padding: .22rem .6rem; }
+  .chart__tick, .chart__name { font-size: 19px; }
+  .chart__label { display: none; }
+  .chart__dot { r: 7px; }
+  .chart__line { stroke-width: 3; }
+  .scene__head, .scene__row { column-gap: .4rem; }
+  .chart__read { min-height: 0; }
+  .chart__tip { min-width: 13rem; }
+  .slide--split .slide__blocks:has(.decide) { grid-template-columns: minmax(0, 1fr); }
+  .slide--split .block:has(> .decide), .slide--split .block:has(> .decide) ~ .block { grid-column: auto; grid-row: auto; position: static; }
+  .decide { max-width: none; }
+  .code__tag { position: static; transform: none; grid-column: 2; justify-self: start; margin-bottom: .3rem; }
+  .choose__row { grid-template-columns: minmax(0, 1fr); gap: .2rem; }
+  .choose__row > [data-label]::before { content: attr(data-label) "："; color: var(--muted); font-size: .82em; }
+  .voice__nav .btn { padding: .5rem .7rem; }
+  .btn__label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+@media print { body { height: auto; overflow: visible; display: block; } .voice__nav, .top__tools { display: none; } }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top__title" id="title"></div>
+  <nav class="beats" id="beats" aria-label="这节课走到哪了"></nav>
+  <div class="top__tools">
+    <span class="num" id="count"></span>
+    <div class="notes"><button class="tool" id="notes" type="button">要点 0</button><ul class="notes__list" id="notes-list" hidden></ul></div>
+    <button class="tool" id="theme" type="button">深色</button>
+  </div>
+</header>
+<main class="stage" id="stage"></main>
+<footer class="voice" aria-label="老师的讲解">
+  <div class="voice__inner">
+    <div><p class="voice__line" id="line" aria-live="polite"></p><p class="voice__key" id="key" hidden></p></div>
+    <div class="voice__nav">
+      <button class="btn" id="prev" type="button" aria-label="上一步">←</button>
+      <button class="btn btn--primary" id="next" type="button"><span class="btn__label">下一步 </span>→</button>
+    </div>
+  </div>
+</footer>
+<script type="application/json" id="lesson-data">{"format":"studyhub-lesson/1","template":"experiment","id":"java-integer-cache","course":"Java 工程语法与集合","title":"包装类缓存池与拆箱陷阱：为什么 Integer == Integer 127 对 128 错？","lead":"测试环境用户 ID 从 1 到 100 跑得好好的，一上线 ID 涨到 128 以上，用 == 判断两个 Integer 相等突然全变 false！","minutes":25,"needs":["知道 int 与 Integer 的自动装箱/拆箱","知道 == 比较引用地址而 equals 比较内容"],"after":["说清 IntegerCache 默认缓存范围 [-128, 127] 及 valueOf() 底层机制","知道 new Integer() 绕过缓存与自动拆箱 NPE 的触发条件","养成包装类一律用 Objects.equals() 或判空后拆箱比较的习惯"],"terms":{"IntegerCache":"`Integer` 内部静态类，在类加载时预先创建 `-128 ~ 127` 共 256 个 `Integer` 对象数组；`Integer.valueOf(int)` 命中范围直接返回缓存对象。","自动装箱 (Autoboxing)":"编译器把 `Integer a = 128;` 改写成 `Integer.valueOf(128)`；超出 127 就会在堆上 `new Integer(128)`。","拆箱 NPE":"当 `Integer x = null` 参与算术运算、条件比较 `x == 1` 或三元表达式拆箱时，编译器插入 `x.intValue()` 直接抛出 `NullPointerException`。"},"experiments":{"intcache":{"runner":"java","home":"lab.intcache","variants":[{"id":"BoxedDoubleEqBug","code":"BoxedDoubleEqBug.java","label":"Integer 直接 == 比较（128 起翻车）","note":"仅 0~127 命中 IntegerCache 返回 true，128 及以上全部 false。"},{"id":"NewIntegerBypass","code":"NewIntegerBypass.java","label":"new Integer() 绕过缓存","note":"每次强制 new 新对象，连 0~127 也全部返回 false。"},{"id":"EqualsSafeCompare","code":"EqualsSafeCompare.java","label":"Objects.equals() 安全比较","note":"自动判空并调用 equals 比数值，全范围 100% 准确。"},{"id":"IntValueUnboxGuard","code":"IntValueUnboxGuard.java","label":"判空后 intValue() 比较","note":"显式判空后拆箱为基本类型 int == int，100% 准确。"}],"knob":{"label":"测试数值上限 N (0..N-1)","values":["100","200","500","1000"],"default":"500"},"repeat":20,"metric":{"key":"correct","expectKey":"expected","label":"相等判断正确数"},"time":{"key":"ms","label":"耗时","unit":"ms"},"lang":"java","sources":{"BoxedDoubleEqBug":"package lab.intcache;\n\npublic class BoxedDoubleEqBug {\n    @SuppressWarnings(\"NumberEquality\")\n    public static void main(String[] args) {\n        int n = Integer.parseInt(args[0]);\n        long start = System.nanoTime();\n        int correct = 0;\n        for (int i = 0; i < n; i++) {\n            Integer a = Integer.valueOf(i);\n            Integer b = Integer.valueOf(i);\n            if (a == b) correct++;\n        }\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"correct=\" + correct);\n        System.out.println(\"expected=\" + n);\n        System.out.println(\"ms=\" + ms);\n    }\n}\n","NewIntegerBypass":"package lab.intcache;\n\npublic class NewIntegerBypass {\n    @SuppressWarnings({\"removal\", \"deprecation\", \"NumberEquality\"})\n    public static void main(String[] args) {\n        int n = Integer.parseInt(args[0]);\n        long start = System.nanoTime();\n        int correct = 0;\n        for (int i = 0; i < n; i++) {\n            Integer a = new Integer(i);\n            Integer b = new Integer(i);\n            if (a == b) correct++;\n        }\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"correct=\" + correct);\n        System.out.println(\"expected=\" + n);\n        System.out.println(\"ms=\" + ms);\n    }\n}\n","EqualsSafeCompare":"package lab.intcache;\n\nimport java.util.Objects;\n\npublic class EqualsSafeCompare {\n    public static void main(String[] args) {\n        int n = Integer.parseInt(args[0]);\n        long start = System.nanoTime();\n        int correct = 0;\n        for (int i = 0; i < n; i++) {\n            Integer a = Integer.valueOf(i);\n            Integer b = Integer.valueOf(i);\n            if (Objects.equals(a, b)) correct++;\n        }\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"correct=\" + correct);\n        System.out.println(\"expected=\" + n);\n        System.out.println(\"ms=\" + ms);\n    }\n}\n","IntValueUnboxGuard":"package lab.intcache;\n\npublic class IntValueUnboxGuard {\n    public static void main(String[] args) {\n        int n = Integer.parseInt(args[0]);\n        long start = System.nanoTime();\n        int correct = 0;\n        for (int i = 0; i < n; i++) {\n            Integer a = Integer.valueOf(i);\n            Integer b = Integer.valueOf(i);\n            if (a != null && b != null && a.intValue() == b.intValue()) {\n                correct++;\n            }\n        }\n        long ms = (System.nanoTime() - start) / 1_000_000;\n        System.out.println(\"correct=\" + correct);\n        System.out.println(\"expected=\" + n);\n        System.out.println(\"ms=\" + ms);\n    }\n}\n"},"paths":{"BoxedDoubleEqBug":"src/lab/intcache/BoxedDoubleEqBug.java","NewIntegerBypass":"src/lab/intcache/NewIntegerBypass.java","EqualsSafeCompare":"src/lab/intcache/EqualsSafeCompare.java","IntValueUnboxGuard":"src/lab/intcache/IntValueUnboxGuard.java"},"shown":{"BoxedDoubleEqBug":"java -cp out lab.intcache.BoxedDoubleEqBug","NewIntegerBypass":"java -cp out lab.intcache.NewIntegerBypass","EqualsSafeCompare":"java -cp out lab.intcache.EqualsSafeCompare","IntValueUnboxGuard":"java -cp out lab.intcache.IntValueUnboxGuard"},"results":{"id":"intcache","variants":{"BoxedDoubleEqBug":{"hash":"e3579ec98f4ec527","repeat":20,"runs":{"100":[{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0}],"200":[{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0},{"correct":128,"expected":200,"ms":0}],"500":[{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0},{"correct":128,"expected":500,"ms":0}],"1000":[{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0},{"correct":128,"expected":1000,"ms":0}]},"inside":"Compiled from \"BoxedDoubleEqBug.java\"\npublic class lab.intcache.BoxedDoubleEqBug {\n  public lab.intcache.BoxedDoubleEqBug();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     53\n      23: iload         5\n      25: invokestatic  #19                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      28: astore        6\n      30: iload         5\n      32: invokestatic  #19                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      35: astore        7\n      37: aload         6\n      39: aload         7\n      41: if_acmpne     47\n      44: iinc          4, 1\n      47: iinc          5, 1\n      50: goto          17\n      53: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      56: lload_2\n      57: lsub\n      58: ldc2_w        #23                 // long 1000000l\n      61: ldiv\n      62: lstore        5\n      64: getstatic     #25                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      67: iload         4\n      69: invokedynamic #29,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      74: invokevirtual #33                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      77: getstatic     #25                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: iload_1\n      81: invokedynamic #39,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      86: invokevirtual #33                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      89: getstatic     #25                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      92: lload         5\n      94: invokedynamic #40,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n      99: invokevirtual #33                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     102: return\n}"},"NewIntegerBypass":{"hash":"38091729c0edada1","repeat":20,"runs":{"100":[{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0},{"correct":0,"expected":100,"ms":0}],"200":[{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0},{"correct":0,"expected":200,"ms":0}],"500":[{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0},{"correct":0,"expected":500,"ms":0}],"1000":[{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0},{"correct":0,"expected":1000,"ms":0}]},"inside":"Compiled from \"NewIntegerBypass.java\"\npublic class lab.intcache.NewIntegerBypass {\n  public lab.intcache.NewIntegerBypass();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     61\n      23: new           #8                  // class java/lang/Integer\n      26: dup\n      27: iload         5\n      29: invokespecial #19                 // Method java/lang/Integer.\"<init>\":(I)V\n      32: astore        6\n      34: new           #8                  // class java/lang/Integer\n      37: dup\n      38: iload         5\n      40: invokespecial #19                 // Method java/lang/Integer.\"<init>\":(I)V\n      43: astore        7\n      45: aload         6\n      47: aload         7\n      49: if_acmpne     55\n      52: iinc          4, 1\n      55: iinc          5, 1\n      58: goto          17\n      61: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      64: lload_2\n      65: lsub\n      66: ldc2_w        #22                 // long 1000000l\n      69: ldiv\n      70: lstore        5\n      72: getstatic     #24                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      75: iload         4\n      77: invokedynamic #28,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      82: invokevirtual #32                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      85: getstatic     #24                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      88: iload_1\n      89: invokedynamic #38,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      94: invokevirtual #32                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      97: getstatic     #24                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     100: lload         5\n     102: invokedynamic #39,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     107: invokevirtual #32                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     110: return\n}"},"EqualsSafeCompare":{"hash":"0a889c14c72bd80b","repeat":20,"runs":{"100":[{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0}],"200":[{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0}],"500":[{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0}],"1000":[{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0}]},"inside":"Compiled from \"EqualsSafeCompare.java\"\npublic class lab.intcache.EqualsSafeCompare {\n  public lab.intcache.EqualsSafeCompare();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     56\n      23: iload         5\n      25: invokestatic  #19                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      28: astore        6\n      30: iload         5\n      32: invokestatic  #19                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      35: astore        7\n      37: aload         6\n      39: aload         7\n      41: invokestatic  #23                 // Method java/util/Objects.equals:(Ljava/lang/Object;Ljava/lang/Object;)Z\n      44: ifeq          50\n      47: iinc          4, 1\n      50: iinc          5, 1\n      53: goto          17\n      56: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      59: lload_2\n      60: lsub\n      61: ldc2_w        #29                 // long 1000000l\n      64: ldiv\n      65: lstore        5\n      67: getstatic     #31                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      70: iload         4\n      72: invokedynamic #35,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      77: invokevirtual #39                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      80: getstatic     #31                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      83: iload_1\n      84: invokedynamic #45,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      89: invokevirtual #39                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      92: getstatic     #31                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      95: lload         5\n      97: invokedynamic #46,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     102: invokevirtual #39                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     105: return\n}"},"IntValueUnboxGuard":{"hash":"14f8c529f11047b4","repeat":20,"runs":{"100":[{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0},{"correct":100,"expected":100,"ms":0}],"200":[{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0},{"correct":200,"expected":200,"ms":0}],"500":[{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0},{"correct":500,"expected":500,"ms":0}],"1000":[{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":1},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0},{"correct":1000,"expected":1000,"ms":0}]},"inside":"Compiled from \"IntValueUnboxGuard.java\"\npublic class lab.intcache.IntValueUnboxGuard {\n  public lab.intcache.IntValueUnboxGuard();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     69\n      23: iload         5\n      25: invokestatic  #19                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      28: astore        6\n      30: iload         5\n      32: invokestatic  #19                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      35: astore        7\n      37: aload         6\n      39: ifnull        63\n      42: aload         7\n      44: ifnull        63\n      47: aload         6\n      49: invokevirtual #23                 // Method java/lang/Integer.intValue:()I\n      52: aload         7\n      54: invokevirtual #23                 // Method java/lang/Integer.intValue:()I\n      57: if_icmpne     63\n      60: iinc          4, 1\n      63: iinc          5, 1\n      66: goto          17\n      69: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      72: lload_2\n      73: lsub\n      74: ldc2_w        #27                 // long 1000000l\n      77: ldiv\n      78: lstore        5\n      80: getstatic     #29                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      83: iload         4\n      85: invokedynamic #33,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      90: invokevirtual #37                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      93: getstatic     #29                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      96: iload_1\n      97: invokedynamic #43,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     102: invokevirtual #37                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     105: getstatic     #29                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     108: lload         5\n     110: invokedynamic #44,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     115: invokevirtual #37                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     118: return\n}"}},"env":{"runtime":"JDK 17.0.21","cores":2,"os":"linux","date":"2026-11-15"}}}},"slides":[{"beat":"open","title":"包装类缓存池与拆箱陷阱","blocks":[{"t":"text","md":"今天弄清一个最经典的线上隐形炸弹：**为什么 `Integer a = 127, b = 127; a == b` 是 `true`，把数字改成 `128` 就变成 `false`？**","say":"测试环境数据量小 ID 都在 127 以内测不出来，一上生产全线翻车。"}]},{"beat":"open","title":"热身：包装类缓存的三个细节","blocks":[{"t":"recall","say":"先检验对包装类缓存的了解。","items":[{"have":"缓存范围","q":"默认情况下，`Integer.valueOf()` 缓存的整数范围是多少？","options":["-128 到 127","0 到 127","-32768 到 32767"],"answer":0,"why":"覆盖一个有符号 byte 的范围 [-128, 127]；上限可通过 `-XX:AutoBoxCacheMax=<size>` 调大。"},{"have":"哪些有缓存","q":"以下哪个包装类**没有**常量缓存池？","options":["Double / Float","Byte / Short / Long","Character (0~127)"],"answer":0,"why":"整型系列（Byte/Short/Integer/Long/Character/Boolean）有缓存，浮点数 Double/Float 范围无穷大没有缓存。"},{"have":"三元 NPE","q":"`Integer x = null; int y = true ? x : 0;` 会发生什么？","options":["抛出 NullPointerException","y 等于 0","编译报错"],"answer":0,"why":"三元运算符两侧分别为 `Integer` 和 `int` 时，会先对 `x` 做自动拆箱 `x.intValue()`，导致 NPE。"}]}]},{"beat":"hook","title":"看代码：== 比较 vs Objects.equals","blocks":[{"t":"code","exp":"intcache","variants":["BoxedDoubleEqBug","EqualsSafeCompare"]}]},{"beat":"predict","title":"先猜：从 0 到 499 逐个比较，== 能对几个？","blocks":[{"t":"predict","exp":"intcache","question":"用 `Integer.valueOf(i) == Integer.valueOf(i)` 比较 `i = 0..499`，一共能判断对多少个？","options":["128 个（只有 0..127 对）","500 个全对","0 个全错"],"answer":0,"why":"0 到 127 共 128 个数命中 `IntegerCache`，返回同一个对象引用；128 到 499 每次都 `new Integer`，`==` 全为 false。"}]},{"beat":"run","title":"跑一跑：实测 100/200/500/1000 档位","blocks":[{"t":"result","exp":"intcache","kind":"correctness"}]},{"beat":"why","title":"掀开字节码：if_acmpne 比的是对象地址","blocks":[{"t":"inside","exp":"intcache","variant":"BoxedDoubleEqBug","explain":"字节码里 `a == b` 编译为 `if_acmpne`（比较两个引用地址是否相等），而 `Integer.valueOf(i)` 在 `i > 127` 时返回两个新堆地址，导致跳转失败。"}]},{"beat":"fix","title":"改一处：Objects.equals 与判空拆箱","blocks":[{"t":"code","exp":"intcache","variants":["EqualsSafeCompare","IntValueUnboxGuard"]}]},{"beat":"choose","title":"怎么选：四种比较方式的耗时对比","blocks":[{"t":"result","exp":"intcache","kind":"scaling"}]},{"beat":"name","title":"记住一条铁律","blocks":[{"t":"text","md":"所有包装类（`Integer`/`Long`/`Boolean` 等）之间比大小或相等，**一律用 `Objects.equals(a, b)`**；性能敏感热循环优先用基本类型 `int`/`long`。","say":"绝不要用 `==` 比较两个包装类。"}]},{"beat":"check","title":"小测：30 秒巩固","blocks":[{"t":"recall","say":"再确认一个边界坑。","items":[{"have":"混合比较","q":"`Integer a = new Integer(500); int b = 500; System.out.println(a == b);` 输出什么？","options":["true（因为和基本类型 int 用 == 时，a 会自动拆箱成 int 再比值）","false","编译报错"],"answer":0,"why":"只要 `==` 有一侧是基本类型，包装类会自动拆箱成基本类型比值——前提是 `a` 不能为 `null`！"}]}]},{"beat":"say","title":"开口讲：2 分钟脱稿自述","blocks":[{"t":"say","prompt":"请脱稿向面试官解释：1) IntegerCache 的缓存范围与原理；2) 为什么 127 对 128 错；3) 自动拆箱在什么场景会悄悄抛出 NPE，工程上怎么防。","seconds":120}]},{"beat":"take","title":"带走 3 张核心卡片","blocks":[{"t":"take","cards":[{"k":"缓存范围","v":"`Integer.valueOf()` 默认缓存 `-128 ~ 127`，Double/Float 无缓存。"},{"k":"比较铁律","v":"包装类之间一律用 `Objects.equals(a, b)`，禁止用 `==`。"},{"k":"拆箱防空","v":"数据库查出的 `Integer` 可能为 `null`，拆箱前必须判空。"}]}]}],"beats":[{"id":"open","label":"开场"},{"id":"hook","label":"问题"},{"id":"code","label":"代码"},{"id":"predict","label":"先猜"},{"id":"run","label":"跑一跑"},{"id":"why","label":"为什么"},{"id":"fix","label":"改一处"},{"id":"choose","label":"怎么选"},{"id":"name","label":"名字"},{"id":"check","label":"小测"},{"id":"say","label":"开口讲"},{"id":"take","label":"带走"}]}</script>
+<script>
+/* Shared pieces of the lesson page: element building, inline marks, Java colouring, the code view, a line diff, saved state.
+   Text always goes in as text nodes; nothing a lesson writes is parsed as HTML. */
+(function () {
+  "use strict";
+  const L = (window.Lesson = { blocks: {} });
+
+  /** h("div.a.b", { text, on: { click }, attr: {…} }, child, child…) */
+  L.h = function (spec, props, ...kids) {
+    const [tag, ...classes] = spec.split(".");
+    const el = document.createElement(tag || "div");
+    if (classes.length) el.className = classes.join(" ");
+    if (props) {
+      if (props.text !== undefined) el.textContent = props.text;
+      for (const [name, value] of Object.entries(props.attr || {})) el.setAttribute(name, value);
+      for (const [name, fn] of Object.entries(props.on || {})) el.addEventListener(name, fn);
+    }
+    for (const kid of kids.flat()) if (kid) el.append(kid);
+    return el;
+  };
+
+  L.num = (value) => Number(value).toLocaleString("en-US");
+
+  /** **bold**, `code` and ==mark== inside a sentence. */
+  L.md = function (text) {
+    const out = document.createDocumentFragment();
+    const pattern = /\*\*([^*]+)\*\*|`([^`]+)`|==([^=]+)==/g;
+    let last = 0;
+    for (let hit = pattern.exec(text); hit; hit = pattern.exec(text)) {
+      out.append(text.slice(last, hit.index));
+      out.append(hit[1] ? L.h("b", { text: hit[1] }) : hit[2] ? L.term(hit[2], L.h("code", { text: hit[2] })) : L.h("mark", { text: hit[3] }));
+      last = pattern.lastIndex;
+    }
+    out.append(text.slice(last));
+    return out;
+  };
+
+  const JAVA = new Set("abstract boolean break byte case catch char class continue default do double else enum extends final finally float for if implements import instanceof int interface long new null package private protected public record return short static super switch synchronized this throw throws try var void volatile while true false".split(" "));
+  const PYTHON = new Set("and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield True False None".split(" "));
+  const LANGS = { java: { words: JAVA, comment: "//" }, python: { words: PYTHON, comment: "#" }, text: { words: new Set(), comment: "\n" } };
+  const TOKEN = /(\/\/.*$|#.*$)|("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)')|\b(\d[\d_]*(?:\.\d+)?[LlFfDd]?)\b|\b([A-Za-z_]\w*)\b/g;
+
+  /** One line of code as coloured spans. */
+  L.colour = function (line, lang) {
+    const { words, comment } = LANGS[lang] || LANGS.text;
+    const out = document.createDocumentFragment();
+    let last = 0;
+    TOKEN.lastIndex = 0;
+    for (let hit = TOKEN.exec(line); hit; hit = TOKEN.exec(line)) {
+      const kind = hit[1] ? (hit[1].startsWith(comment) ? "c" : "") : hit[2] || hit[3] ? "s" : hit[4] ? "n" : words.has(hit[5]) ? "k" : "";
+      out.append(line.slice(last, hit.index));
+      out.append(kind ? L.h(`span.tk-${kind}`, { text: hit[0] }) : hit[0]);
+      last = TOKEN.lastIndex;
+    }
+    out.append(line.slice(last));
+    return out;
+  };
+
+  /* Reminders at the moment of need: a word the learner may not know is explained where it stands, on hover, focus or tap. */
+  L.glossary = {};
+  const tip = L.h("div.tip", { attr: { role: "tooltip", id: "lesson-tip", hidden: "" } });
+  let tipFor = null, tipTimer = 0;
+  function showTip(anchor, word) {
+    clearTimeout(tipTimer);
+    tipFor = anchor;
+    tip.replaceChildren(L.h("b.mono", { text: word }), L.h("span", null, L.md(L.glossary[word])));
+    tip.hidden = false;
+    if (!tip.isConnected) document.body.append(tip);
+    const box = anchor.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
+    tip.style.left = `${Math.max(8, Math.min(window.innerWidth - width - 8, box.left + box.width / 2 - width / 2))}px`;
+    tip.style.top = `${box.bottom + height + 14 > window.innerHeight ? box.top - height - 8 : box.bottom + 8}px`;
+  }
+  L.hideTip = function () { clearTimeout(tipTimer); tip.hidden = true; tipFor = null; };
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") L.hideTip(); });
+  document.addEventListener("click", (event) => { if (tipFor && !tipFor.contains(event.target)) L.hideTip(); });
+
+  /** Wraps `content` as an explainable word when the glossary knows it; otherwise returns the content unchanged. */
+  L.term = function (word, content) {
+    if (!L.glossary[word]) return content;
+    return L.h("span.term", {
+      attr: { tabindex: "0", role: "button", "aria-describedby": "lesson-tip" },
+      on: {
+        mouseenter(event) { const anchor = event.currentTarget; tipTimer = setTimeout(() => showTip(anchor, word), 140); },
+        mouseleave: L.hideTip,
+        focus(event) { showTip(event.currentTarget, word); },
+        blur: L.hideTip,
+        click(event) { event.stopPropagation(); if (tipFor === event.currentTarget) L.hideTip(); else showTip(event.currentTarget, word); },
+      },
+    }, content);
+  };
+
+  /** A line of code with the glossary's words made explainable (longest word first; nothing inside a comment). */
+  L.codeLine = function (line, lang) {
+    const words = Object.keys(L.glossary).sort((a, b) => b.length - a.length);
+    const comment = line.indexOf((LANGS[lang] || LANGS.text).comment);
+    const limit = comment < 0 ? line.length : comment;
+    const out = document.createDocumentFragment();
+    let from = 0;
+    for (let at = 0; at < limit;) {
+      const word = words.find((candidate) => line.startsWith(candidate, at)
+        && !(/\w/.test(candidate[0]) && /\w/.test(line[at - 1] || ""))
+        && !(/\w/.test(candidate.at(-1)) && /\w/.test(line[at + candidate.length] || "")));
+      if (!word) { at++; continue; }
+      out.append(L.colour(line.slice(from, at), lang), L.term(word, L.h("span", null, L.colour(word, lang))));
+      at += word.length;
+      from = at;
+    }
+    out.append(L.colour(line.slice(from), lang));
+    return out;
+  };
+
+  /** The 1-based numbers of the lines of `other` that are not in `base` (longest common subsequence). */
+  L.changedLines = function (base, other) {
+    const a = base.split("\n"), b = other.split("\n");
+    const table = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+    for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
+    const changed = [];
+    for (let i = 0, j = 0; j < b.length;) {
+      if (i < a.length && a[i] === b[j]) { i++; j++; } else if (i < a.length && table[i + 1][j] >= table[i][j + 1]) i++; else changed.push(++j);
+    }
+    return changed;
+  };
+
+  /** A source file with line numbers. show(source, { focus, changed }) redraws it and scrolls the first marked line into view. */
+  L.codeView = function () {
+    const scroll = L.h("div.code__scroll", { attr: { tabindex: "0" } });
+    const label = L.h("div.code__path");
+    const el = L.h("div.code", null, label, scroll);
+    return {
+      el,
+      /** Calls fn(lineNumber) when the learner presses a line. */
+      onLine(fn) { scroll.addEventListener("click", (event) => { const row = event.target.closest(".code__line"); if (row) fn([...scroll.children].indexOf(row) + 1); }); },
+      show(source, { path = "", lang = "text", focus = [], changed = [], wrong = [], tags = {} } = {}) {
+        label.textContent = path;
+        el.classList.toggle("has-focus", focus.length > 0);
+        scroll.replaceChildren(...source.split("\n").map((line, i) => {
+          const state = changed.includes(i + 1) ? ".is-changed" : focus.includes(i + 1) ? ".is-focus" : wrong.includes(i + 1) ? ".is-wrong" : "";
+          return L.h(`div.code__line${state}`, null, L.h("span.code__no", { text: String(i + 1) }), L.h("span", null, L.codeLine(line, lang)), tags[i + 1] ? L.h("span.code__tag", { text: tags[i + 1] }) : null);
+        }));
+        const place = () => {
+          const first = scroll.querySelector(".is-changed, .is-focus");
+          if (first) scroll.scrollTop = Math.max(0, first.offsetTop - scroll.offsetTop - scroll.clientHeight / 3);
+        };
+        place();
+        requestAnimationFrame(place); // a view built before it is on the page has no size yet
+      },
+    };
+  };
+
+  /** A row of mutually exclusive choices. `options` are { id, label }. */
+  L.segmented = function (label, options, selected, onPick) {
+    const buttons = options.map((option) => L.h("button", { text: option.label, attr: { type: "button", "aria-pressed": String(option.id === selected) }, on: { click() { pick(option.id); onPick(option.id); } } }));
+    function pick(id) { buttons.forEach((button, i) => button.setAttribute("aria-pressed", String(options[i].id === id))); }
+    return { el: L.h("div.seg", null, label ? L.h("span", { text: label }) : null, L.h("div.seg__set", { attr: { role: "group", "aria-label": label || "选择" } }, buttons)), pick };
+  };
+
+  /** What the learner did, kept across reloads; quietly does nothing where storage is unavailable. */
+  L.memory = function (key) {
+    let data = {};
+    try { data = JSON.parse(localStorage.getItem(key) || "{}"); } catch { data = {}; }
+    return {
+      get: (name, fallback) => (name in data ? data[name] : fallback),
+      set(name, value) { data[name] = value; try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* private window */ } },
+    };
+  };
+})();
+
+</script>
+<script>
+/* The plain blocks of a lesson. Each maker takes (block, ctx) and returns { el, steps?, set?, ready?, refresh? }:
+   steps = teacher sentences for moments inside the block after it has appeared; set(k) shows it as of step k;
+   ready() false means the learner still has to act before the lesson moves on; refresh() runs each time the block is revealed. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const KEYS = "ABCD";
+
+  L.blocks.text = (block) => ({ el: h("p.text", null, L.md(block.md)) });
+
+  /** A row of small answer buttons. paint(picked, right) locks them once an answer is in and marks the right and the wrong one. */
+  function picks(labels, onPick, extra = "") {
+    const buttons = labels.map((text, i) => h(`button.pick${extra}`, { attr: { type: "button" }, on: { click: () => onPick(i) } }, L.md(text)));
+    return {
+      el: h("div.picks", null, buttons),
+      paint(picked, right) {
+        buttons.forEach((button, i) => {
+          button.disabled = picked !== undefined;
+          button.classList.toggle("is-right", picked !== undefined && i === right);
+          button.classList.toggle("is-wrong", picked === i && i !== right);
+        });
+      },
+    };
+  }
+
+  /** Several small questions answered on the spot. make(item, i) gives each row's content; the answers survive a reload. */
+  function answered(block, ctx, name, make, sum) {
+    const key = `${name}:${block.items.length}:${block.items[0].q || block.items[0].text}`;
+    const answers = ctx.memory.get(key, {});
+    const score = h(`p.${name}__score`, { attr: { "aria-live": "polite" } });
+    const rows = block.items.map((item, i) => {
+      const why = h(`p.${name}__why`, { attr: { hidden: "" } }, L.md(item.why));
+      const row = make(item, (j) => { answers[i] = j; ctx.memory.set(key, answers); paint(); (done() ? score : why).scrollIntoView({ block: "nearest", behavior: "smooth" }); });
+      return { item, why, pick: row.pick, el: h(`div.${name}__item`, null, row.head, row.pick.el, why) };
+    });
+    const done = () => rows.every((row, i) => answers[i] !== undefined);
+    function paint() {
+      rows.forEach((row, i) => { row.pick.paint(answers[i], row.item.answer); row.why.hidden = answers[i] === undefined; });
+      score.textContent = done() ? sum(rows.filter((row, i) => answers[i] === row.item.answer).length, rows.length) : "";
+    }
+    paint();
+    return { el: h(`div.${name}`, null, rows.map((row) => row.el), score), ready: done, waitSay: "先把这几道都点一下再往下。点错没关系；实在想跳过，再按一次。" };
+  }
+
+  /** "You have met these before": a quick question per thing the lesson builds on, with the one sentence needed if it has faded. */
+  L.blocks.recall = (block, ctx) => answered(block, ctx, "recall",
+    (item, onPick) => ({ head: [h("span.recall__have", null, L.md(item.have)), h("p.recall__q", null, L.md(item.q))], pick: picks(item.options, onPick) }),
+    (right, total) => (right === total ? `${total} 样都记得，可以开始了。` : `${total} 样里记得 ${right} 样。没记住的，把它下面那句话再看一眼，这节课够用了。`));
+
+  /** Apply the rule just learned: for each situation, pick the tool. */
+  L.blocks.cases = (block, ctx) => answered(block, ctx, "cases",
+    (item, onPick) => ({ head: [h("p.cases__text", null, L.md(item.text))], pick: picks(block.tools, (j) => { onPick(j); document.dispatchEvent(new CustomEvent("lesson:picked", { detail: { name: block.tools[item.answer] } })); }, ".pick--tool") }),
+    (right, total) => (right === total ? `${total} 个场景都选对了。这条规则是你的了。` : `${total} 个里选对 ${right} 个。看一眼没选对的那条理由，再回想那句规则。`));
+
+  /** A picture to hang the lesson on: a short everyday story, then what each thing in it is called in the program. */
+  L.blocks.scene = (block) => {
+    const rows = block.map.map((pair) => h("div.scene__row", null, h("span", null, L.md(pair.scene)), h("span.scene__arrow", { text: "→" }), h("span.scene__to", null, L.md(pair.code))));
+    const table = h("div.scene__map", null, h("div.scene__head", null, h("span", { text: "场景里" }), h("span"), h("span", { text: "程序里" })), rows);
+    const picture = block.picture ? L.sharePicture({ actors: block.picture.actors, shared: block.picture.shared.name, hands: false }) : null;
+    /* The picture starts as the everyday scene; each row that is reached pins the program's word onto the part it names. */
+    const draw = (k) => {
+      const tags = { actors: [], shared: [], action: "" };
+      block.map.slice(0, k).forEach((pair) => { if (pair.on === "action") tags.action = pair.tag; else if (pair.on) tags[pair.on].push(pair.tag); });
+      picture.set({ value: block.picture.shared.value, tags, hot: k ? block.map[k - 1].on || null : null });
+    };
+    const set = (k) => { table.classList.toggle("is-waiting", k === 0); rows.forEach((row, i) => { row.classList.toggle("is-waiting", i >= k); row.classList.toggle("is-now", i === k - 1); }); if (picture) draw(k); };
+    set(0);
+    return { el: h("div.scene", null, h("p.scene__story", null, L.md(block.story)), h(`div.scene__body${picture ? ".has-picture" : ""}`, null, table, picture?.el)), steps: block.map.map((pair) => ({ say: pair.say })), set };
+  };
+
+  /** "Which line is it?" The learner presses the line they suspect, on the real source. */
+  L.blocks.spot = (block, ctx) => {
+    const key = `spot:${block.of}:${block.answerLines.join("-")}`;
+    const view = L.codeView();
+    const out = h("p.spot__out", { attr: { "aria-live": "polite" } });
+    let found = ctx.memory.get(key, false), wrong = [];
+    function paint() {
+      view.show(block.source, { path: block.path, lang: block.lang, focus: found ? block.answerLines : [], wrong });
+      view.el.classList.toggle("is-pickable", !found);
+      out.className = `spot__out${found ? ".is-ok" : wrong.length ? ".is-miss" : ""}`.replace(/\./g, " ");
+      out.replaceChildren(found ? L.md(block.found) : wrong.length ? L.md(block.hint) : "");
+    }
+    view.onLine((n) => {
+      if (found) return;
+      if (block.answerLines.includes(n)) { found = true; wrong = []; ctx.memory.set(key, true); } else wrong = [n];
+      paint();
+    });
+    paint();
+    return {
+      el: h("div.spot", null, h("p.spot__q", null, L.md(block.q)), view.el, h("div.spot__side", null, h("p.spot__how", { text: "在左边的代码上，点你怀疑的那一行。" }), out)),
+      ready: () => found,
+      waitSay: "先在代码上点一行你怀疑的。点错会有提示；实在想跳过，再按一次。",
+      pass() { found = true; wrong = []; paint(); },
+    };
+  };
+
+  /** Evidence: what the built program looks like inside, as the lab's inspect command printed it. Labels are added as the teacher names each part. */
+  L.blocks.inside = (block) => {
+    const view = L.codeView();
+    const show = (k) => view.show(block.source, {
+      path: block.command, lang: "text", focus: k ? block.walk[k - 1].focusLines : [],
+      tags: Object.fromEntries(block.walk.slice(0, k).map((step) => [step.focusLines.at(-1), step.label])),
+    });
+    show(0);
+    return { el: h("div.inside", null, h("p.inside__what", { text: "这是工具打印出来的真实输出，不是示意图。" }), view.el), steps: block.walk.map((step) => ({ say: step.say, key: step.key })), set: show };
+  };
+
+  /** The teacher hands over the controls: nothing new appears, the switches of the experiment on this slide light up once. */
+  L.blocks.try = () => {
+    const el = h("span.try");
+    return {
+      el,
+      refresh() {
+        for (const exp of el.closest(".slide").querySelectorAll(".exp")) { exp.classList.remove("is-invited"); void exp.offsetWidth; exp.classList.add("is-invited"); }
+      },
+    };
+  };
+
+  L.blocks.points = (block) => ({ el: h("ul.points", null, block.items.map((item) => h("li", null, h("span", null, L.md(item))))) });
+
+  L.blocks.callout = (block) => ({ el: h(`div.callout.callout--${block.tone}`, null, h("h4", { text: block.title }), h("p", null, L.md(block.md))) });
+
+  L.blocks.code = (block) => {
+    const view = L.codeView();
+    const walk = block.walk || [];
+    const show = (focus) => view.show(block.source, { path: block.path, lang: block.lang, focus });
+    show(block.focusLines);
+    return { el: view.el, steps: walk.map((step) => ({ say: step.say, key: step.key })), set(k) { show(k ? walk[k - 1].focusLines : block.focusLines); } };
+  };
+
+  function option(index, text, onPick) {
+    const tag = h("span.opt__tag");
+    const el = h("button.opt", { attr: { type: "button" }, on: { click: () => onPick(index) } }, h("span.opt__key", { text: KEYS[index] }), h("span", null, L.md(text)), tag);
+    return { el, tag };
+  }
+
+  /** Guess first. Nothing is confirmed here: the answer comes from the run, in the matching reveal block. */
+  L.blocks.predict = (block, ctx) => {
+    const key = `predict:${block.id}`;
+    const options = block.options.map((text, i) => option(i, text, pick));
+    function paint() {
+      const picked = ctx.memory.get(key);
+      options.forEach((item, i) => { item.el.classList.toggle("is-picked", i === picked); item.tag.textContent = i === picked ? "你的猜测" : ""; });
+    }
+    function pick(index) { ctx.memory.set(key, index); paint(); }
+    paint();
+    return { el: h("div.predict", null, h("p.predict__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => ctx.memory.get(key) !== undefined };
+  };
+
+  /** After the run: the learner's guess beside what really happened. The explaining is the teacher's job, not this block's. */
+  L.blocks.reveal = (block, ctx) => {
+    const predict = ctx.predicts[block.of];
+    const guess = h("dd");
+    return {
+      el: h("div.reveal", null, h("dl", null, h("dt", { text: "你猜的" }), guess), h("dl", null, h("dt", { text: "实际" }), h("dd.is-ok", null, L.md(predict.options[predict.answer])))),
+      refresh() {
+        const picked = ctx.memory.get(`predict:${block.of}`);
+        guess.className = picked === undefined ? "" : picked === predict.answer ? "is-ok" : "is-miss";
+        guess.replaceChildren(picked === undefined ? "刚才没猜" : L.md(predict.options[picked]));
+      },
+    };
+  };
+
+  /** Several tools side by side: what each solves, what it costs, when to reach for it. The teacher goes through them one row at a
+      time, and the rule to choose by comes last, after every row has been talked through. */
+  L.blocks.choose = (block) => {
+    const rows = block.options.map((option) => h("div.choose__row", null,
+      h("span.choose__name", null, L.term(option.name, h("span", { text: option.name }))),
+      h("span", { attr: { "data-label": "解决什么" } }, L.md(option.solves)),
+      h("span", { attr: { "data-label": "代价" } }, L.md(option.cost)),
+      h("span", { attr: { "data-label": "什么时候用" } }, L.md(option.when))));
+    const rule = h("p.choose__rule", null, L.md(block.rule));
+    const el = h("div.choose", null,
+      h("div.choose__head", null, h("span"), h("span", { text: "解决什么" }), h("span", { text: "代价" }), h("span", { text: "什么时候用" })), rows, rule);
+    const set = (k) => {
+      const walking = k >= 1 && k <= rows.length;
+      el.classList.toggle("is-walking", walking);
+      rows.forEach((row, i) => row.classList.toggle("is-now", walking && i === k - 1));
+      rule.classList.toggle("is-waiting", k <= rows.length);
+    };
+    set(0);
+    return { el, steps: block.options.map((option) => ({ say: option.say })).concat({ say: block.ruleSay, key: block.ruleKey }), set };
+  };
+
+  L.blocks.name = (block) => ({
+    el: h("div.name", null,
+      h("h2.name__term", { text: block.term }),
+      block.alias ? h("p.name__alias", { text: block.alias }) : null,
+      h("p.name__line", null, L.md(block.oneLine)),
+      h("div.name__asked", null, h("h4", { text: "面试里它长这样" }), h("ul", null, block.asked.map((question) => h("li", { text: `「${question}」` })))),
+    ),
+  });
+
+  /** Answered on the spot: the picked option and the right one both show why. */
+  L.blocks.quiz = (block) => {
+    let done = false;
+    const options = block.options.map((item, i) => option(i, item.text, pick));
+    function pick(index) {
+      if (done) return;
+      done = true;
+      block.options.forEach((item, i) => {
+        if (i !== index && !item.ok) return;
+        options[i].el.classList.add(item.ok ? "is-right" : "is-wrong");
+        options[i].tag.textContent = item.ok ? "对" : "不对";
+        options[i].el.append(h("span.opt__why", null, L.md(item.why)));
+      });
+    }
+    return { el: h("div.quiz", null, h("p.quiz__q", null, L.md(block.q)), h("div.opts", null, options.map((item) => item.el))), ready: () => done };
+  };
+
+  /** Say it aloud against a clock, then tick off what you covered. The points stay hidden until the learner has spoken. */
+  L.blocks.say = (block) => {
+    const total = block.seconds || 120;
+    let left = total, timer = 0;
+    const clock = h("span.say__clock");
+    const score = h("p.say__score");
+    const boxes = block.points.map((point) => h("input", { attr: { type: "checkbox" }, on: { change: count } }));
+    const points = h("ul.say__points", { attr: { hidden: "" } }, block.points.map((point, i) => h("li", null, h("label", null, boxes[i], h("span", null, L.md(point))))), score);
+    const start = h("button.btn", { text: "开始讲", attr: { type: "button" }, on: { click: toggle } });
+    const model = h("p.say__model", { attr: { hidden: "" } }, L.md(block.model));
+    const showModel = h("button.btn", { text: "看一份参考回答", attr: { type: "button", hidden: "" }, on: { click() { model.hidden = !model.hidden; showModel.textContent = model.hidden ? "看一份参考回答" : "收起参考回答"; if (!model.hidden) model.scrollIntoView({ block: "nearest", behavior: "smooth" }); } } });
+    const check = h("button.btn.btn--primary", { text: "讲完了，对要点", attr: { type: "button" }, on: { click() { stop(); points.hidden = false; check.hidden = true; showModel.hidden = false; count(); } } });
+    function draw() { clock.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`; }
+    function stop() { clearInterval(timer); timer = 0; start.textContent = left === total ? "开始讲" : "接着讲"; }
+    function toggle() {
+      if (timer) return stop();
+      if (left === 0) left = total;
+      start.textContent = "暂停";
+      timer = setInterval(() => { left -= 1; draw(); if (left === 0) stop(); }, 1000);
+      draw();
+    }
+    function count() { score.textContent = `${block.points.length} 个要点，你讲到了 ${boxes.filter((box) => box.checked).length} 个。没讲到的，回到对应那一页再看一遍。`; }
+    draw();
+    return { el: h("div.say", null, h("p.say__prompt", null, L.md(block.prompt)), h("div.say__row", null, clock, start, check, showModel), points, model) };
+  };
+
+  L.blocks.cards = (block) => ({
+    el: h("div.cards", null, block.items.map((card) => {
+      const answer = h("p.card__a", { attr: { hidden: "" } }, L.md(card.a));
+      const button = h("button.btn.btn--quiet", { text: "看答案", attr: { type: "button" }, on: { click() { answer.hidden = !answer.hidden; button.textContent = answer.hidden ? "看答案" : "收起"; } } });
+      return h("div.card", null, h("p.card__q", null, L.md(card.q)), button, answer);
+    })),
+  });
+})();
+
+</script>
+<script>
+/* Things that are drawn instead of described. Three of them:
+   - the shared-thing picture: two actors, what each holds in hand, and the one thing they share. A scene uses it to show the
+     everyday story; `lanes` puts the same picture beside its rows, so every step is also seen in space, not only in time;
+   - `chart`: the recorded runs as lines, one per way of writing the code, along the experiment's knob;
+   - `decide`: the rule for choosing, drawn as a small tree.
+   Every number in a chart is read from the recorded runs. Colour names a series and nothing else; right or wrong is the marker's shape. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const NS = "http://www.w3.org/2000/svg";
+  const s = (tag, attrs, ...kids) => {
+    const el = document.createElementNS(NS, tag);
+    for (const [name, value] of Object.entries(attrs || {})) el.setAttribute(name, value);
+    el.append(...kids.flat().filter(Boolean));
+    return el;
+  };
+
+  /* ---------- two actors and the thing they share ---------- */
+
+  const PIC = { width: 300, height: 300 };
+  const FIGURE = () => s("svg", { viewBox: "0 0 44 40", class: "pic__figure", "aria-hidden": "true" },
+    s("circle", { cx: 22, cy: 10, r: 8.5 }), s("path", { d: "M4 40v-4a18 14 0 0 1 36 0v4" }));
+
+  /** A straight arrow from (x1, y1) to (x2, y2), stopping a little short at both ends. */
+  function arrow(x1, y1, x2, y2) {
+    const length = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / length, uy = (y2 - y1) / length;
+    const tipX = x2 - ux * 3, tipY = y2 - uy * 3, backX = tipX - ux * 9, backY = tipY - uy * 9;
+    return s("g", { class: "pic__arrow" },
+      s("line", { x1: x1 + ux * 3, y1: y1 + uy * 3, x2: backX, y2: backY }),
+      s("polygon", { points: `${tipX},${tipY} ${backX - uy * 4.5},${backY + ux * 4.5} ${backX + uy * 4.5},${backY - ux * 4.5}` }));
+  }
+
+  /** actors: two names; shared: its name; hands: whether each actor holds a value (the scene's story has no need of it). */
+  L.sharePicture = function ({ actors, shared, hands = true }) {
+    const side = ["a", "b"];
+    const value = h("b.pic__value");
+    const boardTags = h("div.pic__tags");
+    const board = h("div.pic__board", null, value);
+    const boardName = h("div.pic__over", null, h("span.pic__name", { text: shared }), boardTags);
+    const action = h("span.pic__action");
+    const people = actors.map((name, i) => {
+      const tags = h("div.pic__tags");
+      const note = h("span.pic__note");
+      const held = h("b");
+      return {
+        tags, note, held,
+        el: h(`div.pic__actor.pic__actor--${side[i]}`, null, FIGURE(), h("span.pic__name", { text: name }), tags, note),
+        hand: hands ? h(`div.pic__hand.pic__hand--${side[i]}`, null, h("small", { text: "手里" }), held) : null,
+      };
+    });
+    /* With hands the arrows run between the board and a hand; without, between an actor and the board. */
+    const ends = hands ? [[124, 110, 104, 144], [176, 110, 196, 144]] : [[122, 110, 62, 192], [178, 110, 238, 192]];
+    const arrows = ends.map(([bx, by, px, py]) => ({ in: arrow(bx, by, px, py), out: arrow(px, py, bx, by) }));
+    const lines = s("svg", { viewBox: `0 0 ${PIC.width} ${PIC.height}`, class: "pic__lines", "aria-hidden": "true" }, arrows.flatMap((pair) => [pair.in, pair.out]));
+    const el = h(`div.pic${hands ? "" : ".pic--plain"}`, { attr: { role: "img" } }, lines, boardName, board, action, people.flatMap((person) => [person.hand, person.el]));
+
+    const fill = (box, texts) => box.replaceChildren(...(texts || []).map((text) => h("span", { text })));
+    return {
+      el,
+      /** state: { value, hands: [text|null ×2], notes: [{ text, tone }|null ×2], move: { lane, op }|null,
+          tags: { actors: [], shared: [], action: text }, hot: "actors"|"shared"|"action"|null } */
+      set(state) {
+        const move = state.move, tags = state.tags || {};
+        value.textContent = String(state.value);
+        board.classList.toggle("is-now", move?.op === "write" || state.hot === "shared");
+        fill(boardTags, tags.shared);
+        action.textContent = tags.action || "";
+        action.classList.toggle("is-now", state.hot === "action");
+        people.forEach((person, i) => {
+          const mine = move?.lane === i;
+          if (person.hand) {
+            const text = state.hands?.[i];
+            person.held.textContent = text ?? "";
+            person.hand.classList.toggle("is-empty", text === null || text === undefined);
+            person.hand.classList.toggle("is-now", mine && (move.op === "read" || move.op === "calc"));
+          }
+          const note = state.notes?.[i];
+          person.note.textContent = note?.text || "";
+          person.note.className = `pic__note${note?.tone ? ` pic__note--${note.tone}` : ""}${mine && move.op === "note" ? " is-now" : ""}`;
+          person.el.classList.toggle("is-now", state.hot === "actors" || (mine && move.op === "note"));
+          fill(person.tags, tags.actors);
+          arrows[i].in.classList.toggle("is-on", mine && move.op === "read");
+          arrows[i].out.classList.toggle("is-on", (mine && move.op === "write") || Boolean(tags.action));
+        });
+        const holding = (state.hands || []).map((text, i) => (text === null || text === undefined ? "" : `${actors[i]}手里是 ${text}`)).filter(Boolean).join("，");
+        el.setAttribute("aria-label", `${actors.join("和")}共用${shared}，现在是 ${state.value}${holding ? `；${holding}` : ""}`);
+      },
+    };
+  };
+
+  /** What the picture shows after each step of a `lanes` walk: frame 0 is the start, frame k is after step k. */
+  L.shareFrames = function (steps, start) {
+    const frames = [{ value: start, hands: [null, null], notes: [null, null], move: null }];
+    for (const step of steps) {
+      const last = frames.at(-1);
+      const frame = { value: last.value, hands: [...last.hands], notes: last.notes.map((note) => (note?.tone === "fail" ? null : note)), move: { lane: step.lane, op: step.op } };
+      if (step.op === "read") frame.hands[step.lane] = String(frame.value);
+      else if (step.op === "calc") frame.hands[step.lane] = step.text.includes("=") ? step.text.split("=").pop().trim() : step.text;
+      else if (step.op === "write") { frame.value = step.value; frame.hands[step.lane] = null; }
+      else frame.notes[step.lane] = { text: step.text, tone: step.tone };
+      frames.push(frame);
+    }
+    return frames.concat({ ...frames.at(-1), move: null });
+  };
+
+  /* ---------- the recorded runs as a line chart ---------- */
+
+  const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+  const VIEW = { width: 640, height: 300, left: 44, right: 178, top: 14, bottom: 34, inset: 18, labelGap: 19 };
+
+  function step(max, ticks = 4) {
+    const raw = max / ticks, power = 10 ** Math.floor(Math.log10(raw));
+    return [1, 2, 5, 10].find((unit) => unit * power >= raw) * power;
+  }
+
+  /** Label heights that keep the order of `wanted` but never sit closer than `gap`, inside [top, bottom]. */
+  function spread(wanted, gap, top, bottom) {
+    const order = wanted.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y);
+    order.forEach((item, n) => { item.y = Math.max(item.y, n ? order[n - 1].y + gap : top); });
+    for (let n = order.length - 1; n >= 0; n--) order[n].y = Math.min(order[n].y, n === order.length - 1 ? bottom : order[n + 1].y - gap);
+    const out = [];
+    order.forEach((item) => { out[item.i] = item.y; });
+    return out;
+  }
+
+  L.blocks.chart = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.of];
+    const y = { label: "耗时", ...(block.y || exp.time) };
+    const xs = exp.knob.values;
+    const base = exp.variants[0];
+    const series = exp.variants.filter((variant) => !block.show || block.show.includes(variant.id)).slice(0, 4).map((variant) => ({
+      variant,
+      slot: exp.variants.indexOf(variant) + 1, // colour follows the way of writing, not its place in this chart
+      points: xs.map((x) => {
+        const runs = exp.results.variants[variant.id].runs[x];
+        return { x, value: median(runs.map((run) => run[y.key])), wrong: runs.filter((run) => run[exp.metric.key] !== run[exp.metric.expectKey]).length, total: runs.length };
+      }),
+    }));
+    const tick = step(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))));
+    const top = tick * Math.ceil(Math.max(...series.flatMap((one) => one.points.map((point) => point.value))) / tick);
+    const plot = { width: VIEW.width - VIEW.left - VIEW.right, height: VIEW.height - VIEW.top - VIEW.bottom };
+    const px = (i) => VIEW.left + VIEW.inset + (i * (plot.width - 2 * VIEW.inset)) / (xs.length - 1);
+    const py = (value) => VIEW.top + plot.height - (value / top) * plot.height;
+    const verdict = (point) => (point.wrong === 0 ? `${point.total} 次全对` : point.wrong === point.total ? `${point.total} 次全错` : `错了 ${point.wrong} 次`);
+    let focus = null;
+
+    const grid = [];
+    for (let value = 0; value <= top; value += tick) {
+      grid.push(s("line", { class: value ? "chart__grid" : "chart__base", x1: VIEW.left, x2: VIEW.left + plot.width, y1: py(value), y2: py(value) }));
+      grid.push(s("text", { class: "chart__tick", x: VIEW.left - 8, y: py(value) + 4, "text-anchor": "end" }, String(value)));
+    }
+    const xLabels = xs.map((x, i) => s("text", { class: "chart__tick", x: px(i), y: VIEW.height - 14, "text-anchor": "middle" }, String(x)));
+    const xTitle = s("text", { class: "chart__tick", x: VIEW.left + plot.width + 12, y: VIEW.height - 14 }, exp.knob.label);
+    const labelY = spread(series.map((one) => py(one.points.at(-1).value)), VIEW.labelGap, VIEW.top + 6, VIEW.top + plot.height);
+    const endX = px(xs.length - 1);
+
+    series.forEach((one, n) => {
+      const last = one.points.at(-1);
+      one.el = s("g", { class: `chart__series chart__series--${one.slot}` },
+        s("polyline", { class: "chart__line", points: one.points.map((point, i) => `${px(i)},${py(point.value)}`).join(" ") }),
+        s("polyline", { class: "chart__lead", points: `${endX + 8},${py(last.value)} ${endX + 20},${labelY[n]} ${endX + 30},${labelY[n]}` }),
+        one.points.map((point, i) => s("circle", { class: `chart__dot${point.wrong ? " is-wrong" : ""}`, cx: px(i), cy: py(point.value), r: 5 })),
+        s("text", { class: "chart__name", x: endX + 35, y: labelY[n] + 4 }, s("tspan", { class: "chart__label" }, `${one.variant.label} `), s("tspan", { class: "chart__end" }, String(last.value))));
+    });
+
+    const cross = s("line", { class: "chart__cross", y1: VIEW.top, y2: VIEW.top + plot.height });
+    const tip = h("div.chart__tip", { attr: { hidden: "" } });
+    function point(i) {
+      cross.setAttribute("x1", px(i)); cross.setAttribute("x2", px(i));
+      cross.classList.add("is-on");
+      tip.replaceChildren(h("b", { text: `${exp.knob.label} ${xs[i]}` }), ...[...series].sort((a, b) => b.points[i].value - a.points[i].value).map((one) => h(`div.chart__row${focus && focus !== one.variant.id ? ".is-dim" : ""}`, null,
+        h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label }), h("span.num", { text: `${one.points[i].value} ${y.unit}` }), h(`span${one.points[i].wrong ? ".is-wrong" : ""}`, { text: verdict(one.points[i]) }))));
+      tip.hidden = false;
+      const half = i >= xs.length / 2;
+      tip.style.left = half ? "" : `${((px(i) + 14) / VIEW.width) * 100}%`;
+      tip.style.right = half ? `${100 - ((px(i) - 14) / VIEW.width) * 100}%` : "";
+    }
+    function leave() { cross.classList.remove("is-on"); tip.hidden = true; }
+    const width = (plot.width - 2 * VIEW.inset) / (xs.length - 1);
+    const hits = xs.map((x, i) => {
+      const hit = s("rect", { class: "chart__hit", x: px(i) - width / 2, y: VIEW.top, width, height: plot.height + VIEW.bottom, tabindex: 0, role: "button", "aria-label": `${exp.knob.label} ${x}，读这一列` });
+      for (const name of ["pointerenter", "focus", "click"]) hit.addEventListener(name, () => point(i));
+      hit.addEventListener("blur", leave);
+      return hit;
+    });
+    const svg = s("svg", { viewBox: `0 0 ${VIEW.width} ${VIEW.height}`, class: "chart__svg", role: "img", "aria-label": `${y.label}随${exp.knob.label}的变化，${series.length} 种写法，数据在下面的表里` },
+      grid, xLabels, xTitle, cross, series.map((one) => one.el), hits);
+    svg.addEventListener("pointerleave", leave);
+
+    const read = h("p.chart__read", { attr: { "aria-live": "polite" } });
+    const buttons = series.map((one) => h("button.chart__pick", { attr: { type: "button", "aria-pressed": "false" }, on: { click: () => look(focus === one.variant.id ? null : one.variant.id) } },
+      h(`i.chart__key.chart__key--${one.slot}`), h("span", { text: one.variant.label })));
+    function look(id) {
+      focus = id;
+      series.forEach((one, n) => { one.el.classList.toggle("is-dim", Boolean(id) && one.variant.id !== id); one.el.classList.toggle("is-on", one.variant.id === id); buttons[n].setAttribute("aria-pressed", String(one.variant.id === id)); });
+      const one = series.find((candidate) => candidate.variant.id === id);
+      if (!one) return read.replaceChildren("点上面的写法名，只看那一条线；把鼠标移到图上（手机上点一下），读那一列的每个数。");
+      const last = one.points.at(-1), first = one.points[0];
+      const basePoint = exp.results.variants[base.id].runs[last.x];
+      const ratio = one.variant.id === base.id ? "" : `，是「${base.label}」的 ${(last.value / median(basePoint.map((run) => run[y.key]))).toFixed(1)} 倍`;
+      const wrongAt = one.points.filter((item) => item.wrong).map((item) => item.x);
+      read.replaceChildren(L.md(`${one.variant.label}：${exp.knob.label} ${first.x} 时 **${first.value} ${y.unit}**，到 ${last.x} 时 **${last.value} ${y.unit}**${ratio}。${wrongAt.length ? `==${exp.knob.label}为 ${wrongAt.join("、")} 时结果有错==。` : "每一组结果都对。"}`));
+    }
+    look(null);
+
+    const table = h("details.chart__table", null, h("summary", { text: "看数据表" }), h("table", null,
+      h("thead", null, h("tr", null, h("th", { text: `${exp.knob.label} →` }), xs.map((x) => h("th", { text: String(x) })))),
+      h("tbody", null, series.map((one) => h("tr", null, h("th", { text: one.variant.label }), one.points.map((item) => h("td", { text: `${item.value} ${y.unit}${item.wrong ? "（有错）" : ""}` })))))));
+
+    return {
+      el: h("figure.chart", null,
+        h("figcaption.chart__cap", null, h("b", { text: `${y.label}（${y.unit}）` }), h("span", { text: `每个点是 ${exp.repeat} 次真实运行的中位数` }),
+          h("span.chart__marks", null, h("i.chart__mark"), "这一组结果全对", h("i.chart__mark.is-wrong"), "有错")),
+        h("div.chart__plot", null, svg, tip),
+        h("div.chart__side", null, h("div.chart__picks", { attr: { role: "group", "aria-label": "只看一种写法" } }, buttons), read, table)),
+      steps: block.walk.map((item) => ({ say: item.say, key: item.key })),
+      set(k) { look(k ? block.walk[k - 1].focus : null); },
+    };
+  };
+
+  /* ---------- the rule for choosing, as a tree ---------- */
+
+  L.blocks.decide = (block) => {
+    const branches = block.branches.map((branch) => ({
+      pick: branch.pick,
+      el: h("li.decide__branch", null,
+        h("span.decide__when", null, L.md(branch.when)),
+        h("span.decide__pick", null, L.term(branch.pick, h("span", { text: branch.pick }))),
+        branch.eg ? h("small.decide__eg", { text: `比如：${branch.eg}` }) : null),
+    }));
+    /* When the learner answers a `cases` item on the same slide, the branch that item belongs to lights up. */
+    const onPicked = (event) => {
+      const hit = branches.find((branch) => branch.pick === event.detail.name);
+      if (!hit || !hit.el.isConnected) return;
+      branches.forEach((branch) => branch.el.classList.remove("is-hit"));
+      void hit.el.offsetWidth; // restart the flash when the same branch is hit twice
+      hit.el.classList.add("is-hit", "is-used");
+    };
+    document.addEventListener("lesson:picked", onPicked);
+    return { el: h("div.decide", null, h("p.decide__q", null, L.md(block.q)), h("ul.decide__list", null, branches.map((branch) => branch.el))) };
+  };
+})();
+
+</script>
+<script>
+/* The experiment block: the code on the left (switch what was changed), what really happened on the right.
+   Every dot is one recorded run on the learner's own machine; the page never invents a number. Switching the code or the knob
+   moves the same dots, so the learner sees the effect of one change as data. Touch a dot to read that single run. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const AXIS_ROOM = 1.04, BIN = 1.2, DROP_MS = 45;
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  const median = (values) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.floor(sorted.length / 2)]; };
+
+  /** worst: the largest miss of the target, signed (negative = came out too low, positive = too high). */
+  function summary(runs, metric) {
+    const misses = runs.map((run) => run[metric.key] - run[metric.expectKey]);
+    return { wrong: misses.filter(Boolean).length, total: runs.length, worst: misses.reduce((far, miss) => (Math.abs(miss) > Math.abs(far) ? miss : far), 0), expected: runs[0][metric.expectKey] };
+  }
+  const missed = (miss) => `${miss > 0 ? "多了" : "少了"} ${L.num(Math.abs(miss))}`;
+
+  L.blocks.experiment = (block, ctx) => {
+    const exp = ctx.lesson.experiments[block.lab];
+    const shown = exp.variants.filter((variant) => block.show.includes(variant.id));
+    const base = exp.variants[0];
+    const metric = exp.metric, time = exp.time;
+    let variant = block.select || shown[0].id;
+    let knob = block.at || (exp.knob ? exp.knob.default : "-");
+    let played = false;
+    let seen = block.hand ? 0 : exp.repeat; // hand: the learner lets the recorded runs out one press at a time
+
+    const runsOf = (id) => exp.results.variants[id].runs[knob];
+    const view = L.codeView();
+    const note = h("p.exp__note");
+    const question = h("p.exp__q");
+    const finding = h("p.exp__finding", { attr: { "aria-live": "polite" } });
+    const probe = h("span.exp__probe");
+    const command = h("code.cmd");
+    const ticks = h("div.plot__ticks", null, h("span", { text: "0" }), h("span.is-expect"));
+
+    const rows = shown.map((item) => {
+      const dots = Array.from({ length: exp.repeat }, (unused, i) => h("i.dot.is-waiting", { on: { mouseenter: () => read(item, i), click: () => read(item, i) } }));
+      const sum = h("span.plot__sum");
+      const label = h("button.plot__label", { text: item.label, attr: { type: "button" }, on: { click: () => choose(item.id) } });
+      return { item, dots, sum, track: h("div.plot__track", null, dots), el: null, label };
+    });
+    rows.forEach((row) => { row.el = h("div.plot__row", null, row.label, row.track, row.sum); });
+
+    function read(item, i) {
+      const run = runsOf(item.id)[i];
+      probe.textContent = `${item.label} · 第 ${i + 1} 次：${metric.key} = ${L.num(run[metric.key])}${time ? `，${run[time.key]} ${time.unit}` : ""}`;
+    }
+
+    /* The far end of the axis: the largest result or target among everything this block can show. */
+    const reachable = exp.knob && block.knob !== false ? exp.knob.values : [knob];
+    const axisTop = AXIS_ROOM * Math.max(...shown.flatMap((item) => reachable.flatMap((value) => exp.results.variants[item.id].runs[value].flatMap((run) => [run[metric.key], run[metric.expectKey]]))));
+
+    function place(row) {
+      const runs = runsOf(row.item.id);
+      const info = summary(runs, metric);
+      const bins = new Map();
+      row.track.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      runs.forEach((run, i) => {
+        const percent = (run[metric.key] / axisTop) * 100;
+        const bin = Math.round(percent / BIN);
+        const seat = bins.get(bin) || 0;
+        bins.set(bin, seat + 1);
+        row.dots[i].style.left = `${percent}%`;
+        row.dots[i].style.transform = `translate(${-Math.floor(seat / 3) * 7}px, ${[0, -11, 11][seat % 3]}px)`;
+        row.dots[i].classList.toggle("is-ok", run[metric.key] === run[metric.expectKey]);
+      });
+      row.sum.replaceChildren(
+        h(`b${info.wrong ? "" : ".is-ok"}`, { text: info.wrong === 0 ? `${info.total} 次全对` : info.wrong === info.total ? `${info.total} 次全错` : `错了 ${info.wrong} 次` }),
+        time ? h("span.num", { text: `中位 ${median(runs.map((run) => run[time.key]))} ${time.unit}` }) : null,
+      );
+      row.el.classList.toggle("is-on", row.item.id === variant);
+      return info;
+    }
+
+    function tell(info, item) {
+      const runs = runsOf(item.id);
+      const speed = time ? `中位耗时 **${median(runs.map((run) => run[time.key]))} ${time.unit}**` : "";
+      if (info.wrong === 0) {
+        const slower = time && item.id !== base.id ? `，${base.label}是 ${median(runsOf(base.id).map((run) => run[time.key]))} ${time.unit}` : "";
+        return `${item.label}：${info.total} 次==全对==。${speed}${slower}。`;
+      }
+      const share = Math.round((Math.abs(info.worst) / info.expected) * 100);
+      return `${item.label}：${info.total} 次里 ==${info.wrong} 次不对==。${info.worst > 0 ? "最多到了" : "最少只到"} **${L.num(info.expected + info.worst)}**，${missed(info.worst)}${share ? `（${share}%）` : ""}。${speed}。`;
+    }
+
+    function draw() {
+      const item = exp.variants.find((candidate) => candidate.id === variant);
+      const source = exp.sources[variant];
+      view.show(source, { path: exp.paths[variant], lang: exp.lang, changed: variant === base.id ? [] : L.changedLines(exp.sources[base.id], source), focus: variant === base.id ? block.focusLines || [] : [] });
+      note.textContent = item.note || "";
+      let info = null;
+      for (const row of rows) { const result = place(row); if (row.item.id === variant) info = result; }
+      ticks.style.setProperty("--expect", `${(info.expected / axisTop) * 100}%`);
+      ticks.lastChild.textContent = `应该是 ${L.num(info.expected)}`;
+      question.replaceChildren(L.md(`每种写法跑 **${exp.repeat} 次**，一个点是一次的「${metric.label}」。`));
+      finding.replaceChildren(L.md(tell(info, item)));
+      command.textContent = `${exp.shown[variant]}${knob === "-" ? "" : ` ${knob}`}`;
+      probe.textContent = "";
+      if (block.hand) paintHand();
+    }
+
+    /* Hand mode: nothing is summed up until every run has been seen, so the surprise is the learner's own. */
+    const more = h("button.btn.btn--primary", { attr: { type: "button" }, on: { click: () => letOut(1) } });
+    const rest = h("button.btn", { attr: { type: "button" }, on: { click: () => letOut(exp.repeat) } });
+    const hand = block.hand ? h("div.exp__hand", null, more, rest) : null;
+    function paintHand() {
+      const row = rows[0], runs = runsOf(row.item.id), pending = seen < exp.repeat;
+      row.dots.forEach((dot, i) => dot.classList.toggle("is-waiting", i >= seen));
+      row.sum.classList.toggle("is-held", pending);
+      hand.hidden = !pending;
+      if (!pending) return;
+      more.textContent = seen === 0 ? "看第 1 次运行" : "再看一次";
+      rest.textContent = `把剩下的 ${exp.repeat - seen} 次一起放出来`;
+      rest.hidden = seen < 2;
+      if (seen === 0) return finding.replaceChildren("还一次都没看。点下面的按钮，看第 1 次跑出了多少。");
+      const last = runs[seen - 1], value = last[metric.key], expected = last[metric.expectKey];
+      const same = seen > 1 && runs[seen - 2][metric.key] === value;
+      finding.replaceChildren(L.md(`第 ${seen} 次：**${L.num(value)}**。${value === expected ? "和应该的一样。" : `应该是 ${L.num(expected)}，==${missed(value - expected)}==。`}${seen > 1 ? (same ? "和上一次一样。" : "和上一次还不一样。") : ""}`));
+    }
+    function letOut(n) {
+      const from = seen;
+      seen = Math.min(exp.repeat, seen + n);
+      draw();
+      if (seen - from > 1 && !still.matches) rows[0].dots.forEach((dot, i) => { if (i >= from) { dot.classList.add("is-waiting"); setTimeout(() => dot.classList.remove("is-waiting"), 80 + (i - from) * DROP_MS); } });
+    }
+
+    function play() {
+      played = true;
+      if (seen < exp.repeat) return;
+      const all = rows.flatMap((row) => row.dots);
+      all.forEach((dot) => dot.classList.add("is-waiting"));
+      if (still.matches) return all.forEach((dot) => dot.classList.remove("is-waiting"));
+      rows.forEach((row) => row.dots.forEach((dot, i) => setTimeout(() => dot.classList.remove("is-waiting"), 260 + i * DROP_MS)));
+    }
+
+    function choose(id) { variant = id; tabs?.pick(id); draw(); }
+    const tabs = shown.length > 1 ? L.segmented("写法", shown.map((item) => ({ id: item.id, label: item.label })), variant, choose) : null;
+    const dial = exp.knob && block.knob !== false ? L.segmented(exp.knob.label, exp.knob.values.map((value) => ({ id: value, label: value })), knob, (value) => { knob = value; draw(); }) : null;
+    const copy = h("button.btn.btn--quiet", { text: "复制", attr: { type: "button" }, on: { click() { navigator.clipboard?.writeText(command.textContent).then(() => { copy.textContent = "已复制"; }, () => {}); } } });
+    const env = exp.results.env;
+
+    draw();
+    return {
+      el: h("div.exp", null,
+        tabs || dial ? h("div.exp__bar", null, tabs?.el, dial?.el) : null,
+        h("div.exp__body", null,
+          h("div", null, view.el, note),
+          h("div.exp__data", null, question, h("div.plot", null, rows.map((row) => row.el), h("div.plot__axis", null, h("span"), ticks, h("span"))), finding, hand,
+            h("div.exp__foot", null,
+              h("span", { text: `真实记录 · 这台电脑 · ${env.runtime} · ${env.cores} 个逻辑核 · ${env.date}` }),
+              h("button.btn.btn--quiet", { text: "再放一遍", attr: { type: "button" }, on: { click: play } }),
+              h("span", null, "自己跑：", command), copy, probe))),
+      ),
+      refresh() { if (!played) play(); },
+      waitSay: "先自己看：点「看第 1 次运行」，一次一次把结果放出来。实在想跳过，再按一次。",
+      ready: () => seen >= exp.repeat,
+      pass() { if (seen < exp.repeat) letOut(exp.repeat); },
+    };
+  };
+})();
+
+</script>
+<script>
+/* Two actors and the one thing they share, with time running downward.
+   `lanes` is the teacher's walk through one fixed order of steps; a step may end in a question the learner answers before the next
+   step shows what really happens. `schedule` hands the order to the learner: they press which actor moves next and watch what the
+   shared value becomes, with a lock they can switch on. Both draw rows the same way. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const OPS = ["read", "calc", "write"];
+
+  /** One row: a step in its actor's lane, an arrow to or from the shared value when the step touches it.
+      A `note` step touches nothing: the actor waits, gives up, takes or releases something. */
+  function row(step, shared) {
+    const touches = step.op === "read" || step.op === "write";
+    const inward = step.op === "write";
+    const arrow = h(`span.arrow.arrow--${!touches ? "none" : (step.lane === 0) === inward ? "right" : "left"}`);
+    const chip = h(`span.chip${step.op === "note" && step.tone ? `.chip--${step.tone}` : ""}`, { text: step.text });
+    const cells = [h("div.lcell.lcell--a"), h("div.lcell.lcell--mid"), h("div.lcell.lcell--b")];
+    cells[step.lane === 0 ? 0 : 2].append(...(step.lane === 0 ? [chip, arrow] : [arrow, chip]));
+    if (touches) cells[1].append(h(`span.val${inward ? ".val--write" : ""}`, { text: String(shared) }));
+    return h("div.lrow", null, cells);
+  }
+
+  function grid(names, sharedName, rows) {
+    return h("div.lanes__grid", null,
+      h("div.lanes__head.lanes__head--a", { text: names[0] }), h("div.lanes__head.lanes__head--mid", { text: sharedName }), h("div.lanes__head.lanes__head--b", { text: names[1] }),
+      rows);
+  }
+
+  L.blocks.lanes = (block, ctx) => {
+    let shared = block.shared.start, now = 0;
+    const key = `lanes:${block.expr}:${block.steps.length}`;
+    const answers = ctx.memory.get(key, {});
+    const parts = OPS.map((op) => h("span.part", { text: block.parts[op] }));
+    const rows = block.steps.map((step) => { if (step.op === "write") shared = step.value; return row(step, shared); });
+    const verdict = h("p.lanes__verdict.is-waiting", null, L.md(block.verdict));
+    const askBox = h("div.lanes__ask", { attr: { hidden: "" } });
+    const askNow = () => (now >= 1 && now <= rows.length ? block.steps[now - 1].ask : null);
+    /* The same steps seen in space: who holds what, and what the shared thing is right now. */
+    const picture = L.sharePicture({ actors: block.lanes, shared: block.shared.name });
+    const frames = L.shareFrames(block.steps, block.shared.start);
+
+    /* The question that closes a step: what will the next step do? Answered here, shown for real by the next press. */
+    function paintAsk() {
+      const ask = askNow();
+      askBox.hidden = !ask;
+      if (!ask) return;
+      const picked = answers[now - 1];
+      const buttons = ask.options.map((text, i) => {
+        const button = h("button.pick", { attr: { type: "button" }, on: { click() { answers[now - 1] = i; ctx.memory.set(key, answers); paintAsk(); } } }, L.md(text));
+        button.disabled = picked !== undefined;
+        if (picked !== undefined && i === ask.answer) button.classList.add("is-right");
+        if (picked === i && i !== ask.answer) button.classList.add("is-wrong");
+        return button;
+      });
+      const out = picked === undefined ? "" : picked === ask.answer ? "对。按下一步，看它是怎么发生的。" : "不是这个。按下一步，看实际发生了什么。";
+      askBox.replaceChildren(h("p", null, L.md(ask.q)), h("div.picks", null, buttons), h("p.ask__out", { text: out }));
+    }
+
+    return {
+      el: h(`div.lanes${rows.length > 7 ? ".lanes--long" : ""}`, null,
+        h("div.lanes__main", null,
+          h("div.lanes__expr", null, h("code.lanes__code", { text: block.expr }), h("div.lanes__parts", null, parts[0], "→", parts[1], "→", parts[2])),
+          grid(block.lanes, block.shared.name, rows), askBox, verdict),
+        h("div.lanes__side", null, h("p.lanes__now", { text: "此刻" }), picture.el)),
+      steps: block.steps.map((step) => ({ say: step.say, key: step.key })).concat({ say: block.verdictSay, key: block.verdictKey }),
+      waitSay: "先猜一下再往下：点一个你觉得会发生的。实在想跳过，再按一次。",
+      ready: () => !askNow() || answers[now - 1] !== undefined,
+      set(k) {
+        now = k;
+        rows.forEach((el, i) => { el.classList.toggle("is-waiting", i >= k); el.classList.toggle("is-now", i === k - 1); });
+        const op = k >= 1 && k <= rows.length ? block.steps[k - 1].op : null;
+        parts.forEach((part, i) => part.classList.toggle("is-now", OPS[i] === op));
+        verdict.classList.toggle("is-waiting", k <= rows.length);
+        picture.set(frames[Math.min(k, frames.length - 1)]);
+        paintAsk();
+      },
+      /** The part that just changed, so a long walk keeps its newest row on screen. */
+      spot: () => (now > rows.length ? verdict : askNow() ? askBox : rows[now - 1]?.firstChild),
+    };
+  };
+
+  L.blocks.schedule = (block) => {
+    const name = block.shared.name;
+    const hint = { read: `读 ${name}`, calc: "算出新值", write: `写回 ${name}` };
+    const reached = new Set();
+    let shared, actors, owner, locked = false;
+
+    const rows = h("div.lrow-list");
+    const value = h("span.val");
+    const buttons = [0, 1].map((lane) => h("button.btn", { attr: { type: "button" }, on: { click: () => move(lane) } }));
+    const result = h("p.sched__result", { attr: { "aria-live": "polite" } });
+    const goals = block.goals.map((goal) => h("li.goal", { text: goal.label }));
+    const lock = block.lock ? L.segmented("", [{ id: "off", label: "不加锁" }, { id: "on", label: block.lock.label }], "off", (id) => { locked = id === "on"; reset(); }) : null;
+    const allReached = () => block.goals.every((goal) => reached.has(goal.value));
+
+    function paint() {
+      value.textContent = String(shared);
+      buttons.forEach((button, lane) => {
+        const actor = actors[lane];
+        const waits = locked && owner !== null && owner !== lane;
+        button.disabled = actor.pc === OPS.length || waits;
+        button.textContent = actor.pc === OPS.length ? `${block.lanes[lane]} 走完了` : waits ? `${block.lanes[lane]} 在等锁` : `${block.lanes[lane]} 走一步：${hint[OPS[actor.pc]]}`;
+      });
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      if (actors.some((actor) => actor.pc < OPS.length)) { result.textContent = ""; return; }
+      reached.add(shared);
+      goals.forEach((el, i) => el.classList.toggle("is-done", reached.has(block.goals[i].value)));
+      const lost = (block.shared.start + 2 * block.delta - shared) / block.delta;
+      const outcome = `两边都走完了：${name} = ${shared}。${lost ? `有 ${lost} 次白加了。` : "一次都没丢。"}`;
+      result.replaceChildren(L.md(allReached() ? `${outcome}${block.done}` : `${outcome}点「重来」，换一种顺序试试。`));
+    }
+
+    function move(lane) {
+      const actor = actors[lane], op = OPS[actor.pc];
+      let text;
+      if (op === "read") { actor.local = shared; owner = lane; text = `读到 ${shared}`; }
+      else if (op === "calc") { text = `${actor.local} ${block.delta < 0 ? "−" : "+"} ${Math.abs(block.delta)} = ${actor.local + block.delta}`; actor.local += block.delta; }
+      else { shared = actor.local; owner = null; text = `写回 ${shared}`; }
+      actor.pc += 1;
+      rows.append(row({ lane, op, text }, shared));
+      rows.lastChild.scrollIntoView({ block: "nearest" });
+      paint();
+    }
+
+    function reset() {
+      shared = block.shared.start;
+      actors = [{ pc: 0, local: null }, { pc: 0, local: null }];
+      owner = null;
+      rows.replaceChildren();
+      paint();
+    }
+
+    reset();
+    return {
+      el: h("div.sched", null,
+        h("div.sched__bar", null, h("ul.goals", null, goals), lock?.el, h("button.btn.btn--quiet", { text: "重来", attr: { type: "button" }, on: { click: reset } })),
+        grid(block.lanes, name, [rows,
+          h("div.lrow.lrow--controls", null, h("div.lcell.lcell--a", null, buttons[0]), h("div.lcell.lcell--mid", null, value), h("div.lcell.lcell--b", null, buttons[1]))]),
+        result),
+      waitSay: "先自己排一排：点两边的按钮，把上面几种结果都排出来。实在想跳过，再按一次。",
+      ready: allReached,
+    };
+  };
+})();
+
+</script>
+<script>
+/* The lesson as a sequence of moments. A moment is one teacher sentence plus one visible change: a block appearing, or one step
+   inside a block. → / space goes to the next moment, ← back; the track at the top shows where the lesson is in its arc.
+   A block that waits for the learner (a guess, a quiz) holds the lesson once, then lets a second press pass.
+   Deep link: #4 opens slide 4, #4.end opens it with every moment shown. */
+(function () {
+  "use strict";
+  const L = window.Lesson, h = L.h;
+  const lesson = JSON.parse(document.getElementById("lesson-data").textContent);
+  const memory = L.memory(`lesson:${lesson.id}`);
+  const predicts = {};
+  for (const slide of lesson.slides) for (const block of slide.blocks) if (block.t === "predict") predicts[block.id] = block;
+  const ctx = { lesson, memory, predicts };
+  L.glossary = lesson.terms || {};
+
+  const $ = (id) => document.getElementById(id);
+  const stage = $("stage"), line = $("line"), keyLine = $("key"), prev = $("prev"), next = $("next"), count = $("count"), notes = $("notes"), notesList = $("notes-list");
+  const beats = lesson.beats.map((beat) => h("button.beat", { text: beat.label, attr: { type: "button" }, on: { click: () => go(lesson.slides.findIndex((slide) => slide.beat === beat.id), 0) } }));
+  $("beats").append(...beats);
+  $("title").textContent = `${lesson.course} · ${lesson.title}`;
+
+  let at = { s: 0, m: 0 }, current = null, nudged = false;
+
+  function build(index) {
+    const slide = lesson.slides[index];
+    const items = slide.blocks.map((block) => { const made = L.blocks[block.t](block, ctx); return { block, made, wrap: h("div.block.is-waiting", null, made.el), seen: false }; });
+    const moments = slide.bridge ? [{ b: -1, k: 0, say: slide.bridge }] : [];
+    items.forEach((item, b) => {
+      moments.push({ b, k: 0, say: item.block.say, key: item.block.key });
+      (item.made.steps || []).forEach((step, i) => moments.push({ b, k: i + 1, say: step.say ?? step, key: step.key }));
+    });
+    const hook = index === 0;
+    const meta = hook ? h("div.hook__meta", null,
+      h("div", null, h("h3", { text: "需要先会" }), h("ul", null, lesson.needs.map((item) => h("li", { text: item })))),
+      h("div", null, h("h3", { text: `学完你能（约 ${lesson.minutes} 分钟）` }), h("ul", null, lesson.after.map((item) => h("li", { text: item }))))) : null;
+    const el = h(`section.slide${hook ? ".slide--hook" : ""}${slide.layout === "split" ? ".slide--split" : ""}`, null,
+      h("h1.slide__title", { text: slide.title }), h("div.slide__blocks", null, items.map((item) => item.wrap)), meta);
+    return { index, items, moments, el };
+  }
+
+  function remember(key) {
+    const keys = memory.get("keys", []);
+    if (keys.includes(key)) return;
+    memory.set("keys", keys.concat(key));
+    notes.classList.remove("is-flash");
+    void notes.offsetWidth;
+    notes.classList.add("is-flash");
+  }
+
+  function paintNotes() {
+    const keys = memory.get("keys", []);
+    notes.textContent = `要点 ${keys.length}`;
+    notesList.replaceChildren(...(keys.length ? keys.map((key) => h("li", { text: key })) : [h("li.is-empty", { text: "讲到关键结论时，会自动记在这里。" })]));
+  }
+
+  function show(spoken) {
+    L.hideTip();
+    if (!current || current.index !== at.s) { current = build(at.s); stage.replaceChildren(current.el); stage.scrollTop = 0; }
+    at.m = Math.min(at.m, current.moments.length - 1);
+    const now = current.moments[at.m];
+    current.items.forEach((item, b) => {
+      const reached = current.moments.filter((moment, i) => i <= at.m && moment.b === b);
+      item.wrap.classList.toggle("is-waiting", reached.length === 0);
+      if (!reached.length) { item.seen = false; return; }
+      item.made.set?.(reached.at(-1).k);
+      if (!item.seen) { item.seen = true; item.made.refresh?.(); }
+    });
+    line.replaceChildren(h("span", null, L.md(spoken || now.say)));
+    line.classList.remove("is-fresh");
+    void line.offsetWidth;
+    line.classList.add("is-fresh");
+    keyLine.hidden = !now.key || Boolean(spoken);
+    if (now.key && !spoken) { keyLine.textContent = `已记入要点：${now.key}`; remember(now.key); }
+    paintNotes();
+    // keep what just changed in view: the block says which part of it that is, or it is the block itself
+    const changed = current.items[now.b];
+    if (at.m > 0 && changed) (changed.made.spot?.() || changed.wrap).scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const beat = lesson.beats.findIndex((item) => item.id === lesson.slides[at.s].beat);
+    beats.forEach((el, i) => { el.classList.toggle("is-now", i === beat); el.classList.toggle("is-done", i < beat); el.setAttribute("aria-current", i === beat ? "step" : "false"); });
+    count.textContent = `${at.s + 1} / ${lesson.slides.length}`;
+    const last = at.s === lesson.slides.length - 1 && at.m === current.moments.length - 1;
+    prev.disabled = at.s === 0 && at.m === 0;
+    next.disabled = last;
+    memory.set("at", at);
+  }
+
+  function go(s, m) { if (s < 0) return; at = { s, m }; nudged = false; show(); }
+
+  function forward() {
+    const item = current.items[current.moments[at.m].b];
+    if (item?.made.ready && !item.made.ready()) {
+      if (!nudged) { nudged = true; return show(item.made.waitSay || "先选一个再往下。猜错没关系；实在想跳过，再按一次。"); }
+      item.made.pass?.(); // the learner chose to skip: the block shows what it was holding back
+    }
+    if (at.m < current.moments.length - 1) return go(at.s, at.m + 1);
+    if (at.s < lesson.slides.length - 1) go(at.s + 1, 0);
+  }
+
+  function back() {
+    if (at.m > 0) return go(at.s, at.m - 1);
+    if (at.s > 0) go(at.s - 1, Number.MAX_SAFE_INTEGER);
+  }
+
+  next.addEventListener("click", forward);
+  prev.addEventListener("click", back);
+  document.addEventListener("keydown", (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const typing = event.target.closest?.("button, input, [role=button], .code__scroll");
+    if (event.key === "ArrowRight" || event.key === "PageDown" || (event.key === " " && !typing)) { event.preventDefault(); forward(); }
+    else if (event.key === "ArrowLeft" || event.key === "PageUp") { event.preventDefault(); back(); }
+  });
+
+  notes.addEventListener("click", (event) => { event.stopPropagation(); notesList.hidden = !notesList.hidden; });
+  document.addEventListener("click", (event) => { if (!notesList.contains(event.target)) notesList.hidden = true; });
+
+  const root = document.documentElement, themeButton = $("theme");
+  const dark = () => (root.dataset.theme ? root.dataset.theme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const paintTheme = () => { themeButton.textContent = dark() ? "浅色" : "深色"; };
+  themeButton.addEventListener("click", () => { root.dataset.theme = dark() ? "light" : "dark"; try { localStorage.setItem("lesson-theme", root.dataset.theme); } catch { /* private window */ } paintTheme(); });
+  paintTheme();
+
+  const link = /^#(\d+)(\.end)?$/.exec(location.hash);
+  const saved = memory.get("at", { s: 0, m: 0 });
+  if (link) go(Math.min(Number(link[1]), lesson.slides.length) - 1, link[2] ? Number.MAX_SAFE_INTEGER : 0);
+  else go(Math.min(saved.s, lesson.slides.length - 1), saved.m);
+})();
+
+</script>
+</body>
+</html>

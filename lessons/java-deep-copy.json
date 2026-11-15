@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-deep-copy",
+  "course": "Java 工程语法与集合",
+  "title": "浅拷贝污染事故：改了副本，原对象的数组/列表怎么也跟着变了？",
+  "lead": "好不容易实现了 Cloneable 并调用 super.clone() 复制出一个用户副本，可一改副本的 scores[0]，原用户的分数竟然也被改掉了！",
+  "minutes": 25,
+  "needs": ["知道对象变量存的是引用地址", "知道数组与集合也是堆对象"],
+  "after": [
+    "说清引用赋值、浅拷贝（Shallow Copy）与深拷贝（Deep Copy）的本质区别",
+    "知道 Object.clone() 默认只做字段逐位浅拷贝的陷阱",
+    "对比手写深拷贝（拷贝构造/clone）与序列化深拷贝的性能差异"
+  ],
+  "terms": {
+    "浅拷贝 (Shallow Copy)": "只创建一个新的外层对象，但内部所有引用型字段（数组、List、嵌套对象）仍直接复制原地址，副本与原件共享同一份子对象。",
+    "深拷贝 (Deep Copy)": "不仅复制外层对象，还把内部所有可变引用子对象递归复制出全新实例，副本与原件彻底隔离互不影响。",
+    "防御性拷贝 (Defensive Copy)": "在构造器入参或 getter 返回内部可变数组/集合时，返回 `clone()` 或不可变视图，防止外部悄悄篡改内部状态。"
+  },
+  "experiments": {
+    "deepcopy": {
+      "runner": "java",
+      "home": "lab.deepcopy",
+      "variants": [
+        { "id": "AssignRefAlias", "code": "AssignRefAlias.java", "label": "直接赋值 copy = origin", "note": "连外层对象都没复制，只是多了个别名，隔离数 0。" },
+        { "id": "ShallowCloneTrap", "code": "ShallowCloneTrap.java", "label": "super.clone() 浅拷贝陷阱", "note": "外层 User 是新的，但内部 int[] scores 仍指向同一个数组，隔离数 0。" },
+        { "id": "DeepCopyArrayClone", "code": "DeepCopyArrayClone.java", "label": "手写深拷贝（数组 clone）", "note": "外层和内部 scores 数组全部独立，100% 隔离且耗时极低。" },
+        { "id": "SerializeDeepCopy", "code": "SerializeDeepCopy.java", "label": "Java 序列化深拷贝", "note": "通过字节流重建整棵对象图，100% 隔离但耗时高出几十倍。" }
+      ],
+      "knob": { "label": "拷贝对象次数", "values": ["500", "1000", "2000", "4000"], "default": "1000" },
+      "repeat": 20,
+      "metric": { "key": "isolated", "expectKey": "expected", "label": "原件未受污染次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "浅拷贝污染事故",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "写促销规则或配置快照时，常需要「拿一份模板改一改，别动原模板」。今天实测：**为什么直接 `=` 或 `super.clone()` 都会把原件改坏，而序列化深拷贝又有多慢？**",
+          "say": "不仅要分清浅拷贝和深拷贝，还要算清深拷贝的性能账。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：三种拷贝行为",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先测一下概念。",
+          "items": [
+            {
+              "have": "clone 默认行为",
+              "q": "实现 `Cloneable` 后只调用 `super.clone()`，对类里的 `List<String> tags` 字段会做什么？",
+              "options": ["只把 tags 的引用地址复制过去，新旧对象共享同一个 List", "自动把 List 里所有元素也复制一份", "抛出异常"],
+              "answer": 0,
+              "why": "`Object.clone()` 是按字段逐位拷贝，不会递归拷贝嵌套对象。"
+            },
+            {
+              "have": "BeanUtils.copyProperties",
+              "q": "Spring / Apache 的 `BeanUtils.copyProperties(src, dst)` 属于浅拷贝还是深拷贝？",
+              "options": ["浅拷贝（同名嵌套对象/集合直接赋引用）", "深拷贝", "只拷贝基本类型"],
+              "answer": 0,
+              "why": "线上常见事故：用 `BeanUtils` 拷贝配置对象后修改子列表，把缓存里的原配置一起改脏了！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：ShallowCloneTrap vs DeepCopyArrayClone",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "deepcopy",
+          "variants": ["ShallowCloneTrap", "DeepCopyArrayClone"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：1000 次浅拷贝后改副本 scores[0]，原件能保住几次？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "deepcopy",
+          "question": "`ShallowCloneTrap` 调用 `origin.clone()` 后把 `copy.scores[0]` 改成 0，原件 `origin.scores[0]` 还是 100 的次数是？",
+          "options": ["0 次（每次都把原件改坏）", "1000 次", "500 次"],
+          "answer": 0,
+          "why": "`super.clone()` 复制了 `User` 外壳，但 `copy.scores == origin.scores` 依然为 true，改副本数组就是改原数组。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种拷贝隔离度实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "deepcopy",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：Object.clone() 只做原生内存块复制",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "deepcopy",
+          "variant": "ShallowCloneTrap",
+          "explain": "在 `ShallowCloneTrap.clone()` 里只调用了一次 `Object.clone()`（JVM native 浅复制字段），没有任何对 `scores` 数组的 `newarray` 或 `clone` 指令。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：手写深拷贝 vs 序列化深拷贝",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "deepcopy",
+          "variants": ["DeepCopyArrayClone", "SerializeDeepCopy"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：手写深拷贝 vs 序列化耗时曲线",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "deepcopy",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "工程实践建议",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "生产中**少用 `Cloneable`**（《Effective Java》明确不推荐）；优先用**拷贝构造器 / 静态工厂方法**逐层复制可变字段，或直接用**不可变对象 / MapStruct 编译期代码生成**，性能远高于反射或原生序列化。",
+          "say": "只有在低频且对象图极深的场景，才考虑 JSON/序列化兜底。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "确认一个常见误区。",
+          "items": [
+            {
+              "have": "Arrays.copyOf",
+              "q": "对一个 `User[] arr` 调用 `Arrays.copyOf(arr, arr.length)`，是深拷贝还是浅拷贝？",
+              "options": ["浅拷贝（新数组里的元素依然指向原来的 User 对象）", "深拷贝", "编译报错"],
+              "answer": 0,
+              "why": "新数组是新的，但数组槽位里存的还是原 `User` 引用地址。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 浅拷贝和深拷贝的区别；2) Object.clone() 和 BeanUtils.copyProperties() 为什么容易引发线上脏数据；3) 工程中实现深拷贝有哪些方案及性能取舍。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "浅拷贝真相", "v": "`super.clone()` 与 `BeanUtils.copyProperties()` 都是浅拷贝，嵌套集合/数组仍共享引用。" },
+            { "k": "深拷贝代价", "v": "原生序列化深拷贝虽然通用但慢几十倍；热路径优先拷贝构造器或 MapStruct。" },
+            { "k": "防御性拷贝", "v": "接收或返回内部可变数组/集合时做一次拷贝或返回不可变视图，避免状态被外部改坏。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-string-immut",
+  "course": "Java 工程语法与集合",
+  "title": "String 不可变性与循环拼接：为什么循环里用 + 会把 CPU 拖死？",
+  "lead": "面经说 JDK 9+ 字符串 + 会优化成 invokedynamic，那在 for 循环里写 s += \"a\" 拼 2 万次，还会慢成 O(N²) 吗？",
+  "minutes": 25,
+  "needs": ["知道 String 底层是 final 数组（JDK 9+ 为 byte[]）", "知道 StringBuilder 与 StringBuffer 的区别"],
+  "after": [
+    "说清 String 不可变性的三大好处（常量池共享、hash 缓存、线程与安全）",
+    "用实测数据解释为什么循环里 `+` 依然是 O(N²) 拷贝而 `StringBuilder` 是 O(N)",
+    "知道预估容量 `new StringBuilder(n)` 如何进一步省掉数组翻倍扩容拷贝"
+  ],
+  "terms": {
+    "不可变对象 (Immutable)": "`String` 类为 `final`，底层 `byte[] value` 为 `private final` 且不暴露修改方法；任何拼接、裁剪都只返回新 `String`。",
+    "makeConcatWithConstants": "JDK 9+ 把单行 `+` 编译成 `invokedynamic` 一次性算好总长度分配数组，但在**循环体内部**每次迭代仍要新建 `String` 并拷贝前一次的全部字符。",
+    "StringBuilder vs StringBuffer": "两者都继承 `AbstractStringBuilder`；`StringBuilder` 无锁最快（局部变量首选），`StringBuffer` 方法加了 `synchronized`。"
+  },
+  "experiments": {
+    "strimmut": {
+      "runner": "java",
+      "home": "lab.strimmut",
+      "variants": [
+        { "id": "LoopPlusConcat", "code": "LoopPlusConcat.java", "label": "循环内 s = s + \"a\"（O(N²)）", "note": "每次循环都拷贝整条前缀字符串，2 万次耗时飙升且制造海量临时垃圾。" },
+        { "id": "StringBufferSync", "code": "StringBufferSync.java", "label": "StringBuffer（同步锁）", "note": "O(N) 线性复杂度，但每次 append 带 synchronized 开销。" },
+        { "id": "StringBuilderDefault", "code": "StringBuilderDefault.java", "label": "StringBuilder 默认容量", "note": "无锁 O(N)，默认 16 字符起按 2 倍+2 扩容，极快。" },
+        { "id": "StringBuilderSized", "code": "StringBuilderSized.java", "label": "StringBuilder(n) 预分配容量", "note": "零扩容拷贝，从头到尾只分配一次底层数组，耗时最低。" }
+      ],
+      "knob": { "label": "循环拼接次数 N", "values": ["2000", "5000", "10000", "20000"], "default": "10000" },
+      "repeat": 20,
+      "metric": { "key": "lenOk", "expectKey": "expected", "label": "最终字符串长度" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "String 不可变性与循环拼接",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天把 String 的两面彻底讲透：**为什么 String 要设计成不可变？以及为什么哪怕在 JDK 17 下，循环里写 `s += \"a\"` 依然会把耗时拉成 O(N²) 抛物线？**",
+          "say": "字节码一看便知，`invokedynamic` 只救得了单行拼接，救不了循环体。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：String 设计考题",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先过一遍 String 底层知识。",
+          "items": [
+            {
+              "have": "底层存储",
+              "q": "JDK 9 之后 `String` 底层存储字符的数组从 `char[]` 改成了什么？",
+              "options": ["byte[] + coder 编码标记（Compact Strings）", "int[]", "ByteBuffer"],
+              "answer": 0,
+              "why": "纯 ASCII/Latin1 字符串只需 1 字节存一个字符，内存占用直接减半。"
+            },
+            {
+              "have": "为何不可变",
+              "q": "以下哪项**不是** String 设计成不可变的原因？",
+              "options": ["方便直接用下标修改某一个字符", "可以安全作为 HashMap 的 key（hash 值只算一次可缓存）", "支持 StringTable 常量池多处安全共享"],
+              "answer": 0,
+              "why": "不可变恰恰禁止原地改字符，换来了常量池共享、hash 缓存与天然线程安全。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：循环 + 拼接 vs StringBuilder",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "strimmut",
+          "variants": ["LoopPlusConcat", "StringBuilderDefault"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：拼 20000 次，循环 + 比 StringBuilder 慢多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "strimmut",
+          "question": "N=20000 时，`LoopPlusConcat` 和 `StringBuilderSized` 耗时差距大约是？",
+          "options": ["慢几十到上百倍（O(N²) vs O(N)）", "差不多，JDK 17 会自动把循环里的 + 优化成 StringBuilder", "只慢 2 倍"],
+          "answer": 0,
+          "why": "编译器无法把跨循环迭代的 `s = s + \"a\"` 提升成循环外的一个 `StringBuilder`，每次都要拷贝当前全长字符串。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：结果长度全对，但耗时曲线天差地别",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "strimmut",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：循环体内的 invokedynamic",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "strimmut",
+          "variant": "LoopPlusConcat",
+          "explain": "在 `LoopPlusConcat` 的 for 循环内部，每次迭代都执行 `invokedynamic makeConcatWithConstants`：新建一个 `byte[s.length() + 1]` 并拷贝旧 `s` 的全部字节，总拷贝字符数 = `1 + 2 + ... + N = N(N+1)/2`。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：预估容量的 StringBuilder",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "strimmut",
+          "variants": ["StringBufferSync", "StringBuilderSized"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：2000 → 20000 扩展曲线",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "strimmut",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "拼接选型口诀",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**单行固定几段拼接直接用 `+`**（`invokedynamic` 一次分配最快最简洁）；**只要进了循环，一律在循环外建 `StringBuilder`**，能预估总长度就传构造参数。",
+          "say": "`StringBuffer` 仅在极少见的跨线程共享拼接场景才用，单线程方法内一律 `StringBuilder`。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "巩固两个细节。",
+          "items": [
+            {
+              "have": "常量折叠",
+              "q": "`String s = \"a\" + \"b\" + \"c\";` 在运行期会创建几个字符串对象？",
+              "options": ["0 个额外拼接，编译期直接常量折叠成 \"abc\"", "3 个", "5 个"],
+              "answer": 0,
+              "why": "字面量常量的 `+` 在 `javac` 编译期就已经直接合并成 `\"abc\"` 写进常量池。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) String 为什么不可变及 JDK 9 byte[] 改进；2) 为什么单行 + 可以用但循环内 + 必须换 StringBuilder；3) StringBuilder、StringBuffer 的区别。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "不可变收益", "v": "常量池复用、HashMap key 缓存 hash、天然线程安全。" },
+            { "k": "循环禁用 +", "v": "循环内 `s += ...` 每次全量拷贝，复杂度 O(N²)；必须在循环外建 `StringBuilder`。" },
+            { "k": "预分配容量", "v": "已知大概长度时用 `new StringBuilder(capacity)`，省去多次 2 倍扩容拷贝。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

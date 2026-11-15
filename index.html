@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>142</strong> 节循序渐进实验课</span>
-        <span><strong>568</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>147</strong> 节循序渐进实验课</span>
+        <span><strong>588</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,15 +374,16 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 142 / 142 课</span>
+        <span id="shownCount" class="count-note">显示 147 / 147 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (142)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (147)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
         <button type="button" class="pill" data-filter="ch4">第四章 · 线程封闭与线程池 (6)</button>
         <button type="button" class="pill" data-filter="ch5">第五章 · 工程模式与新特性 (11)</button>
+        <button type="button" class="pill" data-filter="m1ch1">基础 1 · 值传递与精度 (5)</button>
         <button type="button" class="pill" data-filter="m2ch1">JVM 1 · 类加载与栈堆 (4)</button>
         <button type="button" class="pill" data-filter="m2ch2">JVM 2 · 锁升级与 GC (5)</button>
         <button type="button" class="pill" data-filter="m2ch3">JVM 3 · OOM 与排障 (5)</button>
@@ -828,6 +829,75 @@
           <p class="card__lead">更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？</p>
           <div class="card__foot">
             <span>26 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m1ch1">
+        <div class="chapter__head">
+          <h2>模块一 · 第一章：Java 值传递、包装类缓存与精度陷阱（M1-01～M1-05）</h2>
+          <p>用真实字节码与实测数据拆穿「对象引用传递」、Integer 128 翻车、BigDecimal 算钱三连坑、循环 + 拼接与浅拷贝污染。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/java-pass-by-value.html" data-ch="m1ch1" data-search="m1-01 java-pass-by-value 值传递与引用副本：方法里 swap 或重赋值为什么外面没变？ 大家都说「java 对象是引用传递」，可为什么在方法里写 box = new box(99) 之后，调用方的 box.val 还是 0？ lab.passbyval">
+          <div class="card__top">
+            <span class="card__num">#M1-01</span>
+            <span class="card__pkg">lab.passbyval</span>
+          </div>
+          <h3 class="card__title">值传递与引用副本：方法里 swap 或重赋值为什么外面没变？</h3>
+          <p class="card__lead">大家都说「Java 对象是引用传递」，可为什么在方法里写 box = new Box(99) 之后，调用方的 box.val 还是 0？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-integer-cache.html" data-ch="m1ch1" data-search="m1-02 java-integer-cache 包装类缓存池与拆箱陷阱：为什么 integer == integer 127 对 128 错？ 测试环境用户 id 从 1 到 100 跑得好好的，一上线 id 涨到 128 以上，用 == 判断两个 integer 相等突然全变 false！ lab.intcache">
+          <div class="card__top">
+            <span class="card__num">#M1-02</span>
+            <span class="card__pkg">lab.intcache</span>
+          </div>
+          <h3 class="card__title">包装类缓存池与拆箱陷阱：为什么 Integer == Integer 127 对 128 错？</h3>
+          <p class="card__lead">测试环境用户 ID 从 1 到 100 跑得好好的，一上线 ID 涨到 128 以上，用 == 判断两个 Integer 相等突然全变 false！</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-bigdecimal.html" data-ch="m1ch1" data-search="m1-03 java-bigdecimal bigdecimal 算钱三连坑：double 构造、equals 标度与舍入模式 不用 double 算钱改用 bigdecimal 了，可为什么 new bigdecimal(0.1) 还是算不准，equals 比较 0.3 和 0.30 竟然返回 false？ lab.bigdecimal">
+          <div class="card__top">
+            <span class="card__num">#M1-03</span>
+            <span class="card__pkg">lab.bigdecimal</span>
+          </div>
+          <h3 class="card__title">BigDecimal 算钱三连坑：double 构造、equals 标度与舍入模式</h3>
+          <p class="card__lead">不用 double 算钱改用 BigDecimal 了，可为什么 new BigDecimal(0.1) 还是算不准，equals 比较 0.3 和 0.30 竟然返回 false？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-string-immut.html" data-ch="m1ch1" data-search="m1-04 java-string-immut string 不可变性与循环拼接：为什么循环里用 + 会把 cpu 拖死？ 面经说 jdk 9+ 字符串 + 会优化成 invokedynamic，那在 for 循环里写 s += "a" 拼 2 万次，还会慢成 o(n²) 吗？ lab.strimmut">
+          <div class="card__top">
+            <span class="card__num">#M1-04</span>
+            <span class="card__pkg">lab.strimmut</span>
+          </div>
+          <h3 class="card__title">String 不可变性与循环拼接：为什么循环里用 + 会把 CPU 拖死？</h3>
+          <p class="card__lead">面经说 JDK 9+ 字符串 + 会优化成 invokedynamic，那在 for 循环里写 s += "a" 拼 2 万次，还会慢成 O(N²) 吗？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/java-deep-copy.html" data-ch="m1ch1" data-search="m1-05 java-deep-copy 浅拷贝污染事故：改了副本，原对象的数组/列表怎么也跟着变了？ 好不容易实现了 cloneable 并调用 super.clone() 复制出一个用户副本，可一改副本的 scores[0]，原用户的分数竟然也被改掉了！ lab.deepcopy">
+          <div class="card__top">
+            <span class="card__num">#M1-05</span>
+            <span class="card__pkg">lab.deepcopy</span>
+          </div>
+          <h3 class="card__title">浅拷贝污染事故：改了副本，原对象的数组/列表怎么也跟着变了？</h3>
+          <p class="card__lead">好不容易实现了 Cloneable 并调用 super.clone() 复制出一个用户副本，可一改副本的 scores[0]，原用户的分数竟然也被改掉了！</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
         </a>
