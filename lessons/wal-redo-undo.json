@@ -570,15 +570,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "WAL 与 Redo / Undo 分工",
-          "alias": "Write-Ahead Logging",
-          "one": "==Redo Log== 顺序写保证断电不丢（持久性 D），==Undo Log== 记录旧值保证回滚与 MVCC（原子性 A）。",
+          "t": "callout",
+          "tone": "note",
+          "title": "WAL 与 Redo / Undo 分工（Write-Ahead Logging）",
+          "md": "==Redo Log== 顺序写保证断电不丢（持久性 D），==Undo Log== 记录旧值保证回滚与 MVCC（原子性 A）。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "为什么需要 Redo Log 和 Undo Log？各自负责 ACID 哪一环？",
             "WAL 为什么能大幅提升 MySQL 写性能？"
           ],

@@ -544,15 +544,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "B+ 树索引选型原理",
-          "alias": "Why B+Tree over Hash / BST / B-Tree",
-          "one": "B+ 树非叶子只存路标（==3 层存千万级，I/O 极少==），叶子用==双向链表==串联（==范围/排序极快==）。",
+          "t": "callout",
+          "tone": "note",
+          "title": "B+ 树索引选型原理（Why B+Tree over Hash / BST / B-Tree）",
+          "md": "B+ 树非叶子只存路标（==3 层存千万级，I/O 极少==），叶子用==双向链表==串联（==范围/排序极快==）。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "MySQL 为什么用 B+ 树做索引，而不用 Hash 表、红黑树或 B 树？",
             "3 层 B+ 树大概能存多少数据？"
           ],

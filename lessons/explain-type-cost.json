@@ -546,15 +546,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "EXPLAIN 执行计划与 type 阶梯",
-          "alias": "EXPLAIN Access Types",
-          "one": "==system > const > eq_ref > ref > range > index > ALL==；线上核心 SQL 至少要达到 ==range==（最好 `ref/const`）。",
+          "t": "callout",
+          "tone": "note",
+          "title": "EXPLAIN 执行计划与 type 阶梯（EXPLAIN Access Types）",
+          "md": "==system > const > eq_ref > ref > range > index > ALL==；线上核心 SQL 至少要达到 ==range==（最好 `ref/const`）。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "EXPLAIN 里你主要看哪些字段？",
             "type 字段有哪些值，从好到坏怎么排？",
             "type=index 和 type=ALL 有什么区别？"

@@ -193,7 +193,14 @@
             "master.putIfAbsent(\"lock:sku\", \"client-A\");",
             "if (replica.putIfAbsent(\"lock:sku\", \"client-B\") == null"
           ],
-          "say": "Master 还没同步到 Replica 就挂了，Replica 升主后放行了 B。"
+          "say": "Master 还没同步到 Replica 就挂了，Replica 升主后放行了 B。",
+          "answer": [
+            "master.putIfAbsent(\"lock:sku\", \"client-A\");",
+            "if (replica.putIfAbsent(\"lock:sku\", \"client-B\") == null"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "Master 还没同步到 Replica 就挂了，Replica 升主后放行了 B。"
         }
       ]
     },

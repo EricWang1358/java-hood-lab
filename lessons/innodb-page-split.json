@@ -544,15 +544,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "InnoDB 页分裂与递增主键",
-          "alias": "Page Split & Sequential PK",
-          "one": "InnoDB 数据页（16KB）按主键有序；==随机主键==会触发==页分裂==与空间碎片，应选用==自增/雪花/UUIDv7==。",
+          "t": "callout",
+          "tone": "note",
+          "title": "InnoDB 页分裂与递增主键（Page Split & Sequential PK）",
+          "md": "InnoDB 数据页（16KB）按主键有序；==随机主键==会触发==页分裂==与空间碎片，应选用==自增/雪花/UUIDv7==。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "为什么 MySQL 建议用自增主键，而不是随机 UUID？",
             "什么是页分裂？什么时候会发生？"
           ],

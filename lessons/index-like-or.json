@@ -538,15 +538,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "LIKE 前导通配与 OR 拖累",
-          "alias": "Leading Wildcard & OR Index Drop",
-          "one": "==LIKE '%x'== 破坏前缀有序性，==OR== 含无索引列会拖累全句；改用==前缀匹配、反转列、ES 或 UNION ALL==。",
+          "t": "callout",
+          "tone": "note",
+          "title": "LIKE 前导通配与 OR 拖累（Leading Wildcard & OR Index Drop）",
+          "md": "==LIKE '%x'== 破坏前缀有序性，==OR== 含无索引列会拖累全句；改用==前缀匹配、反转列、ES 或 UNION ALL==。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "为什么 LIKE '%xxx' 不走索引，而 LIKE 'xxx%' 走索引？",
             "业务上必须按 '%关键词%' 模糊搜索怎么优化？"
           ],

@@ -191,7 +191,13 @@
           "lines": [
             "int unfsynced = bufferedSinceFsync.incrementAndGet();"
           ],
-          "say": "`no` 策略完全不主动调 fsync，未落盘积压量一路狂飙，断电可能丢几十秒数据。"
+          "say": "`no` 策略完全不主动调 fsync，未落盘积压量一路狂飙，断电可能丢几十秒数据。",
+          "answer": [
+            "int unfsynced = bufferedSinceFsync.incrementAndGet();"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "`no` 策略完全不主动调 fsync，未落盘积压量一路狂飙，断电可能丢几十秒数据。"
         }
       ]
     },

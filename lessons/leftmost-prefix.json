@@ -528,15 +528,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "最左前缀原则",
-          "alias": "Leftmost Prefix Rule",
-          "one": "联合索引 `(a, b, c)` 必须从==最左列 a== 起连续匹配（与 SQL `AND` 书写顺序无关）；跳过 `a` 则整体失效。",
+          "t": "callout",
+          "tone": "note",
+          "title": "最左前缀原则（Leftmost Prefix Rule）",
+          "md": "联合索引 `(a, b, c)` 必须从==最左列 a== 起连续匹配（与 SQL `AND` 书写顺序无关）；跳过 `a` 则整体失效。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "什么是联合索引的最左前缀原则？底层原理是什么？",
             "WHERE b=2 AND a=1 能走索引 (a, b) 吗？"
           ],

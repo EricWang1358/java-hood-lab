@@ -554,15 +554,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "记录锁、间隙锁与临键锁",
-          "alias": "Record / Gap / Next-Key Lock",
-          "one": "RR 默认加 ==Next-Key Lock==；唯一索引等值**命中**退化为 ==Record Lock==，**未命中**退化为 ==Gap Lock==。",
+          "t": "callout",
+          "tone": "note",
+          "title": "记录锁、间隙锁与临键锁（Record / Gap / Next-Key Lock）",
+          "md": "RR 默认加 ==Next-Key Lock==；唯一索引等值**命中**退化为 ==Record Lock==，**未命中**退化为 ==Gap Lock==。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "什么是间隙锁和临键锁？为什么会有间隙锁？",
             "RR 下唯一索引等值查询的加锁退化规则？"
           ],

@@ -548,15 +548,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "深分页与游标/延迟关联优化",
-          "alias": "Deep Paging Optimization",
-          "one": "==LIMIT offset, 20 慢在先回表 offset+20 次再丢弃前 offset 行==；==游标翻页== 二分定位只扫 20 行，==延迟关联== 覆盖索引拿 id 后仅回表 20 次。",
+          "t": "callout",
+          "tone": "note",
+          "title": "深分页与游标/延迟关联优化（Deep Paging Optimization）",
+          "md": "==LIMIT offset, 20 慢在先回表 offset+20 次再丢弃前 offset 行==；==游标翻页== 二分定位只扫 20 行，==延迟关联== 覆盖索引拿 id 后仅回表 20 次。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "MySQL 深分页为什么慢？LIMIT 100000, 20 到底干了什么？",
             "深分页怎么优化？延迟关联和游标翻页分别适用什么场景？",
             "如果按非唯一列（如 create_time）做游标翻页，同一秒有多条数据怎么防漏？"

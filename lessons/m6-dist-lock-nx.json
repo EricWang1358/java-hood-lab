@@ -192,7 +192,14 @@
             "if (lockTable.putIfAbsent(\"lock:order\", 1L) == null) {",
             "if (crashBeforeExpire) {"
           ],
-          "say": "`putIfAbsent` 和设置过期时间分成两步，中间一旦异常/宕机就再也走不到后面那行。"
+          "say": "`putIfAbsent` 和设置过期时间分成两步，中间一旦异常/宕机就再也走不到后面那行。",
+          "answer": [
+            "if (lockTable.putIfAbsent(\"lock:order\", 1L) == null) {",
+            "if (crashBeforeExpire) {"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "`putIfAbsent` 和设置过期时间分成两步，中间一旦异常/宕机就再也走不到后面那行。"
         }
       ]
     },

@@ -540,15 +540,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "Using filesort 与索引排序",
-          "alias": "Filesort vs Index Order",
-          "one": "==Using filesort== 是无法利用索引序而进行的额外排序；用 ==(WHERE 等值列, ORDER BY 列)== 利用 B+ 树天然有序即可消灭。",
+          "t": "callout",
+          "tone": "note",
+          "title": "Using filesort 与索引排序（Filesort vs Index Order）",
+          "md": "==Using filesort== 是无法利用索引序而进行的额外排序；用 ==(WHERE 等值列, ORDER BY 列)== 利用 B+ 树天然有序即可消灭。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "EXPLAIN 里的 Using filesort 是什么意思？一定用磁盘吗？",
             "如何消除 SQL 中的 Using filesort？"
           ],

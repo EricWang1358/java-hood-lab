@@ -205,7 +205,13 @@
           "lines": [
             "if (val != null) cache.putIfAbsent(key, val);"
           ],
-          "say": "祸首就在这行 `if (val != null)`：查库返回 `null` 时什么都不放进缓存，导致下一次请求继续穿透。"
+          "say": "祸首就在这行 `if (val != null)`：查库返回 `null` 时什么都不放进缓存，导致下一次请求继续穿透。",
+          "answer": [
+            "if (val != null) cache.putIfAbsent(key, val);"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "祸首就在这行 `if (val != null)`：查库返回 `null` 时什么都不放进缓存，导致下一次请求继续穿透。"
         }
       ]
     },

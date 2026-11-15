@@ -544,15 +544,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "不可重复读与 ReadView 时机",
-          "alias": "Non-Repeatable Read & ReadView Reuse",
-          "one": "RC ==每次 SELECT 新建== ReadView 导致不可重复读；RR ==第一次 SELECT 创建并复用== ReadView 实现可重复读。",
+          "t": "callout",
+          "tone": "note",
+          "title": "不可重复读与 ReadView 时机（Non-Repeatable Read & ReadView Reuse）",
+          "md": "RC ==每次 SELECT 新建== ReadView 导致不可重复读；RR ==第一次 SELECT 创建并复用== ReadView 实现可重复读。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "脏读、不可重复读、幻读的区别？",
             "RC 和 RR 下的 MVCC 有什么区别？"
           ],

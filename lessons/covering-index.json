@@ -530,15 +530,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "覆盖索引（Covering Index）",
-          "alias": "Covering Index / Using index",
-          "one": "查询所需列==全在二级索引树里==（含自带的主键 ID），==无需回表==，EXPLAIN 显示 `Using index`。",
+          "t": "callout",
+          "tone": "note",
+          "title": "覆盖索引（Covering Index）（Covering Index / Using index）",
+          "md": "查询所需列==全在二级索引树里==（含自带的主键 ID），==无需回表==，EXPLAIN 显示 `Using index`。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "什么是覆盖索引？有什么好处？",
             "为什么规范禁止乱写 SELECT *？"
           ],

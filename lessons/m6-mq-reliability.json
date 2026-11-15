@@ -192,7 +192,14 @@
             "if (seq % 10 == 0 || seq % 15 == 0) {",
             "lostMessages.incrementAndGet();"
           ],
-          "say": "没有 ACK 回调和重试逻辑，网络一抖就直接 return 丢弃了。"
+          "say": "没有 ACK 回调和重试逻辑，网络一抖就直接 return 丢弃了。",
+          "answer": [
+            "if (seq % 10 == 0 || seq % 15 == 0) {",
+            "lostMessages.incrementAndGet();"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "没有 ACK 回调和重试逻辑，网络一抖就直接 return 丢弃了。"
         }
       ]
     },

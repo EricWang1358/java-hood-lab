@@ -192,7 +192,14 @@
             "lockExpireTick.set(tick + 2);",
             "for (int i = 0; i < 6; i++) { tick++; Thread.yield(); }"
           ],
-          "say": "业务耗时超过固定 TTL，互斥防线形同虚设。"
+          "say": "业务耗时超过固定 TTL，互斥防线形同虚设。",
+          "answer": [
+            "lockExpireTick.set(tick + 2);",
+            "for (int i = 0; i < 6; i++) { tick++; Thread.yield(); }"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "业务耗时超过固定 TTL，互斥防线形同虚设。"
         }
       ]
     },

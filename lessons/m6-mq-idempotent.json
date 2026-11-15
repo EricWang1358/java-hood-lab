@@ -192,7 +192,14 @@
             "if (Boolean.TRUE.equals(seen.get(orderId))) return;",
             "chargeCount.incrementAndGet();"
           ],
-          "say": "在 `NaiveConsume` 完全不校验、`DedupCacheOnly` 拆成 get+put 两步的情况下，重复扣款根本挡不住。"
+          "say": "在 `NaiveConsume` 完全不校验、`DedupCacheOnly` 拆成 get+put 两步的情况下，重复扣款根本挡不住。",
+          "answer": [
+            "if (Boolean.TRUE.equals(seen.get(orderId))) return;",
+            "chargeCount.incrementAndGet();"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "在 `NaiveConsume` 完全不校验、`DedupCacheOnly` 拆成 get+put 两步的情况下，重复扣款根本挡不住。"
         }
       ]
     },

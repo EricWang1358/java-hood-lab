@@ -194,7 +194,14 @@
             "if (val == null) {",
             "val = rebuildFromDb(key);"
           ],
-          "say": "这句判空与重建之间没有锁，并发请求同时通过 `val == null` 检查。"
+          "say": "这句判空与重建之间没有锁，并发请求同时通过 `val == null` 检查。",
+          "answer": [
+            "if (val == null) {",
+            "val = rebuildFromDb(key);"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "这句判空与重建之间没有锁，并发请求同时通过 `val == null` 检查。"
         }
       ]
     },

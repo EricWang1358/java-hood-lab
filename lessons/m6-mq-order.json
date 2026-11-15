@@ -192,7 +192,14 @@
             "int part = (order * 3 + step) % PARTITIONS;",
             "if (lastStep[order] != step - 1)"
           ],
-          "say": "每一步按 `(order*3 + step)` 轮询进不同分区，同一订单的三步被拆散到不同线程并发跑。"
+          "say": "每一步按 `(order*3 + step)` 轮询进不同分区，同一订单的三步被拆散到不同线程并发跑。",
+          "answer": [
+            "int part = (order * 3 + step) % PARTITIONS;",
+            "if (lastStep[order] != step - 1)"
+          ],
+          "q": "在左边的代码里，点出引发性能或并发隐患的关键一行：",
+          "hint": "提示：去核心循环、加锁或状态更新逻辑里找关键那一行。",
+          "found": "每一步按 `(order*3 + step)` 轮询进不同分区，同一订单的三步被拆散到不同线程并发跑。"
         }
       ]
     },

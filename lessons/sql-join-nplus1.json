@@ -550,15 +550,15 @@
       "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "term",
-          "name": "N+1 查询与 BatchIn 模式",
-          "alias": "N+1 Query & Batch Fetching",
-          "one": "==1 次主查询 + N 次循环子查询== 把往返放大到 1+N；用 ==BatchIn（收集去重 ID 分批 IN + Map 组装）== 压回常数次。",
+          "t": "callout",
+          "tone": "note",
+          "title": "N+1 查询与 BatchIn 模式（N+1 Query & Batch Fetching）",
+          "md": "==1 次主查询 + N 次循环子查询== 把往返放大到 1+N；用 ==BatchIn（收集去重 ID 分批 IN + Map 组装）== 压回常数次。",
           "say": "记住这一句核心定义，面试时先抛结论再展开。"
         },
         {
-          "t": "asked",
-          "questions": [
+          "t": "points",
+          "items": [
             "什么是 N+1 查询问题？MyBatis 里怎么不小心写出 N+1？",
             "为什么很多公司禁止多表 JOIN，那关联数据怎么查？",
             "IN 查询参数特别多（比如 5000 个）时怎么办？"
