@@ -107,6 +107,18 @@
 | 36 | **WHERE 和 HAVING 混用，全表都被扫了一遍？** | 同样是筛选 status = 'PAID'，写在 WHERE 里只要 2 毫秒，写在 HAVING 里为什么把临时表撑爆？ | `lab.wherehaving` | [网页课件](./pages/sql-group-having.html) · [JSON](./lessons/sql-group-having.json) · [源码](./src/lab/wherehaving/) |
 | 37 | **字段允许 NULL，!= 怎么把数据全漏掉了？** | 用 WHERE id NOT IN (SELECT ...) 查黑名单外用户，子查询里只混进了一个 NULL，整条 SQL 竟然返回 0 行！ | `lab.nulltrap` | [网页课件](./pages/sql-null-trap.html) · [JSON](./lessons/sql-null-trap.json) · [源码](./src/lab/nulltrap/) |
 
+### 模块四 · 第二章：InnoDB 页结构、B+ 树聚簇索引、回表与最左前缀（第 43～49 课）
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 43 | **UUID 当主键，插入怎么越插越慢？** | 用随机 UUID 当 InnoDB 主键，数据一上百万插入就抖动变慢；换成自增 ID 或有序 UUIDv7 为什么立刻稳了？ | `lab.pagesplit` | [网页课件](./pages/innodb-page-split.html) · [JSON](./lessons/innodb-page-split.json) · [源码](./src/lab/pagesplit/) |
+| 44 | **为什么 MySQL 索引选 B+ 树不选哈希或二叉树？** | 哈希查找明明是 O(1)，为什么 InnoDB 索引偏偏要用 B+ 树？做一次 BETWEEN 范围查询就全明白了。 | `lab.btreeio` | [网页课件](./pages/btree-vs-hash.html) · [JSON](./lessons/btree-vs-hash.json) · [源码](./src/lab/btreeio/) |
+| 45 | **走索引了，为什么还要回表再查一遍？** | 明明给 name 建了索引，EXPLAIN 也显示走了 idx_name，怎么查 2000 行还是要查 4000 次树？ | `lab.lookup` | [网页课件](./pages/clustered-lookup.html) · [JSON](./lessons/clustered-lookup.json) · [源码](./src/lab/lookup/) |
+| 46 | **把 SELECT * 改成两列，耗时怎么直接腰斩？** | 生产规范总说「禁止 SELECT *」。把 SELECT * 改成 SELECT id, name 后，EXPLAIN 多了句 Using index，发生了什么？ | `lab.covering` | [网页课件](./pages/covering-index.html) · [JSON](./lessons/covering-index.json) · [源码](./src/lab/covering/) |
+| 47 | **建了 (a, b, c) 联合索引，查 b 为啥不走索引？** | 明明建了联合索引 (a, b, c)，结果一查 WHERE b = 500 就变成了全表扫描，怎么回事？ | `lab.leftmost` | [网页课件](./pages/leftmost-prefix.html) · [JSON](./lessons/leftmost-prefix.json) · [源码](./src/lab/leftmost/) |
+| 48 | **联合索引范围后面的列，ICP 怎么少回一半表？** | 建了 (name, age) 联合索引，查 name LIKE '张%' AND age = 20。age 明明被范围截断了，为什么 MySQL 5.6 之后还是变快了？ | `lab.icp` | [网页课件](./pages/index-condition-pushdown.html) · [JSON](./lessons/index-condition-pushdown.json) · [源码](./src/lab/icp/) |
+| 49 | **字符串建前缀索引，ORDER BY 怎么还文件排序？** | 给长邮箱建了前缀索引 idx_email(email(8)) 省了不少空间，可不仅回表变多，ORDER BY email 竟然也用不上索引排序！ | `lab.prefixidx` | [网页课件](./pages/prefix-index-order.html) · [JSON](./lessons/prefix-index-order.json) · [源码](./src/lab/prefixidx/) |
+
 ### 模块五 · 第一章：Spring 事务失效、动态代理与 AOP 切面（第 38～42 课）
 
 用纯 JDK 动态代理与字节码证据，亲手复现同类自调用、异常吞没、传播行为连坐回滚、JDK/CGLIB 代理坑与多切面洋葱错序。

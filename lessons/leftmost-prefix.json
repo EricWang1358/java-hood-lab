@@ -1,0 +1,316 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "leftmost-prefix",
+  "course": "MySQL 索引、事务与锁",
+  "title": "建了 (a, b, c) 联合索引，查 b 为啥不走索引？",
+  "lead": "明明建了联合索引 (a, b, c)，结果一查 WHERE b = 500 就变成了全表扫描，怎么回事？",
+  "minutes": 35,
+  "needs": [
+    "知道 B+ 树是有序的"
+  ],
+  "after": [
+    "理解联合索引「先按 a 排、a 相同再按 b 排」的物理顺序",
+    "一眼判断各种 WHERE 组合能否命中联合索引最左前缀",
+    "知道联合索引列顺序设计的黄金法则：高区分度/等值列放左边"
+  ],
+  "terms": {
+    "联合索引": "同时在多个列上建一棵 B+ 树，先按第 1 列排序，第 1 列相同再按第 2 列排序，依此类推。",
+    "最左前缀原则": "查询条件必须从联合索引的最左列开始匹配，跳过前导列会导致后续列全局无序，无法二分定位。"
+  },
+  "experiments": {
+    "leftmost": {
+      "runner": "java",
+      "home": "lab.leftmost",
+      "variants": [
+        {
+          "id": "SkipFirstCol",
+          "label": "WHERE b=500 (跳过 a)",
+          "note": "跳过最左列 a，b 在整棵树里是无序的，只能全扫 10 万行！"
+        },
+        {
+          "id": "PrefixAOnly",
+          "label": "WHERE a=5 (命中 a)",
+          "note": "只用最左列 a，把扫描范围从 10 万缩小到 1000 行。"
+        },
+        {
+          "id": "PrefixAB",
+          "label": "WHERE a=5 AND b=500",
+          "note": "命中 (a, b) 前缀，直接精准定位 50 行。"
+        },
+        {
+          "id": "FullABC",
+          "label": "WHERE a=5 AND b=500 AND c=1",
+          "note": "三列全命中，扫描行数等于实际命中数。"
+        }
+      ],
+      "knob": {
+        "label": "表总行数",
+        "values": [
+          "10000",
+          "50000",
+          "100000",
+          "200000"
+        ],
+        "default": "100000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "scanned",
+        "expectKey": "expected",
+        "label": "扫描行数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "建了 (a, b, c) 联合索引，查 b 为啥不走索引？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "建了一个联合索引 `(a, b, c)`，很多人以为只要条件里出现 `a`、`b`、`c` 中的任意一个就能走索引。结果 `WHERE b = 500` 上线直接全表扫描。",
+          "say": "这背后不是玄学，而是像查字典一样朴素的排序规则。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "10 万行表，跳过最左列 `a` 要多扫多少行？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "实际只有 50 行满足 `b = 500`。直接查 `WHERE b = 500` 会扫描多少行？",
+          "say": "看看 `SkipFirstCol`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 SkipFirstCol 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "leftmost.SkipFirstCol",
+          "say": "因为树是先按 `a` 排的，不同 `a` 下面都有 `b = 500`，只能从第 0 行扫到第 10 万行。",
+          "walk": [
+            {
+              "focus": [
+                "for (int i = 0; i < n; i++)",
+                "if (colB[i] == 500)"
+              ],
+              "say": "失去了 `a` 的有序约束，只能硬扫全表。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "10 万行表建了 `(a, b, c)` 联合索引，执行 `WHERE b = 500`（不带 a），大约扫描多少行？",
+          "options": [
+            "50 行",
+            "1,000 行",
+            "100,000 行"
+          ],
+          "answer": 2,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "leftmost",
+          "show": [
+            "SkipFirstCol"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `scanned = 100000`！整张表都被扫了一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "leftmost.SkipFirstCol",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "想象一本按「姓氏 + 名字」排好序的花名册：先按姓排，同姓再按名排。只知道「姓张」可以二分翻到张姓那一页；但如果只知道「名叫三」，所有姓氏里都可能有张三，只能从头翻到尾。",
+          "walk": [
+            {
+              "focus": [
+                "if_icmpne"
+              ],
+              "say": "缺少最左列时无法利用 B+ 树的有序性做二分定位。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "leftmost",
+          "show": [
+            "SkipFirstCol",
+            "PrefixAOnly",
+            "PrefixAB",
+            "FullABC"
+          ],
+          "select": "PrefixAB",
+          "say": "带上最左列 `a`（`PrefixAB` / `FullABC`），扫描行数立刻从 10 万降到 50！另外注意：`WHERE b = 500 AND a = 5` 优化器会自动重排顺序，依然能走最左前缀。"
+        },
+        {
+          "t": "chart",
+          "of": "leftmost",
+          "say": "跳过最左列时扫描行数随表规模线性暴涨；命中前缀时几乎贴地。",
+          "walk": [
+            {
+              "focus": [
+                "SkipFirstCol",
+                "PrefixAB"
+              ],
+              "say": "设计联合索引时，永远把最常用、等值匹配且区分度高的列放最左边。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "建了 `(a, b, c)` 相当于同时有了 `(a)`、`(a, b)`、`(a, b, c)` 三个索引，不必再单独建 `(a)` 浪费空间。",
+          "options": [
+            {
+              "name": "跳过前导列 (WHERE b=?)",
+              "solves": "无法使用 B+ 树定位",
+              "cost": "全表/全索引扫描：{ms:leftmost.SkipFirstCol} ms",
+              "when": "如果真有高频独立查 b 的需求，需单独给 b 建索引",
+              "say": "MySQL 8.0 在极少数低基数场景有 Index Skip Scan，但不可依赖。"
+            },
+            {
+              "name": "命中左前缀 (WHERE a=? AND b=?)",
+              "solves": "直接二分定位区间",
+              "cost": "精准扫描：{ms:leftmost.PrefixAB} ms",
+              "when": "最左列必须出现（顺序无所谓，优化器会调整）",
+              "say": "记住：范围列后面的列会截断有序性（第 48 课详讲）。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "表有联合索引 `(a, b, c)`，下面哪条 SQL **不能** 用到该索引的二分定位（排除全索引扫描）？",
+          "options": [
+            {
+              "text": "`WHERE b = 2 AND a = 1`",
+              "ok": false,
+              "why": "优化器会自动调换 AND 顺序为 `a = 1 AND b = 2`，完全命中 `(a, b)`。"
+            },
+            {
+              "text": "`WHERE b = 2 AND c = 3`",
+              "ok": true,
+              "why": "缺少最左列 `a`，无法二分定位！"
+            },
+            {
+              "text": "`WHERE a = 1 AND c = 3`",
+              "ok": false,
+              "why": "至少 `a = 1` 能命中前缀缩小范围（`c` 还能走 ICP 过滤）。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "最左前缀原则",
+          "alias": "Leftmost Prefix Rule",
+          "oneLine": "联合索引 `(a, b, c)` 按从左到右顺序构建，查询==必须包含最左前导列==才能触发 B+ 树快速定位。",
+          "asked": [
+            "什么是最左前缀原则？为什么有这个限制？",
+            "WHERE b=2 AND a=1 能走 (a,b,c) 索引吗？",
+            "联合索引列顺序怎么设计？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚什么是联合索引的最左前缀原则，以及为什么跳过第一列会失效？",
+          "points": [
+            "联合索引按第 1 列全局有序，第 1 列相同时第 2 列才局部有序",
+            "跳过第 1 列时，第 2 列在整棵树上是无序的，无法二分查找",
+            "AND 条件顺序不影响（优化器会重排），但必须有最左列",
+            "设计原则：高频等值列、区分度高的列放最左，范围列放后"
+          ],
+          "model": "联合索引 (a, b, c) 在 B+ 树里是先按 a 全局排序，a 相同再按 b 排，b 相同再按 c 排。就像字典先按姓排再按名排，如果只查 b 不带 a，b 在整棵树里是乱序的，引擎没法二分定位，只能全扫。注意 SQL 里写 WHERE b=2 AND a=1 是可以走索引的，因为优化器会自动调整顺序。设计联合索引时通常把高频等值、区分度高的列放最左边，范围列放后面。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "为什么跳过最左列走不了索引？",
+              "a": "联合索引只保证最左列全局有序，后续列只在前面列相等时局部有序。"
+            },
+            {
+              "q": "WHERE b=2 AND a=1 能走 (a,b,c) 吗？",
+              "a": "能！优化器会自动把 AND 条件重排成 a=1 AND b=2。"
+            },
+            {
+              "q": "建了 (a,b,c) 还需要建 (a) 吗？",
+              "a": "不需要，(a,b,c) 已经覆盖了 (a) 和 (a,b) 的最左前缀。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

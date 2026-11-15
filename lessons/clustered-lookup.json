@@ -1,0 +1,332 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "clustered-lookup",
+  "course": "MySQL 索引、事务与锁",
+  "title": "走索引了，为什么还要回表再查一遍？",
+  "lead": "明明给 name 建了索引，EXPLAIN 也显示走了 idx_name，怎么查 2000 行还是要查 4000 次树？",
+  "minutes": 35,
+  "needs": [
+    "知道主键和普通索引"
+  ],
+  "after": [
+    "画清聚簇索引和二级索引叶子节点存的东西有什么不同",
+    "算清「回表」让树查找次数直接翻倍的代价",
+    "知道 MRR（Multi-Range Read）把随机回表变顺序回表的原理"
+  ],
+  "terms": {
+    "二级索引（辅助索引）": "非主键列的索引，叶子节点存的是「索引列值 + 主键 id」，不存整行数据。",
+    "回表": "先查二级索引拿到主键 id，再拿着主键 id 去聚簇索引查整行记录的过程。",
+    "MRR": "Multi-Range Read：先把一批二级索引查到的主键 id 排个序，再去聚簇索引顺序回表，减少磁盘随机读。"
+  },
+  "experiments": {
+    "lookup": {
+      "runner": "java",
+      "home": "lab.lookup",
+      "variants": [
+        {
+          "id": "SecondaryLookup",
+          "label": "二级索引+回表",
+          "note": "每命中一行先查二级索引拿 pk，再查一次聚簇索引。"
+        },
+        {
+          "id": "ClusteredPk",
+          "label": "主键聚簇直查",
+          "note": "直接查主键，叶子节点自带整行，只需 1 次树查找。"
+        },
+        {
+          "id": "CoveringOnly",
+          "label": "只查索引列(不回表)",
+          "note": "只取二级索引里有的列，1 次树查找收工。"
+        },
+        {
+          "id": "MrrSortedLookup",
+          "label": "MRR 排序回表",
+          "note": "先攒一批主键排好序再集中回表，把随机 I/O 变顺序 I/O。"
+        }
+      ],
+      "knob": {
+        "label": "命中行数",
+        "values": [
+          "100",
+          "500",
+          "2000",
+          "5000"
+        ],
+        "default": "2000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "treeLookups",
+        "expectKey": "expected",
+        "label": "B+ 树查找总次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "走索引了，为什么还要回表再查一遍？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "很多同学以为「建了索引 = 一次查到」。其实在 InnoDB 里，除了主键以外的所有普通索引，查到之后往往还得再跑一趟。",
+          "say": "这多出来的一趟，就是面试天天问的「回表」。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "命中 2000 条记录，二级索引到底查了几次树？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "执行 `SELECT * FROM users WHERE age = 20`（命中 2000 行），B+ 树查找会执行 2000 次还是 **4000** 次？",
+          "say": "看看 `SecondaryLookup` 的循环体。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 SecondaryLookup 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "lookup.SecondaryLookup",
+          "say": "循环里清晰地写着两步：先从二级索引拿 `pk`，再用 `pk` 去聚簇索引 `binarySearch`。",
+          "walk": [
+            {
+              "focus": [
+                "int pk = (i * 19) % N;",
+                "treeLookups++;"
+              ],
+              "say": "第 1 步：走二级索引拿到主键值。"
+            },
+            {
+              "focus": [
+                "int pos = Arrays.binarySearch(pkIds, pk);",
+                "treeLookups++;"
+              ],
+              "say": "第 2 步：拿着主键回聚簇索引查整行，树查找次数直接 × 2！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "命中 2000 行时，`SecondaryLookup` 一共执行多少次树查找？",
+          "options": [
+            "2000 次",
+            "4000 次",
+            "1 次",
+            "100,000 次"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "lookup",
+          "show": [
+            "SecondaryLookup"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `treeLookups = 4000`！如果这 2000 个主键是乱序的，还会导致 2000 次随机磁盘 I/O。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "lookup.SecondaryLookup",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "二级索引只存「索引列 + 主键」是为了省空间，并且以后主行迁移页位置时，二级索引不用跟着改物理地址（逻辑指针解耦）。代价就是查整行必须回表。",
+          "walk": [
+            {
+              "focus": [
+                "Arrays.binarySearch"
+              ],
+              "say": "每一次回表都要重新从聚簇索引根节点往下走一遍。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "lookup",
+          "show": [
+            "SecondaryLookup",
+            "ClusteredPk",
+            "CoveringOnly",
+            "MrrSortedLookup"
+          ],
+          "select": "ClusteredPk",
+          "say": "三种优化思路：尽量用主键查（`ClusteredPk`）、只查索引列免回表（`CoveringOnly`）、或开启 MRR 排序回表（`MrrSortedLookup`）。"
+        },
+        {
+          "t": "chart",
+          "of": "lookup",
+          "say": "二级索引回表的树查找次数永远是主键直查和覆盖索引的 2 倍。",
+          "walk": [
+            {
+              "focus": [
+                "SecondaryLookup",
+                "ClusteredPk"
+              ],
+              "say": "减少回表次数，是 SQL 索引调优的第一抓手。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "能不回表就不回表；必须回表且批量命中时，MRR 能把随机 I/O 整理成顺序 I/O。",
+          "options": [
+            {
+              "name": "二级索引回表",
+              "solves": "按非主键列查整行",
+              "cost": "2 倍树查找：{ms:lookup.SecondaryLookup} ms",
+              "when": "命中行数较少（< 表总行数 20%）时划算",
+              "say": "如果命中超过 30%，优化器可能干脆放弃索引直接全表扫。"
+            },
+            {
+              "name": "主键直查 / 覆盖索引",
+              "solves": "只需查 1 棵树，0 回表",
+              "cost": "1 倍树查找：{ms:lookup.CoveringOnly} ms",
+              "when": "尽量把高频查询列放进覆盖索引",
+              "say": "下一课专门实测覆盖索引的威力。"
+            },
+            {
+              "name": "MRR 排序回表",
+              "solves": "把乱序主键排序后再回表",
+              "cost": "顺序回表：{ms:lookup.MrrSortedLookup} ms",
+              "when": "范围查询需要大量回表时",
+              "say": "MySQL `optimizer_switch` 默认开启 MRR。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么 InnoDB 的二级索引叶子节点存的是「主键值」，而不是直接存整行数据的物理地址？",
+          "options": [
+            {
+              "text": "当聚簇索引发生页分裂导致行物理位置移动时，二级索引无需跟着更新，维护成本低",
+              "ok": true,
+              "why": "主键值是逻辑指针，解耦了二级索引与物理页位置的绑定。"
+            },
+            {
+              "text": "因为 InnoDB 找不到物理地址",
+              "ok": false,
+              "why": "MyISAM 就是直接存物理地址的，这是两种引擎的设计取舍。"
+            },
+            {
+              "text": "为了故意让查询变慢",
+              "ok": false,
+              "why": "这是维护成本与查询回表之间的工程权衡。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "聚簇索引与回表",
+          "alias": "Clustered Index & Back-to-Table",
+          "oneLine": "二级索引叶子只存主键值，查非索引列必须==拿主键回到聚簇索引再查一次（回表）==。",
+          "asked": [
+            "什么是聚簇索引和非聚簇索引？",
+            "什么是回表？怎么减少回表？",
+            "如果命中行数太多，MySQL 为什么有时不走二级索引？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清楚 InnoDB 的聚簇索引、二级索引和「回表」是怎么回事？",
+          "points": [
+            "聚簇索引按主键排序，叶子节点直接存整行数据，每张表只有一个",
+            "二级索引叶子节点只存索引列和主键值，不存整行",
+            "通过二级索引查整行时，必须拿主键再去查一遍聚簇索引，这叫回表",
+            "减少回表靠覆盖索引；批量回表可借助 MRR 排序变顺序读"
+          ],
+          "model": "InnoDB 的聚簇索引就是按主键构建的 B+ 树，叶子节点直接存放整行数据。而其他普通列建的二级索引，叶子节点只存「索引列的值 + 对应的主键 id」。所以当你用普通索引条件查 `SELECT *` 时，引擎必须先查二级索引拿到主键，再拿着主键去聚簇索引再查一次把整行捞出来，这个过程就叫回表。减少回表的核心方法就是使用覆盖索引，或者尽量按主键查询。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "聚簇索引和二级索引叶子节点各存什么？",
+              "a": "聚簇索引存整行数据；二级索引只存索引列值 + 主键 id。"
+            },
+            {
+              "q": "什么是回表？",
+              "a": "先查二级索引拿到主键 id，再回聚簇索引查整行数据的二次查找过程。"
+            },
+            {
+              "q": "为什么回表太多时 MySQL 会放弃索引？",
+              "a": "大量随机回表 I/O 代价高于直接顺序扫聚簇索引全表。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}
