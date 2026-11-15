@@ -109,6 +109,18 @@
 | M2-03 | **虚拟机栈帧与 StackOverflow** | 同样递归 10000 层，为什么局部变量多写几个 long 就会提前炸出 StackOverflowError？ | `lab.jvmstack` | [网页课件](./pages/jvm-stack.html) · [JSON](./lessons/jvm-stack.json) · [源码](./src/lab/jvmstack/) |
 | M2-04 | **TLAB 线程本地分配缓冲** | 堆内存明明所有线程共享，为什么多线程同时 new 对象不抢同一把锁？ | `lab.tlab` | [网页课件](./pages/jvm-tlab.html) · [JSON](./lessons/jvm-tlab.json) · [源码](./src/lab/tlab/) |
 
+### 模块二 · 第二章：对象头、逃逸分析、引用与 GC 机制（M2-05～M2-09）
+
+实测 `synchronized` 锁升级膨胀、JIT 标量替换、强软弱虚引用回收时机、GC Roots 循环孤岛与大对象直入老年代停顿。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M2-05 | **对象头 MarkWord 与锁升级** | 对象头里 64 bit 存了什么？无竞争轻量级锁与多线程膨胀重量级锁耗时差多少？ | `lab.markword` | [网页课件](./pages/jvm-markword.html) · [JSON](./lessons/jvm-markword.json) · [源码](./src/lab/markword/) |
+| M2-06 | **逃逸分析与标量替换** | 循环里 new 百万个临时对象为什么和直接写 int 一样快？ | `lab.escape` | [网页课件](./pages/jvm-escape.html) · [JSON](./lessons/jvm-escape.json) · [源码](./src/lab/escape/) |
+| M2-07 | **强软弱虚引用与 ThreadLocal 泄漏** | 调一次 System.gc() 后强软弱虚引用各自收多少？ThreadLocal 为什么还会内存泄漏？ | `lab.references` | [网页课件](./pages/jvm-references.html) · [JSON](./lessons/jvm-references.json) · [源码](./src/lab/references/) |
+| M2-08 | **GC Roots 可达性分析** | A↔B 循环引用为什么不会内存泄漏？哪些对象能当 GC Roots？ | `lab.gcroots` | [网页课件](./pages/jvm-gcroots.html) · [JSON](./lessons/jvm-gcroots.json) · [源码](./src/lab/gcroots/) |
+| M2-09 | **分代回收与 GC 停顿** | 朝生夕灭的小对象秒收，1MB 大数组直奔老年代怎么把 GC 耗时拖垮？ | `lab.gcpause` | [网页课件](./pages/jvm-gc-pause.html) · [JSON](./lessons/jvm-gc-pause.json) · [源码](./src/lab/gcpause/) |
+
 ### 模块三 · 第一章：TCP 传输与 Socket 底层（M3-01～M3-05）
 
 用真实 Socket 实测三次握手建连成本、`TIME_WAIT` 端口复用、全连接队列 `backlog` 拥堵、TCP 粘包拆包与 Nagle 延迟 ACK 撞车。
