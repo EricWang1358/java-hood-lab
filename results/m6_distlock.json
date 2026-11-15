@@ -1,0 +1,1665 @@
+{
+ "id": "m6_distlock",
+ "variants": {
+  "TwoStepSetNx": {
+   "hash": "81773c74fc14377b",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 27
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 36
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 30
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 25
+     }
+    ],
+    "2": [
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "lockViolations": 9,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 65
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 58
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 52
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 45
+     }
+    ],
+    "4": [
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 52
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 66
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 59
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 66
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 78
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 79
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 76
+     },
+     {
+      "lockViolations": 9,
+      "expected": 0,
+      "ms": 74
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 67
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 106
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 57
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 76
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 88
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 87
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 78
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 51
+     }
+    ],
+    "8": [
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 128
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 82
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 101
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 85
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 123
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 104
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 100
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 107
+     },
+     {
+      "lockViolations": 9,
+      "expected": 0,
+      "ms": 145
+     },
+     {
+      "lockViolations": 9,
+      "expected": 0,
+      "ms": 119
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 121
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 119
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 107
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 91
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 109
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 157
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 112
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 97
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 113
+     },
+     {
+      "lockViolations": 10,
+      "expected": 0,
+      "ms": 78
+     }
+    ]
+   },
+   "inside": "Compiled from \"TwoStepSetNx.java\"\npublic class lab.m6.distlock.TwoStepSetNx {\n  static final int ROUNDS;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.Long> lockTable;\n\n  static final java.util.concurrent.atomic.AtomicInteger lockViolations;\n\n  public lab.m6.distlock.TwoStepSetNx();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void runRound(int, boolean);\n    Code:\n       0: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n       3: ldc           #13                 // String lock:order\n       5: lconst_1\n       6: invokestatic  #15                 // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;\n       9: invokevirtual #21                 // Method java/util/concurrent/ConcurrentHashMap.putIfAbsent:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      12: ifnonnull     48\n      15: iload_1\n      16: ifeq          20\n      19: return\n      20: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      23: ldc           #13                 // String lock:order\n      25: invokestatic  #27                 // Method java/lang/System.nanoTime:()J\n      28: ldc2_w        #33                 // long 1000000l\n      31: ladd\n      32: invokestatic  #15                 // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;\n      35: invokevirtual #35                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      38: pop\n      39: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      42: ldc           #13                 // String lock:order\n      44: invokevirtual #38                 // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;\n      47: pop\n      48: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #42                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #48                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #50                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: invokestatic  #27                 // Method java/lang/System.nanoTime:()J\n      19: lstore_3\n      20: iconst_0\n      21: istore        5\n      23: iload         5\n      25: bipush        30\n      27: if_icmpge     156\n      30: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      33: invokevirtual #53                 // Method java/util/concurrent/ConcurrentHashMap.clear:()V\n      36: iload         5\n      38: istore        6\n      40: iload_1\n      41: anewarray     #56                 // class java/lang/Thread\n      44: astore        7\n      46: iconst_0\n      47: istore        8\n      49: iload         8\n      51: iload_1\n      52: if_icmpge     95\n      55: iload         8\n      57: istore        9\n      59: aload         7\n      61: iload         8\n      63: new           #56                 // class java/lang/Thread\n      66: dup\n      67: aload_2\n      68: iload         9\n      70: iload         6\n      72: invokedynamic #58,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;II)Ljava/lang/Runnable;\n      77: invokespecial #62                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      80: aastore\n      81: aload         7\n      83: iload         8\n      85: aaload\n      86: invokevirtual #65                 // Method java/lang/Thread.start:()V\n      89: iinc          8, 1\n      92: goto          49\n      95: aload         7\n      97: astore        8\n      99: aload         8\n     101: arraylength\n     102: istore        9\n     104: iconst_0\n     105: istore        10\n     107: iload         10\n     109: iload         9\n     111: if_icmpge     132\n     114: aload         8\n     116: iload         10\n     118: aaload\n     119: astore        11\n     121: aload         11\n     123: invokevirtual #68                 // Method java/lang/Thread.join:()V\n     126: iinc          10, 1\n     129: goto          107\n     132: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n     135: ldc           #13                 // String lock:order\n     137: invokevirtual #71                 // Method java/util/concurrent/ConcurrentHashMap.containsKey:(Ljava/lang/Object;)Z\n     140: ifeq          150\n     143: getstatic     #75                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n     146: invokevirtual #79                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n     149: pop\n     150: iinc          5, 1\n     153: goto          23\n     156: invokestatic  #27                 // Method java/lang/System.nanoTime:()J\n     159: lload_3\n     160: lsub\n     161: ldc2_w        #33                 // long 1000000l\n     164: ldiv\n     165: lstore        5\n     167: getstatic     #85                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     170: getstatic     #75                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n     173: invokevirtual #89                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     176: invokedynamic #92,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     181: invokevirtual #96                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     184: getstatic     #85                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     187: ldc           #102                // String expected=0\n     189: invokevirtual #96                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     192: getstatic     #85                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     195: lload         5\n     197: invokedynamic #104,  0            // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     202: invokevirtual #96                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     205: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, int, int);\n    Code:\n       0: aload_0\n       1: invokevirtual #107                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iload_1\n       6: iload_2\n       7: iconst_3\n       8: irem\n       9: ifne          20\n      12: iload_1\n      13: ifne          20\n      16: iconst_1\n      17: goto          21\n      20: iconst_0\n      21: invokestatic  #110                // Method runRound:(IZ)V\n      24: goto          37\n      27: astore_3\n      28: new           #116                // class java/lang/RuntimeException\n      31: dup\n      32: aload_3\n      33: invokespecial #118                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      36: athrow\n      37: return\n    Exception table:\n       from    to  target type\n           0    24    27   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #22                 // class java/util/concurrent/ConcurrentHashMap\n       3: dup\n       4: invokespecial #121                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n       7: putstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      10: new           #80                 // class java/util/concurrent/atomic/AtomicInteger\n      13: dup\n      14: invokespecial #122                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      17: putstatic     #75                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n      20: return\n}\n"
+  },
+  "AtomicSetNxPx": {
+   "hash": "3326231356c79f85",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 67
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 49
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 28
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 58
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 50
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 52
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 36
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 38
+     }
+    ],
+    "2": [
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 110
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 67
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 66
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 56
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 64
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 65
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 50
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 66
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 81
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 60
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 85
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 84
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 46
+     }
+    ],
+    "4": [
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 109
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 91
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 102
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 93
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 92
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 103
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 95
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 78
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 101
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 91
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 102
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 93
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 90
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 64
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 89
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 95
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 90
+     }
+    ],
+    "8": [
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 106
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 117
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 149
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 140
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 107
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 146
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 136
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 144
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 121
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 148
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 152
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 130
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 178
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 140
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 153
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 150
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 221
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 135
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 143
+     },
+     {
+      "lockViolations": 15,
+      "expected": 0,
+      "ms": 151
+     }
+    ]
+   },
+   "inside": "Compiled from \"AtomicSetNxPx.java\"\npublic class lab.m6.distlock.AtomicSetNxPx {\n  static final int ROUNDS;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.String> lockTable;\n\n  static final java.util.concurrent.atomic.AtomicInteger lockViolations;\n\n  public lab.m6.distlock.AtomicSetNxPx();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static boolean tryLockNxPx(java.lang.String, java.lang.String);\n    Code:\n       0: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n       3: aload_0\n       4: aload_1\n       5: invokevirtual #13                 // Method java/util/concurrent/ConcurrentHashMap.putIfAbsent:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n       8: ifnonnull     15\n      11: iconst_1\n      12: goto          16\n      15: iconst_0\n      16: ireturn\n\n  static void unlockNaive(java.lang.String);\n    Code:\n       0: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n       3: aload_0\n       4: invokevirtual #19                 // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;\n       7: pop\n       8: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #23                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #29                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #31                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: invokestatic  #34                 // Method java/lang/System.nanoTime:()J\n      19: lstore_3\n      20: iconst_0\n      21: istore        5\n      23: iload         5\n      25: bipush        30\n      27: if_icmpge     171\n      30: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      33: invokevirtual #40                 // Method java/util/concurrent/ConcurrentHashMap.clear:()V\n      36: iload_1\n      37: anewarray     #43                 // class java/lang/Thread\n      40: astore        6\n      42: iconst_0\n      43: istore        7\n      45: iload         7\n      47: iload_1\n      48: if_icmpge     94\n      51: iload         7\n      53: invokedynamic #45,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      58: astore        8\n      60: aload         6\n      62: iload         7\n      64: new           #43                 // class java/lang/Thread\n      67: dup\n      68: aload_2\n      69: aload         8\n      71: invokedynamic #49,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;Ljava/lang/String;)Ljava/lang/Runnable;\n      76: invokespecial #53                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      79: aastore\n      80: aload         6\n      82: iload         7\n      84: aaload\n      85: invokevirtual #56                 // Method java/lang/Thread.start:()V\n      88: iinc          7, 1\n      91: goto          45\n      94: aload         6\n      96: astore        7\n      98: aload         7\n     100: arraylength\n     101: istore        8\n     103: iconst_0\n     104: istore        9\n     106: iload         9\n     108: iload         8\n     110: if_icmpge     131\n     113: aload         7\n     115: iload         9\n     117: aaload\n     118: astore        10\n     120: aload         10\n     122: invokevirtual #59                 // Method java/lang/Thread.join:()V\n     125: iinc          9, 1\n     128: goto          106\n     131: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n     134: invokevirtual #62                 // Method java/util/concurrent/ConcurrentHashMap.isEmpty:()Z\n     137: ifne          147\n     140: getstatic     #66                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n     143: invokevirtual #70                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n     146: pop\n     147: iload_1\n     148: ifle          165\n     151: iload         5\n     153: iconst_2\n     154: irem\n     155: ifne          165\n     158: getstatic     #66                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n     161: invokevirtual #70                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n     164: pop\n     165: iinc          5, 1\n     168: goto          23\n     171: invokestatic  #34                 // Method java/lang/System.nanoTime:()J\n     174: lload_3\n     175: lsub\n     176: ldc2_w        #76                 // long 1000000l\n     179: ldiv\n     180: lstore        5\n     182: getstatic     #78                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     185: getstatic     #66                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n     188: invokevirtual #82                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     191: invokedynamic #85,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     196: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     199: getstatic     #78                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     202: ldc           #92                 // String expected=0\n     204: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     207: getstatic     #78                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     210: lload         5\n     212: invokedynamic #94,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     217: invokevirtual #86                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     220: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, java.lang.String);\n    Code:\n       0: aload_0\n       1: invokevirtual #97                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: ldc           #100                // String lock:order\n       7: aload_1\n       8: invokestatic  #102                // Method tryLockNxPx:(Ljava/lang/String;Ljava/lang/String;)Z\n      11: ifeq          39\n      14: aload_1\n      15: ldc           #106                // String t-0\n      17: invokevirtual #108                // Method java/lang/String.equals:(Ljava/lang/Object;)Z\n      20: ifeq          34\n      23: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      26: ldc           #100                // String lock:order\n      28: ldc           #114                // String t-other\n      30: invokevirtual #116                // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      33: pop\n      34: ldc           #100                // String lock:order\n      36: invokestatic  #119                // Method unlockNaive:(Ljava/lang/String;)V\n      39: goto          52\n      42: astore_2\n      43: new           #124                // class java/lang/RuntimeException\n      46: dup\n      47: aload_2\n      48: invokespecial #126                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      51: athrow\n      52: return\n    Exception table:\n       from    to  target type\n           0    39    42   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #14                 // class java/util/concurrent/ConcurrentHashMap\n       3: dup\n       4: invokespecial #129                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n       7: putstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      10: new           #71                 // class java/util/concurrent/atomic/AtomicInteger\n      13: dup\n      14: invokespecial #130                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      17: putstatic     #66                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n      20: return\n}\n"
+  },
+  "WrongOwnerUnlock": {
+   "hash": "b20aff08bfe30743",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 33
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 37
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 67
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 51
+     }
+    ],
+    "2": [
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 52
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 60
+     },
+     {
+      "lockViolations": 28,
+      "expected": 0,
+      "ms": 59
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 101
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 57
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "lockViolations": 29,
+      "expected": 0,
+      "ms": 91
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 88
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 75
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 82
+     }
+    ],
+    "4": [
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 103
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 106
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 98
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 81
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 122
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 104
+     },
+     {
+      "lockViolations": 29,
+      "expected": 0,
+      "ms": 100
+     },
+     {
+      "lockViolations": 29,
+      "expected": 0,
+      "ms": 91
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 122
+     },
+     {
+      "lockViolations": 28,
+      "expected": 0,
+      "ms": 103
+     },
+     {
+      "lockViolations": 29,
+      "expected": 0,
+      "ms": 78
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 118
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 119
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 106
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 112
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 101
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 123
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 89
+     },
+     {
+      "lockViolations": 29,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 98
+     }
+    ],
+    "8": [
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 134
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 159
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 144
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 137
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 154
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 212
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 132
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 131
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 151
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 186
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 119
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 126
+     },
+     {
+      "lockViolations": 29,
+      "expected": 0,
+      "ms": 149
+     },
+     {
+      "lockViolations": 29,
+      "expected": 0,
+      "ms": 117
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 171
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 152
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 139
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 115
+     },
+     {
+      "lockViolations": 29,
+      "expected": 0,
+      "ms": 146
+     },
+     {
+      "lockViolations": 30,
+      "expected": 0,
+      "ms": 146
+     }
+    ]
+   },
+   "inside": "Compiled from \"WrongOwnerUnlock.java\"\npublic class lab.m6.distlock.WrongOwnerUnlock {\n  static final int ROUNDS;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.String> lockTable;\n\n  static final java.util.concurrent.atomic.AtomicInteger lockViolations;\n\n  public lab.m6.distlock.WrongOwnerUnlock();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void runRound(java.lang.String);\n    Code:\n       0: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n       3: ldc           #13                 // String lock:order\n       5: aload_0\n       6: invokevirtual #15                 // Method java/util/concurrent/ConcurrentHashMap.putIfAbsent:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n       9: ifnonnull     63\n      12: ldc           #21                 // String t-0\n      14: aload_0\n      15: invokevirtual #23                 // Method java/lang/String.equals:(Ljava/lang/Object;)Z\n      18: ifeq          32\n      21: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      24: ldc           #13                 // String lock:order\n      26: ldc           #29                 // String t-next\n      28: invokevirtual #31                 // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      31: pop\n      32: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      35: ldc           #13                 // String lock:order\n      37: invokevirtual #34                 // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;\n      40: checkcast     #24                 // class java/lang/String\n      43: astore_1\n      44: aload_1\n      45: ifnull        63\n      48: aload_1\n      49: aload_0\n      50: invokevirtual #23                 // Method java/lang/String.equals:(Ljava/lang/Object;)Z\n      53: ifne          63\n      56: getstatic     #38                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n      59: invokevirtual #42                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      62: pop\n      63: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #48                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #54                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #56                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: invokestatic  #59                 // Method java/lang/System.nanoTime:()J\n      19: lstore_3\n      20: iconst_0\n      21: istore        5\n      23: iload         5\n      25: bipush        30\n      27: if_icmpge     137\n      30: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      33: invokevirtual #65                 // Method java/util/concurrent/ConcurrentHashMap.clear:()V\n      36: iload_1\n      37: anewarray     #68                 // class java/lang/Thread\n      40: astore        6\n      42: iconst_0\n      43: istore        7\n      45: iload         7\n      47: iload_1\n      48: if_icmpge     94\n      51: iload         7\n      53: invokedynamic #70,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      58: astore        8\n      60: aload         6\n      62: iload         7\n      64: new           #68                 // class java/lang/Thread\n      67: dup\n      68: aload_2\n      69: aload         8\n      71: invokedynamic #74,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;Ljava/lang/String;)Ljava/lang/Runnable;\n      76: invokespecial #78                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      79: aastore\n      80: aload         6\n      82: iload         7\n      84: aaload\n      85: invokevirtual #81                 // Method java/lang/Thread.start:()V\n      88: iinc          7, 1\n      91: goto          45\n      94: aload         6\n      96: astore        7\n      98: aload         7\n     100: arraylength\n     101: istore        8\n     103: iconst_0\n     104: istore        9\n     106: iload         9\n     108: iload         8\n     110: if_icmpge     131\n     113: aload         7\n     115: iload         9\n     117: aaload\n     118: astore        10\n     120: aload         10\n     122: invokevirtual #84                 // Method java/lang/Thread.join:()V\n     125: iinc          9, 1\n     128: goto          106\n     131: iinc          5, 1\n     134: goto          23\n     137: invokestatic  #59                 // Method java/lang/System.nanoTime:()J\n     140: lload_3\n     141: lsub\n     142: ldc2_w        #87                 // long 1000000l\n     145: ldiv\n     146: lstore        5\n     148: getstatic     #89                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     151: getstatic     #38                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n     154: invokevirtual #93                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     157: invokedynamic #96,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     162: invokevirtual #97                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     165: getstatic     #89                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     168: ldc           #103                // String expected=0\n     170: invokevirtual #97                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     173: getstatic     #89                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     176: lload         5\n     178: invokedynamic #105,  0            // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     183: invokevirtual #97                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     186: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, java.lang.String);\n    Code:\n       0: aload_0\n       1: invokevirtual #108                // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: aload_1\n       6: invokestatic  #111                // Method runRound:(Ljava/lang/String;)V\n       9: goto          22\n      12: astore_2\n      13: new           #116                // class java/lang/RuntimeException\n      16: dup\n      17: aload_2\n      18: invokespecial #118                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      21: athrow\n      22: return\n    Exception table:\n       from    to  target type\n           0     9    12   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #16                 // class java/util/concurrent/ConcurrentHashMap\n       3: dup\n       4: invokespecial #121                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n       7: putstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      10: new           #43                 // class java/util/concurrent/atomic/AtomicInteger\n      13: dup\n      14: invokespecial #122                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      17: putstatic     #38                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n      20: return\n}\n"
+  },
+  "TokenValueUnlock": {
+   "hash": "3d0eadc81b599f24",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 49
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 86
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 52
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 58
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 64
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 67
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 55
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 38
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 65
+     }
+    ],
+    "2": [
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 96
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 65
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 59
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 49
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 67
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 109
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 79
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 91
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 64
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 77
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 71
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 60
+     }
+    ],
+    "4": [
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 85
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 82
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 107
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 79
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 113
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 109
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 87
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 106
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 145
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 130
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 96
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 80
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 105
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 80
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 65
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 60
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 75
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 59
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 80
+     }
+    ],
+    "8": [
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 115
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 104
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 121
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 104
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 100
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 101
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 101
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 115
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 112
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 82
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 111
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 106
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 132
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 119
+     },
+     {
+      "lockViolations": 1,
+      "expected": 0,
+      "ms": 123
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 162
+     },
+     {
+      "lockViolations": 0,
+      "expected": 0,
+      "ms": 84
+     }
+    ]
+   },
+   "inside": "Compiled from \"TokenValueUnlock.java\"\npublic class lab.m6.distlock.TokenValueUnlock {\n  static final int ROUNDS;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.String> lockTable;\n\n  static final java.util.concurrent.atomic.AtomicInteger lockViolations;\n\n  public lab.m6.distlock.TokenValueUnlock();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static boolean tryLockNxPx(java.lang.String, java.lang.String);\n    Code:\n       0: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n       3: aload_0\n       4: aload_1\n       5: invokevirtual #13                 // Method java/util/concurrent/ConcurrentHashMap.putIfAbsent:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n       8: ifnonnull     15\n      11: iconst_1\n      12: goto          16\n      15: iconst_0\n      16: ireturn\n\n  static boolean atomicUnlock(java.lang.String, java.lang.String);\n    Code:\n       0: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n       3: aload_0\n       4: aload_1\n       5: invokevirtual #19                 // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;Ljava/lang/Object;)Z\n       8: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #23                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #29                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #31                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: invokestatic  #34                 // Method java/lang/System.nanoTime:()J\n      19: lstore_3\n      20: iconst_0\n      21: istore        5\n      23: iload         5\n      25: bipush        30\n      27: if_icmpge     139\n      30: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      33: invokevirtual #40                 // Method java/util/concurrent/ConcurrentHashMap.clear:()V\n      36: iload_1\n      37: anewarray     #43                 // class java/lang/Thread\n      40: astore        6\n      42: iconst_0\n      43: istore        7\n      45: iload         7\n      47: iload_1\n      48: if_icmpge     96\n      51: iload         5\n      53: iload         7\n      55: invokedynamic #45,  0             // InvokeDynamic #0:makeConcatWithConstants:(II)Ljava/lang/String;\n      60: astore        8\n      62: aload         6\n      64: iload         7\n      66: new           #43                 // class java/lang/Thread\n      69: dup\n      70: aload_2\n      71: aload         8\n      73: invokedynamic #49,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;Ljava/lang/String;)Ljava/lang/Runnable;\n      78: invokespecial #53                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      81: aastore\n      82: aload         6\n      84: iload         7\n      86: aaload\n      87: invokevirtual #56                 // Method java/lang/Thread.start:()V\n      90: iinc          7, 1\n      93: goto          45\n      96: aload         6\n      98: astore        7\n     100: aload         7\n     102: arraylength\n     103: istore        8\n     105: iconst_0\n     106: istore        9\n     108: iload         9\n     110: iload         8\n     112: if_icmpge     133\n     115: aload         7\n     117: iload         9\n     119: aaload\n     120: astore        10\n     122: aload         10\n     124: invokevirtual #59                 // Method java/lang/Thread.join:()V\n     127: iinc          9, 1\n     130: goto          108\n     133: iinc          5, 1\n     136: goto          23\n     139: invokestatic  #34                 // Method java/lang/System.nanoTime:()J\n     142: lload_3\n     143: lsub\n     144: ldc2_w        #62                 // long 1000000l\n     147: ldiv\n     148: lstore        5\n     150: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     153: getstatic     #68                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n     156: invokevirtual #72                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     159: invokedynamic #78,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     164: invokevirtual #81                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     167: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     170: ldc           #87                 // String expected=0\n     172: invokevirtual #81                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     175: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     178: lload         5\n     180: invokedynamic #89,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     185: invokevirtual #81                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     188: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, java.lang.String);\n    Code:\n       0: aload_0\n       1: invokevirtual #92                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: ldc           #95                 // String lock:order\n       7: aload_1\n       8: invokestatic  #97                 // Method tryLockNxPx:(Ljava/lang/String;Ljava/lang/String;)Z\n      11: ifeq          68\n      14: aload_1\n      15: ldc           #101                // String -0\n      17: invokevirtual #103                // Method java/lang/String.endsWith:(Ljava/lang/String;)Z\n      20: ifeq          34\n      23: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      26: ldc           #95                 // String lock:order\n      28: ldc           #109                // String uuid-next\n      30: invokevirtual #111                // Method java/util/concurrent/ConcurrentHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      33: pop\n      34: ldc           #95                 // String lock:order\n      36: aload_1\n      37: invokestatic  #114                // Method atomicUnlock:(Ljava/lang/String;Ljava/lang/String;)Z\n      40: istore_2\n      41: iload_2\n      42: ifeq          68\n      45: ldc           #109                // String uuid-next\n      47: getstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      50: ldc           #95                 // String lock:order\n      52: invokevirtual #117                // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n      55: invokevirtual #120                // Method java/lang/String.equals:(Ljava/lang/Object;)Z\n      58: ifeq          68\n      61: getstatic     #68                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n      64: invokevirtual #124                // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      67: pop\n      68: goto          81\n      71: astore_2\n      72: new           #129                // class java/lang/RuntimeException\n      75: dup\n      76: aload_2\n      77: invokespecial #131                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      80: athrow\n      81: return\n    Exception table:\n       from    to  target type\n           0    68    71   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #14                 // class java/util/concurrent/ConcurrentHashMap\n       3: dup\n       4: invokespecial #134                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n       7: putstatic     #7                  // Field lockTable:Ljava/util/concurrent/ConcurrentHashMap;\n      10: new           #73                 // class java/util/concurrent/atomic/AtomicInteger\n      13: dup\n      14: invokespecial #135                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      17: putstatic     #68                 // Field lockViolations:Ljava/util/concurrent/atomic/AtomicInteger;\n      20: return\n}\n"
+  }
+ }
+}

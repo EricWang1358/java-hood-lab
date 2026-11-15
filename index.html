@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>105</strong> 节循序渐进实验课</span>
-        <span><strong>420</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>109</strong> 节循序渐进实验课</span>
+        <span><strong>436</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,10 +374,10 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 110 / 110 课</span>
+        <span id="shownCount" class="count-note">显示 114 / 114 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (110)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (114)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
@@ -396,7 +396,7 @@
         <button type="button" class="pill" data-filter="m5ch4">Spring 4 · MyBatis 与连接池 (5)</button>
 
         <button type="button" class="pill" data-filter="m8">模块 8 · 算法与 SQL (10)</button>
-        <button type="button" class="pill" data-filter="m6">模块 6 · Redis / MQ / 微服务 (11)</button>
+        <button type="button" class="pill" data-filter="m6">模块 6 · Redis / MQ / 微服务 (15)</button>
       </div>
     </div>
 
@@ -1543,7 +1543,7 @@
 
       <section class="chapter" data-ch="m6">
         <div class="chapter__head">
-          <h2>模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-11）</h2>
+          <h2>模块 6：Redis 缓存、MQ 与微服务基础（#M6-01～#M6-15）</h2>
           <p>纯 JDK 零依赖仿真实验室：覆盖缓存高并发灾难与底层原理、分布式锁与看门狗、MQ 可靠幂等积压、微服务注册/重试/限流熔断。</p>
         </div>
         <div class="grid">
@@ -1611,6 +1611,30 @@
           <div class="card__top"><span class="card__num">#M6-11</span><span class="card__pkg">lab.m6.eviction</span></div>
           <h3 class="card__title">内存满时随机淘汰 vs 近似 LRU vs LFU 命中率对比</h3>
           <p class="card__lead">Redis 内存触顶 `maxmemory` 时，选 `noeviction` 直接报错、`random` 随机乱删、`allkeys-lru` 还是 `allkeys-lfu`？用真实二八热点负载跑出命中率差距。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-dist-lock-nx.html" data-ch="m6" data-search="m6-12 m6-dist-lock-nx setnx 和 expire 分两行写，崩溃怎么变成永久死锁？ 分布式锁最基础的三个坑：两步加锁崩溃变永久死锁、无唯一 token 误删别人锁、忘记释放锁。 lab.m6.distlock">
+          <div class="card__top"><span class="card__num">#M6-12</span><span class="card__pkg">lab.m6.distlock</span></div>
+          <h3 class="card__title">SETNX 和 EXPIRE 分两行写，崩溃怎么变成永久死锁？</h3>
+          <p class="card__lead">分布式锁最基础的三个坑：两步加锁崩溃变永久死锁、无唯一 Token 误删别人锁、忘记释放锁。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-lua-unlock.html" data-ch="m6" data-search="m6-13 m6-lua-unlock get 判断锁归属再 del，为什么还是删了别人的锁？ 就算在 java 代码里先 `get` 校验 uuid 再 `del`，两步之间的一次 gc 停顿就足够让锁过期易主，照样删掉别人的锁！看懂 lua 脚本与 fencing token 的必要性。 lab.m6.luaunlock">
+          <div class="card__top"><span class="card__num">#M6-13</span><span class="card__pkg">lab.m6.luaunlock</span></div>
+          <h3 class="card__title">get 判断锁归属再 del，为什么还是删了别人的锁？</h3>
+          <p class="card__lead">就算在 Java 代码里先 `get` 校验 UUID 再 `del`，两步之间的一次 GC 停顿就足够让锁过期易主，照样删掉别人的锁！看懂 Lua 脚本与 Fencing Token 的必要性。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-watchdog-renew.html" data-ch="m6" data-search="m6-14 m6-watchdog-renew 业务跑超时锁提前过期，看门狗怎么自动续期？ 锁 ttl 设 3 秒，结果业务跑了 5 秒，另一个线程立刻闯进来双写撞车；设 5 分钟又怕机器挂了卡死。看懂 redisson watchdog 看门狗的续期与停续逻辑。 lab.m6.watchdog">
+          <div class="card__top"><span class="card__num">#M6-14</span><span class="card__pkg">lab.m6.watchdog</span></div>
+          <h3 class="card__title">业务跑超时锁提前过期，看门狗怎么自动续期？</h3>
+          <p class="card__lead">锁 TTL 设 3 秒，结果业务跑了 5 秒，另一个线程立刻闯进来双写撞车；设 5 分钟又怕机器挂了卡死。看懂 Redisson Watchdog 看门狗的续期与停续逻辑。</p>
+          <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/m6-lock-granularity.html" data-ch="m6" data-search="m6-15 m6-lock-granularity 主从异步复制丢锁 vs 分段分布式锁吞吐对比 redis 主从异步复制时，刚加完锁 master 就宕机，slave 升主后锁直接蒸发！此外，一把全局大锁怎么拆成分段锁把吞吐翻倍？ lab.m6.redlock">
+          <div class="card__top"><span class="card__num">#M6-15</span><span class="card__pkg">lab.m6.redlock</span></div>
+          <h3 class="card__title">主从异步复制丢锁 vs 分段分布式锁吞吐对比</h3>
+          <p class="card__lead">Redis 主从异步复制时，刚加完锁 Master 就宕机，Slave 升主后锁直接蒸发！此外，一把全局大锁怎么拆成分段锁把吞吐翻倍？</p>
           <div class="card__foot"><span>22 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
         </a>
         </div>
