@@ -1,0 +1,323 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "btree-vs-hash",
+  "course": "MySQL 索引、事务与锁",
+  "title": "为什么 MySQL 索引选 B+ 树不选哈希或二叉树？",
+  "lead": "哈希查找明明是 O(1)，为什么 InnoDB 索引偏偏要用 B+ 树？做一次 BETWEEN 范围查询就全明白了。",
+  "minutes": 35,
+  "needs": [
+    "知道二分查找和哈希表"
+  ],
+  "after": [
+    "对比 BST、Hash、B 树、B+ 树的磁盘页 I/O 差异",
+    "讲清为什么 3 层 B+ 树就能装下两千万行",
+    "说出 B+ 树叶子双向链表对范围查询和排序的决定性优势"
+  ],
+  "terms": {
+    "扇出（Fanout）": "一个索引页能存多少个子节点指针。InnoDB 16KB 页内节点不存行数据，扇出可达上千。",
+    "树高（Height）": "从根节点查到叶子节点需要读几次磁盘页。树越矮，磁盘 I/O 越少。",
+    "B+ 树": "非叶子节点只存键值和指针，所有数据全在叶子节点且叶子之间用双向链表串起来。"
+  },
+  "experiments": {
+    "btreeio": {
+      "runner": "java",
+      "home": "lab.btreeio",
+      "variants": [
+        {
+          "id": "HashIndex",
+          "label": "哈希索引",
+          "note": "范围查询无法定位，只能退化扫全表！"
+        },
+        {
+          "id": "BinarySearchTree",
+          "label": "二叉平衡树",
+          "note": "每个节点只有 2 叉，20 万行树高 18 层，每次查 18 次 I/O。"
+        },
+        {
+          "id": "BTree",
+          "label": "B 树",
+          "note": "非叶子节点也存整行数据，扇出骤降、树高变高，范围需回溯。"
+        },
+        {
+          "id": "BPlusTree",
+          "label": "B+ 树",
+          "note": "3 层高覆盖千万行，叶子双向链表扫范围一气呵成。"
+        }
+      ],
+      "knob": {
+        "label": "范围查询跨度",
+        "values": [
+          "10",
+          "100",
+          "500",
+          "2000"
+        ],
+        "default": "500"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "pageReads",
+        "expectKey": "expected",
+        "label": "页 I/O 次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "为什么 MySQL 索引选 B+ 树不选哈希或二叉树？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "面试官最爱的底层拷问：「MySQL 为什么用 B+ 树做索引，不用红黑树、哈希表或者 B 树？」",
+          "say": "核心就看两点：单次定位要读几页磁盘、范围查询能不能顺着链表直接扫。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "查一个 500 行的范围：WHERE id BETWEEN 1000 AND 1500",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "哈希表 O(1) 的神话，遇到 `>`、`BETWEEN`、`ORDER BY` 会立刻破功吗？",
+          "say": "先看 `HashIndex` 在范围查询下的源码表现。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 HashIndex 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "btreeio.HashIndex",
+          "say": "哈希把键打散到了各个桶里，失去了大小顺序，遇到范围查询只能遍历所有桶。",
+          "walk": [
+            {
+              "focus": [
+                "for (int k : map.keySet())",
+                "pageReads++;"
+              ],
+              "say": "为了找 `[1000, 1500)` 之间的 500 个数，哈希索引不得不扫完整张表！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "在 20 万行里查 `BETWEEN 1000 AND 1500`，`HashIndex` 和 `BPlusTree` 的页读取数大约差多少倍？",
+          "options": [
+            "差不多",
+            "B+ 树约 8 页，哈希要扫完 2000 页",
+            "哈希只需 1 页"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "btreeio",
+          "show": [
+            "HashIndex"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "`HashIndex` 读了 2000 页！遇到范围查询直接退化成全表扫描。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "btreeio.HashIndex",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "二叉树树高太深（千万行约 24 层 = 24 次磁盘 I/O）；B 树非叶子节点存了整行数据，一页装不下几个键，树高变高且范围查询要反复上下回溯；唯有 B+ 树非叶只存键，一页装上千个指针（3 层千万行），叶子链表直接横扫范围。",
+          "walk": [
+            {
+              "focus": [
+                "keySet"
+              ],
+              "say": "无序散列结构天然不支持范围与排序。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "btreeio",
+          "show": [
+            "HashIndex",
+            "BinarySearchTree",
+            "BTree",
+            "BPlusTree"
+          ],
+          "select": "BPlusTree",
+          "say": "切到 `BPlusTree`：先 3 次页读定位到 1000，再顺着叶子双向链表向后读几页就收工！"
+        },
+        {
+          "t": "chart",
+          "of": "btreeio",
+          "say": "`BPlusTree` 无论范围跨度 10 还是 2000，页 I/O 始终贴近理论下限。",
+          "walk": [
+            {
+              "focus": [
+                "HashIndex",
+                "BPlusTree"
+              ],
+              "say": "红黑树/B树/哈希在磁盘页 I/O 维度全面落后于 B+ 树。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "理解四种结构的唯一目的：记住磁盘 I/O 才是数据库的瓶颈，矮胖且叶子相连的 B+ 树是磁盘时代的完美答案。",
+          "options": [
+            {
+              "name": "B+ 树 (InnoDB)",
+              "solves": "3 层千万行，支持等值、范围、前缀与排序",
+              "cost": "极少页 I/O：{ms:btreeio.BPlusTree} ms",
+              "when": "通用关系型数据库索引默认首选",
+              "say": "InnoDB 的基石。"
+            },
+            {
+              "name": "Hash 索引",
+              "solves": "纯等值查询 O(1)",
+              "cost": "范围退化全扫：{ms:btreeio.HashIndex} ms",
+              "when": "Memory 引擎或 InnoDB 自适应哈希缓存",
+              "say": "不支持范围、不支持 ORDER BY、不支持最左前缀。"
+            },
+            {
+              "name": "二叉树 / B 树",
+              "solves": "内存数据结构或非叶存数据",
+              "cost": "树高过高：{ms:btreeio.BinarySearchTree} ms",
+              "when": "内存 TreeMap 用红黑树，磁盘索引不用",
+              "say": "磁盘按 16KB 页读取，二叉树一节点才几十字节太浪费。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "B+ 树比 B 树更适合做 MySQL 磁盘索引的核心原因是？",
+          "options": [
+            {
+              "text": "B+ 树非叶子节点不存行数据，单页扇出更大、树更矮；且叶子用双向链表连接，范围查询极快",
+              "ok": true,
+              "why": "精准答出树高更低（I/O 更少）和叶子链表（范围扫）两大核心优势。"
+            },
+            {
+              "text": "B+ 树等值查询比哈希索引还快",
+              "ok": false,
+              "why": "纯等值查询哈希是 O(1)，B+ 树胜在综合能力与范围/排序支持。"
+            },
+            {
+              "text": "B+ 树占用的内存比哈希表更小所以不用读盘",
+              "ok": false,
+              "why": "索引最终落在磁盘页上，减少读盘次数才是关键。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "B+ 树索引",
+          "alias": "B+Tree Index",
+          "oneLine": "非叶子节点仅存键与指针实现==高扇出矮树（3 层千万行）==，叶子双向链表实现==高效范围扫描==。",
+          "asked": [
+            "MySQL 为什么用 B+ 树不用 B 树/红黑树/哈希？",
+            "三层 B+ 树大概能存多少数据？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么 MySQL InnoDB 选择 B+ 树作为索引结构，而不是哈希表、红黑树或 B 树？",
+          "points": [
+            "红黑树树高太深（千万行约 24 层），磁盘 I/O 太多",
+            "哈希表不支持范围查询、ORDER BY 和最左前缀",
+            "B 树非叶子节点存数据导致扇出小、树高变高，范围查询需中序回溯",
+            "B+ 树非叶只存键+指针（3 层千万行），叶子双向链表天然支持范围扫描"
+          ],
+          "model": "数据库索引存放在磁盘页上，性能瓶颈在于磁盘 I/O 次数。红黑树每个节点只有两个分支，千万级数据树高二十多层，查一次要二十多次 I/O。哈希表虽然等值查询是 O(1)，但键是无序的，不支持范围查询、排序和最左前缀。B 树虽然也是多路平衡树，但非叶子节点也存整行数据，导致一页能放的键值很少、树高更高，且范围查询要在树里来回回溯。B+ 树把数据全放到叶子节点并用双向链表串起来，非叶子节点只存键和指针，一页能装上千个分支，3 层就能支撑两千万行，既矮又擅长范围扫描。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "为什么不用红黑树？",
+              "a": "二叉树扇出只有 2，千万数据树高 ~24 层，磁盘 I/O 次数太多。"
+            },
+            {
+              "q": "为什么不用哈希索引？",
+              "a": "无法做范围查询（>、BETWEEN）、ORDER BY 和最左前缀匹配。"
+            },
+            {
+              "q": "B+ 树比 B 树强在哪？",
+              "a": "非叶不存数据→扇出大、树更矮（I/O 更少）；叶子双向链表→范围扫不用回溯。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

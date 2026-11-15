@@ -1,0 +1,991 @@
+{
+ "id": "btreeio",
+ "variants": {
+  "HashIndex": {
+   "hash": "13b84cb4c11a7e82",
+   "repeat": 10,
+   "runs": {
+    "10": [
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 10,
+      "ms": 12
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 10,
+      "ms": 39
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 10,
+      "ms": 50
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 10,
+      "ms": 35
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 10,
+      "ms": 41
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 10,
+      "ms": 44
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 10,
+      "ms": 9
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 10,
+      "ms": 38
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 10,
+      "ms": 23
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 10,
+      "ms": 37
+     }
+    ],
+    "100": [
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 100,
+      "ms": 30
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 100,
+      "ms": 17
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 100,
+      "ms": 19
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 100,
+      "ms": 29
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 100,
+      "ms": 13
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 100,
+      "ms": 22
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 100,
+      "ms": 14
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 100,
+      "ms": 40
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 100,
+      "ms": 24
+     },
+     {
+      "pageReads": 2000,
+      "expected": 4,
+      "matched": 100,
+      "ms": 28
+     }
+    ],
+    "500": [
+     {
+      "pageReads": 2000,
+      "expected": 8,
+      "matched": 500,
+      "ms": 51
+     },
+     {
+      "pageReads": 2000,
+      "expected": 8,
+      "matched": 500,
+      "ms": 39
+     },
+     {
+      "pageReads": 2000,
+      "expected": 8,
+      "matched": 500,
+      "ms": 16
+     },
+     {
+      "pageReads": 2000,
+      "expected": 8,
+      "matched": 500,
+      "ms": 11
+     },
+     {
+      "pageReads": 2000,
+      "expected": 8,
+      "matched": 500,
+      "ms": 49
+     },
+     {
+      "pageReads": 2000,
+      "expected": 8,
+      "matched": 500,
+      "ms": 26
+     },
+     {
+      "pageReads": 2000,
+      "expected": 8,
+      "matched": 500,
+      "ms": 28
+     },
+     {
+      "pageReads": 2000,
+      "expected": 8,
+      "matched": 500,
+      "ms": 21
+     },
+     {
+      "pageReads": 2000,
+      "expected": 8,
+      "matched": 500,
+      "ms": 23
+     },
+     {
+      "pageReads": 2000,
+      "expected": 8,
+      "matched": 500,
+      "ms": 18
+     }
+    ],
+    "2000": [
+     {
+      "pageReads": 2000,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 44
+     },
+     {
+      "pageReads": 2000,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 26
+     },
+     {
+      "pageReads": 2000,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 19
+     },
+     {
+      "pageReads": 2000,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 17
+     },
+     {
+      "pageReads": 2000,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 11
+     },
+     {
+      "pageReads": 2000,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 20
+     },
+     {
+      "pageReads": 2000,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 28
+     },
+     {
+      "pageReads": 2000,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 56
+     },
+     {
+      "pageReads": 2000,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 11
+     },
+     {
+      "pageReads": 2000,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 29
+     }
+    ]
+   },
+   "inside": "Compiled from \"HashIndex.java\"\npublic class lab.btreeio.HashIndex {\n  static final int TOTAL;\n\n  public lab.btreeio.HashIndex();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/HashMap\n      10: dup\n      11: ldc           #17                 // int 400000\n      13: invokespecial #18                 // Method java/util/HashMap.\"<init>\":(I)V\n      16: astore_2\n      17: iconst_0\n      18: istore_3\n      19: iload_3\n      20: ldc           #21                 // int 200000\n      22: if_icmpge     46\n      25: aload_2\n      26: iload_3\n      27: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      30: iload_3\n      31: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      34: invokeinterface #26,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      39: pop\n      40: iinc          3, 1\n      43: goto          19\n      46: invokestatic  #32                 // Method java/lang/System.nanoTime:()J\n      49: lstore_3\n      50: iconst_0\n      51: istore        5\n      53: iconst_0\n      54: istore        6\n      56: aload_2\n      57: invokeinterface #38,  1           // InterfaceMethod java/util/Map.keySet:()Ljava/util/Set;\n      62: invokeinterface #42,  1           // InterfaceMethod java/util/Set.iterator:()Ljava/util/Iterator;\n      67: astore        7\n      69: aload         7\n      71: invokeinterface #48,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z\n      76: ifeq          121\n      79: aload         7\n      81: invokeinterface #54,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;\n      86: checkcast     #8                  // class java/lang/Integer\n      89: invokevirtual #58                 // Method java/lang/Integer.intValue:()I\n      92: istore        8\n      94: iinc          5, 1\n      97: iload         8\n      99: sipush        1000\n     102: if_icmplt     118\n     105: iload         8\n     107: sipush        1000\n     110: iload_1\n     111: iadd\n     112: if_icmpge     118\n     115: iinc          6, 1\n     118: goto          69\n     121: invokestatic  #32                 // Method java/lang/System.nanoTime:()J\n     124: lload_3\n     125: lsub\n     126: ldc2_w        #62                 // long 1000000l\n     129: ldiv\n     130: lstore        7\n     132: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     135: iload         5\n     137: bipush        100\n     139: idiv\n     140: invokedynamic #68,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     145: invokevirtual #72                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     148: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     151: iconst_3\n     152: iconst_1\n     153: iload_1\n     154: bipush        100\n     156: idiv\n     157: invokestatic  #78                 // Method java/lang/Math.max:(II)I\n     160: iadd\n     161: invokedynamic #84,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     166: invokevirtual #72                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     169: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     172: iload         6\n     174: invokedynamic #85,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     179: invokevirtual #72                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     182: getstatic     #64                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     185: lload         7\n     187: invokedynamic #86,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     192: invokevirtual #72                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     195: return\n}"
+  },
+  "BinarySearchTree": {
+   "hash": "9818f0dca60889f0",
+   "repeat": 10,
+   "runs": {
+    "10": [
+     {
+      "pageReads": 28,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 28,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 28,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 28,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 28,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 28,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 28,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 28,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 28,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 28,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     }
+    ],
+    "100": [
+     {
+      "pageReads": 118,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 118,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 118,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 118,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 118,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 118,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 118,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 118,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 118,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 118,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "pageReads": 518,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 518,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 518,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 518,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 518,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 518,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 518,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 518,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 518,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 518,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "pageReads": 2018,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 2018,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 2018,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 2018,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 2018,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 2018,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 2018,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 2018,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 2018,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 2018,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"BinarySearchTree.java\"\npublic class lab.btreeio.BinarySearchTree {\n  static final int TOTAL;\n\n  public lab.btreeio.BinarySearchTree();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: bipush        18\n      13: istore        4\n      15: iload         4\n      17: iload_1\n      18: iadd\n      19: istore        5\n      21: iconst_0\n      22: istore        6\n      24: iconst_0\n      25: istore        7\n      27: iload         7\n      29: iload_1\n      30: if_icmpge     50\n      33: iload         6\n      35: sipush        1000\n      38: iload         7\n      40: iadd\n      41: iadd\n      42: istore        6\n      44: iinc          7, 1\n      47: goto          27\n      50: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      53: lload_2\n      54: lsub\n      55: ldc2_w        #19                 // long 1000000l\n      58: ldiv\n      59: lstore        7\n      61: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      64: iload         5\n      66: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      71: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      74: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      77: iconst_3\n      78: iconst_1\n      79: iload_1\n      80: bipush        100\n      82: idiv\n      83: invokestatic  #35                 // Method java/lang/Math.max:(II)I\n      86: iadd\n      87: invokedynamic #41,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      92: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      95: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      98: iload         6\n     100: ifle          107\n     103: iload_1\n     104: goto          108\n     107: iconst_0\n     108: invokedynamic #42,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     113: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     116: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     119: lload         7\n     121: invokedynamic #43,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     126: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     129: return\n}"
+  },
+  "BTree": {
+   "hash": "6a93f6a4ea5c2746",
+   "repeat": 10,
+   "runs": {
+    "10": [
+     {
+      "pageReads": 6,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 6,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 6,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 6,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 6,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 6,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 6,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 6,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 6,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 6,
+      "expected": 4,
+      "ms": 0
+     }
+    ],
+    "100": [
+     {
+      "pageReads": 11,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 11,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 11,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 11,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 11,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 11,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 11,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 11,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 11,
+      "expected": 4,
+      "ms": 0
+     },
+     {
+      "pageReads": 11,
+      "expected": 4,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "pageReads": 36,
+      "expected": 8,
+      "ms": 0
+     },
+     {
+      "pageReads": 36,
+      "expected": 8,
+      "ms": 0
+     },
+     {
+      "pageReads": 36,
+      "expected": 8,
+      "ms": 0
+     },
+     {
+      "pageReads": 36,
+      "expected": 8,
+      "ms": 0
+     },
+     {
+      "pageReads": 36,
+      "expected": 8,
+      "ms": 0
+     },
+     {
+      "pageReads": 36,
+      "expected": 8,
+      "ms": 0
+     },
+     {
+      "pageReads": 36,
+      "expected": 8,
+      "ms": 0
+     },
+     {
+      "pageReads": 36,
+      "expected": 8,
+      "ms": 0
+     },
+     {
+      "pageReads": 36,
+      "expected": 8,
+      "ms": 0
+     },
+     {
+      "pageReads": 36,
+      "expected": 8,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "pageReads": 130,
+      "expected": 23,
+      "ms": 0
+     },
+     {
+      "pageReads": 130,
+      "expected": 23,
+      "ms": 0
+     },
+     {
+      "pageReads": 130,
+      "expected": 23,
+      "ms": 0
+     },
+     {
+      "pageReads": 130,
+      "expected": 23,
+      "ms": 0
+     },
+     {
+      "pageReads": 130,
+      "expected": 23,
+      "ms": 3
+     },
+     {
+      "pageReads": 130,
+      "expected": 23,
+      "ms": 0
+     },
+     {
+      "pageReads": 130,
+      "expected": 23,
+      "ms": 0
+     },
+     {
+      "pageReads": 130,
+      "expected": 23,
+      "ms": 0
+     },
+     {
+      "pageReads": 130,
+      "expected": 23,
+      "ms": 0
+     },
+     {
+      "pageReads": 130,
+      "expected": 23,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"BTree.java\"\npublic class lab.btreeio.BTree {\n  public lab.btreeio.BTree();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_5\n      12: iconst_1\n      13: iload_1\n      14: bipush        16\n      16: idiv\n      17: invokestatic  #19                 // Method java/lang/Math.max:(II)I\n      20: iadd\n      21: istore        4\n      23: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      26: lload_2\n      27: lsub\n      28: ldc2_w        #25                 // long 1000000l\n      31: ldiv\n      32: lstore        5\n      34: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      37: iload         4\n      39: invokedynamic #31,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      44: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      47: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      50: iconst_3\n      51: iconst_1\n      52: iload_1\n      53: bipush        100\n      55: idiv\n      56: invokestatic  #19                 // Method java/lang/Math.max:(II)I\n      59: iadd\n      60: invokedynamic #41,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      65: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      68: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      71: lload         5\n      73: invokedynamic #42,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n      78: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      81: return\n}"
+  },
+  "BPlusTree": {
+   "hash": "baa845741fb68089",
+   "repeat": 10,
+   "runs": {
+    "10": [
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 10,
+      "ms": 0
+     }
+    ],
+    "100": [
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 100,
+      "ms": 1
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     },
+     {
+      "pageReads": 4,
+      "expected": 4,
+      "matched": 100,
+      "ms": 0
+     }
+    ],
+    "500": [
+     {
+      "pageReads": 8,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 8,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 8,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 8,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 8,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 8,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 8,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 8,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 8,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     },
+     {
+      "pageReads": 8,
+      "expected": 8,
+      "matched": 500,
+      "ms": 0
+     }
+    ],
+    "2000": [
+     {
+      "pageReads": 23,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 23,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 23,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 23,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 23,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 23,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 23,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 23,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 23,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     },
+     {
+      "pageReads": 23,
+      "expected": 23,
+      "matched": 2000,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"BPlusTree.java\"\npublic class lab.btreeio.BPlusTree {\n  public lab.btreeio.BPlusTree();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_3\n      12: iconst_1\n      13: iload_1\n      14: bipush        100\n      16: idiv\n      17: invokestatic  #19                 // Method java/lang/Math.max:(II)I\n      20: iadd\n      21: istore        4\n      23: iconst_0\n      24: istore        5\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     52\n      35: iload         5\n      37: sipush        1000\n      40: iload         6\n      42: iadd\n      43: iadd\n      44: istore        5\n      46: iinc          6, 1\n      49: goto          29\n      52: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      55: lload_2\n      56: lsub\n      57: ldc2_w        #25                 // long 1000000l\n      60: ldiv\n      61: lstore        6\n      63: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      66: iload         4\n      68: invokedynamic #31,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      73: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      76: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      79: iload         4\n      81: invokedynamic #41,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      86: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      89: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      92: iload         5\n      94: ifle          101\n      97: iload_1\n      98: goto          102\n     101: iconst_0\n     102: invokedynamic #42,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     107: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     110: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     113: lload         6\n     115: invokedynamic #43,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     120: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     123: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

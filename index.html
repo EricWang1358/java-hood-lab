@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>47</strong> 节循序渐进实验课</span>
-        <span><strong>188</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>54</strong> 节循序渐进实验课</span>
+        <span><strong>216</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,10 +374,10 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 47 / 47 课</span>
+        <span id="shownCount" class="count-note">显示 54 / 54 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (47)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (54)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
@@ -385,6 +385,7 @@
         <button type="button" class="pill" data-filter="ch5">第五章 · 工程模式与新特性 (11)</button>
         <button type="button" class="pill" data-filter="m3ch1">网络 1 · TCP 与 Socket (5)</button>
         <button type="button" class="pill" data-filter="m4ch1">MySQL 1 · SQL 与深分页 (5)</button>
+        <button type="button" class="pill" data-filter="m4ch2">MySQL 2 · B+ 树与索引 (7)</button>
         <button type="button" class="pill" data-filter="m5ch1">Spring 1 · 事务与 AOP (5)</button>
       </div>
     </div>
@@ -1022,6 +1023,57 @@
             <span>13 页 · 约 35 分钟</span>
             <span class="card__go">进入实验 →</span>
           </div>
+        </a>
+        </div>
+      </section>
+
+      <section class="chapter" data-ch="m4ch2">
+        <div class="chapter__head">
+          <h2>模块四 · 第二章：InnoDB 页结构、B+ 树聚簇索引、回表与最左前缀（第 43～49 课）</h2>
+          <p>用真实页分裂、I/O 次数、回表次数与索引下推实验，打通 InnoDB 索引物理结构与核心设计原则。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/innodb-page-split.html" data-ch="m4ch2" data-search="43 innodb-page-split uuid 当主键，插入怎么越插越慢？ 页分裂 自增主键 uuidv7 lab.pagesplit">
+          <div class="card__top"><span class="card__num">#43</span><span class="card__pkg">lab.pagesplit</span></div>
+          <h3 class="card__title">UUID 当主键，插入怎么越插越慢？</h3>
+          <p class="card__lead">用随机 UUID 当 InnoDB 主键，数据一上百万插入就抖动变慢；换成自增 ID 或有序 UUIDv7 为什么立刻稳了？</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/btree-vs-hash.html" data-ch="m4ch2" data-search="44 btree-vs-hash 为什么 mysql 索引选 b+ 树不选哈希或二叉树？ 扇出 树高 范围查询 lab.btreeio">
+          <div class="card__top"><span class="card__num">#44</span><span class="card__pkg">lab.btreeio</span></div>
+          <h3 class="card__title">为什么 MySQL 索引选 B+ 树不选哈希或二叉树？</h3>
+          <p class="card__lead">哈希查找明明是 O(1)，为什么 InnoDB 索引偏偏要用 B+ 树？做一次 BETWEEN 范围查询就全明白了。</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/clustered-lookup.html" data-ch="m4ch2" data-search="45 clustered-lookup 走索引了，为什么还要回表再查一遍？ 聚簇索引 二级索引 回表 mrr lab.lookup">
+          <div class="card__top"><span class="card__num">#45</span><span class="card__pkg">lab.lookup</span></div>
+          <h3 class="card__title">走索引了，为什么还要回表再查一遍？</h3>
+          <p class="card__lead">明明给 name 建了索引，EXPLAIN 也显示走了 idx_name，怎么查 2000 行还是要查 4000 次树？</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/covering-index.html" data-ch="m4ch2" data-search="46 covering-index 把 select * 改成两列，耗时怎么直接腰斩？ 覆盖索引 using index lab.covering">
+          <div class="card__top"><span class="card__num">#46</span><span class="card__pkg">lab.covering</span></div>
+          <h3 class="card__title">把 SELECT * 改成两列，耗时怎么直接腰斩？</h3>
+          <p class="card__lead">生产规范总说「禁止 SELECT *」。把 SELECT * 改成 SELECT id, name 后，EXPLAIN 多了句 Using index，发生了什么？</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/leftmost-prefix.html" data-ch="m4ch2" data-search="47 leftmost-prefix 建了 (a, b, c) 联合索引，查 b 为啥不走索引？ 最左前缀 联合索引 lab.leftmost">
+          <div class="card__top"><span class="card__num">#47</span><span class="card__pkg">lab.leftmost</span></div>
+          <h3 class="card__title">建了 (a, b, c) 联合索引，查 b 为啥不走索引？</h3>
+          <p class="card__lead">明明建了联合索引 (a, b, c)，结果一查 WHERE b = 500 就变成了全表扫描，怎么回事？</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/index-condition-pushdown.html" data-ch="m4ch2" data-search="48 index-condition-pushdown 联合索引范围后面的列，icp 怎么少回一半表？ 索引下推 using index condition lab.icp">
+          <div class="card__top"><span class="card__num">#48</span><span class="card__pkg">lab.icp</span></div>
+          <h3 class="card__title">联合索引范围后面的列，ICP 怎么少回一半表？</h3>
+          <p class="card__lead">建了 (name, age) 联合索引，查 name LIKE '张%' AND age = 20。age 明明被范围截断了，为什么 MySQL 5.6 之后还是变快了？</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
+        </a>
+        <a class="card" href="./pages/prefix-index-order.html" data-ch="m4ch2" data-search="49 prefix-index-order 字符串建前缀索引，order by 怎么还文件排序？ 前缀索引 倒序索引 crc32 lab.prefixidx">
+          <div class="card__top"><span class="card__num">#49</span><span class="card__pkg">lab.prefixidx</span></div>
+          <h3 class="card__title">字符串建前缀索引，ORDER BY 怎么还文件排序？</h3>
+          <p class="card__lead">给长邮箱建了前缀索引 idx_email(email(8)) 省了不少空间，可不仅回表变多，ORDER BY email 竟然也用不上索引排序！</p>
+          <div class="card__foot"><span>12 页 · 约 35 分钟</span><span class="card__go">进入实验 →</span></div>
         </a>
         </div>
       </section>

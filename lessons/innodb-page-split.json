@@ -1,0 +1,334 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "innodb-page-split",
+  "course": "MySQL 索引、事务与锁",
+  "title": "UUID 当主键，插入怎么越插越慢？",
+  "lead": "用随机 UUID 当 InnoDB 主键，数据一上百万插入就抖动变慢；换成自增 ID 或有序 UUIDv7 为什么立刻稳了？",
+  "minutes": 35,
+  "needs": [
+    "知道主键唯一标识一行",
+    "见过 UUID 字符串"
+  ],
+  "after": [
+    "讲清 InnoDB 聚簇索引按主键有序存放在 16KB 页里",
+    "说出随机主键触发页分裂与磁盘碎片的原因",
+    "掌握自增 ID / 雪花算法 / UUIDv7 的选型"
+  ],
+  "terms": {
+    "聚簇索引": "InnoDB 里表数据本身就按主键顺序存在 B+ 树叶子节点里，树即表。",
+    "页（Page）": "InnoDB 磁盘管理的最小单位，默认 16KB，一页装满就要申请新页。",
+    "页分裂": "往已满的中间页插新主键，InnoDB 不得不挪动一半记录到新页，产生大量随机 I/O 和碎片。",
+    "UUIDv7": "带时间戳前缀的有序 UUID，既全局唯一又能按时间顺序追加到 B+ 树末尾。"
+  },
+  "experiments": {
+    "pagesplit": {
+      "runner": "java",
+      "home": "lab.pagesplit",
+      "variants": [
+        {
+          "id": "RandomUuidInsert",
+          "label": "随机 UUID 主键",
+          "note": "每次随机落进旧页，页满就触发对半分裂。"
+        },
+        {
+          "id": "AutoIncAppend",
+          "label": "自增主键追加",
+          "note": "永远插在最后一页末尾，满页直接新开页，0 分裂。"
+        },
+        {
+          "id": "SnowflakeTrend",
+          "label": "雪花趋势递增",
+          "note": "64 位整型且高位是时间戳，接近顺序追加。"
+        },
+        {
+          "id": "OrderedUuidV7",
+          "label": "有序 UUIDv7",
+          "note": "前 48 位为毫秒时间戳，兼顾分布式与零页分裂。"
+        }
+      ],
+      "knob": {
+        "label": "插入行数",
+        "values": [
+          "5000",
+          "15000",
+          "30000",
+          "60000"
+        ],
+        "default": "30000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "splits",
+        "expectKey": "expected",
+        "label": "页分裂次数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "UUID 当主键，插入怎么越插越慢？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "很多从业务转架构的同学喜欢用 `UUID()` 做主键，觉得分布式不冲突。但在 InnoDB 里，这会让写入性能随数据量增长急剧恶化。",
+          "say": "今天我们把 16KB 数据页搬进实验台，亲眼看看随机主键是怎么把页拆碎的。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "同样插 3 万行，页分裂次数差多少？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "每页最多装 64 条记录。随机插入 3 万行时，会有多少次不得不把满页「劈成两半」？",
+          "say": "先看 `RandomUuidInsert` 的代码。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 RandomUuidInsert 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "pagesplit.RandomUuidInsert",
+          "say": "重点看页满时的处理逻辑：随机定位到中间页 `p`，一旦超过 `PAGE_CAP` 就只能劈半挪走。",
+          "walk": [
+            {
+              "focus": [
+                "int p = rnd.nextInt(pages.size());"
+              ],
+              "say": "随机 UUID 无法预测大小，每次都可能插进早已写满的旧页。"
+            },
+            {
+              "focus": [
+                "if (sz > PAGE_CAP)",
+                "splits++;"
+              ],
+              "say": "旧页满了，只能新申请一页并把一半数据搬过去，这就是页分裂。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "用 `RandomUuidInsert` 插入 30,000 行（每页容量 64），大约会触发多少次页分裂？",
+          "options": [
+            "0 次",
+            "约 470 次（30000/64）",
+            "约 200 次",
+            "30000 次"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "pagesplit",
+          "show": [
+            "RandomUuidInsert"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "实测 `splits` 飙到几百次！每分裂一次不仅多写一页，还留下大量半空的碎片页。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "pagesplit.RandomUuidInsert",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "InnoDB 规定同一页内的记录必须按主键严格有序。随机主键迫使引擎把数据往中间塞，塞不下就分裂；而二级索引叶子节点存的也是主键值，随机 36 字节 UUID 还会让所有二级索引体积暴涨！",
+          "walk": [
+            {
+              "focus": [
+                "invokevirtual",
+                "ArrayList.add"
+              ],
+              "say": "中间插入导致数组/页内数据搬移，破坏顺序性。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "pagesplit",
+          "show": [
+            "RandomUuidInsert",
+            "AutoIncAppend",
+            "SnowflakeTrend",
+            "OrderedUuidV7"
+          ],
+          "select": "AutoIncAppend",
+          "say": "切到 `AutoIncAppend`、`SnowflakeTrend` 或 `OrderedUuidV7`：因为主键单调递增，永远只往最后一页末尾追加，页分裂直接归零！"
+        },
+        {
+          "t": "chart",
+          "of": "pagesplit",
+          "say": "顺序递增主键不仅零分裂，页填充率接近 100%，缓存命中率也最高。",
+          "walk": [
+            {
+              "focus": [
+                "RandomUuidInsert",
+                "AutoIncAppend"
+              ],
+              "say": "随机主键页分裂随行数线性增长；递增主键始终贴地为 0。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "单库首选自增 `BIGINT`；分库分表选雪花 ID 或有序 UUIDv7，远离随机 UUIDv4。",
+          "options": [
+            {
+              "name": "随机 UUIDv4",
+              "solves": "本地生成无中心",
+              "cost": "大量页分裂+二级索引膨大：{ms:pagesplit.RandomUuidInsert} ms",
+              "when": "绝不推荐做 InnoDB 聚簇主键",
+              "say": "非用不可就转成有序 UUIDv7 或单设自增代理主键。"
+            },
+            {
+              "name": "自增 BIGINT",
+              "solves": "8 字节极紧凑，零页分裂",
+              "cost": "0 分裂：{ms:pagesplit.AutoIncAppend} ms",
+              "when": "单库单表业务首选",
+              "say": "省空间又顺序写，性能天花板。"
+            },
+            {
+              "name": "雪花 / UUIDv7",
+              "solves": "分布式全局唯一且趋势递增",
+              "cost": "接近 0 分裂：{ms:pagesplit.SnowflakeTrend} ms",
+              "when": "分库分表、微服务发号",
+              "say": "兼具分布式唯一性与 B+ 树顺序写优势。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么阿里巴巴《Java 开发手册》强制建议每张表要有自增或趋势递增主键，不建议随机 UUID？",
+          "options": [
+            {
+              "text": "随机 UUID 会导致 InnoDB 聚簇索引频繁页分裂与页碎片，且拖大二级索引体积",
+              "ok": true,
+              "why": "完全命中：顺序写变随机写，且 36 字节字符串撑大所有二级索引。"
+            },
+            {
+              "text": "因为 MySQL 不支持用 VARCHAR 当主键",
+              "ok": false,
+              "why": "语法支持，只是性能代价极高。"
+            },
+            {
+              "text": "因为自增主键一定能防并发超卖",
+              "ok": false,
+              "why": "自增只负责发号，不管业务并发扣减。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "聚簇索引页分裂",
+          "alias": "Clustered Index Page Split",
+          "oneLine": "InnoDB 数据按主键有序存放在 16KB 页中，==随机主键会导致频繁页分裂与磁盘碎片==。",
+          "asked": [
+            "为什么不建议用 UUID 做 MySQL 主键？",
+            "什么是页分裂和页合并？",
+            "分库分表用什么主键策略？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么 InnoDB 推荐使用自增或趋势递增主键，而不是随机 UUID？",
+          "points": [
+            "InnoDB 聚簇索引叶子节点按主键顺序存整行数据",
+            "随机 UUID 插入旧页触发页分裂，产生随机 I/O 和半空碎片页",
+            "UUID 占用 36 字节，会撑大所有二级索引（叶子存主键）",
+            "分布式场景可用雪花算法或有序 UUIDv7 替代"
+          ],
+          "model": "InnoDB 的表数据就是一棵按主键排序的聚簇索引 B+ 树。如果用自增或雪花 ID 等趋势递增主键，新数据永远追加到最后一页末尾，填满就开新页，不会发生页分裂，填充率接近 100%。而随机 UUID 会随机插进旧页，一旦页满就必须把一页劈成两半搬移数据，造成大量随机 I/O 和碎片页。此外二级索引叶子节点存的是主键值，36 字节的 UUID 会让所有二级索引体积膨胀好几倍。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "随机主键为什么慢？",
+              "a": "破坏 B+ 树末尾顺序追加，频繁触发页分裂、随机 I/O 与空间碎片。"
+            },
+            {
+              "q": "主键长度还会影响谁？",
+              "a": "影响所有二级索引！因为二级索引叶子节点存储的是主键值。"
+            },
+            {
+              "q": "分布式主键怎么选？",
+              "a": "雪花算法（8 字节趋势递增）或 UUIDv7（时间前缀有序）。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}
