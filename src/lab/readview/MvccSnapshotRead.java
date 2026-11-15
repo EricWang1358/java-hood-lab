@@ -1,29 +1,33 @@
 package lab.readview;
 
 public class MvccSnapshotRead {
-    static boolean isVisible(int rowTrxId, int creatorTrxId, int minTrxId, int maxTrxId, int[] activeIds) {
-        if (rowTrxId == creatorTrxId || rowTrxId < minTrxId) return true;
+    static boolean isVisible(int rowTrxId, int creatorTrxId, int[] mIds, int minTrxId, int maxTrxId) {
+        if (rowTrxId == creatorTrxId) return true;
+        if (rowTrxId < minTrxId) return true;
         if (rowTrxId >= maxTrxId) return false;
-        for (int id : activeIds) if (id == rowTrxId) return false;
+        for (int active : mIds) {
+            if (active == rowTrxId) return false; // Still active when ReadView was taken
+        }
         return true;
     }
 
     public static void main(String[] args) {
-        int ops = Integer.parseInt(args[0]);
-        int[] activeIds = {102, 105};
+        int reads = Integer.parseInt(args[0]);
         long start = System.nanoTime();
-        int blockedReads = 0;
-        int ok = 0;
-        for (int i = 0; i < ops; i++) {
-            // Walk undo chain [trx=105 -> trx=98]: skip 105 (active), read 98 (< minTrxId) with ZERO lock!
-            if (!isVisible(105, 103, 102, 106, activeIds) && isVisible(98, 103, 102, 106, activeIds)) {
-                ok++;
-            }
+        int blockedMs = 0;
+        int[] mIds = {100, 102}; // Active writers when ReadView was created
+        int minTrxId = 100, maxTrxId = 105, creatorTrxId = 101;
+        // Row head is modified by active trx 102, prev undo version is committed trx 90
+        int headTrx = 102, prevTrx = 90;
+        int visibleReads = 0;
+        for (int i = 0; i < reads; i++) {
+            int chosenTrx = isVisible(headTrx, creatorTrxId, mIds, minTrxId, maxTrxId) ? headTrx : prevTrx;
+            if (chosenTrx == 90) visibleReads++; // Zero lock wait!
         }
-        long ms = (System.nanoTime() - start) / 1_000_000;
-        System.out.println("blockedReads=" + blockedReads);
+        long ms = (System.nanoTime() - start) / 1_000_000 + blockedMs;
+        System.out.println("blockedMs=" + blockedMs);
         System.out.println("expected=0");
-        System.out.println("ok=" + ok);
+        System.out.println("visibleReads=" + visibleReads);
         System.out.println("ms=" + ms);
     }
 }
