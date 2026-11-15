@@ -1,0 +1,250 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "jvm-deadlock-diag",
+  "course": "JVM 内存与 GC",
+  "title": "线上卡死与死锁排查：ThreadMXBean 与 jstack 如何秒查死锁？",
+  "lead": "CPU 很低、内存很空，接口却全部卡死超时！如何用 jstack 与 ThreadMXBean 一秒揪出死锁，并用 tryLock/有序锁彻底根治？",
+  "minutes": 30,
+  "needs": ["知道死锁四个必要条件", "知道 BLOCKED 状态", "知道 jstack / ThreadMXBean"],
+  "after": [
+    "看懂 jstack 末尾的 `Found one Java-level deadlock` 报告及 `BLOCKED` / `WAITING` 状态差异",
+    "会用 `ManagementFactory.getThreadMXBean().findDeadlockedThreads()` 在线自动巡检死锁",
+    "用「全局加锁顺序」或「ReentrantLock.tryLock(timeout) 超时放弃」打破循环等待条件"
+  ],
+  "terms": {
+    "BLOCKED 状态": "线程正在等另一条线程释放 `synchronized` 监视器锁时所处的状态；而 `ReentrantLock.lock()` 等待时线程是 `WAITING`（LockSupport.park）。",
+    "ThreadMXBean": "JVM 内置 JMX 监控接口，`findDeadlockedThreads()` 能同时检测 `synchronized` 和 `JUC Lock` 的循环死锁。",
+    "有序加锁 (Lock Ordering)": "所有线程按固定顺序（如对象 `identityHashCode` 或主键 ID 从小到大）申请多把锁，破坏「循环等待」条件，彻底消灭死锁。"
+  },
+  "experiments": {
+    "deadlockdiag": {
+      "runner": "java",
+      "home": "lab.deadlockdiag",
+      "variants": [
+        { "id": "DeadlockHang", "code": "DeadlockHang.java", "label": "AB-BA 死锁永久卡死", "note": "T1 锁 A 等 B，T2 锁 B 等 A，50ms 超时 0 笔完成，彻底卡死！" },
+        { "id": "ThreadMxBeanDetect", "code": "ThreadMxBeanDetect.java", "label": "ThreadMXBean 自动检测+中断", "note": "用 findDeadlockedThreads() 毫秒级揪出死锁线程 ID 并触发中断解围！" },
+        { "id": "TryLockTimeoutEscape", "code": "TryLockTimeoutEscape.java", "label": "tryLock 超时退避解套", "note": "拿不到第二把锁就释放第一把锁重试，全部安全完成 N 笔转账。" },
+        { "id": "OrderedLockSafe", "code": "OrderedLockSafe.java", "label": "全局锁序（根治死锁）", "note": "按 hashCode 从小到大统一先锁 A 再锁 B，无重试无阻塞，1ms 全部跑完！" }
+      ],
+      "knob": { "label": "并发转账次数", "values": ["10", "20", "40", "80"], "default": "40" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "成功检测/完成次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "线上卡死与死锁排查",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**监控显示 CPU 只有 2%、内存很空，但业务请求全部超时卡死，怎么用 `jstack` 和 `ThreadMXBean` 一秒抓出死锁？**",
+          "say": "CPU 100% 和服务假死（死锁/线程池打满）是线上最经典的两种相反症状。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：死锁的诊断特征",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先对齐死锁诊断的三条关键知识。",
+          "items": [
+            {
+              "have": "jstack 死锁报告",
+              "q": "发生线程死锁时，直接执行 `jstack -l <pid>`，最显眼的线索在哪？",
+              "options": ["文件最末尾会自动汇总打印 `Found one Java-level deadlock:` 并列出互相等待的锁和线程", "必须手动从头翻几千行", "jstack 看不到 ReentrantLock 死锁"],
+              "answer": 0,
+              "why": "加上 `-l` 参数连 `ReentrantLock` / `ReentrantReadWriteLock` 的拥有者信息也会一起打印出来！"
+            },
+            {
+              "have": "synchronized vs Lock 状态",
+              "q": "在 `jstack` 中，等 `synchronized` 锁和等 `ReentrantLock.lock()` 时线程状态分别显示什么？",
+              "options": ["前者是 BLOCKED，后者是 WAITING (parking)", "都是 RUNNABLE", "都是 TERMINATED"],
+              "answer": 0,
+              "why": "这个细节经常用来考察你是否真的看懂过 `jstack` 日志！"
+            },
+            {
+              "have": "治本条件",
+              "q": "破坏死锁四个必要条件中的哪一个，在业务代码里最简单且开销最小？",
+              "options": ["破坏「循环等待」条件：对多把锁按固定顺序（如 ID 从小到大）依次加锁", "破坏互斥条件（不加锁）", "重启机器"],
+              "answer": 0,
+              "why": "按全局顺序加锁不需要重试、不会活锁，是工程上最稳的解法。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个「独木桥对撞」的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["线程 1 (先 A 后 B)", "线程 2 (先 B 后 A)"], "shared": { "name": "锁 A 与 锁 B", "value": "互相死等 vs 统一先过 A" } },
+          "story": "`DeadlockHang` 就像两人分别从桥两头同时上桥，谁都不肯退（互相死等）；`ThreadMxBeanDetect` 则是交警巡逻系统每秒扫一次，发现闭环死锁立刻报警并劝退一方；`OrderedLockSafe` 更绝——规定所有人必须统一先拿编号小的锁再拿编号大的锁，永远不会迎面撞死！",
+          "say": "死锁不会自己恢复，只能靠监控发现重启，或者提前在代码里用有序锁/超时锁防住。",
+          "map": [
+            { "scene": "两人迎面卡死", "on": "shared", "tag": "AB-BA 死锁", "code": "`DeadlockHang`", "say": "各自占着对方想要的锁不放。" },
+            { "scene": "交警巡检秒抓闭环", "on": "actors", "tag": "ThreadMXBean 检测", "code": "`findDeadlockedThreads()`", "say": "15ms 精准找出死锁线程 ID。" },
+            { "scene": "统一按编号先拿小锁", "on": "actors", "tag": "全局锁序", "code": "`OrderedLockSafe`", "say": "破坏循环等待，0 死锁 0 重试。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：用 ThreadMXBean 在线秒查死锁",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "deadlockdiag.ThreadMxBeanDetect",
+          "say": "看 `ThreadMxBeanDetect.java`：两条线程刚撞进 `LOCK_A`/`LOCK_B` 死锁，`ManagementFactory.getThreadMXBean().findDeadlockedThreads()` 立刻就把两条死锁线程 ID 抓了出来！"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：40 次并发任务下，四种写法的完成/检测情况？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`DeadlockHang`、`ThreadMxBeanDetect`、`TryLockTimeoutEscape`、`OrderedLockSafe` 各自能成功几次？",
+          "options": ["全都能过 40", "DeadlockHang 卡死 0/40，后三者全部 40/40（其中 OrderedLockSafe 最快）", "TryLockTimeoutEscape 也会死锁"],
+          "answer": 1,
+          "say": "`DeadlockHang` 永久阻塞超时，`OrderedLockSafe` 无需任何超时退避直接极速过关。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测结果：0/40 卡死 vs 检测解围/有序锁 40/40",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "deadlockdiag",
+          "show": ["DeadlockHang", "ThreadMxBeanDetect", "TryLockTimeoutEscape", "OrderedLockSafe"],
+          "knob": "40",
+          "hand": "OrderedLockSafe",
+          "focus": "ok",
+          "say": "看结果：`DeadlockHang` 直接卡死 0/40，而 `ThreadMxBeanDetect` 精准揪出死锁，`TryLockTimeoutEscape` 和 `OrderedLockSafe` 稳稳 40/40！"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "破坏循环等待（有序加锁）或超时退避（tryLock）是根治死锁的两大工程手段；ThreadMXBean 可用于线上死锁巡检告警",
+          "say": "注意：`TryLockTimeoutEscape` 若两线程步调完全一致可能出现短暂活锁重试，最好加一点随机退避时间（Jitter）。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：ThreadMXBean 检测死锁的调用链",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "deadlockdiag.ThreadMxBeanDetect",
+          "within": "main",
+          "from": "ManagementFactory.getThreadMXBean",
+          "to": "ThreadMXBean.findDeadlockedThreads",
+          "say": "JVM 内部维护了每条线程的「持有锁」和「正在等待锁」的有向图，`findDeadlockedThreads()` 只需对等待图做一次环检测，就能精确返回构成环的所有线程 ID。",
+          "walk": [
+            { "focus": ["ManagementFactory.getThreadMXBean"], "label": "获取线程管理 Bean", "say": "JDK 标准 JMX 入口，线上零侵入监控可用。" },
+            { "focus": ["ThreadMXBean.findDeadlockedThreads"], "label": "等待图环检测", "say": "同时支持 `synchronized` 监视器与 `AbstractOwnableSynchronizer`（ReentrantLock）。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "拉到 80 次并发转账再看",
+      "blocks": [
+        {
+          "t": "try",
+          "key": "deadlockdiag",
+          "say": "把次数调到 80，对比 `TryLockTimeoutEscape` 与 `OrderedLockSafe` 的耗时差异。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "死锁预防方案怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "优先在设计阶段破坏死锁条件，而不是事后靠 `jstack` 救火。",
+          "options": [
+            { "name": "全局锁序（按 ID/hashCode 排序加锁）", "solves": "从根源上破坏循环等待，零重试、无活锁、性能最高", "cost": "需要提前明确所有要锁的资源（如转账双方账户 ID）", "when": "账户转账、批量锁定多行库存/订单", "say": "注意：如果用 `identityHashCode` 排序，极端哈希碰撞时需加一把 tie-breaker 第三把平局锁。" },
+            { "name": "ReentrantLock.tryLock(timeout) + 随机退避", "solves": "拿不到第二把锁时主动释放已持有锁，破坏「占有且等待」", "cost": "高并发碰撞时可能反复重试，需加随机退避防活锁", "when": "锁顺序无法提前确定或跨模块调用", "say": "尽量设合理超时时间并记录告警日志。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住死锁排查与根治手段",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "死锁检测与破环手段",
+          "alias": "jstack -l / ThreadMXBean / Lock Ordering",
+          "oneLine": "线上用 jstack -l 或 Arthas thread -b 一秒定位死锁；代码层通过全局有序加锁（破坏循环等待）或 tryLock 超时释放（破坏占有且等待）根治。",
+          "asked": "死锁的四个必要条件是什么？线上假死怎么用 jstack 查死锁，怎么解决？",
+          "say": "四个条件（互斥、占有且等待、不可剥夺、循环等待）+ `jstack -l` / `thread -b` + 有序锁/`tryLock`。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "线上发生死锁假死，如果想用 Arthas 一条命令直接找出阻塞别人最多的元凶线程或死锁线程，应该敲什么？",
+          "options": [
+            { "text": "thread -b（或原生命令 jstack -l <pid>）", "ok": true, "why": "正确！`thread -b` 会直接扫描出正在阻塞最多其他线程的那条罪魁祸首线程及堆栈。" },
+            { "text": "watch * *", "ok": false, "why": "watch 是观测方法入参返回值的，且不能直接通配所有类方法。" },
+            { "text": "jad java.lang.Object", "ok": false, "why": "jad 是反编译类字节码的。" }
+          ],
+          "say": "Arthas `thread -b`（查阻塞/死锁）和 `thread -n 3`（查高 CPU）是线上排障双绝招！"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：死锁排查与工程根治",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：如果线上服务出现假死疑似死锁，怎么排查？写代码时怎么避免死锁？",
+          "points": [
+            "排查手段：用 jstack -l <pid> 查看末尾的 Found one Java-level deadlock 报告（注意 synchronized 阻塞显示 BLOCKED，ReentrantLock 显示 WAITING）；或者用 Arthas thread -b 一键定位；也可在后台巡检线程里用 ThreadMXBean.findDeadlockedThreads() 自动告警",
+            "死锁四条件：互斥、占有且等待、不可剥夺、循环等待",
+            "工程根治：最推荐破坏「循环等待」，对多把锁按全局唯一顺序（如主键 ID 从小到大）依次加锁；其次是破坏「占有且等待」，用 ReentrantLock.tryLock(timeout) 超时主动释放已持锁并随机退避重试"
+          ],
+          "model": "如果线上 CPU 很低但接口全部卡死超时，怀疑发生死锁时，我会直接用 `jstack -l <pid>` 抓取线程快照——注意要带 `-l` 参数以打印 JUC Lock 信息——在输出末尾通常会直接看到 `Found one Java-level deadlock` 报告，明确指出哪两条线程互相持有对方等待的锁（其中等 synchronized 是 BLOCKED，等 ReentrantLock 是 WAITING）；如果装了 Arthas 也可以直接跑 `thread -b` 一步找出阻塞源头，或者在系统里通过 `ThreadMXBean.findDeadlockedThreads()` 做定时巡检告警。至于编码预防，死锁有互斥、占有且等待、不可剥夺、循环等待四个必要条件，工程上最彻底、开销最低的做法是破坏「循环等待」，比如转账扣款时约定所有线程必须按账户 ID 从小到大的顺序依次加锁；如果加锁顺序实在无法统一，就用 `ReentrantLock.tryLock(timeout)` 设超时时间，拿不到第二把锁就主动释放第一把锁并随机退避重试，破坏「占有且等待」条件。",
+          "say": "「jstack -l / thread -b / ThreadMXBean 排查 → 四个条件 → 有序锁 + tryLock 根治」收官模块二！"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "死锁排查三张卡收好，JVM 内存与 GC 排障模块圆满收官！",
+          "items": [
+            { "front": "查死锁最快命令", "back": "jstack -l <pid>（看末尾 deadlock 报告）或 Arthas thread -b。" },
+            { "front": "BLOCKED vs WAITING", "back": "等 synchronized 显示 BLOCKED；等 ReentrantLock 显示 WAITING (parking)。" },
+            { "front": "死锁最稳解法", "back": "按全局固定顺序加锁（破坏循环等待）或 tryLock 超时释放重试。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
