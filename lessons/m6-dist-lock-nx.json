@@ -1,0 +1,559 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-dist-lock-nx",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "SETNX 和 EXPIRE 分两行写，崩溃怎么变成永久死锁？",
+  "lead": "分布式锁最基础的三个坑：两步加锁崩溃变永久死锁、无唯一 Token 误删别人锁、忘记释放锁。",
+  "minutes": 35,
+  "needs": [
+    "了解 Redis SETNX 基本语义",
+    "知道线程唯一标识 UUID 的作用"
+  ],
+  "after": [
+    "复现 SETNX + EXPIRE 非原子导致永久死锁的现场",
+    "说明 SET key uuid NX PX ttl 单条原子命令如何同时解决死锁与误删",
+    "理解锁值存入唯一请求 ID 的必要性"
+  ],
+  "terms": {
+    "SET NX PX": "Redis 单条原子命令：仅当 Key 不存在时设值并同步绑定毫秒级过期时间，消除两步崩溃死锁。",
+    "锁归属Token": "把每个客户端独一无二的 UUID+线程号 写进锁的 Value，释放时校验归属防误删。"
+  },
+  "experiments": {
+    "m6_distlock": {
+      "runner": "java",
+      "home": "lab.m6.distlock",
+      "knob": {
+        "name": "threads",
+        "label": "并发抢锁线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "lockViolations",
+        "expectKey": "expected",
+        "label": "死锁/误删违规次数",
+        "expect": "零违规"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "TwoStepSetNx",
+          "label": "两步SETNX+EXPIRE",
+          "code": "TwoStepSetNx.java",
+          "note": "先占锁再设过期时间，中间进程崩溃立刻留下永不过期的死锁。"
+        },
+        {
+          "id": "AtomicSetNxPx",
+          "label": "原子加锁无Token",
+          "code": "AtomicSetNxPx.java",
+          "note": "加锁原子了，但解锁直接 remove(key) 不验归属，照样删错别人锁。"
+        },
+        {
+          "id": "WrongOwnerUnlock",
+          "label": "盲删他人锁",
+          "code": "WrongOwnerUnlock.java",
+          "note": "业务超时锁已过期被他人接手，老线程醒来直接 DEL 造成连锁破坏。"
+        },
+        {
+          "id": "TokenValueUnlock",
+          "label": "NX PX + Token校验",
+          "code": "TokenValueUnlock.java",
+          "note": "单条命令原子加锁+唯一 Token 解锁校验，彻底零死锁零误删。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "SETNX 和 EXPIRE 分两行写，崩溃怎么变成永久死锁？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "用 Redis 写分布式锁，新手最常踩的两脚泥坑：**第一脚是 `SETNX` 和 `EXPIRE` 分两行写，机器一宕机锁永远不释放；第二脚是解锁不验 Value，把别人的锁给删了**。",
+          "say": "分布式锁的底层逻辑一点也不玄乎，先把「原子设过期」和「唯一身份归属」这两根柱子立稳。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "Redis 单命令原子性",
+              "q": "Redis 执行一条 `SET lock:1 uuid NX PX 30000` 时，设值和设过期时间是原子的吗？",
+              "options": [
+                "是，单条命令在 Redis 主线程不可分割",
+                "不是，中间也可能崩溃一半",
+                "只有在 Lua 里才原子"
+              ],
+              "answer": 0,
+              "why": "Redis 2.6.12 起 SET 支持 NX/PX 联合参数，一条命令原子完成。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：30 轮抢锁与模拟崩溃/GC 停顿",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "多线程同时抢 `lock:order`，模拟持锁后突然崩溃或业务卡顿导致锁过期易主。",
+            "actors": [
+              "线程 A (崩溃)",
+              "线程 B (接盘)"
+            ],
+            "shared": "lock:order"
+          },
+          "say": "多线程同时抢 `lock:order`，模拟持锁后突然崩溃或业务卡顿导致锁过期易主。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `TwoStepSetNx`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_distlock.TwoStepSetNx",
+          "say": "这就是最常见的基线写法 `TwoStepSetNx`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`TwoStepSetNx` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`TwoStepSetNx` 每逢第 3 轮在 `SETNX` 后、`EXPIRE` 前崩溃，30 轮会留下多少次永久死锁？",
+          "options": [
+            "0 次",
+            "约 10 次永久死锁",
+            "1 次"
+          ],
+          "answer": 1,
+          "say": "每 3 轮就崩一次，锁一直挂在表里谁也进不去。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`TwoStepSetNx` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_distlock",
+          "show": [
+            "TwoStepSetNx"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "if (lockTable.putIfAbsent(\"lock:order\", 1L) == null) {",
+            "if (crashBeforeExpire) {"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `TwoStepSetNx` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_distlock.TwoStepSetNx",
+          "lines": [
+            "if (lockTable.putIfAbsent(\"lock:order\", 1L) == null) {",
+            "if (crashBeforeExpire) {"
+          ],
+          "say": "`putIfAbsent` 和设置过期时间分成两步，中间一旦异常/宕机就再也走不到后面那行。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "SETNX(k) -> [CRASH!] -> EXPIRE(k)",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "线程 A (崩溃)",
+            "线程 B (接盘)"
+          ],
+          "shared": {
+            "name": "lock:order",
+            "start": "空闲"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "A 执行 SETNX 成功占位",
+              "say": "线程 A 成功把 lock:order 写进了 Redis。"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "A 在 EXPIRE 前突然断电/OOM",
+              "say": "还没来得及执行第二行 EXPIRE，机器直接挂了，这把锁永远没有过期时间！"
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "B 永远抢不到锁，全链路死锁",
+              "say": "之后所有机器来抢这把锁全都失败，除非人工手动 DEL。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `AtomicSetNxPx`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "换成 `AtomicSetNxPx` 后不再永久死锁，为什么依然出现 `lockViolations`？",
+          "options": [
+            "解锁时没校验 Value 是否属于自己，把别人新抢的锁删了",
+            "SET NX PX 也会永久死锁",
+            "ConcurrentHashMap 线程不安全"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`TwoStepSetNx` vs `AtomicSetNxPx`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_distlock",
+          "show": [
+            "TwoStepSetNx",
+            "AtomicSetNxPx"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `AtomicSetNxPx` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_distlock.WrongOwnerUnlock",
+          "within": "runRound(java.lang.String)",
+          "from": "0: getstatic",
+          "to": "return",
+          "say": "看 `WrongOwnerUnlock.runRound`：直接调 `lockTable.remove(\"lock:order\")` 不传期望旧值，别人刚接手的锁一刀砍没。",
+          "walk": [
+            {
+              "focus": [
+                "remove"
+              ],
+              "label": "无条件 DEL 误删",
+              "say": "锁一旦因为业务超时被 Redis 过期收回，新线程就能进来；老线程必须凭 Token 验明正身才能删。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`WrongOwnerUnlock` 与 `TokenValueUnlock`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_distlock",
+          "show": [
+            "TwoStepSetNx",
+            "AtomicSetNxPx",
+            "WrongOwnerUnlock",
+            "TokenValueUnlock"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_distlock",
+          "variants": [
+            "TwoStepSetNx",
+            "AtomicSetNxPx",
+            "WrongOwnerUnlock",
+            "TokenValueUnlock"
+          ],
+          "notes": [
+            {
+              "focus": "TwoStepSetNx",
+              "key": "两步加锁每逢崩溃必留永久死锁",
+              "say": "绝对禁止把 SETNX 和 EXPIRE 拆成两条命令。"
+            },
+            {
+              "focus": "TokenValueUnlock",
+              "key": "原子加锁 + Token 校验解锁全程零违规",
+              "say": "TokenValueUnlock 兼顾安全与极简开销。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `TokenValueUnlock` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_distlock.TokenValueUnlock",
+          "within": "atomicUnlock(java.lang.String, java.lang.String)",
+          "from": "0: getstatic",
+          "to": "ireturn",
+          "say": "看 `TokenValueUnlock.atomicUnlock`：调用 `lockTable.remove(key, token)` 只有键和值同时匹配才删，等价于 Redis 里的 Lua 原子校验删除。",
+          "walk": [
+            {
+              "focus": [
+                "remove"
+              ],
+              "label": "原子比对归属删除",
+              "key": "加锁用 SET NX PX + UUID，解锁用 Lua 校验 UUID 再 DEL",
+              "say": "这两步是手写 Redis 分布式锁的最小安全闭环。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "SET NX PX + UUID + Lua 解锁",
+              "solves": "防崩溃死锁、防误删他人锁",
+              "cost": "约 {ms:m6_distlock.TokenValueUnlock} ms，不支持自动续期与可重入",
+              "when": "轻量短任务互斥（明确耗时远小于 TTL）",
+              "say": "手写分布式锁的底线规范；若需要自动续期与可重入直接上 Redisson。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "手写 Redis 分布式锁必须满足哪两条铁律？",
+          "branches": [
+            {
+              "when": "防进程崩溃变永久死锁",
+              "pick": "SET key uuid NX PX ttl 单条原子命令",
+              "eg": "RedisTemplate setIfAbsent(k, v, timeout)"
+            },
+            {
+              "when": "防超时后误删新持有者的锁",
+              "pick": "Value 存唯一 UUID + Lua 原子删",
+              "eg": "if get(k)==uuid then del(k)"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "SETNX + EXPIRE 两步",
+            "SET NX PX + 盲删",
+            "SET NX PX + UUID + Lua"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "老项目里写着 `if (setnx(k, 1) == 1) expire(k, 30)`，线上偶尔出现锁再也解不开。",
+              "answer": 2,
+              "why": "必须改成单条 `SET k uuid NX PX 30000` 并配 Lua 校验删除。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：Redis 分布式锁基础",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "Redis 分布式锁基础",
+          "alias": "Distributed Lock · SET NX PX + Owner Token",
+          "oneLine": "==SET NX PX== 保加锁与过期原子绑定；==唯一 Token== 防业务超时后误删他人锁。",
+          "asked": [
+            "为什么不能把 SETNX 和 EXPIRE 分两行写？",
+            "分布式锁的 Value 随便写个 1 行不行？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Redis 分布式锁的 Value 为什么要存全局唯一 UUID（或客户端+线程标识）而不是固定的 `\"1\"`？",
+          "options": [
+            {
+              "text": "为了在解锁时校验锁是不是当前线程加的，防止超时后误删别人的锁",
+              "ok": true,
+              "why": "如果大家都存 \"1\"，就分不清锁到底是谁加的。"
+            },
+            {
+              "text": "因为 Redis 不允许 Value 存数字",
+              "ok": false,
+              "why": "纯粹是为了区分锁的持有者身份。"
+            }
+          ],
+          "say": "Value 就是锁的「身份证」。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Spring `StringRedisTemplate` 中哪个调用对应原子 `SET NX PX`？",
+          "options": [
+            {
+              "text": "opsForValue().setIfAbsent(key, uuid, 30, TimeUnit.SECONDS)",
+              "ok": true,
+              "why": "Spring Data Redis 底层会组装成一条原子 SET ... NX PX 命令。"
+            },
+            {
+              "text": "setIfAbsent 后再调 expire",
+              "ok": false,
+              "why": "拆成两步依然有崩溃死锁风险。"
+            }
+          ],
+          "say": "注意区分单命令重载与两步调用。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "如果只用了 `SET NX PX` 但解锁直接 `DEL key`，什么场景会出事故？",
+          "options": [
+            {
+              "text": "A 业务超时锁自动过期，B 抢到新锁后，A 跑完直接把 B 的锁 DEL 了",
+              "ok": true,
+              "why": "紧接着 C 就能无锁闯入，互斥彻底失效。"
+            },
+            {
+              "text": "永远不会出事",
+              "ok": false,
+              "why": "只要有一次超时或 GC 停顿就会连锁雪崩。"
+            }
+          ],
+          "say": "记住「A 删 B 锁，C 闯入」的经典事故链。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "手写一个安全的 Redis 分布式锁需要注意哪些坑？SETNX+EXPIRE 分两步和 Value 写死有什么问题？",
+          "points": [
+            "SETNX 和 EXPIRE 分两行非原子，中间崩溃导致锁永不过期变死锁，必须用 SET key uuid NX PX ttl",
+            "Value 不能写死，必须存唯一请求/线程 Token，否则超时后 A 会误删 B 刚抢到的锁",
+            "解锁必须用 Lua 脚本把 GET 比对和 DEL 合一步原子执行"
+          ],
+          "model": "手写 Redis 分布式锁最基础的两条防线是原子设过期和身份校验。首先，不能把 SETNX 和 EXPIRE 分两行写，否则进程在两行之间崩溃或断网就会留下永不过期的死锁，必须使用单条原子命令 SET key uuid NX PX ttl。其次，锁的 Value 不能写死成 1，必须存入每个客户端线程唯一的 UUID Token；因为如果线程 A 业务超时导致锁被 Redis 自动释放、线程 B 抢到新锁后，A 跑完盲目 DEL 就会把 B 的锁删掉，引发 C 线程同时进入的并发事故。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "加锁铁律？",
+              "a": "单条原子命令 SET key uuid NX PX ttl，禁止 SETNX + EXPIRE 两步写。"
+            },
+            {
+              "q": "Value 为什么必须唯一？",
+              "a": "作为持有者身份证，防止超时后误删别人新抢到的锁。"
+            },
+            {
+              "q": "解锁为什么还要配 Lua？",
+              "a": "GET 校验 + DEL 必须原子，否则中间卡顿依然会删错锁。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

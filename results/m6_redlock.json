@@ -1,0 +1,1665 @@
+{
+ "id": "m6_redlock",
+ "variants": {
+  "GlobalDistLock": {
+   "hash": "e9325552b74d995a",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 27
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 28
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 23
+     }
+    ],
+    "2": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 36
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 33
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 38
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 35
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 42
+     }
+    ],
+    "4": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 36
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 33
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 59
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 36
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 60
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 37
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 26
+     }
+    ],
+    "8": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 57
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 62
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 56
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 59
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 49
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 35
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 52
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 56
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 50
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 60
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 52
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 55
+     }
+    ]
+   },
+   "inside": "Compiled from \"GlobalDistLock.java\"\npublic class lab.m6.redlock.GlobalDistLock {\n  static final int OPS;\n\n  static final java.util.concurrent.locks.ReentrantLock globalLock;\n\n  static final java.util.concurrent.atomic.AtomicInteger conflicts;\n\n  static volatile long sink;\n\n  public lab.m6.redlock.GlobalDistLock();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void processOrder(int);\n    Code:\n       0: getstatic     #7                  // Field globalLock:Ljava/util/concurrent/locks/ReentrantLock;\n       3: invokevirtual #13                 // Method java/util/concurrent/locks/ReentrantLock.lock:()V\n       6: iload_0\n       7: i2l\n       8: lstore_1\n       9: iconst_0\n      10: istore_3\n      11: iload_3\n      12: sipush        6000\n      15: if_icmpge     33\n      18: lload_1\n      19: ldc2_w        #18                 // long 31l\n      22: lmul\n      23: iload_3\n      24: i2l\n      25: ladd\n      26: lstore_1\n      27: iinc          3, 1\n      30: goto          11\n      33: getstatic     #20                 // Field sink:J\n      36: lload_1\n      37: lxor\n      38: putstatic     #20                 // Field sink:J\n      41: getstatic     #7                  // Field globalLock:Ljava/util/concurrent/locks/ReentrantLock;\n      44: invokevirtual #24                 // Method java/util/concurrent/locks/ReentrantLock.unlock:()V\n      47: goto          61\n      50: astore        4\n      52: getstatic     #7                  // Field globalLock:Ljava/util/concurrent/locks/ReentrantLock;\n      55: invokevirtual #24                 // Method java/util/concurrent/locks/ReentrantLock.unlock:()V\n      58: aload         4\n      60: athrow\n      61: return\n    Exception table:\n       from    to  target type\n           6    41    50   any\n          50    52    50   any\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #27                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #33                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #35                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #38                 // class java/lang/Thread\n      20: astore_3\n      21: invokestatic  #40                 // Method java/lang/System.nanoTime:()J\n      24: lstore        4\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     71\n      35: iload         6\n      37: istore        7\n      39: aload_3\n      40: iload         6\n      42: new           #38                 // class java/lang/Thread\n      45: dup\n      46: aload_2\n      47: iload         7\n      49: invokedynamic #46,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;I)Ljava/lang/Runnable;\n      54: invokespecial #50                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      57: aastore\n      58: aload_3\n      59: iload         6\n      61: aaload\n      62: invokevirtual #53                 // Method java/lang/Thread.start:()V\n      65: iinc          6, 1\n      68: goto          29\n      71: aload_3\n      72: astore        6\n      74: aload         6\n      76: arraylength\n      77: istore        7\n      79: iconst_0\n      80: istore        8\n      82: iload         8\n      84: iload         7\n      86: if_icmpge     107\n      89: aload         6\n      91: iload         8\n      93: aaload\n      94: astore        9\n      96: aload         9\n      98: invokevirtual #56                 // Method java/lang/Thread.join:()V\n     101: iinc          8, 1\n     104: goto          82\n     107: invokestatic  #40                 // Method java/lang/System.nanoTime:()J\n     110: lload         4\n     112: lsub\n     113: ldc2_w        #59                 // long 1000000l\n     116: ldiv\n     117: lstore        6\n     119: getstatic     #61                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     122: getstatic     #65                 // Field conflicts:Ljava/util/concurrent/atomic/AtomicInteger;\n     125: invokevirtual #69                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     128: invokedynamic #75,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     133: invokevirtual #79                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     136: getstatic     #61                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     139: ldc           #85                 // String expected=0\n     141: invokevirtual #79                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     144: getstatic     #61                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     147: lload         6\n     149: invokedynamic #87,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     154: invokevirtual #79                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     157: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, int);\n    Code:\n       0: aload_0\n       1: invokevirtual #90                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iconst_0\n       6: istore_2\n       7: iload_2\n       8: sipush        250\n      11: if_icmpge     30\n      14: iload_1\n      15: sipush        1000\n      18: imul\n      19: iload_2\n      20: iadd\n      21: invokestatic  #93                 // Method processOrder:(I)V\n      24: iinc          2, 1\n      27: goto          7\n      30: goto          43\n      33: astore_2\n      34: new           #98                 // class java/lang/RuntimeException\n      37: dup\n      38: aload_2\n      39: invokespecial #100                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      42: athrow\n      43: return\n    Exception table:\n       from    to  target type\n           0    30    33   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #14                 // class java/util/concurrent/locks/ReentrantLock\n       3: dup\n       4: invokespecial #103                // Method java/util/concurrent/locks/ReentrantLock.\"<init>\":()V\n       7: putstatic     #7                  // Field globalLock:Ljava/util/concurrent/locks/ReentrantLock;\n      10: new           #70                 // class java/util/concurrent/atomic/AtomicInteger\n      13: dup\n      14: invokespecial #104                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      17: putstatic     #65                 // Field conflicts:Ljava/util/concurrent/atomic/AtomicInteger;\n      20: return\n}\n"
+  },
+  "AsyncMasterFailover": {
+   "hash": "9327e8ad512805ab",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "conflicts": 26,
+      "expected": 0,
+      "ms": 52
+     },
+     {
+      "conflicts": 26,
+      "expected": 0,
+      "ms": 65
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 75
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "conflicts": 30,
+      "expected": 0,
+      "ms": 107
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 50
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 62
+     },
+     {
+      "conflicts": 30,
+      "expected": 0,
+      "ms": 50
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 74
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "conflicts": 30,
+      "expected": 0,
+      "ms": 64
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 56
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 92
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 30
+     }
+    ],
+    "2": [
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "conflicts": 30,
+      "expected": 0,
+      "ms": 65
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 81
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 140
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 49
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "conflicts": 25,
+      "expected": 0,
+      "ms": 58
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 101
+     },
+     {
+      "conflicts": 26,
+      "expected": 0,
+      "ms": 84
+     },
+     {
+      "conflicts": 30,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "conflicts": 25,
+      "expected": 0,
+      "ms": 75
+     },
+     {
+      "conflicts": 25,
+      "expected": 0,
+      "ms": 94
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 65
+     },
+     {
+      "conflicts": 26,
+      "expected": 0,
+      "ms": 74
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "conflicts": 26,
+      "expected": 0,
+      "ms": 95
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 53
+     }
+    ],
+    "4": [
+     {
+      "conflicts": 30,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 89
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 84
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 75
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 91
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "conflicts": 30,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 72
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 55
+     },
+     {
+      "conflicts": 30,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 68
+     },
+     {
+      "conflicts": 30,
+      "expected": 0,
+      "ms": 50
+     },
+     {
+      "conflicts": 24,
+      "expected": 0,
+      "ms": 76
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 30
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 76
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 82
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 79
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 28
+     },
+     {
+      "conflicts": 26,
+      "expected": 0,
+      "ms": 21
+     }
+    ],
+    "8": [
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 59
+     },
+     {
+      "conflicts": 30,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 50
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "conflicts": 26,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 73
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 67
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 76
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 65
+     },
+     {
+      "conflicts": 30,
+      "expected": 0,
+      "ms": 75
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 58
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 91
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 56
+     },
+     {
+      "conflicts": 29,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "conflicts": 27,
+      "expected": 0,
+      "ms": 55
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 70
+     },
+     {
+      "conflicts": 28,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "conflicts": 26,
+      "expected": 0,
+      "ms": 75
+     }
+    ]
+   },
+   "inside": "Compiled from \"AsyncMasterFailover.java\"\npublic class lab.m6.redlock.AsyncMasterFailover {\n  static final int ROUNDS;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.String> master;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.String, java.lang.String> replica;\n\n  static final java.util.concurrent.atomic.AtomicInteger conflicts;\n\n  public lab.m6.redlock.AsyncMasterFailover();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iconst_2\n      12: invokespecial #15                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: invokestatic  #18                 // Method java/lang/System.nanoTime:()J\n      19: lstore_3\n      20: iconst_0\n      21: istore        5\n      23: iload         5\n      25: bipush        30\n      27: if_icmpge     98\n      30: getstatic     #26                 // Field master:Ljava/util/concurrent/ConcurrentHashMap;\n      33: invokevirtual #30                 // Method java/util/concurrent/ConcurrentHashMap.clear:()V\n      36: getstatic     #35                 // Field replica:Ljava/util/concurrent/ConcurrentHashMap;\n      39: invokevirtual #30                 // Method java/util/concurrent/ConcurrentHashMap.clear:()V\n      42: new           #38                 // class java/lang/Thread\n      45: dup\n      46: aload_2\n      47: invokedynamic #40,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n      52: invokespecial #44                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      55: astore        6\n      57: new           #38                 // class java/lang/Thread\n      60: dup\n      61: aload_2\n      62: invokedynamic #47,  0             // InvokeDynamic #1:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n      67: invokespecial #44                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      70: astore        7\n      72: aload         6\n      74: invokevirtual #48                 // Method java/lang/Thread.start:()V\n      77: aload         7\n      79: invokevirtual #48                 // Method java/lang/Thread.start:()V\n      82: aload         6\n      84: invokevirtual #51                 // Method java/lang/Thread.join:()V\n      87: aload         7\n      89: invokevirtual #51                 // Method java/lang/Thread.join:()V\n      92: iinc          5, 1\n      95: goto          23\n      98: invokestatic  #18                 // Method java/lang/System.nanoTime:()J\n     101: lload_3\n     102: lsub\n     103: ldc2_w        #54                 // long 1000000l\n     106: ldiv\n     107: lstore        5\n     109: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     112: getstatic     #60                 // Field conflicts:Ljava/util/concurrent/atomic/AtomicInteger;\n     115: invokevirtual #64                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     118: invokedynamic #70,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     123: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     126: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     129: ldc           #80                 // String expected=0\n     131: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     134: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     137: lload         5\n     139: invokedynamic #82,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     144: invokevirtual #74                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     147: return\n\n  private static void lambda$main$1(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #85                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: invokestatic  #88                 // Method java/lang/Thread.yield:()V\n       8: getstatic     #35                 // Field replica:Ljava/util/concurrent/ConcurrentHashMap;\n      11: ldc           #91                 // String lock:sku\n      13: ldc           #93                 // String client-B\n      15: invokevirtual #95                 // Method java/util/concurrent/ConcurrentHashMap.putIfAbsent:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      18: ifnonnull     39\n      21: getstatic     #26                 // Field master:Ljava/util/concurrent/ConcurrentHashMap;\n      24: ldc           #91                 // String lock:sku\n      26: invokevirtual #99                 // Method java/util/concurrent/ConcurrentHashMap.containsKey:(Ljava/lang/Object;)Z\n      29: ifeq          39\n      32: getstatic     #60                 // Field conflicts:Ljava/util/concurrent/atomic/AtomicInteger;\n      35: invokevirtual #103                // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      38: pop\n      39: goto          52\n      42: astore_1\n      43: new           #108                // class java/lang/RuntimeException\n      46: dup\n      47: aload_1\n      48: invokespecial #110                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      51: athrow\n      52: return\n    Exception table:\n       from    to  target type\n           0    39    42   Class java/lang/Exception\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #85                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: getstatic     #26                 // Field master:Ljava/util/concurrent/ConcurrentHashMap;\n       8: ldc           #91                 // String lock:sku\n      10: ldc           #113                // String client-A\n      12: invokevirtual #95                 // Method java/util/concurrent/ConcurrentHashMap.putIfAbsent:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      15: pop\n      16: goto          29\n      19: astore_1\n      20: new           #108                // class java/lang/RuntimeException\n      23: dup\n      24: aload_1\n      25: invokespecial #110                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      28: athrow\n      29: return\n    Exception table:\n       from    to  target type\n           0    16    19   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #31                 // class java/util/concurrent/ConcurrentHashMap\n       3: dup\n       4: invokespecial #115                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n       7: putstatic     #26                 // Field master:Ljava/util/concurrent/ConcurrentHashMap;\n      10: new           #31                 // class java/util/concurrent/ConcurrentHashMap\n      13: dup\n      14: invokespecial #115                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n      17: putstatic     #35                 // Field replica:Ljava/util/concurrent/ConcurrentHashMap;\n      20: new           #65                 // class java/util/concurrent/atomic/AtomicInteger\n      23: dup\n      24: invokespecial #116                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      27: putstatic     #60                 // Field conflicts:Ljava/util/concurrent/atomic/AtomicInteger;\n      30: return\n}\n"
+  },
+  "SegmentedDistLock": {
+   "hash": "fa2686d81b5a8e89",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 28
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 18
+     }
+    ],
+    "2": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 28
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 38
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 50
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 38
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 30
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 49
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 36
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 44
+     }
+    ],
+    "4": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 40
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 35
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 55
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 38
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 50
+     }
+    ],
+    "8": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 55
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 49
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 64
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 58
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 59
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 64
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 58
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 56
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 60
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 65
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 76
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 43
+     }
+    ]
+   },
+   "inside": "Compiled from \"SegmentedDistLock.java\"\npublic class lab.m6.redlock.SegmentedDistLock {\n  static final int OPS;\n\n  static final int SEGMENTS;\n\n  static final java.util.concurrent.locks.ReentrantLock[] segLocks;\n\n  static final java.util.concurrent.atomic.AtomicInteger conflicts;\n\n  static volatile long sink;\n\n  public lab.m6.redlock.SegmentedDistLock();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void processOrder(int);\n    Code:\n       0: getstatic     #7                  // Field segLocks:[Ljava/util/concurrent/locks/ReentrantLock;\n       3: iload_0\n       4: bipush        16\n       6: invokestatic  #13                 // Method java/lang/Math.floorMod:(II)I\n       9: aaload\n      10: astore_1\n      11: aload_1\n      12: invokevirtual #19                 // Method java/util/concurrent/locks/ReentrantLock.lock:()V\n      15: iload_0\n      16: i2l\n      17: lstore_2\n      18: iconst_0\n      19: istore        4\n      21: iload         4\n      23: sipush        6000\n      26: if_icmpge     45\n      29: lload_2\n      30: ldc2_w        #24                 // long 31l\n      33: lmul\n      34: iload         4\n      36: i2l\n      37: ladd\n      38: lstore_2\n      39: iinc          4, 1\n      42: goto          21\n      45: getstatic     #26                 // Field sink:J\n      48: lload_2\n      49: lxor\n      50: putstatic     #26                 // Field sink:J\n      53: aload_1\n      54: invokevirtual #30                 // Method java/util/concurrent/locks/ReentrantLock.unlock:()V\n      57: goto          69\n      60: astore        5\n      62: aload_1\n      63: invokevirtual #30                 // Method java/util/concurrent/locks/ReentrantLock.unlock:()V\n      66: aload         5\n      68: athrow\n      69: return\n    Exception table:\n       from    to  target type\n          15    53    60   any\n          60    62    60   any\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #33                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #39                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #41                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #44                 // class java/lang/Thread\n      20: astore_3\n      21: invokestatic  #46                 // Method java/lang/System.nanoTime:()J\n      24: lstore        4\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     71\n      35: iload         6\n      37: istore        7\n      39: aload_3\n      40: iload         6\n      42: new           #44                 // class java/lang/Thread\n      45: dup\n      46: aload_2\n      47: iload         7\n      49: invokedynamic #52,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;I)Ljava/lang/Runnable;\n      54: invokespecial #56                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      57: aastore\n      58: aload_3\n      59: iload         6\n      61: aaload\n      62: invokevirtual #59                 // Method java/lang/Thread.start:()V\n      65: iinc          6, 1\n      68: goto          29\n      71: aload_3\n      72: astore        6\n      74: aload         6\n      76: arraylength\n      77: istore        7\n      79: iconst_0\n      80: istore        8\n      82: iload         8\n      84: iload         7\n      86: if_icmpge     107\n      89: aload         6\n      91: iload         8\n      93: aaload\n      94: astore        9\n      96: aload         9\n      98: invokevirtual #62                 // Method java/lang/Thread.join:()V\n     101: iinc          8, 1\n     104: goto          82\n     107: invokestatic  #46                 // Method java/lang/System.nanoTime:()J\n     110: lload         4\n     112: lsub\n     113: ldc2_w        #65                 // long 1000000l\n     116: ldiv\n     117: lstore        6\n     119: getstatic     #67                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     122: getstatic     #71                 // Field conflicts:Ljava/util/concurrent/atomic/AtomicInteger;\n     125: invokevirtual #75                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     128: invokedynamic #81,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     133: invokevirtual #85                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     136: getstatic     #67                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     139: ldc           #91                 // String expected=0\n     141: invokevirtual #85                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     144: getstatic     #67                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     147: lload         6\n     149: invokedynamic #93,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     154: invokevirtual #85                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     157: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, int);\n    Code:\n       0: aload_0\n       1: invokevirtual #96                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iconst_0\n       6: istore_2\n       7: iload_2\n       8: sipush        250\n      11: if_icmpge     30\n      14: iload_1\n      15: sipush        1000\n      18: imul\n      19: iload_2\n      20: iadd\n      21: invokestatic  #99                 // Method processOrder:(I)V\n      24: iinc          2, 1\n      27: goto          7\n      30: goto          43\n      33: astore_2\n      34: new           #104                // class java/lang/RuntimeException\n      37: dup\n      38: aload_2\n      39: invokespecial #106                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      42: athrow\n      43: return\n    Exception table:\n       from    to  target type\n           0    30    33   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: bipush        16\n       2: anewarray     #20                 // class java/util/concurrent/locks/ReentrantLock\n       5: putstatic     #7                  // Field segLocks:[Ljava/util/concurrent/locks/ReentrantLock;\n       8: new           #76                 // class java/util/concurrent/atomic/AtomicInteger\n      11: dup\n      12: invokespecial #109                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      15: putstatic     #71                 // Field conflicts:Ljava/util/concurrent/atomic/AtomicInteger;\n      18: iconst_0\n      19: istore_0\n      20: iload_0\n      21: bipush        16\n      23: if_icmpge     44\n      26: getstatic     #7                  // Field segLocks:[Ljava/util/concurrent/locks/ReentrantLock;\n      29: iload_0\n      30: new           #20                 // class java/util/concurrent/locks/ReentrantLock\n      33: dup\n      34: invokespecial #110                // Method java/util/concurrent/locks/ReentrantLock.\"<init>\":()V\n      37: aastore\n      38: iinc          0, 1\n      41: goto          20\n      44: return\n}\n"
+  },
+  "FencingVersionDb": {
+   "hash": "8859b7f7a221c580",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 28
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 30
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 42
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 35
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 30
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 23
+     }
+    ],
+    "2": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 35
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 30
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 39
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 29
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 32
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 37
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 33
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 33
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 33
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 36
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 31
+     }
+    ],
+    "4": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 38
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 46
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 35
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 36
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 48
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 33
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 55
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 36
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 36
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 44
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 45
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 51
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 36
+     }
+    ],
+    "8": [
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 57
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 58
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 55
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 66
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 47
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 62
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 63
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 61
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 54
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 56
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 59
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 85
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 74
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 78
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 69
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 73
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 60
+     },
+     {
+      "conflicts": 0,
+      "expected": 0,
+      "ms": 50
+     }
+    ]
+   },
+   "inside": "Compiled from \"FencingVersionDb.java\"\npublic class lab.m6.redlock.FencingVersionDb {\n  static final int OPS;\n\n  static final int SEGMENTS;\n\n  static final java.util.concurrent.atomic.AtomicLong[] dbVersions;\n\n  static final java.util.concurrent.atomic.AtomicInteger conflicts;\n\n  public lab.m6.redlock.FencingVersionDb();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void casUpdate(int);\n    Code:\n       0: getstatic     #7                  // Field dbVersions:[Ljava/util/concurrent/atomic/AtomicLong;\n       3: iload_0\n       4: aaload\n       5: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicLong.get:()J\n       8: lstore_1\n       9: lload_1\n      10: lstore_3\n      11: iconst_0\n      12: istore        5\n      14: iload         5\n      16: sipush        6000\n      19: if_icmpge     38\n      22: lload_3\n      23: ldc2_w        #19                 // long 31l\n      26: lmul\n      27: iload         5\n      29: i2l\n      30: ladd\n      31: lstore_3\n      32: iinc          5, 1\n      35: goto          14\n      38: lload_3\n      39: ldc2_w        #21                 // long 42l\n      42: lcmp\n      43: ifne          54\n      46: getstatic     #23                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      49: ldc           #29                 // String\n      51: invokevirtual #31                 // Method java/io/PrintStream.print:(Ljava/lang/String;)V\n      54: getstatic     #7                  // Field dbVersions:[Ljava/util/concurrent/atomic/AtomicLong;\n      57: iload_0\n      58: aaload\n      59: lload_1\n      60: lload_1\n      61: lconst_1\n      62: ladd\n      63: invokevirtual #37                 // Method java/util/concurrent/atomic/AtomicLong.compareAndSet:(JJ)Z\n      66: ifeq          70\n      69: return\n      70: goto          0\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #41                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #47                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #49                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #52                 // class java/lang/Thread\n      20: astore_3\n      21: invokestatic  #54                 // Method java/lang/System.nanoTime:()J\n      24: lstore        4\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     71\n      35: iload         6\n      37: istore        7\n      39: aload_3\n      40: iload         6\n      42: new           #52                 // class java/lang/Thread\n      45: dup\n      46: aload_2\n      47: iload         7\n      49: invokedynamic #57,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;I)Ljava/lang/Runnable;\n      54: invokespecial #61                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      57: aastore\n      58: aload_3\n      59: iload         6\n      61: aaload\n      62: invokevirtual #64                 // Method java/lang/Thread.start:()V\n      65: iinc          6, 1\n      68: goto          29\n      71: aload_3\n      72: astore        6\n      74: aload         6\n      76: arraylength\n      77: istore        7\n      79: iconst_0\n      80: istore        8\n      82: iload         8\n      84: iload         7\n      86: if_icmpge     107\n      89: aload         6\n      91: iload         8\n      93: aaload\n      94: astore        9\n      96: aload         9\n      98: invokevirtual #67                 // Method java/lang/Thread.join:()V\n     101: iinc          8, 1\n     104: goto          82\n     107: invokestatic  #54                 // Method java/lang/System.nanoTime:()J\n     110: lload         4\n     112: lsub\n     113: ldc2_w        #70                 // long 1000000l\n     116: ldiv\n     117: lstore        6\n     119: getstatic     #23                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     122: getstatic     #72                 // Field conflicts:Ljava/util/concurrent/atomic/AtomicInteger;\n     125: invokevirtual #76                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     128: invokedynamic #81,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     133: invokevirtual #85                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     136: getstatic     #23                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     139: ldc           #88                 // String expected=0\n     141: invokevirtual #85                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     144: getstatic     #23                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     147: lload         6\n     149: invokedynamic #90,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     154: invokevirtual #85                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     157: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, int);\n    Code:\n       0: aload_0\n       1: invokevirtual #93                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iconst_0\n       6: istore_2\n       7: iload_2\n       8: sipush        250\n      11: if_icmpge     29\n      14: iload_1\n      15: iload_2\n      16: iadd\n      17: bipush        16\n      19: irem\n      20: invokestatic  #96                 // Method casUpdate:(I)V\n      23: iinc          2, 1\n      26: goto          7\n      29: goto          42\n      32: astore_2\n      33: new           #101                // class java/lang/RuntimeException\n      36: dup\n      37: aload_2\n      38: invokespecial #103                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      41: athrow\n      42: return\n    Exception table:\n       from    to  target type\n           0    29    32   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: bipush        16\n       2: anewarray     #14                 // class java/util/concurrent/atomic/AtomicLong\n       5: putstatic     #7                  // Field dbVersions:[Ljava/util/concurrent/atomic/AtomicLong;\n       8: new           #77                 // class java/util/concurrent/atomic/AtomicInteger\n      11: dup\n      12: invokespecial #106                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      15: putstatic     #72                 // Field conflicts:Ljava/util/concurrent/atomic/AtomicInteger;\n      18: iconst_0\n      19: istore_0\n      20: iload_0\n      21: bipush        16\n      23: if_icmpge     45\n      26: getstatic     #7                  // Field dbVersions:[Ljava/util/concurrent/atomic/AtomicLong;\n      29: iload_0\n      30: new           #14                 // class java/util/concurrent/atomic/AtomicLong\n      33: dup\n      34: lconst_0\n      35: invokespecial #107                // Method java/util/concurrent/atomic/AtomicLong.\"<init>\":(J)V\n      38: aastore\n      39: iinc          0, 1\n      42: goto          20\n      45: return\n}\n"
+  }
+ }
+}
