@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-immutable-class",
+  "course": "Java 工程语法与集合",
+  "title": "不可变类设计：final 字段加上 private，为什么 List 还是被外面改坏了？",
+  "lead": "类加了 final、字段也加了 private final List<String> roles，可为什么外面调用方往原 list 里 add 一条，配置竟然被悄悄篡改？",
+  "minutes": 25,
+  "needs": ["知道 final 修饰引用只保证引用不改指向", "知道 Collections.unmodifiableList 与 List.copyOf 的区别"],
+  "after": [
+    "说清设计真正不可变类的 4 条准则（final 类、private final 字段、无 setter、构造/返回做防御性拷贝）",
+    "区分「只读视图（unmodifiableList）」与「真独立不可变快照（List.copyOf）」",
+    "知道 JDK 16+ record 如何原生简化不可变数据载体"
+  ],
+  "terms": {
+    "final 引用陷阱": "`private final List<String> roles` 只锁死 `roles` 变量不能再指向别的 List，但 List 里面的元素照样可以被 `add`/`clear` 修改。",
+    "unmodifiableList 视图": "仅在外层套一层只读包装拦截修改，但若构造方还保留着原 `src` 列表的引用，改 `src` 照样穿透影响内部！",
+    "List.copyOf()": "JDK 10+ 提供的真不可变快照拷贝：先复制元素再生成不可变集合，既防外部原引用篡改，也防 getter 返回后被改。"
+  },
+  "experiments": {
+    "immut": {
+      "runner": "java",
+      "home": "lab.immut",
+      "variants": [
+        { "id": "MutableExposeList", "code": "MutableExposeList.java", "label": "直接保存并暴露原 List（被改穿）", "note": "外部改原 list 或调 getter().clear() 都能直接改坏内部状态，完整率 0。" },
+        { "id": "UnmodifiableViewLeak", "code": "UnmodifiableViewLeak.java", "label": "仅返回 unmodifiableList 视图（仍漏）", "note": "构造时未拷贝，外部保留原 src 引用继续 add 照样污染内部，完整率 0。" },
+        { "id": "DefensiveCopyImmutable", "code": "DefensiveCopyImmutable.java", "label": "List.copyOf() 构造防御拷贝（安全）", "note": "构造时做不可变快照拷贝，内外两条路都彻底封死，100% 完整。" },
+        { "id": "RecordImmutableDemo", "code": "RecordImmutableDemo.java", "label": "JDK 17 record 不可变载体", "note": "编译器自动生成 final 类、private final 字段与 equals/hashCode。" }
+      ],
+      "knob": { "label": "校验次数 N", "values": ["5000", "10000", "20000", "50000"], "default": "20000" },
+      "repeat": 20,
+      "metric": { "key": "intact", "expectKey": "expected", "label": "状态完好次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "不可变类设计与防御性拷贝",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "写并发缓存、全局配置、值对象时，我们总想做成「绝对不可变」。今天亲眼看清：**为什么只写 `private final` 和 `unmodifiableList` 照样会被外部悄悄改穿？**",
+          "say": "《Effective Java》第 17 条核心原则：使可变性最小化。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：final 与不可变视图",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先测两个关键概念。",
+          "items": [
+            {
+              "have": "final 含义",
+              "q": "`private final List<String> list = new ArrayList<>();` 加了 `final` 后还能调用 `list.add(\"a\")` 吗？",
+              "options": ["可以，final 只保证引用变量不再指向其他对象", "不可以，编译报错", "运行时报 UnsupportedOperationException"],
+              "answer": 0,
+              "why": "`final` 管的是变量槽位，管不了堆里集合对象内部元素的增删。"
+            },
+            {
+              "have": "unmodifiableList",
+              "q": "`Collections.unmodifiableList(src)` 返回的视图能防住外部修改 `src` 本身吗？",
+              "options": ["防不住，原引用 src 被修改时视图内容会同步变化", "能防住，它会自动深拷贝一份", "会锁住 src"],
+              "answer": 0,
+              "why": "它只是把同一个 `src` 包了一层代理，并没有拷贝数据。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：MutableExposeList vs UnmodifiableViewLeak",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "immut",
+          "variants": ["MutableExposeList", "UnmodifiableViewLeak"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：套了 unmodifiableList 后外部改 src，内部还能保住几次？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "immut",
+          "question": "`UnmodifiableViewLeak` 构造后外部执行 `src.add(\"ADMIN\")`，`cfg.getRoles().size() == 1` 的次数是？",
+          "options": ["0 次（全被原引用 src 穿透改坏）", "20000 次", "10000 次"],
+          "answer": 0,
+          "why": "构造器里直接 `this.roles = roles` 没做拷贝，外部手握 `src` 依然畅通无阻。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种写法状态完整性实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "immut",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：putfield 直接存了入参引用",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "immut",
+          "variant": "UnmodifiableViewLeak",
+          "explain": "在 `UnmodifiableViewLeak$Config.<init>` 里直接执行 `putfield roles` 把外部传入的 `ArrayList` 引用存了下来，没有任何拷贝调用。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：List.copyOf() 与 record",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "immut",
+          "variants": ["DefensiveCopyImmutable", "RecordImmutableDemo"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：防御拷贝 vs record 耗时",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "immut",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "不可变类四步标准模板",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "设计不可变类四步走：**① 类声明 `final`（防子类重写破坏）；② 所有字段 `private final`；③ 不提供任何 setter；④ 构造器接收可变集合/数组时用 `List.copyOf()`/`clone()` 做防御性拷贝。**",
+          "say": "JDK 17 里纯数据载体直接写 `record`，省心又安全。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个细节。",
+          "items": [
+            {
+              "have": "List.copyOf null",
+              "q": "`List.copyOf(src)` 如果 `src` 里面包含 `null` 元素会怎样？",
+              "options": ["抛出 NullPointerException（JDK 9+ 不可变集合不允许 null）", "自动过滤掉 null", "正常保留 null"],
+              "answer": 0,
+              "why": "若业务允许 `null` 元素，需用 `Collections.unmodifiableList(new ArrayList<>(src))` 做防御拷贝。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 如何从零设计一个线程安全的不可变类；2) 为什么只加 final 和 unmodifiableList 还不够；3) List.copyOf() 和 Collections.unmodifiableList() 的区别。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "final 局限", "v": "`final` 只锁引用不锁内部元素，可变集合字段仍需防御性拷贝。" },
+            { "k": "视图 vs 快照", "v": "`unmodifiableList` 只是代理视图；`List.copyOf()` 才是真独立不可变快照。" },
+            { "k": "Record 利器", "v": "JDK 17 用 `record` 声明值对象，天然 final 且自动生成规范构造与 equals。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

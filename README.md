@@ -110,6 +110,18 @@
 | M1-04 | **String 不可变性与循环拼接：为什么循环里用 + 会把 CPU 拖死？** | 面经说 JDK 9+ 字符串 + 会优化成 invokedynamic，那在 for 循环里写 s += "a" 拼 2 万次，还会慢成 O(N²) 吗？ | `lab.strimmut` | [网页课件](./pages/java-string-immut.html) · [JSON](./lessons/java-string-immut.json) · [源码](./src/lab/strimmut/) |
 | M1-05 | **浅拷贝污染事故：改了副本，原对象的数组/列表怎么也跟着变了？** | 好不容易实现了 Cloneable 并调用 super.clone() 复制出一个用户副本，可一改副本的 scores[0]，原用户的分数竟然也被改掉了！ | `lab.deepcopy` | [网页课件](./pages/java-deep-copy.html) · [JSON](./lessons/java-deep-copy.json) · [源码](./src/lab/deepcopy/) |
 
+### 模块一 · 第二章：equals/hashCode、不可变类、泛型与枚举（M1-06～M1-10）
+
+实测 HashMap 丢键与退化、不可变防御拷贝、泛型擦除堆污染、Comparator 减法溢出与 EnumMap 数组直寻址。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M1-06 | **equals 与 hashCode 契约：为什么只重写 equals 会让 HashMap 丢键？** | 明明两个 Key 的 id 完全一样、equals() 也返回 true，为什么 put 进 HashMap 后再 get(new Key(id)) 竟然返回 null？ | `lab.eqhash` | [网页课件](./pages/java-equals-hashcode.html) · [JSON](./lessons/java-equals-hashcode.json) · [源码](./src/lab/eqhash/) |
+| M1-07 | **不可变类设计：final 字段加上 private，为什么 List 还是被外面改坏了？** | 类加了 final、字段也加了 private final List<String> roles，可为什么外面调用方往原 list 里 add 一条，配置竟然被悄悄篡改？ | `lab.immut` | [网页课件](./pages/java-immutable-class.html) · [JSON](./lessons/java-immutable-class.json) · [源码](./src/lab/immut/) |
+| M1-08 | **泛型擦除、堆污染与 PECS 原则：运行期 List<Integer> 里怎么塞进了 String？** | 明明声明的是 List<Integer>，为什么通过原始类型引用塞进一个 "bad-string" 竟然编译运行都不报错，直到取出那一刻才炸出 ClassCastException？ | `lab.generics` | [网页课件](./pages/java-generics-erasure.html) · [JSON](./lessons/java-generics-erasure.json) · [源码](./src/lab/generics/) |
+| M1-09 | **Comparator 减法溢出坑与 TreeSet 神秘吞元素** | 图省事写了个 (a, b) -> a - b 排序，遇到负数直接排反；更诡异的是往 TreeSet 里加 1000 个不同 ID 的同分元素，size() 竟然只有 1！ | `lab.compsort` | [网页课件](./pages/java-comparable-sort.html) · [JSON](./lessons/java-comparable-sort.json) · [源码](./src/lab/compsort/) |
+| M1-10 | **Enum 枚举本质、EnumMap 加速与状态机模式** | 为什么《Effective Java》盛赞 Enum 是最佳单例？把订单状态存在 EnumMap 里，比 HashMap<OrderState, String> 和魔法数字快在哪里？ | `lab.enumstate` | [网页课件](./pages/java-enum-state.html) · [JSON](./lessons/java-enum-state.json) · [源码](./src/lab/enumstate/) |
+
 ### 模块二 · 第一章：类加载、初始化与栈堆分配（M2-01～M2-04）
 
 用真实 `ClassLoader` 隔离、`<clinit>` 死锁、栈帧深度爆栈与 Eden TLAB 并发分配实测 JVM 底层运行机制。
