@@ -98,6 +98,17 @@
 | 31 | **换上虚拟线程，共享计数还需要锁吗** | 只把平台线程换成 Thread.ofVirtual()，百万次 count++ 会少掉吗？ | `lab.virtrace` | [网页课件](./pages/virtual-race.html) · [JSON](./lessons/virtual-race.json) · [源码](./src/lab/virtrace/) |
 | 32 | **库与缓存各用原子数组，为啥还会写反？** | 更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？ | `lab.txoutbox` | [网页课件](./pages/tx-outbox.html) · [JSON](./lessons/tx-outbox.json) · [源码](./src/lab/txoutbox/) |
 
+### 模块二 · 第一章：类加载、初始化与栈堆分配（M2-01～M2-04）
+
+用真实 `ClassLoader` 隔离、`<clinit>` 死锁、栈帧深度爆栈与 Eden TLAB 并发分配实测 JVM 底层运行机制。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| M2-01 | **双亲委派与打破：同名类怎么加载出两份？** | JDBC SPI、Tomcat 多应用隔离和热部署为什么要打破双亲委派？重写 findClass 与 loadClass 差在哪？ | `lab.classload` | [网页课件](./pages/jvm-classload.html) · [JSON](./lessons/jvm-classload.json) · [源码](./src/lab/classload/) |
+| M2-02 | **静态初始化顺序与 <clinit> 死锁** | 静态变量和 static{} 谁先执行？两个类在静态初始化时互相调用为什么会触发隐蔽的 <clinit> 死锁？ | `lab.clinit` | [网页课件](./pages/jvm-clinit.html) · [JSON](./lessons/jvm-clinit.json) · [源码](./src/lab/clinit/) |
+| M2-03 | **虚拟机栈帧与 StackOverflow** | 同样递归 10000 层，为什么局部变量多写几个 long 就会提前炸出 StackOverflowError？ | `lab.jvmstack` | [网页课件](./pages/jvm-stack.html) · [JSON](./lessons/jvm-stack.json) · [源码](./src/lab/jvmstack/) |
+| M2-04 | **TLAB 线程本地分配缓冲** | 堆内存明明所有线程共享，为什么多线程同时 new 对象不抢同一把锁？ | `lab.tlab` | [网页课件](./pages/jvm-tlab.html) · [JSON](./lessons/jvm-tlab.json) · [源码](./src/lab/tlab/) |
+
 ### 模块三 · 第一章：TCP 传输与 Socket 底层（M3-01～M3-05）
 
 用真实 Socket 实测三次握手建连成本、`TIME_WAIT` 端口复用、全连接队列 `backlog` 拥堵、TCP 粘包拆包与 Nagle 延迟 ACK 撞车。
