@@ -10,7 +10,7 @@
       "scanned": 10000,
       "expected": 100,
       "matched": 10,
-      "ms": 3
+      "ms": 7
      },
      {
       "scanned": 10000,
@@ -28,6 +28,12 @@
       "scanned": 10000,
       "expected": 100,
       "matched": 10,
+      "ms": 6
+     },
+     {
+      "scanned": 10000,
+      "expected": 100,
+      "matched": 10,
       "ms": 3
      },
      {
@@ -35,6 +41,12 @@
       "expected": 100,
       "matched": 10,
       "ms": 1
+     },
+     {
+      "scanned": 10000,
+      "expected": 100,
+      "matched": 10,
+      "ms": 6
      },
      {
       "scanned": 10000,
@@ -46,25 +58,13 @@
       "scanned": 10000,
       "expected": 100,
       "matched": 10,
-      "ms": 9
+      "ms": 1
      },
      {
       "scanned": 10000,
       "expected": 100,
       "matched": 10,
-      "ms": 2
-     },
-     {
-      "scanned": 10000,
-      "expected": 100,
-      "matched": 10,
-      "ms": 2
-     },
-     {
-      "scanned": 10000,
-      "expected": 100,
-      "matched": 10,
-      "ms": 2
+      "ms": 1
      }
     ],
     "50000": [
@@ -72,37 +72,19 @@
       "scanned": 50000,
       "expected": 100,
       "matched": 50,
-      "ms": 3
+      "ms": 12
      },
      {
       "scanned": 50000,
       "expected": 100,
       "matched": 50,
-      "ms": 14
+      "ms": 6
      },
      {
       "scanned": 50000,
       "expected": 100,
       "matched": 50,
-      "ms": 8
-     },
-     {
-      "scanned": 50000,
-      "expected": 100,
-      "matched": 50,
-      "ms": 5
-     },
-     {
-      "scanned": 50000,
-      "expected": 100,
-      "matched": 50,
-      "ms": 5
-     },
-     {
-      "scanned": 50000,
-      "expected": 100,
-      "matched": 50,
-      "ms": 11
+      "ms": 6
      },
      {
       "scanned": 50000,
@@ -114,19 +96,37 @@
       "scanned": 50000,
       "expected": 100,
       "matched": 50,
+      "ms": 13
+     },
+     {
+      "scanned": 50000,
+      "expected": 100,
+      "matched": 50,
+      "ms": 6
+     },
+     {
+      "scanned": 50000,
+      "expected": 100,
+      "matched": 50,
       "ms": 10
      },
      {
       "scanned": 50000,
       "expected": 100,
       "matched": 50,
-      "ms": 6
+      "ms": 17
      },
      {
       "scanned": 50000,
       "expected": 100,
       "matched": 50,
-      "ms": 6
+      "ms": 4
+     },
+     {
+      "scanned": 50000,
+      "expected": 100,
+      "matched": 50,
+      "ms": 10
      }
     ],
     "100000": [
@@ -134,7 +134,37 @@
       "scanned": 100000,
       "expected": 100,
       "matched": 100,
-      "ms": 5
+      "ms": 9
+     },
+     {
+      "scanned": 100000,
+      "expected": 100,
+      "matched": 100,
+      "ms": 4
+     },
+     {
+      "scanned": 100000,
+      "expected": 100,
+      "matched": 100,
+      "ms": 7
+     },
+     {
+      "scanned": 100000,
+      "expected": 100,
+      "matched": 100,
+      "ms": 3
+     },
+     {
+      "scanned": 100000,
+      "expected": 100,
+      "matched": 100,
+      "ms": 9
+     },
+     {
+      "scanned": 100000,
+      "expected": 100,
+      "matched": 100,
+      "ms": 11
      },
      {
       "scanned": 100000,
@@ -146,13 +176,7 @@
       "scanned": 100000,
       "expected": 100,
       "matched": 100,
-      "ms": 7
-     },
-     {
-      "scanned": 100000,
-      "expected": 100,
-      "matched": 100,
-      "ms": 5
+      "ms": 2
      },
      {
       "scanned": 100000,
@@ -164,31 +188,7 @@
       "scanned": 100000,
       "expected": 100,
       "matched": 100,
-      "ms": 5
-     },
-     {
-      "scanned": 100000,
-      "expected": 100,
-      "matched": 100,
-      "ms": 8
-     },
-     {
-      "scanned": 100000,
-      "expected": 100,
-      "matched": 100,
-      "ms": 13
-     },
-     {
-      "scanned": 100000,
-      "expected": 100,
-      "matched": 100,
-      "ms": 4
-     },
-     {
-      "scanned": 100000,
-      "expected": 100,
-      "matched": 100,
-      "ms": 7
+      "ms": 15
      }
     ],
     "200000": [
@@ -196,49 +196,19 @@
       "scanned": 200000,
       "expected": 100,
       "matched": 200,
-      "ms": 15
+      "ms": 73
      },
      {
       "scanned": 200000,
       "expected": 100,
       "matched": 200,
-      "ms": 28
+      "ms": 12
      },
      {
       "scanned": 200000,
       "expected": 100,
       "matched": 200,
-      "ms": 7
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 200,
-      "ms": 10
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 200,
-      "ms": 8
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 200,
-      "ms": 11
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 200,
-      "ms": 9
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 200,
-      "ms": 10
+      "ms": 12
      },
      {
       "scanned": 200000,
@@ -251,6 +221,36 @@
       "expected": 100,
       "matched": 200,
       "ms": 11
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 200,
+      "ms": 16
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 200,
+      "ms": 5
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 200,
+      "ms": 18
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 200,
+      "ms": 13
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 200,
+      "ms": 13
      }
     ]
    },
@@ -271,6 +271,18 @@
       "scanned": 10000,
       "expected": 100,
       "matched": 11,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 100,
+      "matched": 11,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 100,
+      "matched": 11,
       "ms": 1
      },
      {
@@ -283,30 +295,6 @@
       "scanned": 10000,
       "expected": 100,
       "matched": 11,
-      "ms": 2
-     },
-     {
-      "scanned": 10000,
-      "expected": 100,
-      "matched": 11,
-      "ms": 2
-     },
-     {
-      "scanned": 10000,
-      "expected": 100,
-      "matched": 11,
-      "ms": 0
-     },
-     {
-      "scanned": 10000,
-      "expected": 100,
-      "matched": 11,
-      "ms": 0
-     },
-     {
-      "scanned": 10000,
-      "expected": 100,
-      "matched": 11,
       "ms": 0
      },
      {
@@ -320,6 +308,18 @@
       "expected": 100,
       "matched": 11,
       "ms": 2
+     },
+     {
+      "scanned": 10000,
+      "expected": 100,
+      "matched": 11,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 100,
+      "matched": 11,
+      "ms": 0
      }
     ],
     "50000": [
@@ -327,6 +327,12 @@
       "scanned": 50000,
       "expected": 100,
       "matched": 51,
+      "ms": 1
+     },
+     {
+      "scanned": 50000,
+      "expected": 100,
+      "matched": 51,
       "ms": 2
      },
      {
@@ -339,13 +345,7 @@
       "scanned": 50000,
       "expected": 100,
       "matched": 51,
-      "ms": 1
-     },
-     {
-      "scanned": 50000,
-      "expected": 100,
-      "matched": 51,
-      "ms": 1
+      "ms": 0
      },
      {
       "scanned": 50000,
@@ -375,16 +375,34 @@
       "scanned": 50000,
       "expected": 100,
       "matched": 51,
-      "ms": 2
+      "ms": 1
      },
      {
       "scanned": 50000,
       "expected": 100,
       "matched": 51,
-      "ms": 1
+      "ms": 2
      }
     ],
     "100000": [
+     {
+      "scanned": 100000,
+      "expected": 100,
+      "matched": 101,
+      "ms": 1
+     },
+     {
+      "scanned": 100000,
+      "expected": 100,
+      "matched": 101,
+      "ms": 7
+     },
+     {
+      "scanned": 100000,
+      "expected": 100,
+      "matched": 101,
+      "ms": 3
+     },
      {
       "scanned": 100000,
       "expected": 100,
@@ -401,13 +419,7 @@
       "scanned": 100000,
       "expected": 100,
       "matched": 101,
-      "ms": 0
-     },
-     {
-      "scanned": 100000,
-      "expected": 100,
-      "matched": 101,
-      "ms": 10
+      "ms": 7
      },
      {
       "scanned": 100000,
@@ -419,19 +431,7 @@
       "scanned": 100000,
       "expected": 100,
       "matched": 101,
-      "ms": 9
-     },
-     {
-      "scanned": 100000,
-      "expected": 100,
-      "matched": 101,
-      "ms": 6
-     },
-     {
-      "scanned": 100000,
-      "expected": 100,
-      "matched": 101,
-      "ms": 2
+      "ms": 0
      },
      {
       "scanned": 100000,
@@ -451,55 +451,55 @@
       "scanned": 200000,
       "expected": 100,
       "matched": 201,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 201,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 201,
+      "ms": 2
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 201,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 201,
+      "ms": 2
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 201,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 201,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 201,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 100,
+      "matched": 201,
       "ms": 1
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 201,
-      "ms": 0
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 201,
-      "ms": 0
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 201,
-      "ms": 0
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 201,
-      "ms": 5
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 201,
-      "ms": 0
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 201,
-      "ms": 3
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 201,
-      "ms": 0
-     },
-     {
-      "scanned": 200000,
-      "expected": 100,
-      "matched": 201,
-      "ms": 3
      },
      {
       "scanned": 200000,
@@ -534,7 +534,7 @@
      {
       "scanned": 100,
       "expected": 100,
-      "ms": 0
+      "ms": 1
      },
      {
       "scanned": 100,
@@ -633,11 +633,6 @@
      {
       "scanned": 100,
       "expected": 100,
-      "ms": 4
-     },
-     {
-      "scanned": 100,
-      "expected": 100,
       "ms": 0
      },
      {
@@ -653,7 +648,12 @@
      {
       "scanned": 100,
       "expected": 100,
-      "ms": 2
+      "ms": 0
+     },
+     {
+      "scanned": 100,
+      "expected": 100,
+      "ms": 0
      },
      {
       "scanned": 100,

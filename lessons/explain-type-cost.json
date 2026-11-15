@@ -3,24 +3,24 @@
   "template": "experiment",
   "id": "explain-type-cost",
   "course": "MySQL 索引、事务与锁",
-  "title": "EXPLAIN 里 type=ALL 和 ref，扫描行数差多少？",
-  "lead": "慢 SQL 排查第一件事就是敲 EXPLAIN。type 列里 ALL、index、range、ref 到底差几个数量级？",
-  "minutes": 35,
+  "title": "EXPLAIN 里的 type 字段，从 ALL 到 const 到底差了多少倍？",
+  "lead": "慢 SQL 排查第一眼必看 EXPLAIN 的 type 列。ALL、index、range、ref、const 各自在扫多少行？",
+  "minutes": 40,
   "needs": [
-    "知道 SELECT 查询",
-    "听说过 EXPLAIN"
+    "知道 B+ 树索引能加速查询"
   ],
   "after": [
-    "背出 EXPLAIN type 性能从高到低排序：system > const > eq_ref > ref > range > index > ALL",
-    "看懂 rows、key、key_len、Extra 四个核心列",
-    "一眼判断一条 SQL 是真走索引还是全索引扫描（type=index）"
+    "背出并排序 EXPLAIN type 性能阶梯（system > const > eq_ref > ref > range > index > ALL）",
+    "区分 type=ALL（扫数据页）与 type=index（扫二级索引树）",
+    "看懂 rows 与 filtered 的真实含义"
   ],
   "terms": {
-    "type=ALL": "全表扫描：从聚簇索引第一页扫到最后一页。",
-    "type=index": "全索引扫描：虽然比 ALL 小，但依然把整棵二级索引树从头扫到尾！",
-    "type=range": "索引范围扫描：BETWEEN、IN、>、< 等区间定位。",
-    "type=ref": "非唯一索引等值匹配：直接定位到等于目标值的区间。",
-    "type=const": "主键或唯一索引等值匹配：最多 1 行，直接常数级定位。"
+    "EXPLAIN": "MySQL 查看 SQL 执行计划的诊断命令，不真正执行查询（子查询除外），而是告诉你优化器打算怎么查。",
+    "type=ALL": "全表扫描（Full Table Scan）：从聚簇索引头扫到尾，扫描行数等于全表总行数。",
+    "type=index": "全索引扫描：虽然不用回表（走了覆盖索引），但依然把整棵二级索引树从头扫到尾。",
+    "type=range": "索引范围扫描：如 `BETWEEN`、`>`、`IN`，只扫 B+ 树里的一段区间。",
+    "type=ref": "非唯一索引等值查找，直接定位到匹配的少数几行。",
+    "type=const": "主键或唯一索引等值命中最多一行，常数级 O(1) 定位。"
   },
   "experiments": {
     "explaintype": {
@@ -30,22 +30,22 @@
         {
           "id": "TypeAll",
           "label": "type=ALL (全表扫描)",
-          "note": "从头到尾扫完 10 万行聚簇索引。"
+          "note": "无可用索引，从头扫到尾 100,000 行，I/O 爆炸！"
         },
         {
           "id": "TypeIndex",
-          "label": "type=index (全索引扫)",
-          "note": "走二级索引但无起始条件，依然扫完 10 万个索引项。"
+          "label": "type=index (全索引扫描)",
+          "note": "虽然没回表，但依然扫了整棵索引树 100,000 项。"
         },
         {
           "id": "TypeRange",
-          "label": "type=range (范围扫)",
-          "note": "二分定位区间起点，只扫 10 行。"
+          "label": "type=range (索引区间扫描)",
+          "note": "只扫 B+ 树连续区间，扫描量骤降到几百行。"
         },
         {
           "id": "TypeRef",
-          "label": "type=ref (等值定位)",
-          "note": "非唯一索引等值命中，直接定位 10 行。"
+          "label": "type=ref (等值精准命中)",
+          "note": "直接按等值定位，只扫匹配的那 10 行！"
         }
       ],
       "knob": {
@@ -74,41 +74,154 @@
   "slides": [
     {
       "beat": "open",
-      "title": "EXPLAIN 里 type=ALL 和 ref，扫描行数差多少？",
+      "title": "EXPLAIN 里的 type 字段，从 ALL 到 const 到底差了多少倍？",
+      "bridge": "今天不背八股定义，先看一个真实工程场景，跑出数据后再拆底层机制。",
       "blocks": [
         {
           "t": "text",
-          "md": "很多同学看 `EXPLAIN` 只要看到 `key` 列不是 NULL 就以为「走索引成功了」——结果线上还是慢成狗，因为 `type` 是 `index`（全索引扫描），照样扫了 10 万行！",
-          "say": "今天把 EXPLAIN 的核心字段和 `type` 级别一次量透。"
+          "md": "线上慢 SQL 报警来了，第一反应不是猜，而是敲 `EXPLAIN`！在 `EXPLAIN` 输出的十几个列里，**`type`（访问类型）** 直接决定了这条 SQL 是扫 10 行还是扫 100 万行。",
+          "say": "今天把 `ALL`、`index`、`range`、`ref` 四种访问路径写成真实扫描计数，一跑就看出数量级差距。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，热个身",
+      "bridge": "这节课会用到三个基础概念，咱们先花一分钟确认一下。忘了也没关系，选完当场给你补齐。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题，每题点一个答案就行。选完马上告诉你对不对，下面那句话就是这节课要用到的前置底座。",
+          "items": [
+            {
+              "have": "全表扫描",
+              "q": "10 万行数据里只找 10 行，如果 `EXPLAIN` 显示 `type = ALL`，MySQL 实际上扫了多少行？",
+              "options": [
+                "10 行",
+                "10 万行",
+                "100 行"
+              ],
+              "answer": 1,
+              "why": "`ALL` 就是从第一行扫到最后一行，全表 10 万行无一幸免。"
+            },
+            {
+              "have": "type=index 误区",
+              "q": "`EXPLAIN` 显示 `type = index`，说明这条 SQL 性能已经最优了吗？",
+              "options": [
+                "是，用上索引了",
+                "不是！type=index 是全索引扫描，依然扫了整棵索引树",
+                "比 const 还快"
+              ],
+              "answer": 1,
+              "why": "很多同学看到 `index` 以为很好，其实它只是比 `ALL` 树瘦一点，依然是全量扫描！"
+            },
+            {
+              "have": "上线底线",
+              "q": "阿里/大厂 SQL 规范通常要求核心线上查询的 `type` 至少达到哪一档？",
+              "options": [
+                "ALL",
+                "range 及以上（最好 ref / const）",
+                "index"
+              ],
+              "answer": 1,
+              "why": "至少达到 `range`（最好 `ref` 或 `const`），避免全表/全索引扫描。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个生活场景",
+      "bridge": "热身完了。看代码之前，先在脑子里放一个画面。后面所有的数据库和 Java 机制，都可以往这个画面上套。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "翻整本字典 (ALL)",
+              "按拼音目录直奔页码 (ref)"
+            ],
+            "shared": {
+              "name": "10 万词条字典",
+              "value": "找 10 个词"
+            }
+          },
+          "story": "在 10 万词的字典里找 10 个词：`ALL` 是从第 1 页一字一字翻到最后一页；`index` 是只翻前面厚厚的索引目录从头扫到尾；`range` 是翻到「Z 开头」那几页；`ref / const` 则是直接查目录精准翻到那一页！",
+          "say": "字典越厚（表越大），`ALL` 和 `ref` 的差距就越大。",
+          "map": [
+            {
+              "scene": "从第 1 页翻到最后一页",
+              "on": "actors",
+              "tag": "type=ALL",
+              "code": "`for (int i = 0; i < n; i++)`",
+              "say": "逐行扫描 10 万行，只为了挑出符合条件的 10 行。"
+            },
+            {
+              "scene": "只翻目录不看正文",
+              "on": "actors",
+              "tag": "type=index",
+              "code": "`TypeIndex`",
+              "say": "虽然不用回表读大页，但目录本身也要从头扫到尾。"
+            },
+            {
+              "scene": "按区间翻那几页",
+              "on": "actors",
+              "tag": "type=range",
+              "code": "`TypeRange`",
+              "say": "只扫描目标区间，跳过绝大多数无关页。"
+            },
+            {
+              "scene": "直奔目标页码",
+              "on": "action",
+              "tag": "type=ref / const",
+              "code": "`TypeRef`",
+              "say": "B+ 树 3 层直达叶子节点，只扫匹配的那几行！"
+            }
+          ]
         }
       ]
     },
     {
       "beat": "hook",
-      "title": "同样找 10 行，type=ALL 和 type=ref 差多少？",
+      "title": "10 万行里找 10 行，type=ALL 要多扫多少倍？",
+      "bridge": "直观感觉是一回事，高并发/异常真的撞上来时，结果往往完全相反。",
       "blocks": [
         {
           "t": "text",
-          "md": "10 万行表里精确找 10 行记录，不同 `type` 对应的扫描行数会是 10 万还是 **10**？",
-          "say": "看 `TypeAll` 的执行逻辑。"
+          "md": "同样找 10 条记录，10 万行表下 `TypeAll`、`TypeIndex`、`TypeRange`、`TypeRef` 的 `scanned` 扫描行数分别是多少？",
+          "say": "看 `TypeAll` 的扫描循环。"
         }
       ]
     },
     {
       "beat": "code",
-      "title": "看看 TypeAll 的执行逻辑",
+      "title": "把场景写成程序：TypeAll",
+      "bridge": "我们用纯 JDK 把这个底层过程真实模拟出来。重点看标出来的几行，不认识的词点一下虚线就有大白话解释。",
       "blocks": [
         {
           "t": "code",
           "of": "explaintype.TypeAll",
-          "say": "`TypeAll` 只能从第 0 行一直遍历到第 N-1 行。",
+          "say": "`TypeAll` 没有索引树可跳，只能写一个 `0` 到 `n` 的完整循环，每走一步 `scanned++`。",
           "walk": [
             {
               "focus": [
-                "for (int i = 0; i < n; i++)",
+                "for (int i = 0; i < n; i++) {"
+              ],
+              "say": "全表扫描：无论目标在哪里，必须遍历全部 `n` 行。"
+            },
+            {
+              "focus": [
                 "scanned++;"
               ],
-              "say": "哪怕目标就在第 500 行，也得把整张表 10 万行扫完。"
+              "say": "每扫一行计数加 1，10 万行就是 10 万次 I/O 与比较。"
+            },
+            {
+              "focus": [
+                "if (rows[i] >= 500 && rows[i] < 510) matched++;"
+              ],
+              "say": "扫了 10 万行，真正有用的只有 10 行，有效率只有万分之一！"
             }
           ]
         }
@@ -116,25 +229,27 @@
     },
     {
       "beat": "predict",
-      "title": "先猜一猜",
+      "title": "先押一个答案",
+      "bridge": "代码看完了。先别急着看结果，按你刚才对场景的理解，先猜一猜程序跑完会打印出什么。",
       "blocks": [
         {
           "t": "predict",
           "id": "p1",
-          "q": "10 万行表查 10 条数据，`EXPLAIN` 显示 `type=index`，大约会扫描多少行？",
+          "q": "10 万行表里只查 10 条数据，如果 `EXPLAIN` 的 `type` 是 `ALL`，`scanned` 扫描行数是？",
           "options": [
             "10 行",
-            "100,000 行",
-            "1 行"
+            "1,000 行",
+            "100,000 行"
           ],
-          "answer": 1,
-          "say": "先根据直觉下注，再看真实跑出来的结果。"
+          "answer": 2,
+          "say": "选一个你觉得最可能的，猜错完全没关系，猜过再看实测印象最深。"
         }
       ]
     },
     {
       "beat": "run",
-      "title": "实测看看现场结果",
+      "title": "一次一次看真实运行结果",
+      "bridge": "你已经下注了。这组程序在本地 JDK 实测跑了多轮，现在把真实数据放出来核对。",
       "blocks": [
         {
           "t": "experiment",
@@ -142,15 +257,42 @@
           "show": [
             "TypeAll"
           ],
-          "knob": false,
-          "hand": false,
-          "say": "`TypeAll` 和 `TypeIndex` 都扫了整整 10 万行！"
+          "hand": true,
+          "focus": [
+            "for (int i = 0; i < n; i++) {"
+          ],
+          "say": "先点运行看看基准表现，留意指标和预期是不是对得上。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "say": "实测 `scanned = 100000`，而预期只需 `10` 行——扫描放大了整整 10,000 倍！",
+          "key": "EXPLAIN 执行计划与 type 阶梯"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "出事的是哪一行？",
+      "bridge": "结果摆在眼前了。现在回到代码里，把直接导致这个现象的关键一行找出来。",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "explaintype.TypeAll",
+          "q": "回到 `TypeAll`，点击**被迫从头到尾遍历全表每一行**的循环行：",
+          "answer": [
+            "for (int i = 0; i < n; i++) {"
+          ],
+          "hint": "找决定扫描范围从 `0` 到 `n` 的 `for` 循环那一行。",
+          "found": "就是它！没有索引就只能从 0 扫到 n。",
+          "say": "直接在代码上点你怀疑的那一行，点错了会给你提示。"
         }
       ]
     },
     {
       "beat": "why",
-      "title": "掀开机盖：底层为什么会这样？",
+      "title": "拆开字节码 / 底层指令看一眼",
+      "bridge": "光看表面现象还不够，用 JDK 自带的 `javap -c -p` 看一眼机器到底执行了什么。",
       "blocks": [
         {
           "t": "inside",
@@ -158,21 +300,105 @@
           "within": "static void main",
           "from": "0:",
           "to": "return",
-          "say": "看到 `type=index` 千万别高兴太早：它只是「扫描整棵二级索引树」，因为二级索引比聚簇索引瘦小所以比 `ALL` 快一点，但复杂度依然是 O(N)！只有 `range`、`ref`、`eq_ref`、`const` 才真正用上了 B+ 树的二分定位。",
+          "say": "看 `javap -c -p`：循环计数器从 0 一直累加直到 `if_icmpge` 超过 `n` 才退出，时间和扫描行数严格呈 O(N) 线性增长。",
           "walk": [
             {
               "focus": [
-                "if_icmplt"
+                "if_icmpge"
               ],
-              "say": "O(N) 线性遍历 vs O(log N) 二分定位。"
+              "label": "线性扫完整张表",
+              "say": "循环条件必须把 `n` 行全部跑完才会结束。"
+            },
+            {
+              "focus": [
+                "iaload"
+              ],
+              "label": "逐行读取判断",
+              "say": "每一行都要加载出来做条件比较。"
             }
           ]
         }
       ]
     },
     {
+      "beat": "why",
+      "title": "EXPLAIN 执行计划核心五列怎么读？",
+      "bridge": "把两条执行流或两个阶段摊在时间轴上，每一步谁先谁后、哪里卡住，一眼看穿。",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "EXPLAIN SELECT * FROM orders WHERE user_id = 1001;",
+          "parts": {
+            "read": "看 type",
+            "calc": "看 key/rows",
+            "write": "看 Extra"
+          },
+          "lanes": [
+            "优化器诊断 (EXPLAIN)",
+            "常见告警信号"
+          ],
+          "shared": {
+            "name": "SQL 健康度",
+            "start": "待体检"
+          },
+          "say": "拿到一条慢 SQL，按这 3 步快速扫一眼 EXPLAIN。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "read",
+              "text": "1. 先看 type：const > eq_ref > ref > range > index > ALL",
+              "say": "看到 `ALL` 或 `index` 直接亮红灯，说明在全表或全索引扫！"
+            },
+            {
+              "lane": 0,
+              "op": "calc",
+              "text": "2. 再看 possible_keys / key / rows",
+              "say": "`possible_keys` 有值但 `key` 是 `NULL`，说明索引失效了！",
+              "ask": {
+                "q": "EXPLAIN 显示 `type=ALL, key=NULL, rows=500000`，说明什么？",
+                "options": [
+                  "走了主键索引",
+                  "没走任何索引，正在全表扫描 50 万行！"
+                ],
+                "answer": 1
+              }
+            },
+            {
+              "lane": 1,
+              "op": "write",
+              "value": "体检完成",
+              "text": "3. 最后看 Extra：Using index(好) vs Using filesort/temporary(差)",
+              "say": "`Using index` 代表覆盖索引不用回表；看到 `Using filesort` 或 `Using temporary` 说明排序/分组没用上索引，要重点优化！"
+            }
+          ],
+          "verdict": "核心口诀：==type 至少 range，key 不能为 NULL，Extra 远离 filesort/temporary==。",
+          "verdictSay": "把这三步变成肌肉记忆，任何慢 SQL 都能在 10 秒内定位病根。"
+        }
+      ]
+    },
+    {
       "beat": "fix",
-      "title": "对照四种方案实测",
+      "title": "先猜：怎么改才能彻底修好？",
+      "bridge": "病根找到了。在看几种修法前，先判断一下哪种思路真正对症。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "下面哪种 `EXPLAIN type` 排序（从快到慢）是完全正确的？",
+          "options": [
+            "const > eq_ref > ref > range > index > ALL",
+            "ALL > index > range > ref > const",
+            "index > const > ref > ALL"
+          ],
+          "answer": 0,
+          "say": "想清楚「为什么出事」，再选一个你认为能根治的方案。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测对比",
+      "bridge": "不争论，把四种写法放在同一个开关下实测，高下立判。",
       "blocks": [
         {
           "t": "experiment",
@@ -184,19 +410,44 @@
             "TypeRef"
           ],
           "select": "TypeRef",
-          "say": "切到 `TypeRange` 和 `TypeRef`：扫描行数直接从 10 万断崖跌到 10！"
+          "say": "切到 `TypeRef`（等值命中）或 `TypeRange`（区间命中），扫描行数直接从 100,000 断崖跌回 10 行！"
         },
+        {
+          "t": "reveal",
+          "of": "p2",
+          "say": "切到 `TypeRef` 后问题彻底清零，同时兼顾性能与正确性。"
+        },
+        {
+          "t": "try",
+          "say": "自己拨动上面的规模开关，对比错误数和耗时随规模的变化。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "修好了，各自代价是多少？",
+      "bridge": "把四种方案在不同规模下的耗时和正确性画成折线图，工程选型靠数据说话。",
+      "blocks": [
         {
           "t": "chart",
           "of": "explaintype",
-          "say": "表越大，`ALL`/`index` 和 `range`/`ref` 的差距越是天壤之别。",
+          "say": "`TypeAll` 和 `TypeIndex` 随着表数据量涨到 20 万一路线性飙高；`TypeRange` 和 `TypeRef` 几乎贴地不动。",
           "walk": [
             {
-              "focus": [
-                "TypeAll",
-                "TypeRef"
-              ],
-              "say": "调优最低及格线：至少把 `type` 优化到 `range` 及以上。"
+              "focus": "TypeAll",
+              "say": "看 `type=ALL (全表扫描)`：无可用索引，从头扫到尾 100,000 行，I/O 爆炸！"
+            },
+            {
+              "focus": "TypeIndex",
+              "say": "看 `type=index (全索引扫描)`：虽然没回表，但依然扫了整棵索引树 100,000 项。"
+            },
+            {
+              "focus": "TypeRange",
+              "say": "看 `type=range (索引区间扫描)`：只扫 B+ 树连续区间，扫描量骤降到几百行。"
+            },
+            {
+              "focus": "TypeRef",
+              "say": "看 `type=ref (等值精准命中)`：直接按等值定位，只扫匹配的那 10 行！"
             }
           ]
         }
@@ -204,32 +455,33 @@
     },
     {
       "beat": "choose",
-      "title": "工程上怎么选？",
+      "title": "工程上到底怎么选？",
+      "bridge": "没有银弹，只有适用边界。把每种方案的优点、代价和适用场景摆成一张表。",
       "blocks": [
         {
           "t": "choose",
-          "say": "背熟 EXPLAIN 五大核心列：`type`（访问类型）、`possible_keys`/`key`（实际索引）、`key_len`（联合索引命中了几列）、`rows`（预估扫描行数）、`Extra`（Using index / Using filesort / Using temporary）。",
+          "say": "线上慢 SQL 治理目标：消灭 `ALL` 和 `index`，尽量做到 `range`、`ref`、`const`。",
           "options": [
             {
-              "name": "const / eq_ref",
-              "solves": "主键/唯一索引等值单行定位",
-              "cost": "1 行：{ms:explaintype.TypeRef} ms",
-              "when": "按 PK 或 Unique Key 查询或 JOIN",
-              "say": "性能天花板。"
+              "name": "type=ALL / index",
+              "solves": "无索引也能查",
+              "cost": "扫描全表/全索引 10 万+ 行",
+              "when": "仅限极小配置表（< 1000 行）",
+              "say": "大表必慢。"
             },
             {
-              "name": "ref / range",
-              "solves": "普通索引等值或范围定位",
-              "cost": "仅扫命中区间：{ms:explaintype.TypeRange} ms",
-              "when": "业务列表、订单筛选的最低及格线",
-              "say": "日常 SQL 优化目标就是至少达到 range/ref。"
+              "name": "type=range",
+              "solves": "只扫 B+ 树目标区间",
+              "cost": "只扫区间行数：{ms:explaintype.TypeRange} ms",
+              "when": "范围查询、分页、时间段筛选",
+              "say": "线上可接受底线。"
             },
             {
-              "name": "index / ALL",
-              "solves": "全索引或全表扫描",
-              "cost": "O(N) 全扫：{ms:explaintype.TypeAll} ms",
-              "when": "大表严禁出现，需立刻加索引或改写条件",
-              "say": "看到 ALL 或 index 立刻亮红灯。"
+              "name": "type=ref / const",
+              "solves": "O(logN) 树高 3 层精准直达",
+              "cost": "精准 10 行：{ms:explaintype.TypeRef} ms",
+              "when": "核心等值查询首选",
+              "say": "毫秒级响应。"
             }
           ]
         }
@@ -237,89 +489,121 @@
     },
     {
       "beat": "check",
-      "title": "随堂检验",
+      "title": "两道巩固题：检验是否真懂",
+      "bridge": "学完立刻做两道高频面试陷阱题，看看能不能一眼识破。",
       "blocks": [
         {
           "t": "quiz",
-          "q": "下面哪种 `EXPLAIN` 结果说明 SQL **真正利用了 B+ 树二分定位**，而不是全量扫描？",
+          "id": "q1",
+          "q": "`EXPLAIN` 结果中出现 `type = index` 时，代表什么含义？",
           "options": [
             {
-              "text": "`type=ref, Extra=Using where`",
+              "text": "全索引扫描：遍历了整棵二级索引树，大表下依然很慢",
               "ok": true,
-              "why": "`ref` 表示用非唯一索引做了等值定位，只扫描匹配区间。"
+              "why": "别被 `index` 这个名字骗了，它只比 `ALL` 少回表，依然是全量扫描！"
             },
             {
-              "text": "`type=index, key=idx_name`",
+              "text": "精准命中了单个索引记录",
               "ok": false,
-              "why": "`type=index` 是全索引扫描，照样把整棵索引树扫了一遍。"
+              "why": "精准命中是 `const` 或 `ref`。"
             },
             {
-              "text": "`type=ALL, rows=100000`",
+              "text": "使用了覆盖索引且只扫描 1 行",
               "ok": false,
-              "why": "全表扫描。"
+              "why": "是遍历整棵索引树，不是只扫 1 行。"
             }
           ],
-          "say": "选出最符合 InnoDB 底层机制的一项。"
+          "say": "第一题：选最精准的那一项。"
+        },
+        {
+          "t": "quiz",
+          "id": "q2",
+          "q": "如果 `EXPLAIN` 里的 `Extra` 列出现 `Using index`，代表什么？",
+          "options": [
+            {
+              "text": "使用了覆盖索引，查询所需的列都在索引树上，无需回表",
+              "ok": true,
+              "why": "这是非常好的信号，省去了回表随机 I/O！"
+            },
+            {
+              "text": "使用了索引下推",
+              "ok": false,
+              "why": "索引下推是 `Using index condition`。"
+            },
+            {
+              "text": "索引失效了",
+              "ok": false,
+              "why": "完全相反，这是覆盖索引命中的最佳状态。"
+            }
+          ],
+          "say": "第二题：换个问法考同一个底层原理。"
         }
       ]
     },
     {
       "beat": "name",
-      "title": "给它起个名字",
+      "title": "把概念装进脑子：标准叫法与面试原题",
+      "bridge": "前面一直用大白话和实验推演，现在给它贴上面试官认可的专业名词。",
       "blocks": [
         {
-          "t": "name",
-          "term": "EXPLAIN 执行计划",
-          "alias": "type / key / key_len / rows / Extra",
-          "oneLine": "看懂 `EXPLAIN` 必须盯紧 `type`：==至少要达到 `range` 或 `ref`==，警惕伪走索引的 `type=index`。",
-          "asked": [
-            "EXPLAIN 中最重要的字段有哪些？",
-            "type 字段有哪些常见值，性能怎么排序？",
-            "key_len 怎么用来判断联合索引用了几列？"
+          "t": "term",
+          "name": "EXPLAIN 执行计划与 type 阶梯",
+          "alias": "EXPLAIN Access Types",
+          "one": "==system > const > eq_ref > ref > range > index > ALL==；线上核心 SQL 至少要达到 ==range==（最好 `ref/const`）。",
+          "say": "记住这一句核心定义，面试时先抛结论再展开。"
+        },
+        {
+          "t": "asked",
+          "questions": [
+            "EXPLAIN 里你主要看哪些字段？",
+            "type 字段有哪些值，从好到坏怎么排？",
+            "type=index 和 type=ALL 有什么区别？"
           ],
-          "say": "把核心术语和面试高频问法对齐。"
+          "say": "这几道都是真实一二面原题，下一页直接练习脱稿讲。"
         }
       ]
     },
     {
       "beat": "say",
-      "title": "两分钟开口讲清",
+      "title": "合上课件，开口讲一遍",
+      "bridge": "看懂不等于讲得出来。对着计时器，按要点一口气讲顺。",
       "blocks": [
         {
           "t": "say",
-          "prompt": "拿到一条慢 SQL，你如何用 EXPLAIN 诊断它？重点看哪几列？",
+          "prompt": "讲清楚 EXPLAIN 重点看哪几列，type 从快到慢怎么排序，以及 type=index 为什么也不是好信号？",
+          "seconds": 90,
           "points": [
-            "重点看 type、key、key_len、rows、Extra 五列",
-            "type 排序：system > const > eq_ref > ref > range > index > ALL，至少优化到 range/ref",
-            "key_len 判断联合索引实际命中了前几列",
-            "Extra 警惕 Using filesort 和 Using temporary，追求 Using index"
+            "重点看 type、possible_keys/key、key_len、rows、Extra",
+            "type 排序：system > const > eq_ref > ref > range > index > ALL",
+            "type=index 是全索引扫描（把整棵二级索引树扫一遍），大表依然很慢；线上至少要 range 以上"
           ],
-          "model": "用 EXPLAIN 排查慢 SQL 我主要盯五列：第一看 type，从好到差是 const、eq_ref、ref、range、index、ALL，日常至少要优化到 range 或 ref，注意 type=index 虽然写了 key 但其实是全索引扫描；第二看 key 和 key_len，确认走没走对索引以及联合索引命中了几列；第三看 rows 预估扫描行数；第四看 Extra，有没有出现 Using filesort 文件排序或 Using temporary 临时表，理想状态是 Using index 覆盖索引。",
-          "say": "对着要点自己脱稿顺一遍。"
+          "model": "分析慢 SQL 时用 EXPLAIN 重点看 type、key、key_len、rows 和 Extra 这几列。其中 type 决定了访问效率，从好到坏依次是 system、const、eq_ref、ref、range、index、ALL。const 和 eq_ref 是主键或唯一索引等值查询，ref 是非唯一索引等值，range 是范围扫描。需要特别注意 type=index 并不是好事，它代表全索引扫描，虽然不用回表但依然扫了整棵索引树，大表下同样很慢，线上核心接口至少要优化到 range 及以上。",
+          "say": "先自己组织语言讲一遍，再点开参考答案对照漏了哪个得分点。"
         }
       ]
     },
     {
       "beat": "take",
-      "title": "带走这三张卡",
+      "title": "带走三张复习卡片",
+      "bridge": "最后留三张一问一答卡片，考前扫一眼就能全部唤醒。",
       "blocks": [
         {
           "t": "cards",
-          "items": [
+          "cards": [
             {
-              "q": "EXPLAIN type 性能排序？",
-              "a": "system > const > eq_ref > ref > range > index > ALL。"
+              "q": "EXPLAIN type 从好到坏排序？",
+              "a": "const > eq_ref > ref > range > index > ALL。"
             },
             {
-              "q": "type=index 是走索引加速了吗？",
-              "a": "不是！它是全索引扫描，依然 O(N) 扫完整棵二级索引树。"
+              "q": "type=index 和 ALL 的区别？",
+              "a": "ALL 扫整张聚簇索引表；index 扫整棵二级索引树（都是全量扫描）。"
             },
             {
-              "q": "key_len 有什么用？",
-              "a": "通过字节数反推联合索引实际命中了前几个字段。"
+              "q": "Extra 里 Using index 代表什么？",
+              "a": "覆盖索引命中，无需回表。"
             }
           ],
-          "say": "收好这三张复习卡，继续下一课。"
+          "say": "这三张卡片就是本课的最小精华，全部通关，进入下一课！"
         }
       ]
     }
