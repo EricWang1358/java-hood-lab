@@ -5,13 +5,14 @@
   "course": "Spring 全家桶与持久层",
   "title": "参数校验 @Valid 没生效，或 BindingResult 吞掉了全局异常？",
   "lead": "DTO 上贴满了 @NotNull/@Min，Controller 却忘了加 @Valid；或者顺手多写了个 BindingResult，结果全局异常处理器再也收不到报错！",
-  "minutes": 25,
-  "needs": ["知道 Bean Validation 注解（@NotNull/@Positive）", "了解 Controller 参数绑定"],
-  "after": ["讲清 @Valid 与 @Validated 的区别", "知道方法参数写了 BindingResult 会抑制框架抛出 MethodArgumentNotValidException", "掌握统一由全局异常处理器收口校验错误"],
+  "minutes": 30,
+  "needs": ["知道 Bean Validation 注解（@NotNull/@Positive）", "了解 Controller 参数绑定与 @RequestBody", "知道 @RestControllerAdvice 靠捕获异常工作"],
+  "after": ["讲清 @Valid 与 @Validated 的区别（含嵌套校验与分组校验）", "知道方法参数写了 BindingResult 会抑制框架抛出 MethodArgumentNotValidException", "掌握统一由全局异常处理器收口校验错误"],
   "terms": {
-    "@Valid / @Validated": "触发 Spring MVC 对请求体 DTO 执行校验；@Validated 还支持分组校验。",
-    "BindingResult": "Spring 校验结果对象：一旦写在参数列表里，校验失败时不会抛异常，必须自己检查 hasErrors()。",
-    "MethodArgumentNotValidException": "@RequestBody 校验失败抛出的标准异常，应交给 @RestControllerAdvice 统一返回 400。"
+    "@Valid / @Validated": "触发 Spring MVC 对请求体 DTO 执行校验；@Validated 还支持分组校验，而嵌套对象属性上必须写 @Valid。",
+    "BindingResult": "Spring 校验结果对象：一旦写在参数列表里，校验失败时框架认为你自己要处理，不会再抛异常，必须自己检查 hasErrors()。",
+    "MethodArgumentNotValidException": "@RequestBody 校验失败抛出的标准异常，应交给 @RestControllerAdvice 统一返回 400 JSON。",
+    "ConstraintViolationException": "在类上贴 @Validated 对 @RequestParam/@PathVariable 单参数校验失败时抛出的异常。"
   },
   "experiments": {
     "paramvalid": {
@@ -33,7 +34,69 @@
     {
       "beat": "open",
       "title": "参数校验 @Valid 没生效，或 BindingResult 吞掉了全局异常？",
-      "blocks": [{ "t": "text", "md": "后端接口最怕「前端传了个 `-100` 金额进来直接扣成加钱」。光在 DTO 字段写 `@Positive` 没用，Controller 入口还得写对。", "say": "这节课把校验失效的两个常见低级坑一次扫清。" }]
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**为什么 DTO 上明明写满了 `@NotNull`、`@Positive`，非法负数金额还是畅通无阻地打进了 Service？**",
+          "say": "后端接口最怕前端传个 `-100` 金额进来把扣款变成加钱。光在 DTO 上贴注解只是‘贴标签’，还得有开关触发校验、有机制把错误抛出来。"
+        },
+        {
+          "t": "text",
+          "md": "先打通 Bean Validation 触发条件和异常机制，再看清 `BindingResult` 是怎么悄悄把异常吞掉的。",
+          "say": "大约 30 分钟，把参数校验的坑一次踩平。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热个身：先确认三件前置知识",
+      "bridge": "先搞清校验注解本身不干活，全靠 Spring MVC 参数解析器触发。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "三道小题快速热身。",
+          "items": [
+            {
+              "have": "校验开关",
+              "q": "DTO 字段上写了 `@Positive`，但 Controller 参数只写 `OrderDTO dto`（没写 `@Valid`），Spring 会校验吗？",
+              "options": ["会，DTO 上有注解就会自动校验", "不会，必须加 @Valid 或 @Validated 才触发校验"],
+              "answer": 1,
+              "why": "`@Positive` 只是元数据标记，没有 `@Valid`/`@Validated` 开关，Spring 参数解析器根本不会调用 Validator。"
+            },
+            {
+              "have": "嵌套对象校验",
+              "q": "`OrderDTO` 里包含一个 `AddressDTO address` 子对象，怎样才能让 `AddressDTO` 里的 `@NotBlank` 也生效？",
+              "options": ["在 address 字段上加 @Valid", "只靠 Controller 上的 @Validated 就够了"],
+              "answer": 0,
+              "why": "嵌套对象字段必须加 `@Valid` 才会递归级联校验（`@Validated` 不能贴在字段上）。"
+            },
+            {
+              "have": "异常捕获前提",
+              "q": "`@RestControllerAdvice` 能统一处理校验错误的前提是什么？",
+              "options": ["Controller 必须把 MethodArgumentNotValidException 抛出来", "不管抛不抛都能抓到"],
+              "answer": 0,
+              "why": "只要异常被中途吞掉或被 `BindingResult` 接管不抛，全局异常处理器就一无所知。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景",
+      "bridge": "把 `@Valid` 和 `BindingResult` 想成「安检门」和「自己签字担保」。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["安检员(Validator)", "全局处理中心(Advice)"], "shared": { "name": "BindingResult(自签单)", "value": "接管" } },
+          "story": "安检员查出违禁品（负数金额）时，正常应该直接拉响警报交给**全局处理中心（Advice）**拦截。但如果你在门口递了一张**「我自己处理（BindingResult）」的签字单**，安检员就把单子塞给你然后放人进去了——结果你忘了看单子，违禁品直接进了业务车间！",
+          "say": "既然配了 `@RestControllerAdvice` 统一拉警报，就千万别再在 Controller 参数里写 `BindingResult`。",
+          "map": [
+            { "scene": "安检门开关", "on": "actors", "tag": "@Valid / @Validated", "code": "(@Validated @RequestBody OrderDTO dto)", "say": "开了安检门，校验才会真跑起来。" },
+            { "scene": "自签接管单", "on": "shared", "tag": "BindingResult", "code": "controllerWithBindingResult(-100)", "say": "参数列表里一旦出现 `BindingResult`，框架立刻停止抛异常。" }
+          ]
+        }
+      ]
     },
     {
       "beat": "hook",
@@ -45,7 +108,7 @@
       "beat": "code",
       "title": "看清 BindingResult 为什么会「吞异常」",
       "bridge": "Spring 约定：只要你在参数里接了 `BindingResult`，它就认为「你自己要处理」，于是就不抛异常了。",
-      "blocks": [{ "t": "code", "of": "paramvalid.CatchBindingResult", "say": "看第 6 行。", "walk": [{ "focus": ["// 参数里写了 BindingResult 但忘了手动判断 hasErrors()"], "say": "写全局异常处理后，Controller 参数里千万别再多余加 `BindingResult`。", "key": "用了全局异常处理器，就不要在 Controller 里写 BindingResult" }] }]
+      "blocks": [{ "t": "code", "of": "paramvalid.CatchBindingResult", "say": "重点看第 4～8 行。", "walk": [{ "focus": ["boolean hasErrors = amount <= 0;"], "say": "Validator 其实已经算出了 `hasErrors = true`，错误信息全装在 `BindingResult` 里。" }, { "focus": ["return false;"], "say": "但由于 Controller 写了 `BindingResult` 却忘了写 `if (result.hasErrors()) throw ...`，方法直接返回继续往下放行！", "key": "用了全局异常处理器，就不要在 Controller 里写 BindingResult" }] }]
     },
     {
       "beat": "predict",
@@ -55,53 +118,68 @@
     },
     {
       "beat": "run",
+      "title": "出事的是哪一行？点出来",
+      "bridge": "在 `CatchBindingResult.java` 中点出把 `hasErrors` 放过并返回 `false` 的那一行。",
+      "blocks": [{ "t": "spot", "of": "paramvalid.CatchBindingResult", "q": "哪一行代码忽略了 `hasErrors` 并直接放行？", "answer": ["return false;"], "hint": "找 `controllerWithBindingResult` 的返回语句。", "found": "就是这句！拿到 `BindingResult` 却不判断 `hasErrors()`，等于白校验。", "say": "点击代码里对应的那一行。" }]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖看字节码",
+      "bridge": "用 `javap -c -p` 看 `CatchBindingResult.controllerWithBindingResult` 编译出的指令。",
+      "blocks": [{ "t": "inside", "of": "paramvalid.CatchBindingResult", "within": "controllerWithBindingResult", "from": "iload_0", "to": "ireturn", "say": "反编译看局部变量 `hasErrors` 的命运。", "walk": [{ "focus": ["istore_1"], "label": "算完结果直接丢弃", "say": "`istore_1` 把 `hasErrors` 存进 1 号局部变量后，后面根本没有 `iload_1` 和 `athrow`，直接 `iconst_0` + `ireturn` 返回！", "key": "校验结果被存进局部对象却无人抛出" }] }]
+    },
+    {
+      "beat": "run",
       "title": "四种校验写法实测对比",
       "bridge": "20 次运行全部放出来。",
       "blocks": [
-        { "t": "experiment", "lab": "paramvalid", "show": ["NoValidAnnotation", "CatchBindingResult", "ValidatedGroup", "AssertGuard"], "select": "CatchBindingResult", "say": "`NoValidAnnotation` 和 `CatchBindingResult` 全是 0；`ValidatedGroup` 和 `AssertGuard` 100% 拦截。" },
-        { "t": "reveal", "of": "pv_guess", "say": "入口 `@Validated` + 领域层构造断言，双重保险。", "key": "@Validated 入口拦截 + 领域对象不变量断言" },
-        { "t": "try", "say": "切换挡位 4 和 8 观察。" }
+        { "t": "experiment", "lab": "paramvalid", "show": ["NoValidAnnotation", "CatchBindingResult", "ValidatedGroup", "AssertGuard"], "select": "CatchBindingResult", "say": "`NoValidAnnotation` 和 `CatchBindingResult` 全是 0；`@Validated` 全局收口与领域构造防御全是 2000！" },
+        { "t": "reveal", "of": "pv_guess", "say": "拿掉多余的 `BindingResult`，让框架自动抛出 `MethodArgumentNotValidException`，统一交给 `@RestControllerAdvice` 处理。", "key": "拿掉 BindingResult，交给 @RestControllerAdvice 统一返回 400" },
+        { "t": "try", "say": "把非法请求调到 8 千再看。" }
       ]
     },
     {
       "beat": "fix",
       "title": "耗时对比",
       "bridge": "四种写法耗时折线。",
-      "blocks": [{ "t": "chart", "of": "paramvalid", "say": "校验拦截耗时极低。", "walk": [{ "focus": "ValidatedGroup", "say": "统一收口最简洁。" }] }]
+      "blocks": [{ "t": "chart", "of": "paramvalid", "say": "快速失败拦截几乎零开销。", "walk": [{ "focus": "ValidatedGroup", "say": "标准且干净。" }] }]
     },
     {
       "beat": "choose",
-      "title": "校验选型",
+      "title": "参数校验选型",
       "layout": "split",
-      "bridge": "@Valid 和 @Validated 怎么选？",
+      "bridge": "不同参数怎么配校验？",
       "blocks": [
-        { "t": "decide", "q": "Spring MVC 参数校验怎么写？", "branches": [{ "when": "需要分组校验（如 CreateGroup/UpdateGroup）", "pick": "@Validated(CreateGroup.class)", "eg": "Controller 方法参数" }, { "when": "嵌套对象属性级联校验", "pick": "嵌套字段上加 @Valid", "eg": "@Valid private Address addr;" }], "say": "外层分组用 `@Validated`，内部级联用 `@Valid`。" },
-        { "t": "cases", "tools": ["@Validated", "嵌套字段 @Valid", "去掉 BindingResult"], "say": "三个问题选修法。", "items": [{ "text": "新增时 `id` 必须为空，更新时 `id` 必须非空，共用同一个 DTO。", "answer": 0, "why": "用 `@Validated` 配合分组接口。" }, { "text": "`OrderDTO` 里的 `List<ItemDTO> items` 内部字段校验不生效。", "answer": 1, "why": "在 `items` 字段上加 `@Valid` 开启级联校验。" }, { "text": "写了 `@RestControllerAdvice` 处理校验异常，但某接口校验失败还是进了方法体。", "answer": 2, "why": "检查方法参数里是不是多写了 `BindingResult`。" }] }
+        { "t": "decide", "q": "需要校验入参，怎么选注解？", "branches": [{ "when": "@RequestBody JSON 对象，或需要新增/修改分组校验", "pick": "@Validated（嵌套子对象字段加 @Valid）", "eg": "@Validated(CreateGroup.class)" }, { "when": "@RequestParam / @PathVariable 单参数", "pick": "在 Controller 类上加 @Validated", "eg": "抛 ConstraintViolationException" }], "say": "类上 `@Validated` 管单参数，字段嵌套用 `@Valid`。" },
+        { "t": "cases", "tools": ["类上加 @Validated", "字段上加 @Valid", "去掉 BindingResult"], "say": "三个问题怎么修？", "items": [{ "text": "`@GetMapping` 里写 `@RequestParam @Min(1) Long id` 不生效。", "answer": 0, "why": "必须在 Controller 类头上加 `@Validated`，否则单参数注解不会触发。" }, { "text": "`OrderDTO` 里的 `List<ItemDTO> items` 子项校验不生效。", "answer": 1, "why": "在 `items` 字段上加 `@Valid` 才能级联校验集合里的元素。" }, { "text": "配了 `@RestControllerAdvice` 但校验失败没进异常处理。", "answer": 2, "why": "删掉 Controller 方法参数里的 `BindingResult`。" }] }
       ]
     },
     {
       "beat": "name",
       "title": "面试标准术语",
       "bridge": "对准高频提问。",
-      "blocks": [{ "t": "name", "term": "Spring Validation 校验机制", "alias": "@Valid · @Validated · MethodArgumentNotValidException", "oneLine": "`@Validated` 支持分组校验；嵌套对象校验需在字段加 `@Valid`；写 `BindingResult` 会阻止框架抛出校验异常。", "asked": ["@Valid 和 @Validated 的区别？", "为什么嵌套对象的校验注解不生效？"], "say": "两问全覆盖。" }]
+      "blocks": [{ "t": "name", "term": "Spring Validation 校验与异常处理", "alias": "@Valid · @Validated · BindingResult", "oneLine": "==@Valid== 支持嵌套对象级联校验，==@Validated== 支持分组与类级别单参数校验；若方法参数声明 ==BindingResult== 会抑制异常抛出，应移除并交由 ==@RestControllerAdvice== 收口。", "asked": ["@Valid 和 @Validated 的区别？为什么有时参数校验不生效？"], "say": "把嵌套校验、分组校验和单参数类注解全答出来。" }]
     },
     {
       "beat": "check",
-      "title": "小测一下",
-      "bridge": "快速检验。",
-      "blocks": [{ "t": "quiz", "q": "以下哪个注解支持「按新增/修改分组校验」？", "options": [{ "text": "@Validated", "ok": true, "why": "正确！Spring 的 `@Validated` 支持分组，Jakarta 的 `@Valid` 不支持。" }, { "text": "@Valid", "ok": false, "why": "`@Valid` 不支持分组参数，但支持嵌套字段级联。" }], "say": "选出支持分组的注解。" }]
+      "title": "小测一下（两题）",
+      "bridge": "快速检验是否吃透。",
+      "blocks": [
+        { "t": "quiz", "q": "1. Controller 方法写成 `create(@Validated @RequestBody OrderDTO dto, BindingResult result)` 且没写 `result.hasErrors()` 判断，校验失败时会进 `@RestControllerAdvice` 吗？", "options": [{ "text": "不会，声明 BindingResult 后框架不再抛 MethodArgumentNotValidException", "ok": true, "why": "正确！用全局异常处理时切忌在参数里再写 `BindingResult`。" }, { "text": "会，框架照样抛异常", "ok": false, "why": "声明 `BindingResult` 就等于告诉 Spring 你要自己接管错误。" }], "say": "第 1 题：考 BindingResult 机制。" },
+        { "t": "quiz", "q": "2. `@Valid` 和 `@Validated` 的核心区别，下面哪项说法正确？", "options": [{ "text": "@Validated 支持分组校验且可贴在类上配合 @RequestParam；@Valid 可贴在嵌套字段上做级联校验", "ok": true, "why": "正确！两者经常配合使用：入口 `@Validated`，DTO 嵌套字段 `@Valid`。" }, { "text": "@Validated 只能用于实体类，不能用于 Controller", "ok": false, "why": "正好相反，`@Validated` 最常用在 Controller 参数和类上。" }], "say": "第 2 题：考两注解差异。" }
+      ]
     },
     {
       "beat": "say",
       "title": "开口讲一遍",
-      "bridge": "一分钟脱稿复述。",
-      "blocks": [{ "t": "say", "prompt": "@Valid 和 @Validated 有什么区别？为什么校验有时不生效？", "points": ["@Valid 是 JSR 标准，@Validated 是 Spring 扩展支持分组校验", "嵌套对象字段必须加 @Valid 才会级联校验", "Controller 参数写了 BindingResult 会抑制异常，导致 @RestControllerAdvice 收不到"], "model": "`@Valid` 是 Jakarta Bean Validation 标准注解，不支持分组但可用在嵌套字段上做级联校验；`@Validated` 是 Spring 扩展的，支持分组校验。常见不生效原因有三个：忘了在 Controller 参数加注解、嵌套集合/对象字段漏写 `@Valid`，或者参数里多余写了 `BindingResult` 导致异常被吞掉、没抛给全局异常处理器。", "say": "点击开始自述。" }]
+      "bridge": "两分钟脱稿复述。",
+      "blocks": [{ "t": "say", "prompt": "Spring Boot 中 @Valid 和 @Validated 有什么区别？参数校验统一怎么收口？", "points": ["来源不同：@Valid 是 JSR-303 标准注解，@Validated 是 Spring 扩展注解", "核心差异：@Validated 支持分组校验（如新增/更新不同规则）且能贴在 Controller 类上校验 @RequestParam/@PathVariable；@Valid 可以贴在 DTO 成员字段上实现嵌套对象/集合的级联校验", "常见失效坑：1) 入口忘了写 @Valid/@Validated；2) 嵌套对象忘了写 @Valid；3) 单参数忘了在类上加 @Validated；4) 写了 BindingResult 吞掉了异常", "统一收口：移除 BindingResult，让 @RestControllerAdvice 统一捕获 MethodArgumentNotValidException 和 ConstraintViolationException 返回 400 JSON"], "model": "`@Valid` 是 JSR-303 标准注解，`@Validated` 是 Spring 的增强版。两者核心差异有三点：第一，`@Validated` 支持分组校验，比如新增和修改共用一个 DTO 时按不同分组校验字段；第二，嵌套对象或 `List` 字段的级联校验只能用 `@Valid` 贴在字段上；第三，`@RequestParam` 单参数校验需要在 Controller 类上贴 `@Validated`。工程里统一收口时，切记不要在 Controller 方法参数里多写 `BindingResult`，否则框架会把校验错误塞给它而不再抛异常；去掉它之后，统一交给 `@RestControllerAdvice` 捕获 `MethodArgumentNotValidException` 和 `ConstraintViolationException` 返回标准 400 JSON。", "say": "点击开始自述。" }]
     },
     {
       "beat": "take",
       "title": "带走三张卡",
       "bridge": "核心回顾。",
-      "blocks": [{ "t": "cards", "items": [{ "q": "`@Valid` vs `@Validated`？", "a": "`@Validated` 支持分组校验；嵌套字段级联校验用 `@Valid`。" }, { "q": "为什么嵌套 DTO 校验不生效？", "a": "外层 DTO 的嵌套字段或 `List` 上漏加了 `@Valid`。" }, { "q": "为什么全局异常处理器收不到校验失败？", "a": "Controller 参数里多余写了 `BindingResult`。" }], "say": "三张卡收好。" }]
+      "blocks": [{ "t": "cards", "items": [{ "q": "配了全局异常为什么校验还不进 Advice？", "a": "检查 Controller 参数里是不是多写了 `BindingResult` 吞掉了异常。" }, { "q": "嵌套对象怎么校验？", "a": "外层 `@Validated`，内层嵌套对象/集合字段上加 `@Valid`。" }, { "q": "@RequestParam 单参数怎么校验？", "a": "在 Controller 类上加 `@Validated`，捕获 `ConstraintViolationException`。" }], "say": "三张卡收好。" }]
     }
   ]
 }
