@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-spi-loader",
+  "course": "Java 工程语法与集合",
+  "title": "SPI 扩展机制与懒加载缓存：JDBC / Dubbo / Spring Boot 是怎么插拔实现的？",
+  "lead": "写一个核心接口，不改核心包一行代码，只往 classpath 放个 jar 就能自动加载实现类——JDK ServiceLoader 怎么做到的？为什么每次重新 load 这么慢？",
+  "minutes": 25,
+  "needs": ["知道面向接口编程", "知道 Class.forName 与反射实例化"],
+  "after": [
+    "说清 JDK SPI（META-INF/services + ServiceLoader）的工作原理与懒加载特性",
+    "理解为什么 JDBC DriverManager 用线程上下文类加载器（TCCL）打破双亲委派",
+    "对比每次反射加载、懒加载注册表与单例缓存的性能差异，并知道 Dubbo/Spring SPI 的改进"
+  ],
+  "terms": {
+    "SPI (Service Provider Interface)": "由调用方/标准方定义接口，第三方厂商提供实现并配置在 `META-INF/services/接口全限定名` 文件中，实现解耦插拔。",
+    "ServiceLoader 懒加载": "`ServiceLoader.load()` 返回 `Iterable`，只有在 `iterator().hasNext()/next()` 遍历时才逐行读取配置文件并 `Class.forName` 实例化。",
+    "JDK SPI 缺陷": "JDK `ServiceLoader` 一旦遍历就会把所有实现类全部实例化，且不支持按 key 名字按需取单个实现（Dubbo/Spring 做了按需缓存改进）。"
+  },
+  "experiments": {
+    "spiloader": {
+      "runner": "java",
+      "home": "lab.spiloader",
+      "variants": [
+        { "id": "ServiceLoaderRescanEvery", "code": "ServiceLoaderRescanEvery.java", "label": "每次 Class.forName + newInstance", "note": "每次调用都重新加载类并反射构造新实例，耗时远高于缓存方案。" },
+        { "id": "LazySpiRegistry", "code": "LazySpiRegistry.java", "label": "按需 Supplier 注册表（每次构造）", "note": "免去 Class.forName 查找，按 key 精准构造实例，无反射开销。" },
+        { "id": "CachedSpiSingleton", "code": "CachedSpiSingleton.java", "label": "按 Key 缓存 SPI 单例（推荐）", "note": "启动时按需初始化并缓存单例，热路径 O(1) 直接返回扩展实现。" },
+        { "id": "RealServiceLoaderEmpty", "code": "RealServiceLoaderEmpty.java", "label": "ServiceLoader.load 空扫描开销", "note": "演示即便没有配置 META-INF/services，反复调用 ServiceLoader.load() 仍有扫描开销。" }
+      ],
+      "knob": { "label": "扩展点调用次数 N", "values": ["10000", "50000", "100000", "200000"], "default": "100000" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "成功执行次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "SPI 扩展机制与按需缓存",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "为什么引入一个 `mysql-connector-j.jar` 就能自动注册进 `DriverManager`？为什么 Spring Boot 引入 starter 就能自动装配？底层都是 **SPI（服务发现接口）**！今天实测 SPI 实例化与缓存的正确姿势。",
+          "say": "SPI 是阅读 JDBC、SLF4J、Dubbo、Spring Boot 源码的钥匙。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：SPI 的三个核心问题",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先检验对 SPI 机制的了解。",
+          "items": [
+            {
+              "have": "配置文件路径",
+              "q": "JDK 原生 `ServiceLoader` 默认去哪个目录下查找接口实现类的配置？",
+              "options": ["META-INF/services/<接口全限定名>", "WEB-INF/spi/", "src/main/java/"],
+              "answer": 0,
+              "why": "文件名为接口全限定名，文件内容为一行一个实现类全限定名。"
+            },
+            {
+              "have": "TCCL 打破双亲委派",
+              "q": "JDK 核心库里的 `DriverManager`（Bootstrap 加载）为什么能加载到 classpath 下的 MySQL Driver？",
+              "options": ["ServiceLoader.load() 默认使用 Thread.currentThread().getContextClassLoader()（应用类加载器）", "MySQL Driver 放在 rt.jar 里", "JVM 禁用双亲委派"],
+              "answer": 0,
+              "why": "这就是经典的「线程上下文类加载器（TCCL）逆向委派」。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：ServiceLoaderRescanEvery vs CachedSpiSingleton",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "spiloader",
+          "variants": ["ServiceLoaderRescanEvery", "CachedSpiSingleton"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：10 万次调用，每次反射加载 vs 缓存单例差多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "spiloader",
+          "question": "`ServiceLoaderRescanEvery` 每次 `Class.forName().getDeclaredConstructor().newInstance()` vs `CachedSpiSingleton`，耗时差距大约是？",
+          "options": ["慢一个数量级以上（Class.forName 查类表 + 反射构造）", "差不多", "一样快"],
+          "answer": 0,
+          "why": "`Class.forName` 涉及类名解析、字典查找与反射构造，绝对不能放在热路径每次重复执行。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种 SPI 获取方式耗时实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "spiloader",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：Class.forName 与无参构造要求",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "spiloader",
+          "variant": "ServiceLoaderRescanEvery",
+          "explain": "JDK SPI 要求实现类必须有 `public` 无参构造器，底层正是通过 `Constructor.newInstance()` 反射实例化；而缓存单例后热路径只剩一次 `Map.get()`。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：按 Key 注册表与单例缓存",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "spiloader",
+          "variants": ["LazySpiRegistry", "CachedSpiSingleton"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：1 万 → 20 万次耗时对比",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "spiloader",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "JDK SPI vs Dubbo / Spring SPI",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**JDK `ServiceLoader` 缺点：**① 必须遍历所有实现并全量实例化，不能按 key 只加载某一个；② 非线程安全。\n**Dubbo / Spring SPI 改进：**配置文件写成 `key=实现类` 键值对，按需加载指定 key 并用 `ConcurrentHashMap` 缓存单例。",
+          "say": "自己写插件化框架时，也应该照着这个思路做按需懒加载 + 单例缓存。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个 Spring Boot 面试题。",
+          "items": [
+            {
+              "have": "SpringFactories",
+              "q": "Spring Boot 自动装配读取 `META-INF/spring.factories`（或 Boot 3 的 `.imports`）核心思想属于？",
+              "options": ["约定大于配置的 SPI 扩展加载机制", "AOP 动态代理", "JDBC 连接池"],
+              "answer": 0,
+              "why": "本质就是读取 jar 包里约定路径的配置文件，按条件筛选并注册配置类。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 什么是 SPI，它和 API 有什么区别；2) JDK ServiceLoader 的实现原理与局限性；3) JDBC 和 Spring Boot 分别是怎么利用 SPI 思想的。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "SPI 约定", "v": "接口方定标准，`META-INF/services/接口名` 配实现，实现解耦插拔。" },
+            { "k": "TCCL 破双亲", "v": "`ServiceLoader` 借助线程上下文类加载器让核心库加载外部 jar 实现。" },
+            { "k": "缓存单例", "v": "禁止每次请求重新 `ServiceLoader.load()`，应在启动/首次使用时按 Key 缓存。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

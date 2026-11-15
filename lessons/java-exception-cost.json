@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-exception-cost",
+  "course": "Java 工程语法与集合",
+  "title": "异常栈捕获代价：为什么不能用 try-catch 代替 if-else 控制业务流？",
+  "lead": "用异常代替返回 false 或错误码，表面代码少写了几个 if，可一旦并发上来，为什么 CPU 全烧在 Throwable.fillInStackTrace() 上？",
+  "minutes": 25,
+  "needs": ["知道 Checked vs Unchecked 异常", "知道 new Exception() 会采集调用栈"],
+  "after": [
+    "用实测耗时证明 fillInStackTrace() 爬栈是异常最大的性能杀手",
+    "对比普通异常、无栈异常（writableStackTrace=false）、静态预建异常与返回错误码的耗时差距",
+    "掌握「异常只用于真正异常路径，业务预期分支用错误码/Result」的工程规范"
+  ],
+  "terms": {
+    "fillInStackTrace()": "`Throwable` 构造器默认调用 native 方法逐帧回溯当前线程整条调用栈并生成 `StackTraceElement[]`，栈越深开销越大。",
+    "无栈异常": "通过 `super(msg, null, false, false)` 关闭 `writableStackTrace`，跳过爬栈，适合高频业务校验异常。",
+    "错误码 / Result 模式": "对参数校验失败、库存不足等高频预期分支直接返回 `false` / 状态枚举 / `Result.fail()`，零栈捕获、零跳转开销。"
+  },
+  "experiments": {
+    "exccost": {
+      "runner": "java",
+      "home": "lab.exccost",
+      "variants": [
+        { "id": "ThrowNewEveryFail", "code": "ThrowNewEveryFail.java", "label": "每次 new Exception 抛异常（爬栈）", "note": "每次失败都要调用 fillInStackTrace() 爬 8 层调用栈，耗时暴涨几十倍。" },
+        { "id": "StacklessException", "code": "StacklessException.java", "label": "无栈异常（writableStackTrace=false）", "note": "关闭栈帧采集，保留异常控制流语义但避开爬栈瓶颈。" },
+        { "id": "PrebuiltStaticException", "code": "PrebuiltStaticException.java", "label": "静态预建共享异常", "note": "复用静态常量异常，但栈信息固定在类加载点，排查困难。" },
+        { "id": "ReturnErrorCode", "code": "ReturnErrorCode.java", "label": "返回错误码（推荐）", "note": "普通方法返回 + 分支判断，几乎零开销且分支预测友好。" }
+      ],
+      "knob": { "label": "失败分支次数 N", "values": ["5000", "10000", "20000", "50000"], "default": "20000" },
+      "repeat": 20,
+      "metric": { "key": "handled", "expectKey": "expected", "label": "成功拦截处理次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "异常栈捕获代价",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "《阿里巴巴 Java 开发手册》明确写着「不要用异常控制业务流程」。今天拿真实压测数据说话：**同样处理 5 万次校验失败，抛异常和返回错误码到底差多少倍？**",
+          "say": "答案全藏在 `Throwable.<init>` 调的那个 native 方法里。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：Java 异常体系两问",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先过一遍异常基础。",
+          "items": [
+            {
+              "have": "受检 vs 非受检",
+              "q": "以下哪个类属于 Checked Exception（编译期强制 try-catch 或 throws）？",
+              "options": ["IOException / SQLException", "NullPointerException", "IllegalArgumentException"],
+              "answer": 0,
+              "why": "直接继承 `Exception`（非 `RuntimeException`）的是受检异常；`RuntimeException` 和 `Error` 是非受检异常。"
+            },
+            {
+              "have": "开销大头",
+              "q": "`try { ... } catch (Exception e)` 本身不抛异常时几乎没开销，真正慢的是哪一步？",
+              "options": ["new Exception() 时执行 fillInStackTrace() 爬栈", "try 块声明", "catch 关键字"],
+              "answer": 0,
+              "why": "没有抛出时 JVM 只是在字节码异常表里挂个区间；一旦 `new` 异常对象就会触发爬栈。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：ThrowNewEveryFail vs ReturnErrorCode",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "exccost",
+          "variants": ["ThrowNewEveryFail", "ReturnErrorCode"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：5 万次失败分支，new 异常比返回错误码慢多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "exccost",
+          "question": "在 8 层递归深度下执行 50000 次 `ThrowNewEveryFail` vs `ReturnErrorCode`，耗时对比大约是？",
+          "options": ["慢几十到上百倍（几十 ms vs 接近 0 ms）", "只慢 1.5 倍", "一样快"],
+          "answer": 0,
+          "why": "每次都要进 JVM C++ 层回溯 8 层栈帧并构造数组；而 `return -1` 只是寄存器传值。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种失败处理方式耗时实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "exccost",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：athrow 与 Exception table",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "exccost",
+          "variant": "ThrowNewEveryFail",
+          "explain": "`new IllegalArgumentException` 在构造器内部调用 `fillInStackTrace()` 收集栈帧，随后 `athrow` 指令中断正常指令流并查字节码 `Exception table` 跳进 `catch`。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：无栈异常与错误码",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "exccost",
+          "variants": ["StacklessException", "ReturnErrorCode"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：5 千 → 5 万次耗时曲线",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "exccost",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "异常使用分层原则",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**① 正常预期内的校验失败（如参数为空、库存不足、幂等拦截）用 `Result` / 错误码返回；② 需要跨多层直接中断（如统一全局异常处理）的高频业务异常可关掉 `writableStackTrace`；③ 真正的系统故障（DB 断开、IO 异常）必须保留完整栈帧方便排障。**",
+          "say": "另外注意：高频抛同一异常时 JIT 还可能触发 `-XX:+OmitStackTraceInFastThrow`，导致线上突然变成「无栈异常」！"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个线上坑。",
+          "items": [
+            {
+              "have": "FastThrow",
+              "q": "线上日志突然出现只有 `java.lang.NullPointerException` 一行却没有堆栈信息，最可能的原因是？",
+              "options": ["JIT 触发了 OmitStackTraceInFastThrow 优化，高并发重复抛同一个内置异常时省略了堆栈", "日志框架坏了", "JDK 版本太高"],
+              "answer": 0,
+              "why": "遇到这种情况，去翻更早几分钟刚启动时的日志，通常就能看到第一条带完整堆栈的原始报错。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) 为什么不能用异常做常规业务流程控制；2) 异常开销大主要大在哪里；3) Checked Exception 和 RuntimeException 的区别及工程选型。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "性能瓶颈", "v": "`new Exception()` 触发 `fillInStackTrace()` 爬栈，栈越深越慢。" },
+            { "k": "业务分流", "v": "可预期的业务校验失败走错误码/`Result`，别让 `try-catch` 替 `if`。" },
+            { "k": "无栈技巧", "v": "高频业务中断异常可重写 `fillInStackTrace()` 或传 `writableStackTrace=false`。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

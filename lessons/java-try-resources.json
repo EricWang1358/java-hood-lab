@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "java-try-resources",
+  "course": "Java 工程语法与集合",
+  "title": "try-with-resources 防泄漏与抑制异常：finally 怎么把主异常吞掉了？",
+  "lead": "用老式 try-finally 手动关流，结果 work() 抛了核心业务异常，finally 里的 close() 又抛了一个异常——外层 catch 竟然只看到 close() 的报错！",
+  "minutes": 25,
+  "needs": ["知道 AutoCloseable 接口", "知道 finally 块总会在方法返回前执行"],
+  "after": [
+    "说清老式 try-finally 在「异常后忘记关」和「close 覆盖主异常」上的双重缺陷",
+    "用字节码理解 try-with-resources 语法糖如何自动调用 addSuppressed() 保留全部异常现场",
+    "记住多资源声明时「先声明的后关闭（LIFO 逆序）」规则"
+  ],
+  "terms": {
+    "异常吞没 (Exception Masking)": "在 `try` 块已经抛出主异常后，`finally` 块里再抛出新异常，新异常会直接覆盖掉主异常，导致真正的根因彻底丢失。",
+    "抑制异常 (Suppressed Exception)": "`try-with-resources` 自动生成 `primary.addSuppressed(closeEx)`，既保住主异常不丢，又把关闭失败的异常挂在 `getSuppressed()` 数组里。",
+    "AutoCloseable": "任何实现 `AutoCloseable`（含 `Closeable`）的资源都可以放进 `try (...)` 圆括号里，退出作用域时由编译器保证自动关闭。"
+  },
+  "experiments": {
+    "tryres": {
+      "runner": "java",
+      "home": "lab.tryres",
+      "variants": [
+        { "id": "ForgetCloseLeak", "code": "ForgetCloseLeak.java", "label": "try 里顺手 close()（抛异常即泄漏）", "note": "r.work() 抛出异常直接跳过 r.close()，资源关闭数 0，连接池迅速耗尽。" },
+        { "id": "FinallyCloseSwallow", "code": "FinallyCloseSwallow.java", "label": "手写 try-finally（吞掉主异常）", "note": "虽然关闭了资源，但 close() 抛出的异常直接覆盖了 primary work fail，根因保留数 0。" },
+        { "id": "TryWithResourcesSafe", "code": "TryWithResourcesSafe.java", "label": "try-with-resources（保主异常+关资源）", "note": "资源 100% 关闭，主异常 100% 保留，且 close 异常完整挂进 getSuppressed()。" },
+        { "id": "MultiResourceOrder", "code": "MultiResourceOrder.java", "label": "多资源逆序关闭验证", "note": "先声明 r1 后声明 r2，退出时严格按 r2 -> r1（21）逆序关闭。" }
+      ],
+      "knob": { "label": "资源操作次数 N", "values": ["5000", "10000", "20000", "50000"], "default": "20000" },
+      "repeat": 20,
+      "metric": { "key": "closedOk", "expectKey": "expected", "label": "安全关闭且保留根因次数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "try-with-resources 与抑制异常",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "写文件流、JDBC Connection、Redis 连接时，为什么 JDK 7 之后强烈要求用 `try-with-resources` 取代手写 `try-finally`？今天一次看清：**不仅防泄漏，更防 `finally` 悄悄吞掉真正的主异常！**",
+          "say": "字节码会告诉你编译器在背后替你写了多少行严谨的胶水代码。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：资源关闭的三个细节",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先测一下对 try-with-resources 的了解。",
+          "items": [
+            {
+              "have": "接口要求",
+              "q": "一个自定义类要放进 `try (...)` 圆括号里自动关闭，必须实现哪个接口？",
+              "options": ["AutoCloseable（或 Closeable）", "Serializable", "Cloneable"],
+              "answer": 0,
+              "why": "`Closeable` 继承自 `AutoCloseable`，区别在于 `Closeable.close()` 只抛 `IOException`，而 `AutoCloseable.close()` 抛 `Exception`。"
+            },
+            {
+              "have": "关闭顺序",
+              "q": "`try (A a = new A(); B b = new B())` 退出时先关闭谁？",
+              "options": ["先关闭 b，再关闭 a（栈式逆序）", "先关闭 a，再关闭 b", "并行关闭"],
+              "answer": 0,
+              "why": "后申请的资源（如包装流 `BufferedReader`）往往依赖先申请的底层流（`FileReader`），必须逆序关闭。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：ForgetCloseLeak vs FinallyCloseSwallow",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "tryres",
+          "variants": ["ForgetCloseLeak", "FinallyCloseSwallow"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：FinallyCloseSwallow 抛了两次异常，catch 里能拿到主异常吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "tryres",
+          "question": "`FinallyCloseSwallow` 中 `work()` 抛 `primary work fail`，`finally` 里 `close()` 抛 `close fail`，外层 catch 能拿到 `primary work fail` 的次数是？",
+          "options": ["0 次（主异常被 finally 抛出的 close fail 彻底覆盖）", "20000 次", "10000 次"],
+          "answer": 0,
+          "why": "手写 `finally` 里一旦抛出异常，JVM 会直接丢弃 `try` 块正在向外传播的主异常！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种资源关闭方式实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "tryres",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：编译器自动插入的 addSuppressed",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "tryres",
+          "variant": "TryWithResourcesSafe",
+          "explain": "反编译 `TryWithResourcesSafe` 可以看到，`javac` 自动生成了嵌套 `try-catch`，在捕获 `close()` 异常后调用 `Throwable.addSuppressed(Throwable)` 并重新抛出主异常。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：try-with-resources 标准写法",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "tryres",
+          "variants": ["TryWithResourcesSafe", "MultiResourceOrder"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：性能几乎一致，安全性天壤之别",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "tryres",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "资源管理规范",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**所有实现了 `AutoCloseable` 的 IO 流、Socket、JDBC Connection/Statement/ResultSet、分布式锁/事务句柄，一律使用 `try-with-resources`**；如果自己封装底层资源，也实现 `AutoCloseable`。",
+          "say": "绝对不要在 `finally` 里直接 `return` 或无保护地抛异常，那会把 `try` 里的报错吞得一干二净。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个经典面试题。",
+          "items": [
+            {
+              "have": "finally return",
+              "q": "`try { return 1; } finally { return 2; }` 最终返回什么？",
+              "options": ["2（finally 里的 return 会覆盖 try 里的返回值甚至吞掉异常）", "1", "编译报错"],
+              "answer": 0,
+              "why": "阿里巴巴开发手册明确禁止在 `finally` 块中使用 `return`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) try-with-resources 的底层实现原理（编译期语法糖 + AutoCloseable）；2) 它相比手写 try-finally 解决了什么痛点（抑制异常 addSuppressed）；3) 多个资源的关闭顺序。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "语法糖本质", "v": "`try-with-resources` 编译后自动展开成嵌套 `try-finally` + `close()`。" },
+            { "k": "保住根因", "v": "关闭异常通过 `addSuppressed()` 挂载，绝不覆盖 `try` 块抛出的主异常。" },
+            { "k": "逆序关闭", "v": "多资源按声明的逆序关闭；禁止在 `finally` 里写 `return`。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

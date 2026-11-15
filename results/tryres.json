@@ -1,0 +1,1671 @@
+{
+ "id": "tryres",
+ "variants": {
+  "ForgetCloseLeak": {
+   "hash": "da4f39e1640ccb5f",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 8
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 6
+     }
+    ],
+    "10000": [
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 14
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 10
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 11
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 14
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 11
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 13
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 14
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 11
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 13
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 11
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 13
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 10
+     }
+    ],
+    "20000": [
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 21
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 19
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 22
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 20
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 20
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 18
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 19
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 19
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 20
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 21
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 20
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 21
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 20
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 21
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 19
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 26
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 19
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 19
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 21
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 20
+     }
+    ],
+    "50000": [
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 48
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 48
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 51
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 50
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 45
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 49
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 49
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 47
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 48
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 48
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 48
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 49
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 47
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 46
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 46
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 47
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 47
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 48
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 48
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 49
+     }
+    ]
+   },
+   "inside": "Compiled from \"ForgetCloseLeak.java\"\npublic class lab.tryres.ForgetCloseLeak {\n  public lab.tryres.ForgetCloseLeak();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     64\n      23: new           #19                 // class lab/tryres/ForgetCloseLeak$Resource\n      26: dup\n      27: invokespecial #21                 // Method lab/tryres/ForgetCloseLeak$Resource.\"<init>\":()V\n      30: astore        6\n      32: aload         6\n      34: invokevirtual #22                 // Method lab/tryres/ForgetCloseLeak$Resource.work:()V\n      37: aload         6\n      39: invokevirtual #25                 // Method lab/tryres/ForgetCloseLeak$Resource.close:()V\n      42: goto          47\n      45: astore        7\n      47: aload         6\n      49: getfield      #30                 // Field lab/tryres/ForgetCloseLeak$Resource.closed:Z\n      52: ifeq          58\n      55: iinc          4, 1\n      58: iinc          5, 1\n      61: goto          17\n      64: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      67: lload_2\n      68: lsub\n      69: ldc2_w        #34                 // long 1000000l\n      72: ldiv\n      73: lstore        5\n      75: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      78: iload         4\n      80: invokedynamic #40,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      85: invokevirtual #44                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      88: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      91: iload_1\n      92: invokedynamic #50,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      97: invokevirtual #44                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     100: getstatic     #36                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     103: lload         5\n     105: invokedynamic #51,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     110: invokevirtual #44                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     113: return\n    Exception table:\n       from    to  target type\n          32    42    45   Class java/lang/RuntimeException\n}"
+  },
+  "FinallyCloseSwallow": {
+   "hash": "fd938a6a666de424",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 13
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 13
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 16
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 11
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 11
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 11
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 11
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 13
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 13
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 13
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 11
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 12
+     },
+     {
+      "closedOk": 0,
+      "expected": 5000,
+      "ms": 15
+     }
+    ],
+    "10000": [
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 21
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 21
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 20
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 22
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 19
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 21
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 21
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 20
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 21
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 22
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 23
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 23
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 22
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 22
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 21
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 22
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 22
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 25
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 22
+     },
+     {
+      "closedOk": 0,
+      "expected": 10000,
+      "ms": 18
+     }
+    ],
+    "20000": [
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 42
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 36
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 38
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 38
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 38
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 40
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 41
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 39
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 40
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 40
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 41
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 39
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 39
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 39
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 41
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 37
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 38
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 36
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 37
+     },
+     {
+      "closedOk": 0,
+      "expected": 20000,
+      "ms": 41
+     }
+    ],
+    "50000": [
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 92
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 86
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 96
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 82
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 93
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 81
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 92
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 92
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 91
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 85
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 85
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 88
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 83
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 88
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 83
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 85
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 80
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 91
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 81
+     },
+     {
+      "closedOk": 0,
+      "expected": 50000,
+      "ms": 83
+     }
+    ]
+   },
+   "inside": "Compiled from \"FinallyCloseSwallow.java\"\npublic class lab.tryres.FinallyCloseSwallow {\n  public lab.tryres.FinallyCloseSwallow();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     90\n      23: new           #19                 // class lab/tryres/FinallyCloseSwallow$Resource\n      26: dup\n      27: invokespecial #21                 // Method lab/tryres/FinallyCloseSwallow$Resource.\"<init>\":()V\n      30: astore        6\n      32: aload         6\n      34: invokevirtual #22                 // Method lab/tryres/FinallyCloseSwallow$Resource.work:()V\n      37: aload         6\n      39: invokevirtual #25                 // Method lab/tryres/FinallyCloseSwallow$Resource.close:()V\n      42: goto          55\n      45: astore        7\n      47: aload         6\n      49: invokevirtual #25                 // Method lab/tryres/FinallyCloseSwallow$Resource.close:()V\n      52: aload         7\n      54: athrow\n      55: goto          84\n      58: astore        7\n      60: ldc           #30                 // String primary work fail\n      62: aload         7\n      64: invokevirtual #32                 // Method java/lang/RuntimeException.getMessage:()Ljava/lang/String;\n      67: invokevirtual #36                 // Method java/lang/String.equals:(Ljava/lang/Object;)Z\n      70: ifeq          84\n      73: aload         6\n      75: getfield      #42                 // Field lab/tryres/FinallyCloseSwallow$Resource.closed:Z\n      78: ifeq          84\n      81: iinc          4, 1\n      84: iinc          5, 1\n      87: goto          17\n      90: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      93: lload_2\n      94: lsub\n      95: ldc2_w        #46                 // long 1000000l\n      98: ldiv\n      99: lstore        5\n     101: getstatic     #48                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     104: iload         4\n     106: invokedynamic #52,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     111: invokevirtual #56                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     114: getstatic     #48                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     117: iload_1\n     118: invokedynamic #62,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     123: invokevirtual #56                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     126: getstatic     #48                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     129: lload         5\n     131: invokedynamic #63,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     136: invokevirtual #56                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     139: return\n    Exception table:\n       from    to  target type\n          32    37    45   any\n          45    47    45   any\n          32    55    58   Class java/lang/RuntimeException\n}"
+  },
+  "TryWithResourcesSafe": {
+   "hash": "3126750e14215774",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 17
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 17
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 18
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 19
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 15
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 15
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 15
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 15
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 17
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 18
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 16
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 19
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 18
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 16
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 18
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 17
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 16
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 17
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 16
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 20
+     }
+    ],
+    "10000": [
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 27
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 24
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 26
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 30
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 28
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 29
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 28
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 27
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 26
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 29
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 30
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 28
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 25
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 28
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 26
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 28
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 29
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 25
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 27
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 27
+     }
+    ],
+    "20000": [
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 49
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 53
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 53
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 49
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 49
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 50
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 49
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 48
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 52
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 48
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 50
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 48
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 49
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 53
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 48
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 51
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 49
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 50
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 48
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 52
+     }
+    ],
+    "50000": [
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 108
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 99
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 107
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 103
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 97
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 108
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 104
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 101
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 106
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 105
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 101
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 103
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 101
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 100
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 103
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 100
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 104
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 105
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 105
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 100
+     }
+    ]
+   },
+   "inside": "Compiled from \"TryWithResourcesSafe.java\"\npublic class lab.tryres.TryWithResourcesSafe {\n  public lab.tryres.TryWithResourcesSafe();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     124\n      23: aconst_null\n      24: astore        6\n      26: new           #19                 // class lab/tryres/TryWithResourcesSafe$Resource\n      29: dup\n      30: invokespecial #21                 // Method lab/tryres/TryWithResourcesSafe$Resource.\"<init>\":()V\n      33: astore        7\n      35: aload         7\n      37: astore        6\n      39: aload         7\n      41: invokevirtual #22                 // Method lab/tryres/TryWithResourcesSafe$Resource.work:()V\n      44: aload         7\n      46: invokevirtual #25                 // Method lab/tryres/TryWithResourcesSafe$Resource.close:()V\n      49: goto          74\n      52: astore        8\n      54: aload         7\n      56: invokevirtual #25                 // Method lab/tryres/TryWithResourcesSafe$Resource.close:()V\n      59: goto          71\n      62: astore        9\n      64: aload         8\n      66: aload         9\n      68: invokevirtual #30                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n      71: aload         8\n      73: athrow\n      74: goto          118\n      77: astore        7\n      79: ldc           #36                 // String primary work fail\n      81: aload         7\n      83: invokevirtual #38                 // Method java/lang/RuntimeException.getMessage:()Ljava/lang/String;\n      86: invokevirtual #42                 // Method java/lang/String.equals:(Ljava/lang/Object;)Z\n      89: ifeq          118\n      92: aload         7\n      94: invokevirtual #48                 // Method java/lang/RuntimeException.getSuppressed:()[Ljava/lang/Throwable;\n      97: arraylength\n      98: iconst_1\n      99: if_icmpne     118\n     102: aload         6\n     104: ifnull        118\n     107: aload         6\n     109: getfield      #52                 // Field lab/tryres/TryWithResourcesSafe$Resource.closed:Z\n     112: ifeq          118\n     115: iinc          4, 1\n     118: iinc          5, 1\n     121: goto          17\n     124: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     127: lload_2\n     128: lsub\n     129: ldc2_w        #56                 // long 1000000l\n     132: ldiv\n     133: lstore        5\n     135: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     138: iload         4\n     140: invokedynamic #62,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     145: invokevirtual #66                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     148: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     151: iload_1\n     152: invokedynamic #72,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     157: invokevirtual #66                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     160: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     163: lload         5\n     165: invokedynamic #73,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     170: invokevirtual #66                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     173: return\n    Exception table:\n       from    to  target type\n          35    44    52   Class java/lang/Throwable\n          54    59    62   Class java/lang/Throwable\n          26    74    77   Class java/lang/RuntimeException\n}"
+  },
+  "MultiResourceOrder": {
+   "hash": "ec22ff1cc2bd7a4e",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 3
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 4
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 6
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 3
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 4
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 4
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 4
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 5
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 4
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 7
+     },
+     {
+      "closedOk": 5000,
+      "expected": 5000,
+      "ms": 5
+     }
+    ],
+    "10000": [
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 5
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 5
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 5
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 4
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 5
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 9
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 8
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 6
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 4
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 7
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 4
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 5
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 5
+     },
+     {
+      "closedOk": 10000,
+      "expected": 10000,
+      "ms": 8
+     }
+    ],
+    "20000": [
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 12
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 13
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 11
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 12
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 9
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 6
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 8
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 7
+     },
+     {
+      "closedOk": 20000,
+      "expected": 20000,
+      "ms": 9
+     }
+    ],
+    "50000": [
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 16
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 14
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 14
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 14
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 14
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 17
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 14
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 15
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 18
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 16
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 19
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 12
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 14
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 15
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 15
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 14
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 15
+     },
+     {
+      "closedOk": 50000,
+      "expected": 50000,
+      "ms": 12
+     }
+    ]
+   },
+   "inside": "Compiled from \"MultiResourceOrder.java\"\npublic class lab.tryres.MultiResourceOrder {\n  public lab.tryres.MultiResourceOrder();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      10: lstore_2\n      11: iconst_0\n      12: istore        4\n      14: iconst_0\n      15: istore        5\n      17: iload         5\n      19: iload_1\n      20: if_icmpge     116\n      23: new           #19                 // class java/lang/StringBuilder\n      26: dup\n      27: iconst_2\n      28: invokespecial #21                 // Method java/lang/StringBuilder.\"<init>\":(I)V\n      31: astore        6\n      33: new           #24                 // class lab/tryres/MultiResourceOrder$Resource\n      36: dup\n      37: ldc           #26                 // String 1\n      39: aload         6\n      41: invokespecial #28                 // Method lab/tryres/MultiResourceOrder$Resource.\"<init>\":(Ljava/lang/String;Ljava/lang/StringBuilder;)V\n      44: astore        7\n      46: new           #24                 // class lab/tryres/MultiResourceOrder$Resource\n      49: dup\n      50: ldc           #31                 // String 2\n      52: aload         6\n      54: invokespecial #28                 // Method lab/tryres/MultiResourceOrder$Resource.\"<init>\":(Ljava/lang/String;Ljava/lang/StringBuilder;)V\n      57: astore        8\n      59: aload         8\n      61: invokevirtual #33                 // Method lab/tryres/MultiResourceOrder$Resource.close:()V\n      64: aload         7\n      66: invokevirtual #33                 // Method lab/tryres/MultiResourceOrder$Resource.close:()V\n      69: goto          94\n      72: astore        8\n      74: aload         7\n      76: invokevirtual #33                 // Method lab/tryres/MultiResourceOrder$Resource.close:()V\n      79: goto          91\n      82: astore        9\n      84: aload         8\n      86: aload         9\n      88: invokevirtual #38                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V\n      91: aload         8\n      93: athrow\n      94: ldc           #42                 // String 21\n      96: aload         6\n      98: invokevirtual #44                 // Method java/lang/StringBuilder.toString:()Ljava/lang/String;\n     101: invokevirtual #48                 // Method java/lang/String.equals:(Ljava/lang/Object;)Z\n     104: ifeq          110\n     107: iinc          4, 1\n     110: iinc          5, 1\n     113: goto          17\n     116: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     119: lload_2\n     120: lsub\n     121: ldc2_w        #54                 // long 1000000l\n     124: ldiv\n     125: lstore        5\n     127: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     130: iload         4\n     132: invokedynamic #60,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     137: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     140: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     143: iload_1\n     144: invokedynamic #70,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     149: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     152: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     155: lload         5\n     157: invokedynamic #71,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     162: invokevirtual #64                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     165: return\n    Exception table:\n       from    to  target type\n          46    64    72   Class java/lang/Throwable\n          74    79    82   Class java/lang/Throwable\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux",
+  "date": "2026-11-15"
+ }
+}
