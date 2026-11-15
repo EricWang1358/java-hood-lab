@@ -1,0 +1,272 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "tcp-timewait",
+  "course": "网络与操作系统",
+  "title": "压测刚跑几千次就 BindException？",
+  "lead": "服务端或客户端频繁主动断开连接时，为什么端口很快被 TIME_WAIT 占满报错？",
+  "minutes": 35,
+  "needs": ["知道 TCP 四次挥手", "知道 IP + 端口唯一标识一条连接", "见过 BindException"],
+  "after": [
+    "说出 TIME_WAIT 为什么必须存在以及持续 2MSL 的原因",
+    "分清主动关闭方才进 TIME_WAIT，避免踩到端口复用坑",
+    "掌握 SO_REUSEADDR、让客户端先断、长连接复用三种解法"
+  ],
+  "terms": {
+    "TIME_WAIT": "主动关闭 TCP 连接的一方在发完最后一个 ACK 后进入的等待状态，持续 2MSL（通常 60 秒）。",
+    "MSL": "Maximum Segment Lifetime：报文段在网络中允许存活的最长时间。",
+    "SO_REUSEADDR": "套接字选项：允许服务端在旧连接处于 TIME_WAIT 时重新绑定同一监听端口。",
+    "BindException": "端口被占用或处于不可复用状态时，绑定端口抛出的异常（Address already in use）。",
+    "主动关闭方": "先调用 close() 发送第一个 FIN 报文的那一端，只有这一端会进入 TIME_WAIT。"
+  },
+  "experiments": {
+    "timewait": {
+      "runner": "java",
+      "home": "lab.timewait",
+      "variants": [
+        { "id": "NoReuse", "code": "NoReuse.java", "label": "主动关+禁复用", "note": "服务端主动 close() 后立即在同一端口重启监听，且关闭 SO_REUSEADDR。" },
+        { "id": "ReuseAddr", "code": "ReuseAddr.java", "label": "开启 SO_REUSEADDR", "note": "同样服务端主动 close()，但开启 setReuseAddress(true) 允许重绑端口。" },
+        { "id": "ClientClose", "code": "ClientClose.java", "label": "让客户端先关", "note": "服务端等客户端先 close()，把 TIME_WAIT 留给客户端临时端口。" },
+        { "id": "LongConn", "code": "LongConn.java", "label": "长连接不频繁关", "note": "复用同一条连接完成全部轮次请求，根本不触发 TIME_WAIT。" }
+      ],
+      "knob": { "label": "重连轮数", "values": ["10", "30", "60", "120"], "default": "30" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "成功轮数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "压测刚跑几千次就 BindException？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天只弄明白一件事：**连接明明已经 `close()` 关掉了，为什么再绑定同一个端口还会报 `Address already in use`？**",
+          "say": "很多同学在本地压测或重启服务时都撞过 `BindException`。明明程序退出了、连接关了，端口怎么还占着？根源就是 `TIME_WAIT`。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：谁会进入 TIME_WAIT？",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先确认三个关于关闭连接的基本事实。",
+          "items": [
+            {
+              "have": "四次挥手",
+              "q": "一次正常四次挥手中，哪一方会进入 `TIME_WAIT` 状态？",
+              "options": ["被动关闭方", "主动先发 FIN 的一方", "双方都不会"],
+              "answer": 1,
+              "why": "谁先调用 `close()` 发第一个 `FIN`，谁在发完最后一个 `ACK` 后进入 `TIME_WAIT`。"
+            },
+            {
+              "have": "2MSL",
+              "q": "`TIME_WAIT` 默认等待 2MSL（Linux 下通常 60 秒）是为什么？",
+              "options": ["让对方重传可能丢失的最后一个 ACK，并等旧包在网络里消散", "故意拖慢程序", "为了省电"],
+              "answer": 0,
+              "why": "如果最后一个 ACK 丢了，对方会重传 FIN；同时 2MSL 确保老连接的迟到报文不会串进新连接。"
+            },
+            {
+              "have": "临时端口",
+              "q": "Linux 默认客户端可用临时端口范围大概多少个？",
+              "options": ["几百个", "约 28000 个（32768～60999）", "无限个"],
+              "answer": 1,
+              "why": "如果压测机每秒建 1000 个短连接并主动关闭，不到半分钟就会把近 3 万个临时端口占满。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先看一个退场留灯的场景",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": { "kind": "share", "actors": ["服务端(主动关)", "客户端"], "shared": { "name": "端口", "value": "TIME_WAIT" } },
+          "story": "服务端说完「再见」率先挂断并立刻把同一个端口重新挂牌营业；但刚才那通电话的尾音可能还在路上，内核强制原端口进入 60 秒冷静期（`TIME_WAIT`），不许立刻重绑。",
+          "say": "冷静期是为了保护下一通电话不被上一通的迷路报文污染。",
+          "map": [
+            { "scene": "率先挂断电话", "on": "actors", "tag": "主动 close()", "code": "`accepted.close()`", "say": "谁先 close 谁就背上 TIME_WAIT。" },
+            { "scene": "60 秒冷静期", "on": "shared", "tag": "TIME_WAIT", "code": "2MSL 占住四元组", "say": "在冷静期结束前，无 `SO_REUSEADDR` 时不能重绑同一端口。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "现场复现：只成功 1 次，后面全炸",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "timewait.NoReuse",
+          "say": "看 `NoReuse.java`：服务端先 `close()` 断开，紧接着关闭 `SO_REUSEADDR` 并尝试在同一个端口重新 `bind`。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：连续重绑 30 轮，能成功几轮？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`NoReuse` 连续在同一端口接受连接、主动关闭再重绑 30 次，最后 `ok` 是几？",
+          "options": ["30（全成功）", "约 15（一半）", "1（只有第一次成功）"],
+          "answer": 2,
+          "say": "第一次端口是干净的；一旦服务端主动关掉第一条连接，端口立刻进入 `TIME_WAIT`，第 2 次到第 30 次全部 `BindException`！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测撞车：ok = 1 / 30",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "timewait",
+          "show": ["NoReuse", "ReuseAddr"],
+          "knob": "30",
+          "hand": "NoReuse",
+          "focus": "ok",
+          "say": "运行 20 轮全部一致：`NoReuse` 永远卡死在 `ok=1`，开启 `SO_REUSEADDR` 后 30/30 全过。"
+        },
+        {
+          "t": "reveal",
+          "of": "p1",
+          "key": "主动关闭方进 TIME_WAIT，无 SO_REUSEADDR 无法重绑",
+          "say": "这就是为什么 Nginx、Tomcat、Netty 服务端监听前都会默认开启 `SO_REUSEADDR`。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：字节码里的 setReuseAddress(false)",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "timewait.NoReuse",
+          "within": "main(",
+          "from": "setReuseAddress",
+          "to": "bind",
+          "say": "在 `bind()` 之前调用 `setReuseAddress(false)`，内核检查到该端口上有处于 `TIME_WAIT` 的连接记录，直接拒绝绑定。",
+          "walk": [
+            { "focus": ["setReuseAddress"], "label": "关闭复用标志", "say": "把内核 socket 选项设为禁止复用。" },
+            { "focus": ["bind"], "label": "绑定触发异常", "say": "第 2 轮执行到 `bind` 时立刻抛出 `BindException`。" }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "三种破局之道：复用、甩锅、长连接",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "timewait.ClientClose",
+          "say": "除了服务端开 `SO_REUSEADDR`，`ClientClose` 让客户端先断（`TIME_WAIT` 转移到客户端临时端口），`LongConn` 则根本不频繁断连。"
+        },
+        {
+          "t": "experiment",
+          "lab": "timewait",
+          "show": ["NoReuse", "ReuseAddr", "ClientClose", "LongConn"],
+          "knob": "30",
+          "hand": "LongConn",
+          "focus": "ok",
+          "say": "三种改法全部稳稳 30/30，而长连接复用连建连耗时也一起省掉了。"
+        },
+        {
+          "t": "try",
+          "key": "timewait",
+          "say": "拉到 120 轮试试看，`NoReuse` 依然只成功第 1 次。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "生产环境怎么治 TIME_WAIT 过多？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "区分服务端重启场景与客户端/网关压测场景。",
+          "options": [
+            { "name": "SO_REUSEADDR", "solves": "服务端重启时快速重绑监听端口", "cost": "耗时 {ms:timewait.ReuseAddr} ms", "when": "所有服务端监听 Socket 必开", "say": "Java/Netty 服务端默认就该开启它。" },
+            { "name": "长连接/连接池", "solves": "从根源消灭海量短连接与 TIME_WAIT", "cost": "耗时 {ms:timewait.LongConn} ms", "when": "微服务调用、Nginx 到后端上游", "say": "把 Nginx upstream 配上 keepalive，比调内核参数靠谱一百倍。" }
+          ]
+        },
+        {
+          "t": "callout",
+          "tone": "warn",
+          "title": "别乱改 tcp_tw_recycle",
+          "md": "Linux 4.12+ 已彻底移除 `tcp_tw_recycle`：在 NAT 环境下开启它会导致同出口 IP 的不同手机用户连接被直接丢包。真要治本，优先用**长连接池**。",
+          "say": "面试千万别背「开 tcp_tw_recycle」，那是过时且在 NAT 下会出线上事故的坑。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记住这个状态名",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "TIME_WAIT 与 2MSL",
+          "alias": "主动关闭方等待态",
+          "oneLine": "主动关闭方发完最后 ACK 后等待 2MSL，以防 ACK 丢失重传和旧包串台；治本靠长连接，服务端靠 SO_REUSEADDR。",
+          "asked": "线上出现大量 TIME_WAIT 怎么办？为什么要有 TIME_WAIT？",
+          "say": "答清两点原因（防 ACK 丢 + 消散迷路旧包）和两招治理（长连接池 + SO_REUSEADDR）。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂小测",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "某网关服务器向上游发起大量短连接请求并由网关主动断开，导致网关本地端口耗尽。最根本的解法是？",
+          "options": [
+            { "text": "把网关到上游改成 HTTP Keep-Alive 长连接池", "ok": true, "why": "正确！消除频繁建连断连，TIME_WAIT 自然消失。" },
+            { "text": "开启已废弃的 tcp_tw_recycle", "ok": false, "why": "Linux 4.12+ 已移除，NAT 下会丢包。" },
+            { "text": "在服务端关闭 SO_REUSEADDR", "ok": false, "why": "关闭只会让重绑更失败。" }
+          ],
+          "say": "选出生产环境最稳的治本方案。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲：TIME_WAIT 全解析",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "面试官问：TIME_WAIT 是什么？为什么需要它？线上太多怎么处理？",
+          "points": [
+            "谁产生：主动调用 close() 先发 FIN 的一方在发完最后一个 ACK 后进入，持续 2MSL",
+            "为什么：一是为了保证对方没收到最后一个 ACK 重传 FIN 时能重发；二是让网络里残留旧包自然消散",
+            "怎么治：服务端开 SO_REUSEADDR 允许重绑；客户端/网关把短连接改为长连接池才是治本"
+          ],
+          "model": "TIME_WAIT 出现在主动关闭连接的一方，发完最后一个 ACK 后会停留 2MSL。它有两个作用：一是万一最后一个 ACK 丢了，被动方重传 FIN 时还能补回 ACK；二是等旧连接的迟到报文在网络里彻底过期，避免污染复用同一四元组的新连接。如果线上压测或网关出现大量 TIME_WAIT 占满端口，服务端监听要开 SO_REUSEADDR，而最根本的解法是把短连接改成连接池复用长连接，绝不盲目去开早已废弃的 tcp_tw_recycle。",
+          "say": "开口讲一遍，把 2MSL 的两个作用和治本方案讲顺。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "say": "收好这三张卡，下次再见 BindException 一眼定位。",
+          "items": [
+            { "front": "谁进 TIME_WAIT？", "back": "永远是主动先发 FIN 的关闭方，等待 2MSL（约 60 秒）。" },
+            { "front": "为什么不能省掉 2MSL？", "back": "防最后一个 ACK 丢失重传 FIN + 等迷路旧包消散不串新连接。" },
+            { "front": "工程治理两板斧？", "back": "服务端监听开 SO_REUSEADDR；高频调用上长连接池消灭短连接。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
