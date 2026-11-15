@@ -1,0 +1,321 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "index-like-or",
+  "course": "MySQL 索引、事务与锁",
+  "title": "LIKE '%abc' 和 OR 没加索引，为啥全表扫？",
+  "lead": "LIKE 'abc%' 能走索引，加了个前导百分号 LIKE '%abc' 就废了；WHERE a=1 OR b=2 只要 b 没索引，连 a 的索引也一起拖下水！",
+  "minutes": 35,
+  "needs": [
+    "知道 B+ 树按字典序排序"
+  ],
+  "after": [
+    "讲清为什么 LIKE 'prefix%' 能走索引而 '%suffix' 不行",
+    "解释 OR 两边只要有一边没索引就会退化全表扫",
+    "用 UNION ALL 和倒序索引/覆盖索引破局"
+  ],
+  "terms": {
+    "前导通配符": "`LIKE '%abc'`：开头不确定，B+ 树无法按字典序前缀定位。",
+    "OR 短路退化": "`WHERE a=1 OR b=2` 若 `b` 无索引，扫 `a` 的索引还得全表扫一次 `b`，优化器干脆直接一次全表扫。",
+    "UNION ALL": "把 `OR` 拆成两条独立 `SELECT` 再合并结果，每条都能各自走索引。"
+  },
+  "experiments": {
+    "likeor": {
+      "runner": "java",
+      "home": "lab.likeor",
+      "variants": [
+        {
+          "id": "LeadingWildcard",
+          "label": "LIKE '%999'",
+          "note": "前导通配符无法定位前缀，全扫 10 万行。"
+        },
+        {
+          "id": "OrUnindexed",
+          "label": "a=1 OR b=2 (b无索引)",
+          "note": "b 没索引把整条 SQL 拖成全表扫。"
+        },
+        {
+          "id": "PrefixLike",
+          "label": "LIKE 'ORD_0050%'",
+          "note": "前缀固定，B+ 树直接范围定位 100 行！"
+        },
+        {
+          "id": "UnionAllSplit",
+          "label": "UNION ALL 拆分",
+          "note": "拆成两个各自走索引的查询，100 行搞定。"
+        }
+      ],
+      "knob": {
+        "label": "表总行数",
+        "values": [
+          "10000",
+          "50000",
+          "100000",
+          "200000"
+        ],
+        "default": "100000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "scanned",
+        "expectKey": "expected",
+        "label": "扫描行数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "LIKE '%abc' 和 OR 没加索引，为啥全表扫？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "模糊查询 `LIKE` 和条件组合 `OR` 是业务代码里高频出现的两个写法，也是慢 SQL 榜单上的常客。",
+          "say": "今天我们把它们放在一起实测，看清楚到底什么情况下会失效、什么情况下其实能救。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "同样是 LIKE 和 OR，扫描 10 万行还是 100 行？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "只因为 `%` 放在前面，或者 `OR` 的另一半忘了建索引，扫描行数暴涨 **1000 倍**。",
+          "say": "看 `LeadingWildcard` 和 `OrUnindexed`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 LeadingWildcard 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "likeor.LeadingWildcard",
+          "say": "前导通配符让字典序失效；`OR` 只要有一边没索引，引擎就得全表扫那一边，顺便把另一边也一起查了更划算。",
+          "walk": [
+            {
+              "focus": [
+                "codes[i].endsWith(\"999\")"
+              ],
+              "say": "后缀匹配在正序 B+ 树里散落各处，只能全扫。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "表有 `idx_a`，`b` 没有索引。执行 `SELECT * FROM t WHERE a = 1 OR b = 2`，`EXPLAIN` 的 `type` 会是？",
+          "options": [
+            "ref",
+            "range",
+            "ALL（全表扫描）"
+          ],
+          "answer": 2,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "likeor",
+          "show": [
+            "LeadingWildcard"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "`LeadingWildcard` 和 `OrUnindexed` 都老老实实扫了 10 万行！"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "likeor.LeadingWildcard",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "注意一个常见误区：并不是 `OR` 一定会让索引失效！如果 `a` 和 `b` **都有索引**，MySQL 可以触发 `index_merge`（各自走索引再合并，或者改写 `UNION ALL`）；只有一边没索引时才全军覆没。",
+          "walk": [
+            {
+              "focus": [
+                "if (colA[i] == 1 || colB[i] == 2)"
+              ],
+              "say": "只要 `b` 没索引，就绕不开全表扫。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "likeor",
+          "show": [
+            "LeadingWildcard",
+            "OrUnindexed",
+            "PrefixLike",
+            "UnionAllSplit"
+          ],
+          "select": "PrefixLike",
+          "say": "前缀固定用 `LIKE 'abc%'`；必须模糊查中间用覆盖索引（至少扫索引树代替扫全表）或上 ES 全文检索；`OR` 给两边都加索引或改 `UNION ALL`。"
+        },
+        {
+          "t": "chart",
+          "of": "likeor",
+          "say": "`PrefixLike` 和 `UnionAllSplit` 始终稳稳贴在 100 行，不受表变大影响。",
+          "walk": [
+            {
+              "focus": [
+                "LeadingWildcard",
+                "PrefixLike"
+              ],
+              "say": "能用 `IN` 代替同列 `OR`，能用 `UNION ALL` 代替跨列 `OR`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "面对模糊搜索和 `OR`，按场景选最轻量的解法。",
+          "options": [
+            {
+              "name": "LIKE 'prefix%'",
+              "solves": "前缀确定，直接 B+ 树 range 扫描",
+              "cost": "只扫命中区间：{ms:likeor.PrefixLike} ms",
+              "when": "订单号前缀、姓氏搜索、时间前缀",
+              "say": "最稳妥。"
+            },
+            {
+              "name": "UNION ALL 拆分",
+              "solves": "跨列 OR 各自走独立索引",
+              "cost": "仅扫两分支命中行：{ms:likeor.UnionAllSplit} ms",
+              "when": "两列都有索引但优化器没选 index_merge 时",
+              "say": "注意用 UNION ALL（若无交集）比 UNION 省去重排序。"
+            },
+            {
+              "name": "覆盖索引 / ES",
+              "solves": "必须 `%keyword%` 模糊搜时的兜底",
+              "cost": "避免全表回表或走倒排索引",
+              "when": "后台商品/用户关键词模糊搜索",
+              "say": "千万级文本模糊搜直接上 Elasticsearch。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "关于 `LIKE` 和 `OR` 的索引使用，下面哪句话是**准确**的？",
+          "options": [
+            {
+              "text": "`WHERE a=1 OR b=2` 只要 `a` 和 `b` 都有独立索引，就有机会走 `index_merge` 索引合并；只有一边没索引才全表扫",
+              "ok": true,
+              "why": "纠正「OR 必失效」的刻板印象！"
+            },
+            {
+              "text": "只要 SQL 里出现 `OR`，MySQL 绝对无法使用任何索引",
+              "ok": false,
+              "why": "同列 `a=1 OR a=2` 和双索引列都有机会走索引。"
+            },
+            {
+              "text": "`LIKE '%abc%'` 只要给该列建了普通 B+ 树索引就能直接二分定位",
+              "ok": false,
+              "why": "前导 `%` 破坏了前缀有序性，无法二分定位。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "LIKE 通配符与 OR 失效",
+          "alias": "Leading Wildcard & OR Degradation",
+          "oneLine": "`LIKE '%x'` 破坏字典序前缀；`OR` ==只要有一侧无索引就会把整条查询拖成全表扫描==。",
+          "asked": [
+            "LIKE '%abc' 为什么不走索引？必须这样查怎么优化？",
+            "OR 一定会让索引失效吗？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "LIKE '%abc' 和 OR 在什么情况下会让索引失效？有什么优化手段？",
+          "points": [
+            "LIKE '%abc' 开头不确定，无法利用 B+ 树前缀有序性二分",
+            "优化：改前缀匹配、倒序索引（后缀）、覆盖索引（缩小扫描体积）或上 ES",
+            "OR 并非必失效：两边都有索引可走 index_merge 或改 UNION ALL；只要一边没索引就退化全表扫"
+          ],
+          "model": "LIKE '%abc' 失效是因为 B+ 树按字符串从左到右的字典序排列，开头是通配符就失去了有序锚点，只能全扫。如果业务必须模糊匹配，后缀匹配可以倒序存储建前缀索引，任意位置模糊可以只查索引列走覆盖索引减小扫描体积，或者直接上 Elasticsearch。至于 OR，并不是一用就失效：如果 OR 两边的列都有索引，MySQL 可以走 index_merge 索引合并或手动改写成 UNION ALL；只有当其中一侧没有索引时，引擎为了避免扫两次干脆直接全表扫描。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "LIKE '%abc' 怎么优化？",
+              "a": "后缀用倒序+前缀索引；通用模糊尽量用覆盖索引或上 ES。"
+            },
+            {
+              "q": "OR 什么时候会失效？",
+              "a": "OR 的任意一侧列没有索引时，整条 SQL 退化为全表扫描。"
+            },
+            {
+              "q": "OR 两边都有索引怎么写更快？",
+              "a": "可用 index_merge，或显式拆成两条 SELECT 用 UNION ALL 合并。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}

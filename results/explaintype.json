@@ -1,0 +1,951 @@
+{
+ "id": "explaintype",
+ "variants": {
+  "TypeAll": {
+   "hash": "29ce74dc4be54d48",
+   "repeat": 10,
+   "runs": {
+    "10000": [
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 6
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 3
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 7
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 6
+     }
+    ],
+    "100000": [
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 4
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 5
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 3
+     }
+    ],
+    "200000": [
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 3
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 3
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 3
+     }
+    ]
+   },
+   "inside": "Compiled from \"TypeAll.java\"\npublic class lab.explaintype.TypeAll {\n  public lab.explaintype.TypeAll();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     28\n      18: aload_2\n      19: iload_3\n      20: iload_3\n      21: iastore\n      22: iinc          3, 1\n      25: goto          13\n      28: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      31: lstore_3\n      32: iconst_0\n      33: istore        5\n      35: iconst_0\n      36: istore        6\n      38: iconst_0\n      39: istore        7\n      41: iload         7\n      43: iload_1\n      44: if_icmpge     79\n      47: iinc          5, 1\n      50: aload_2\n      51: iload         7\n      53: iaload\n      54: sipush        500\n      57: if_icmplt     73\n      60: aload_2\n      61: iload         7\n      63: iaload\n      64: sipush        510\n      67: if_icmpge     73\n      70: iinc          6, 1\n      73: iinc          7, 1\n      76: goto          41\n      79: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      82: lload_3\n      83: lsub\n      84: ldc2_w        #19                 // long 1000000l\n      87: ldiv\n      88: lstore        7\n      90: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      93: iload         5\n      95: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     100: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     103: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     106: ldc           #35                 // String expected=10\n     108: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     111: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     114: iload         6\n     116: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     121: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     124: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     127: lload         7\n     129: invokedynamic #38,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     134: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     137: return\n}"
+  },
+  "TypeIndex": {
+   "hash": "b14e7a6fed4d87c2",
+   "repeat": 10,
+   "runs": {
+    "10000": [
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 8
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 3
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 5
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 3
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 3
+     },
+     {
+      "scanned": 50000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 3
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 3
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 100000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 4
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 4
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 200000,
+      "expected": 10,
+      "matched": 10,
+      "ms": 7
+     }
+    ]
+   },
+   "inside": "Compiled from \"TypeIndex.java\"\npublic class lab.explaintype.TypeIndex {\n  public lab.explaintype.TypeIndex();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     28\n      18: aload_2\n      19: iload_3\n      20: iload_3\n      21: iastore\n      22: iinc          3, 1\n      25: goto          13\n      28: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      31: lstore_3\n      32: iconst_0\n      33: istore        5\n      35: iconst_0\n      36: istore        6\n      38: iconst_0\n      39: istore        7\n      41: iload         7\n      43: iload_1\n      44: if_icmpge     79\n      47: iinc          5, 1\n      50: aload_2\n      51: iload         7\n      53: iaload\n      54: sipush        500\n      57: if_icmplt     73\n      60: aload_2\n      61: iload         7\n      63: iaload\n      64: sipush        510\n      67: if_icmpge     73\n      70: iinc          6, 1\n      73: iinc          7, 1\n      76: goto          41\n      79: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      82: lload_3\n      83: lsub\n      84: ldc2_w        #19                 // long 1000000l\n      87: ldiv\n      88: lstore        7\n      90: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      93: iload         5\n      95: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     100: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     103: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     106: ldc           #35                 // String expected=10\n     108: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     111: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     114: iload         6\n     116: invokedynamic #37,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     121: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     124: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     127: lload         7\n     129: invokedynamic #38,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     134: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     137: return\n}"
+  },
+  "TypeRange": {
+   "hash": "3aa585210e8dac45",
+   "repeat": 10,
+   "runs": {
+    "10000": [
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 6
+     }
+    ],
+    "100000": [
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"TypeRange.java\"\npublic class lab.explaintype.TypeRange {\n  public lab.explaintype.TypeRange();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     28\n      18: aload_2\n      19: iload_3\n      20: iload_3\n      21: iastore\n      22: iinc          3, 1\n      25: goto          13\n      28: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      31: lstore_3\n      32: aload_2\n      33: sipush        500\n      36: invokestatic  #19                 // Method java/util/Arrays.binarySearch:([II)I\n      39: istore        5\n      41: iconst_0\n      42: istore        6\n      44: iload         5\n      46: istore        7\n      48: iload         7\n      50: iload_1\n      51: if_icmpge     73\n      54: aload_2\n      55: iload         7\n      57: iaload\n      58: sipush        510\n      61: if_icmpge     73\n      64: iinc          6, 1\n      67: iinc          7, 1\n      70: goto          48\n      73: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      76: lload_3\n      77: lsub\n      78: ldc2_w        #25                 // long 1000000l\n      81: ldiv\n      82: lstore        7\n      84: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      87: iload         6\n      89: invokedynamic #31,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      94: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      97: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     100: ldc           #41                 // String expected=10\n     102: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     105: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     108: lload         7\n     110: invokedynamic #43,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     115: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     118: return\n}"
+  },
+  "TypeRef": {
+   "hash": "cbb3ade7b269fadd",
+   "repeat": 10,
+   "runs": {
+    "10000": [
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 1
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "50000": [
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "100000": [
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 2
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ],
+    "200000": [
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     },
+     {
+      "scanned": 10,
+      "expected": 10,
+      "ms": 0
+     }
+    ]
+   },
+   "inside": "Compiled from \"TypeRef.java\"\npublic class lab.explaintype.TypeRef {\n  public lab.explaintype.TypeRef();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     31\n      18: aload_2\n      19: iload_3\n      20: iload_3\n      21: bipush        10\n      23: idiv\n      24: iastore\n      25: iinc          3, 1\n      28: goto          13\n      31: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      34: lstore_3\n      35: aload_2\n      36: bipush        50\n      38: invokestatic  #19                 // Method java/util/Arrays.binarySearch:([II)I\n      41: istore        5\n      43: iconst_0\n      44: istore        6\n      46: iload         5\n      48: istore        7\n      50: iload         7\n      52: iflt          73\n      55: aload_2\n      56: iload         7\n      58: iaload\n      59: bipush        50\n      61: if_icmpne     73\n      64: iinc          6, 1\n      67: iinc          7, -1\n      70: goto          50\n      73: iload         5\n      75: iconst_1\n      76: iadd\n      77: istore        8\n      79: iload         8\n      81: iload_1\n      82: if_icmpge     103\n      85: aload_2\n      86: iload         8\n      88: iaload\n      89: bipush        50\n      91: if_icmpne     103\n      94: iinc          6, 1\n      97: iinc          8, 1\n     100: goto          79\n     103: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     106: lload_3\n     107: lsub\n     108: ldc2_w        #25                 // long 1000000l\n     111: ldiv\n     112: lstore        9\n     114: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     117: iload         6\n     119: invokedynamic #31,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     124: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     127: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     130: ldc           #41                 // String expected=10\n     132: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     135: getstatic     #27                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     138: lload         9\n     140: invokedynamic #43,  0             // InvokeDynamic #1:makeConcatWithConstants:(J)Ljava/lang/String;\n     145: invokevirtual #35                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     148: return\n}"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

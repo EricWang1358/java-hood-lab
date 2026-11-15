@@ -1,0 +1,313 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "index-func-implicit",
+  "course": "MySQL 索引、事务与锁",
+  "title": "索引列套了个函数或隐式转换，索引怎么直接哑火？",
+  "lead": "明明给 phone 和 created_at 建了索引，结果 WHERE YEAR(created_at)=2026 和 WHERE phone=138... 全都退化成全表扫描！",
+  "minutes": 35,
+  "needs": [
+    "知道 B+ 树按原值排序"
+  ],
+  "after": [
+    "说出「索引列做函数/运算/隐式类型转换」导致索引失效的根本原因",
+    "会用范围改写替代 YEAR()/DATE() 等日期函数",
+    "避开 VARCHAR 列传数字导致的隐式 CAST 坑"
+  ],
+  "terms": {
+    "索引列计算": "在索引字段上套函数（YEAR(col)）或加减乘除（id+1=100），破坏了原值在 B+ 树里的顺序。",
+    "隐式类型转换": "字符串列 `phone` 传了整数 `138...`，MySQL 会自动把字符串转成数字 `CAST(phone AS DOUBLE)`，等价于对索引列套函数！"
+  },
+  "experiments": {
+    "idxfunc": {
+      "runner": "java",
+      "home": "lab.idxfunc",
+      "variants": [
+        {
+          "id": "FuncOnColumn",
+          "label": "YEAR(created_at)=2026",
+          "note": "索引列套函数，B+ 树无法定位，退化全表扫 10 万行。"
+        },
+        {
+          "id": "ImplicitCast",
+          "label": "phone=138...(隐式转换)",
+          "note": "字符串列传数字，等价 CAST(phone AS DOUBLE)，全表扫！"
+        },
+        {
+          "id": "ExprOnColumn",
+          "label": "id + 1 = 100",
+          "note": "索引列做算术运算，同样无法二分。"
+        },
+        {
+          "id": "RangeRewrite",
+          "label": "范围改写(索引列干净)",
+          "note": "created_at >= '2026-01-01' AND < '2027-01-01'，直接二分 50 行！"
+        }
+      ],
+      "knob": {
+        "label": "表总行数",
+        "values": [
+          "10000",
+          "50000",
+          "100000",
+          "200000"
+        ],
+        "default": "100000"
+      },
+      "repeat": 10,
+      "metric": {
+        "key": "scanned",
+        "expectKey": "expected",
+        "label": "扫描行数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "索引列套了个函数或隐式转换，索引怎么直接哑火？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "索引失效 8 大现场里，最冤枉的就是这一类：索引明明建好了，就因为索引列左边多写了个 `YEAR()`、多写了个 `+ 1`、或者少打了两个单引号，索引瞬间全废。",
+          "say": "记住一句话：**永远保持索引列在比较符号左边干干净净，不要对它做任何加工**。"
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "少写一对单引号，扫描行数从 50 变成 10 万？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "`phone` 是 `VARCHAR(20)` 且有索引。写 `WHERE phone = 13800000050`（没加引号）会发生什么？",
+          "say": "看看 `FuncOnColumn` 和 `ImplicitCast`。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "看看 FuncOnColumn 的执行逻辑",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "idxfunc.FuncOnColumn",
+          "say": "因为要把每一行的 `phone` 都拿出来 `Long.parseLong` 转成数字再比较，B+ 树上按字典序排好的字符串索引完全派不上用场。",
+          "walk": [
+            {
+              "focus": [
+                "Long.parseLong(phones[i])"
+              ],
+              "say": "逐行转换类型，只能全表扫！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜一猜",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`phone` 是 `VARCHAR` 且有索引，执行 `WHERE phone = 13800000050`（数字）会走索引吗？",
+          "options": [
+            "会，MySQL 会自动把数字转成字符串",
+            "不会，MySQL 把字符串列转成数字（CAST），触发索引失效"
+          ],
+          "answer": 1,
+          "say": "先根据直觉下注，再看真实跑出来的结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测看看现场结果",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "idxfunc",
+          "show": [
+            "FuncOnColumn"
+          ],
+          "knob": false,
+          "hand": false,
+          "say": "三个错误写法全扫了 10 万行！只有保持索引列干净的 `RangeRewrite` 只扫 50 行。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：底层为什么会这样？",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "idxfunc.FuncOnColumn",
+          "within": "static void main",
+          "from": "0:",
+          "to": "return",
+          "say": "B+ 树里存的是原始列值的大小顺序（且字符串 `'138'` 和数字 `138` 排序规则不同，比如 `'0138'` 和 `'138'` 转成数字一样，所以 MySQL 只能把列转数字而不是把数字转串！）。",
+          "walk": [
+            {
+              "focus": [
+                "Long.parseLong"
+              ],
+              "say": "函数和隐式转换等价，都在索引列上动了手脚。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "对照四种方案实测",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "idxfunc",
+          "show": [
+            "FuncOnColumn",
+            "ImplicitCast",
+            "ExprOnColumn",
+            "RangeRewrite"
+          ],
+          "select": "RangeRewrite",
+          "say": "把函数/运算挪到等号右边，或者把日期函数改写成闭开区间 `>=` 和 `<`，并严格保证参数类型与列类型一致！"
+        },
+        {
+          "t": "chart",
+          "of": "idxfunc",
+          "say": "干净索引列始终贴地 50 行；任何左值加工都随表规模线性飙升。",
+          "walk": [
+            {
+              "focus": [
+                "FuncOnColumn",
+                "RangeRewrite"
+              ],
+              "say": "调优口诀：计算挪右边，类型要对齐。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程上怎么选？",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "如果真的有按函数查询的刚需（比如按某月统计），MySQL 8.0 可以建**函数索引**，或者冗余一个生成列加索引。",
+          "options": [
+            {
+              "name": "范围改写 (RangeRewrite)",
+              "solves": "保持索引列原样，B+ 树直接二分",
+              "cost": "仅扫命中行：{ms:idxfunc.RangeRewrite} ms",
+              "when": "日期过滤、数值偏移（id = 100 - 1）",
+              "say": "把 `YEAR(dt)=2026` 改成 `dt >= '2026-01-01' AND dt < '2027-01-01'`。"
+            },
+            {
+              "name": "类型严格对齐",
+              "solves": "杜绝隐式 CAST",
+              "cost": "0 额外扫描",
+              "when": "VARCHAR 列必须传字符串 `'138...'`",
+              "say": "Java 里别把 Long 传给 String 列对应的 MyBatis 参数！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "随堂检验",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "要查询 2026 年创建的所有订单（`created_at` 有索引），下面哪种写法能走索引？",
+          "options": [
+            {
+              "text": "`WHERE created_at >= '2026-01-01 00:00:00' AND created_at < '2027-01-01 00:00:00'`",
+              "ok": true,
+              "why": "索引列 `created_at` 没有任何函数包裹，完美走 `type=range`！"
+            },
+            {
+              "text": "`WHERE DATE_FORMAT(created_at, '%Y') = '2026'`",
+              "ok": false,
+              "why": "对索引列用了 `DATE_FORMAT` 函数，索引失效。"
+            },
+            {
+              "text": "`WHERE YEAR(created_at) = 2026`",
+              "ok": false,
+              "why": "对索引列用了 `YEAR` 函数，索引失效。"
+            }
+          ],
+          "say": "选出最符合 InnoDB 底层机制的一项。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "给它起个名字",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "函数与隐式转换失效",
+          "alias": "Non-SARGable Predicates",
+          "oneLine": "对索引列套函数、做算术运算或触发隐式类型转换，都会==破坏 B+ 树有序性导致全表扫描==。",
+          "asked": [
+            "哪些情况会导致索引失效？",
+            "为什么 VARCHAR 字段传数字会索引失效，反之（INT 传字符串）会吗？"
+          ],
+          "say": "把核心术语和面试高频问法对齐。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "两分钟开口讲清",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "为什么对索引列用函数或隐式类型转换会让索引失效？怎么改写？",
+          "points": [
+            "B+ 树按列原始值排序，对列套函数或运算后不再有序，无法二分",
+            "VARCHAR 列传数字，MySQL 会把列 CAST 成数字（相当于套函数），索引失效",
+            "反过来 INT 列传字符串 '123'，MySQL 会把右边字符串转数字，列本身干净，仍能走索引",
+            "改写原则：运算移到右边，日期函数改成 >= AND < 范围查询"
+          ],
+          "model": "B+ 树索引是按照列的原始值排好序的。如果在 WHERE 条件里对索引列套用函数（如 YEAR(created_at)）或做运算（id+1=100），引擎无法用原值的顺序去二分定位，只能全表扫。隐式类型转换同理：在 MySQL 里字符串和数字比较时会把字符串转成数字，所以 VARCHAR 列传数字等价于对索引列套 CAST 函数，导致索引失效；反过来 INT 列传字符串时转的是右边的常量，索引依然有效。优化方法就是把计算挪到等号右边，日期函数改写成 >= 和 < 范围查询。",
+          "say": "对着要点自己脱稿顺一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "VARCHAR 列传数字为什么失效？",
+              "a": "MySQL 会转成 CAST(col AS DOUBLE)，等价于在索引列上套函数。"
+            },
+            {
+              "q": "INT 列传字符串 '123' 会失效吗？",
+              "a": "不会！因为转换的是右边的常量 '123'，左边的 INT 索引列是干净的。"
+            },
+            {
+              "q": "YEAR(dt) = 2026 怎么改写？",
+              "a": "dt >= '2026-01-01' AND dt < '2027-01-01'。"
+            }
+          ],
+          "say": "收好这三张复习卡，继续下一课。"
+        }
+      ]
+    }
+  ]
+}
