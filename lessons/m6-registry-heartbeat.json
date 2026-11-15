@@ -1,0 +1,570 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "m6-registry-heartbeat",
+  "course": "Java 后端面试核心 · 模块 6（Redis/MQ/微服务）",
+  "title": "注册中心心跳全超时，为什么 Eureka 死保旧列表而 Zookeeper 直接踢光？",
+  "lead": "微服务注册中心不是简单的心跳打卡表：网络抖动时如果不管三七二十一全踢掉，健康节点也会团灭；如果连本地快照都不缓存，注册中心一挂全网跟着瘫痪。",
+  "minutes": 35,
+  "needs": [
+    "了解服务注册与发现的基本流程",
+    "知道 CAP 定理中 AP 与 CP 的基本区别"
+  ],
+  "after": [
+    "对比硬编码静态列表、激进剔除风暴、AP 自我保护、本地快照兜底四种行为",
+    "讲清 Eureka 自我保护机制与 Nacos AP/CP 双模式的选型逻辑",
+    "理解为什么注册中心挂了微服务之间短期内仍能正常调用"
+  ],
+  "terms": {
+    "AP自我保护": "当 15 分钟内心跳续约比例低于 85% 时，认为大概率是网络分区而非全部宕机，宁可保留过期实例也不盲目剔除。",
+    "本地快照兜底": "客户端把拉取到的服务列表缓存在内存和本地磁盘，即便注册中心整体宕机也能照常发起 RPC 调用。"
+  },
+  "experiments": {
+    "m6_registry": {
+      "runner": "java",
+      "home": "lab.m6.registry",
+      "knob": {
+        "name": "threads",
+        "label": "并发调用线程",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "default": "4"
+      },
+      "metric": {
+        "key": "failedCalls",
+        "expectKey": "expected",
+        "label": "调用失败次数",
+        "expect": "零失败"
+      },
+      "time": {
+        "key": "ms",
+        "unit": "ms",
+        "label": "耗时"
+      },
+      "repeat": 20,
+      "variants": [
+        {
+          "id": "StaticList",
+          "label": "硬编码IP列表",
+          "code": "StaticList.java",
+          "note": "节点 2 宕机后无法动态摘除，25% 流量持续打向死节点失败。"
+        },
+        {
+          "id": "FastEvictStorm",
+          "label": "无自我保护激进踢除",
+          "code": "FastEvictStorm.java",
+          "note": "网络抖动导致心跳大面积超时，注册表被全部清空，健康节点也彻底不可用（320 次全失败）。"
+        },
+        {
+          "id": "SelfPreservationAp",
+          "label": "AP自我保护+客户端重选",
+          "code": "SelfPreservationAp.java",
+          "note": "触发自我保护保留实例清单，配合客户端调用失败自动切换下一健康节点，零失败。"
+        },
+        {
+          "id": "LocalSnapshotFallback",
+          "label": "本地磁盘快照兜底",
+          "code": "LocalSnapshotFallback.java",
+          "note": "注册中心自身整体不可用时，客户端降级读本地快照并跳过异常实例，依然零失败。"
+        }
+      ]
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "注册中心心跳全超时，为什么 Eureka 死保旧列表而 Zookeeper 直接踢光？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "面试问「注册中心挂了，微服务还能互相调用吗？」或者「Eureka 为什么要搞自我保护？」，核心都在考察你是否理解**服务发现里的 AP 可用性优先原则与客户端缓存兜底**。",
+          "say": "如果注册中心因为机房网络抖动 5 秒就把 90% 的健康节点全踢了，那比不剔除死节点更灾难。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：先把前置直觉拿稳",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先做两道热身题，把本课要用的缓存与并发尺子对齐。",
+          "items": [
+            {
+              "have": "CAP 定理",
+              "q": "作为微服务注册中心，Eureka（以及 Nacos 默认模式）在网络分区时优先保 C（强一致）还是 A（高可用）？",
+              "options": [
+                "优先保 A（可用性），允许短暂读到旧实例列表",
+                "优先保 C（强一致），宁可拒绝所有服务发现请求"
+              ],
+              "answer": 0,
+              "why": "服务发现场景下，客户端本身有重试和负载均衡兜底，短暂拿到个别下线节点远好于整个注册表不可用。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先想象一个场景：4 个服务节点遇上短暂网络抖动（或注册中心短暂失联）",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "caption": "观察硬编码、激进踢除、AP 自我保护和本地快照 4 种策略下，业务调用的失败次数（`failedCalls`）。",
+            "actors": [
+              "激进踢除 (FastEvict)",
+              "AP自我保护 + 本地快照"
+            ],
+            "shared": "可用实例列表"
+          },
+          "say": "观察硬编码、激进踢除、AP 自我保护和本地快照 4 种策略下，业务调用的失败次数（`failedCalls`）。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基线代码 `StaticList`",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "m6_registry.StaticList",
+          "say": "这就是最常见的基线写法 `StaticList`，重点盯住读写缓存与访问下游的那几行。"
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先押一注：`StaticList` 并发跑起来会怎样？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p1",
+          "q": "`FastEvictStorm` 没有自我保护机制，机房网络抖动导致 85% 心跳超时后会发生什么？",
+          "options": [
+            "只踢掉真正挂掉的 1 台",
+            "把健康节点也误踢光，注册表变空，所有调用 100% 失败",
+            "自动切换到静态 IP"
+          ],
+          "answer": 1,
+          "say": "这就是著名的「雪崩式误摘除」：本来机器活得好好的，只因注册中心网络抖了一下全网断流。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "实测放出：`StaticList` 的真实散点",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_registry",
+          "show": [
+            "StaticList"
+          ],
+          "knob": false,
+          "hand": true,
+          "focus": [
+            "for (int i = 0; i < 4; i++) evicted[i] = true;",
+            "if (aliveCount == 0) {"
+          ],
+          "say": "点「看第 1 次运行」，对比实测指标与预期基线，看看问题到底有多严重。"
+        },
+        {
+          "t": "reveal",
+          "say": "实测证明 `StaticList` 在并发下完全失控，指标远超预期安全线。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "回到源码点出祸首",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "m6_registry.StaticList",
+          "lines": [
+            "for (int i = 0; i < 4; i++) evicted[i] = true;",
+            "if (aliveCount == 0) {"
+          ],
+          "say": "激进剔除遇到大面积心跳延迟时直接把可用列表清零，连带健康节点一起埋葬。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "两条泳道看清：问题是怎么发生的",
+      "blocks": [
+        {
+          "t": "lanes",
+          "expr": "心跳大面积丢失 -> AP保留列表 -> 客户端故障转移",
+          "parts": {
+            "read": "读缓存",
+            "calc": "查库/算值",
+            "write": "写回/更新"
+          },
+          "lanes": [
+            "激进踢除 (FastEvict)",
+            "AP自我保护 + 本地快照"
+          ],
+          "shared": {
+            "name": "可用实例列表",
+            "start": "4 个实例"
+          },
+          "say": "一步步点下去，看两条并发线程是怎样交错把系统拖垮的。",
+          "steps": [
+            {
+              "lane": 0,
+              "op": "write",
+              "text": "网络抖动 >15% 心跳超时，注册中心把 4 个实例全删光",
+              "say": "客户端拉到空列表，全链路直接报错。"
+            },
+            {
+              "lane": 1,
+              "op": "read",
+              "text": "SelfPreservationAp 触发自我保护，冻结剔除保留列表",
+              "say": "宁可留着可能已挂的节点，也不误杀健康节点。"
+            },
+            {
+              "lane": 1,
+              "op": "calc",
+              "text": "客户端命中坏节点时自动故障转移到下一节点",
+              "say": "即便注册中心彻底宕机，LocalSnapshotFallback 也能靠本地快照撑过去。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "常见补救 `FastEvictStorm`：真能彻底解决吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "p2",
+          "q": "为什么保留了一个已经下线的节点在列表里，`SelfPreservationAp` 的 `failedCalls` 依然可以是 0？",
+          "options": [
+            "客户端负载均衡器连不上死节点时会快速切换到列表里的下一个健康节点",
+            "死节点会自动复活",
+            "注册中心会替客户端执行业务"
+          ],
+          "answer": 0,
+          "say": "先猜一猜这种常见补救写法在高并发下的真实表现。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "实测对比：`StaticList` vs `FastEvictStorm`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_registry",
+          "show": [
+            "StaticList",
+            "FastEvictStorm"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "切换不同线程挡位，观察第一种补救写法把指标压下来多少，又留下了什么新隐患。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看 `FastEvictStorm` 的字节码证据",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_registry.FastEvictStorm",
+          "within": "call(int)",
+          "from": "0: iconst_0",
+          "to": "return",
+          "say": "看 `FastEvictStorm.call`：一旦 `evicted` 全为 true，`aliveCount == 0`，每次请求只能直接报错。",
+          "walk": [
+            {
+              "focus": [
+                "failedCalls"
+              ],
+              "label": "空注册表灾难",
+              "say": "这也是为什么很多公司从 Zookeeper 迁到 Eureka/Nacos AP 模式的原因。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四种方案同台实测：`SelfPreservationAp` 与 `LocalSnapshotFallback`",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "m6_registry",
+          "show": [
+            "StaticList",
+            "FastEvictStorm",
+            "SelfPreservationAp",
+            "LocalSnapshotFallback"
+          ],
+          "knob": true,
+          "hand": false,
+          "say": "把四套实现全部放出来跑一遍，对比准确度与耗时代价。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "四条耗时与指标曲线对比",
+      "blocks": [
+        {
+          "t": "chart",
+          "lab": "m6_registry",
+          "variants": [
+            "StaticList",
+            "FastEvictStorm",
+            "SelfPreservationAp",
+            "LocalSnapshotFallback"
+          ],
+          "notes": [
+            {
+              "focus": "FastEvictStorm",
+              "key": "无自我保护导致全网 320 次调用全挂",
+              "say": "在大规模网络抖动面前，宁可脏读旧节点，不可全盘清空。"
+            },
+            {
+              "focus": "LocalSnapshotFallback",
+              "key": "本地快照+健康切换，注册中心挂了也能稳住零失败",
+              "say": "前提是不能在注册中心宕机期间大规模扩缩容换新 IP。"
+            }
+          ],
+          "say": "从 1 线程到 8 线程，看清每一种方案的真实扩展性边界。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "掀开机盖看最终方案 `LocalSnapshotFallback` 字节码",
+      "blocks": [
+        {
+          "t": "inside",
+          "of": "m6_registry.LocalSnapshotFallback",
+          "within": "call(int)",
+          "from": "0: getstatic",
+          "to": "return",
+          "say": "看 `LocalSnapshotFallback.call`：即使 `registryDown = true`，客户端依然读取 `localDiskSnapshot` 并自动跳过异常实例。",
+          "walk": [
+            {
+              "focus": [
+                "localDiskSnapshot"
+              ],
+              "label": "客户端本地缓存兜底",
+              "key": "注册中心宕机 ≠ 微服务立刻瘫痪（只要地址没全变）",
+              "say": "Nacos 和 Eureka 客户端默认都会持久化一份本地服务列表快照。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "工程选型：按代价与边界挑方案",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "没有银弹，选型只看两条：一致性/防打爆要求有多死，以及能承受多大内存或延迟代价。",
+          "options": [
+            {
+              "name": "AP 注册中心 (Eureka / Nacos AP)",
+              "solves": "网络分区与机房抖动下的高可用服务发现",
+              "cost": "约 {ms:m6_registry.SelfPreservationAp} ms，允许几秒钟拿到已下线节点",
+              "when": "绝大多数互联网高可用微服务架构",
+              "say": "配合客户端本地缓存 + 优雅下线（先摘流量再停机），体验最好。"
+            },
+            {
+              "name": "CP 注册中心 (Zookeeper / Nacos CP)",
+              "solves": "强一致要求（如分布式选主、配置绝对一致）",
+              "cost": "Leader 选举或网络分区期间可能短暂拒绝写入或剔除抖动节点",
+              "when": "对服务上下线状态强一致敏感、节点数有限的内网核心组件",
+              "say": "Nacos 支持临时实例走 AP（Distro）、持久化实例走 CP（Raft），面试能讲出来非常加分。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "三个真实线上场景，选出最合适的一招",
+      "blocks": [
+        {
+          "t": "decide",
+          "q": "注册中心面试两大必考追问怎么答？",
+          "branches": [
+            {
+              "when": "注册中心全部宕机了，微服务还能调用吗？",
+              "pick": "短期内可以！因为客户端内存和本地磁盘都缓存了服务列表快照",
+              "eg": "但期间新扩容的实例无法被发现，已下线实例需要靠客户端摘除"
+            },
+            {
+              "when": "为什么服务发现更推荐 AP 而不是 CP？",
+              "pick": "注册中心本身挂了或分区时，保住已有列表让业务继续跑比追求强一致重要得多",
+              "eg": "Nacos 默认临时实例就是 AP 模式"
+            }
+          ],
+          "say": "先看决策树分支，再把左边三个线上场景对号入座。"
+        },
+        {
+          "t": "cases",
+          "tools": [
+            "静态写死配置",
+            "CP 激进剔除",
+            "AP 自我保护 + 本地快照"
+          ],
+          "say": "逐个判断每个场景该用哪套防线。",
+          "items": [
+            {
+              "text": "机房跨区光纤抖动 10 秒，希望微服务不要因为心跳超时把所有健康实例全摘掉。",
+              "answer": 2,
+              "why": "AP 自我保护机制会在心跳丢失率异常升高时冻结摘除，保住全网流量。"
+            },
+            {
+              "text": "只有 3 台固定内网数据库机器，十年不换 IP。",
+              "answer": 0,
+              "why": "极少变更的基础设施可以直接用 VIP/域名或静态配置，无需重型注册中心。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "立个名字：服务注册与发现",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "服务注册与发现",
+          "alias": "Registry Heartbeat · Self-Preservation · Local Snapshot",
+          "oneLine": "==AP 自我保护== 防止网络抖动误杀健康节点；==本地缓存快照== 让注册中心宕机时微服务依然能撑住。",
+          "asked": [
+            "注册中心挂了，微服务还能正常调用吗？",
+            "Eureka 和 Nacos/Zookeeper 在 CAP 上有什么区别？"
+          ],
+          "say": "把今天亲眼看到的实验现象收束成面试官最常追问的标准术语。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测一",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Nacos/Eureka 注册中心集群全部宕机后，正在运行的微服务之间还能互相调用吗？",
+          "options": [
+            {
+              "text": "能，客户端本地内存和磁盘都有服务列表快照缓存，现有实例之间仍可正常通信",
+              "ok": true,
+              "why": "只是注册中心宕机期间无法感知新上线或下线的实例变更。"
+            },
+            {
+              "text": "不能，每次 RPC 都要先实时查一次注册中心才能发请求",
+              "ok": false,
+              "why": "如果是每次同步查注册中心，注册中心早就被打爆且成为单点故障了。"
+            }
+          ],
+          "say": "客户端缓存是服务发现高可用的基石。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测二",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "为什么 Eureka 要设计「自我保护模式」（15 分钟内心跳续约率低于 85% 时停止剔除实例）？",
+          "options": [
+            {
+              "text": "防止因短暂网络分区导致大量健康实例被误剔除，引发全网雪崩",
+              "ok": true,
+              "why": "宁可留着少数死节点让客户端重试，也绝不把健康节点全踢光。"
+            },
+            {
+              "text": "为了省去写心跳检测线程的代码",
+              "ok": false,
+              "why": "恰恰相反，自我保护需要专门统计续约阈值。"
+            }
+          ],
+          "say": "保 A 舍 C 的经典工程取舍。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测三",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "关于 Nacos 的一致性协议，以下说法正确的是？",
+          "options": [
+            {
+              "text": "Nacos 默认的临时实例采用 AP（Distro 协议），持久化实例采用 CP（Raft 协议）",
+              "ok": true,
+              "why": "Nacos 兼顾了 AP 服务发现和 CP 配置/持久化需求。"
+            },
+            {
+              "text": "Nacos 只支持 CP 不支持 AP",
+              "ok": false,
+              "why": "默认微服务注册（ephemeral=true）就是 AP。"
+            }
+          ],
+          "say": "Distro (AP) + Raft (CP) 是 Nacos 面试高频考点。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "合上代码，用自己的话讲给面试官听",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "注册中心（如 Nacos/Eureka）如果全部宕机了，微服务之间还能正常调用吗？为什么注册中心通常选择 AP？",
+          "points": [
+            "短期内仍能正常调用，因为消费者本地内存和磁盘保存了服务列表快照缓存",
+            "不过注册中心宕机期间无法感知新扩容或下线的节点变更",
+            "服务发现选择 AP（如自我保护机制）是因为网络抖动时宁可短暂保留个别失效节点让客户端重试，也不能误删健康节点导致全网不可用"
+          ],
+          "model": "如果注册中心全部宕机，微服务之间在短期内依然可以正常调用。因为无论是 Eureka 还是 Nacos，服务消费者都不会每次发请求都去实时查注册中心，而是会在本地内存和磁盘里缓存一份服务实例列表快照。只要下游实例本身没挂，流量依然能正常路由，只是注册中心挂掉期间无法感知新机器上线或下线。另外，服务发现场景通常优先选择 AP 而不是 CP，比如 Eureka 的自我保护机制和 Nacos 默认的 Distro AP 模式，核心原因是在机房网络抖动时，宁可暂时保留旧列表（哪怕里面混有个别死节点，客户端还能重试切换），也绝不能激进地把大量健康实例误踢光，导致全网雪崩。",
+          "say": "不看参考答案，按四个要点计时两分钟脱稿讲一遍。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走这三张核心卡",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "注册中心全挂了微服务还能调通吗？",
+              "a": "能！客户端有内存+磁盘本地快照，现有节点仍可互调，只是无法感知新变更。"
+            },
+            {
+              "q": "自我保护机制解决什么问题？",
+              "a": "防止网络抖动导致心跳大面积超时时，把健康实例误剔除造成雪崩。"
+            },
+            {
+              "q": "Nacos 临时实例 vs 持久化实例协议？",
+              "a": "临时实例走 AP（Distro），持久化实例走 CP（Raft）。"
+            }
+          ],
+          "say": "把这三张核心复习卡装进脑子，这一课就真正过关了。"
+        }
+      ]
+    }
+  ]
+}

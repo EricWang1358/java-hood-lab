@@ -1,0 +1,1665 @@
+{
+ "id": "m6_rpcretry",
+ "variants": {
+  "NoRetryFail": {
+   "hash": "8606d347155a1987",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 21
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 10
+     }
+    ],
+    "2": [
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 21
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 20
+     }
+    ],
+    "4": [
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 21
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 11
+     }
+    ],
+    "8": [
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 27
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 13
+     }
+    ]
+   },
+   "inside": "Compiled from \"NoRetryFail.java\"\npublic class lab.m6.rpcretry.NoRetryFail {\n  static final int CALLS;\n\n  static final java.util.concurrent.atomic.AtomicInteger failedCalls;\n\n  public lab.m6.rpcretry.NoRetryFail();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static boolean rpcAttempt(int, int);\n    Code:\n       0: iload_0\n       1: iconst_5\n       2: irem\n       3: ifne          10\n       6: iload_1\n       7: ifle          14\n      10: iconst_1\n      11: goto          15\n      14: iconst_0\n      15: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #15                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #18                 // class java/lang/Thread\n      20: astore_3\n      21: invokestatic  #20                 // Method java/lang/System.nanoTime:()J\n      24: lstore        4\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     65\n      35: aload_3\n      36: iload         6\n      38: new           #18                 // class java/lang/Thread\n      41: dup\n      42: aload_2\n      43: invokedynamic #26,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n      48: invokespecial #30                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      51: aastore\n      52: aload_3\n      53: iload         6\n      55: aaload\n      56: invokevirtual #33                 // Method java/lang/Thread.start:()V\n      59: iinc          6, 1\n      62: goto          29\n      65: aload_3\n      66: astore        6\n      68: aload         6\n      70: arraylength\n      71: istore        7\n      73: iconst_0\n      74: istore        8\n      76: iload         8\n      78: iload         7\n      80: if_icmpge     101\n      83: aload         6\n      85: iload         8\n      87: aaload\n      88: astore        9\n      90: aload         9\n      92: invokevirtual #36                 // Method java/lang/Thread.join:()V\n      95: iinc          8, 1\n      98: goto          76\n     101: invokestatic  #20                 // Method java/lang/System.nanoTime:()J\n     104: lload         4\n     106: lsub\n     107: ldc2_w        #39                 // long 1000000l\n     110: ldiv\n     111: lstore        6\n     113: getstatic     #41                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     116: getstatic     #45                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n     119: invokevirtual #51                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     122: invokedynamic #57,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     127: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     130: getstatic     #41                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     133: ldc           #67                 // String expected=0\n     135: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     138: getstatic     #41                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     141: lload         6\n     143: invokedynamic #69,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     148: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     151: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #72                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iconst_0\n       6: istore_1\n       7: iload_1\n       8: bipush        60\n      10: if_icmpge     34\n      13: iload_1\n      14: iconst_0\n      15: invokestatic  #75                 // Method rpcAttempt:(II)Z\n      18: ifne          28\n      21: getstatic     #45                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n      24: invokevirtual #79                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      27: pop\n      28: iinc          1, 1\n      31: goto          7\n      34: goto          47\n      37: astore_1\n      38: new           #84                 // class java/lang/RuntimeException\n      41: dup\n      42: aload_1\n      43: invokespecial #86                 // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      46: athrow\n      47: return\n    Exception table:\n       from    to  target type\n           0    34    37   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #52                 // class java/util/concurrent/atomic/AtomicInteger\n       3: dup\n       4: invokespecial #89                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n       7: putstatic     #45                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n      10: return\n}\n"
+  },
+  "BlindRetryStorm": {
+   "hash": "68546c25ec691ff8",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 12,
+      "expected": 0,
+      "ms": 24
+     }
+    ],
+    "2": [
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 27
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 38,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 28
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 21
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 27
+     },
+     {
+      "failedCalls": 24,
+      "expected": 0,
+      "ms": 7
+     }
+    ],
+    "4": [
+     {
+      "failedCalls": 167,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "failedCalls": 74,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 21
+     },
+     {
+      "failedCalls": 144,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 144,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 129,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 67,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 205,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 144,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "failedCalls": 190,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 132,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 48,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 8
+     }
+    ],
+    "8": [
+     {
+      "failedCalls": 333,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 450,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 216,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 185,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 392,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 144,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "failedCalls": 192,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "failedCalls": 288,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 232,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "failedCalls": 300,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 321,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 360,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 162,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 209,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 248,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 288,
+      "expected": 0,
+      "ms": 28
+     },
+     {
+      "failedCalls": 96,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "failedCalls": 300,
+      "expected": 0,
+      "ms": 10
+     }
+    ]
+   },
+   "inside": "Compiled from \"BlindRetryStorm.java\"\npublic class lab.m6.rpcretry.BlindRetryStorm {\n  static final int CALLS;\n\n  static final int CAPACITY_PER_WAVE;\n\n  static final java.util.concurrent.atomic.AtomicInteger inFlight;\n\n  static final java.util.concurrent.atomic.AtomicInteger failedCalls;\n\n  public lab.m6.rpcretry.BlindRetryStorm();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static boolean rpcAttempt(int);\n    Code:\n       0: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n       3: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n       6: istore_1\n       7: iload_1\n       8: bipush        20\n      10: if_icmple     24\n      13: iconst_0\n      14: istore_2\n      15: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n      18: invokevirtual #19                 // Method java/util/concurrent/atomic/AtomicInteger.decrementAndGet:()I\n      21: pop\n      22: iload_2\n      23: ireturn\n      24: iload_0\n      25: iconst_5\n      26: irem\n      27: ifeq          34\n      30: iconst_1\n      31: goto          35\n      34: iconst_0\n      35: istore_2\n      36: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n      39: invokevirtual #19                 // Method java/util/concurrent/atomic/AtomicInteger.decrementAndGet:()I\n      42: pop\n      43: iload_2\n      44: ireturn\n      45: astore_3\n      46: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n      49: invokevirtual #19                 // Method java/util/concurrent/atomic/AtomicInteger.decrementAndGet:()I\n      52: pop\n      53: aload_3\n      54: athrow\n    Exception table:\n       from    to  target type\n           7    15    45   any\n          24    36    45   any\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #22                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #28                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #30                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #33                 // class java/lang/Thread\n      20: astore_3\n      21: invokestatic  #35                 // Method java/lang/System.nanoTime:()J\n      24: lstore        4\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     65\n      35: aload_3\n      36: iload         6\n      38: new           #33                 // class java/lang/Thread\n      41: dup\n      42: aload_2\n      43: invokedynamic #41,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n      48: invokespecial #45                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      51: aastore\n      52: aload_3\n      53: iload         6\n      55: aaload\n      56: invokevirtual #48                 // Method java/lang/Thread.start:()V\n      59: iinc          6, 1\n      62: goto          29\n      65: aload_3\n      66: astore        6\n      68: aload         6\n      70: arraylength\n      71: istore        7\n      73: iconst_0\n      74: istore        8\n      76: iload         8\n      78: iload         7\n      80: if_icmpge     101\n      83: aload         6\n      85: iload         8\n      87: aaload\n      88: astore        9\n      90: aload         9\n      92: invokevirtual #51                 // Method java/lang/Thread.join:()V\n      95: iinc          8, 1\n      98: goto          76\n     101: invokestatic  #35                 // Method java/lang/System.nanoTime:()J\n     104: lload         4\n     106: lsub\n     107: ldc2_w        #54                 // long 1000000l\n     110: ldiv\n     111: lstore        6\n     113: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     116: getstatic     #60                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n     119: invokevirtual #63                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     122: invokedynamic #66,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     127: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     130: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     133: ldc           #76                 // String expected=0\n     135: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     138: getstatic     #56                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     141: lload         6\n     143: invokedynamic #78,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     148: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     151: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #81                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iconst_0\n       6: istore_1\n       7: iload_1\n       8: bipush        60\n      10: if_icmpge     75\n      13: iconst_0\n      14: istore_2\n      15: iconst_0\n      16: istore_3\n      17: iload_3\n      18: iconst_3\n      19: if_icmpge     58\n      22: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n      25: bipush        12\n      27: invokevirtual #84                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n      30: pop\n      31: iload_1\n      32: invokestatic  #88                 // Method rpcAttempt:(I)Z\n      35: istore_2\n      36: getstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n      39: bipush        -12\n      41: invokevirtual #84                 // Method java/util/concurrent/atomic/AtomicInteger.addAndGet:(I)I\n      44: pop\n      45: iload_2\n      46: ifeq          52\n      49: goto          58\n      52: iinc          3, 1\n      55: goto          17\n      58: iload_2\n      59: ifne          69\n      62: getstatic     #60                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n      65: invokevirtual #13                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      68: pop\n      69: iinc          1, 1\n      72: goto          7\n      75: goto          88\n      78: astore_1\n      79: new           #94                 // class java/lang/RuntimeException\n      82: dup\n      83: aload_1\n      84: invokespecial #96                 // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      87: athrow\n      88: return\n    Exception table:\n       from    to  target type\n           0    75    78   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n       3: dup\n       4: invokespecial #99                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n       7: putstatic     #7                  // Field inFlight:Ljava/util/concurrent/atomic/AtomicInteger;\n      10: new           #14                 // class java/util/concurrent/atomic/AtomicInteger\n      13: dup\n      14: invokespecial #99                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      17: putstatic     #60                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n      20: return\n}\n"
+  },
+  "BackoffJitterRetry": {
+   "hash": "d92d7aa9d78c0aa2",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 27
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 41
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 5
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 14
+     }
+    ],
+    "2": [
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 37
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 27
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 56
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 27
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 19
+     }
+    ],
+    "4": [
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 24
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 21
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 28
+     }
+    ],
+    "8": [
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 34
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 43
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 37
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 30
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 31
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 53
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 37
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 28
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 8
+     }
+    ]
+   },
+   "inside": "Compiled from \"BackoffJitterRetry.java\"\npublic class lab.m6.rpcretry.BackoffJitterRetry {\n  static final int CALLS;\n\n  static final java.util.concurrent.atomic.AtomicInteger retryBudget;\n\n  static final java.util.concurrent.atomic.AtomicInteger failedCalls;\n\n  public lab.m6.rpcretry.BackoffJitterRetry();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static boolean rpcAttempt(int, int);\n    Code:\n       0: iload_0\n       1: iconst_5\n       2: irem\n       3: ifne          10\n       6: iload_1\n       7: ifle          14\n      10: iconst_1\n      11: goto          15\n      14: iconst_0\n      15: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #13                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #15                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #18                 // class java/lang/Thread\n      20: astore_3\n      21: invokestatic  #20                 // Method java/lang/System.nanoTime:()J\n      24: lstore        4\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     65\n      35: aload_3\n      36: iload         6\n      38: new           #18                 // class java/lang/Thread\n      41: dup\n      42: aload_2\n      43: invokedynamic #26,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;)Ljava/lang/Runnable;\n      48: invokespecial #30                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      51: aastore\n      52: aload_3\n      53: iload         6\n      55: aaload\n      56: invokevirtual #33                 // Method java/lang/Thread.start:()V\n      59: iinc          6, 1\n      62: goto          29\n      65: aload_3\n      66: astore        6\n      68: aload         6\n      70: arraylength\n      71: istore        7\n      73: iconst_0\n      74: istore        8\n      76: iload         8\n      78: iload         7\n      80: if_icmpge     101\n      83: aload         6\n      85: iload         8\n      87: aaload\n      88: astore        9\n      90: aload         9\n      92: invokevirtual #36                 // Method java/lang/Thread.join:()V\n      95: iinc          8, 1\n      98: goto          76\n     101: invokestatic  #20                 // Method java/lang/System.nanoTime:()J\n     104: lload         4\n     106: lsub\n     107: ldc2_w        #39                 // long 1000000l\n     110: ldiv\n     111: lstore        6\n     113: getstatic     #41                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     116: getstatic     #45                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n     119: invokevirtual #51                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     122: invokedynamic #57,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     127: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     130: getstatic     #41                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     133: ldc           #67                 // String expected=0\n     135: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     138: getstatic     #41                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     141: lload         6\n     143: invokedynamic #69,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     148: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     151: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier);\n    Code:\n       0: aload_0\n       1: invokevirtual #72                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iconst_0\n       6: istore_1\n       7: iload_1\n       8: bipush        60\n      10: if_icmpge     78\n      13: iload_1\n      14: iconst_0\n      15: invokestatic  #75                 // Method rpcAttempt:(II)Z\n      18: istore_2\n      19: iconst_1\n      20: istore_3\n      21: iload_2\n      22: ifne          61\n      25: iload_3\n      26: iconst_2\n      27: if_icmpgt     61\n      30: getstatic     #79                 // Field retryBudget:Ljava/util/concurrent/atomic/AtomicInteger;\n      33: invokevirtual #51                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n      36: ifle          61\n      39: getstatic     #79                 // Field retryBudget:Ljava/util/concurrent/atomic/AtomicInteger;\n      42: invokevirtual #82                 // Method java/util/concurrent/atomic/AtomicInteger.decrementAndGet:()I\n      45: pop\n      46: invokestatic  #85                 // Method java/lang/Thread.yield:()V\n      49: iload_1\n      50: iload_3\n      51: iinc          3, 1\n      54: invokestatic  #75                 // Method rpcAttempt:(II)Z\n      57: istore_2\n      58: goto          21\n      61: iload_2\n      62: ifne          72\n      65: getstatic     #45                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n      68: invokevirtual #88                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      71: pop\n      72: iinc          1, 1\n      75: goto          7\n      78: goto          91\n      81: astore_1\n      82: new           #93                 // class java/lang/RuntimeException\n      85: dup\n      86: aload_1\n      87: invokespecial #95                 // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      90: athrow\n      91: return\n    Exception table:\n       from    to  target type\n           0    78    81   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #52                 // class java/util/concurrent/atomic/AtomicInteger\n       3: dup\n       4: bipush        100\n       6: invokespecial #98                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":(I)V\n       9: putstatic     #79                 // Field retryBudget:Ljava/util/concurrent/atomic/AtomicInteger;\n      12: new           #52                 // class java/util/concurrent/atomic/AtomicInteger\n      15: dup\n      16: invokespecial #99                 // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      19: putstatic     #45                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n      22: return\n}\n"
+  },
+  "HedgedIdempotentRetry": {
+   "hash": "c0818ea9b11ba43c",
+   "repeat": 20,
+   "runs": {
+    "1": [
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 19
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 7
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 8
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 6
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 13
+     }
+    ],
+    "2": [
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 27
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 23
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 11
+     }
+    ],
+    "4": [
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 26
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 25
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 12
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 11
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 10
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 11
+     }
+    ],
+    "8": [
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 22
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 17
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 20
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 18
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 16
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 15
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 27
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 14
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 13
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 28
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 9
+     },
+     {
+      "failedCalls": 0,
+      "expected": 0,
+      "ms": 8
+     }
+    ]
+   },
+   "inside": "Compiled from \"HedgedIdempotentRetry.java\"\npublic class lab.m6.rpcretry.HedgedIdempotentRetry {\n  static final int CALLS;\n\n  static final java.util.concurrent.ConcurrentHashMap<java.lang.Integer, java.lang.Boolean> idemDedup;\n\n  static final java.util.concurrent.atomic.AtomicInteger failedCalls;\n\n  public lab.m6.rpcretry.HedgedIdempotentRetry();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static boolean idempotentCall(int, int);\n    Code:\n       0: iload_1\n       1: ifne          12\n       4: iload_0\n       5: iconst_5\n       6: irem\n       7: ifne          12\n      10: iconst_0\n      11: ireturn\n      12: getstatic     #7                  // Field idemDedup:Ljava/util/concurrent/ConcurrentHashMap;\n      15: iload_0\n      16: invokestatic  #13                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      19: getstatic     #19                 // Field java/lang/Boolean.TRUE:Ljava/lang/Boolean;\n      22: invokevirtual #25                 // Method java/util/concurrent/ConcurrentHashMap.putIfAbsent:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n      25: pop\n      26: iconst_1\n      27: ireturn\n\n  public static void main(java.lang.String[]) throws java.lang.Exception;\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #31                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: new           #35                 // class java/util/concurrent/CyclicBarrier\n      10: dup\n      11: iload_1\n      12: invokespecial #37                 // Method java/util/concurrent/CyclicBarrier.\"<init>\":(I)V\n      15: astore_2\n      16: iload_1\n      17: anewarray     #40                 // class java/lang/Thread\n      20: astore_3\n      21: invokestatic  #42                 // Method java/lang/System.nanoTime:()J\n      24: lstore        4\n      26: iconst_0\n      27: istore        6\n      29: iload         6\n      31: iload_1\n      32: if_icmpge     71\n      35: iload         6\n      37: istore        7\n      39: aload_3\n      40: iload         6\n      42: new           #40                 // class java/lang/Thread\n      45: dup\n      46: aload_2\n      47: iload         7\n      49: invokedynamic #48,  0             // InvokeDynamic #0:run:(Ljava/util/concurrent/CyclicBarrier;I)Ljava/lang/Runnable;\n      54: invokespecial #52                 // Method java/lang/Thread.\"<init>\":(Ljava/lang/Runnable;)V\n      57: aastore\n      58: aload_3\n      59: iload         6\n      61: aaload\n      62: invokevirtual #55                 // Method java/lang/Thread.start:()V\n      65: iinc          6, 1\n      68: goto          29\n      71: aload_3\n      72: astore        6\n      74: aload         6\n      76: arraylength\n      77: istore        7\n      79: iconst_0\n      80: istore        8\n      82: iload         8\n      84: iload         7\n      86: if_icmpge     107\n      89: aload         6\n      91: iload         8\n      93: aaload\n      94: astore        9\n      96: aload         9\n      98: invokevirtual #58                 // Method java/lang/Thread.join:()V\n     101: iinc          8, 1\n     104: goto          82\n     107: invokestatic  #42                 // Method java/lang/System.nanoTime:()J\n     110: lload         4\n     112: lsub\n     113: ldc2_w        #61                 // long 1000000l\n     116: ldiv\n     117: lstore        6\n     119: getstatic     #63                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     122: getstatic     #67                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n     125: invokevirtual #71                 // Method java/util/concurrent/atomic/AtomicInteger.get:()I\n     128: invokedynamic #77,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     133: invokevirtual #81                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     136: getstatic     #63                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     139: ldc           #87                 // String expected=0\n     141: invokevirtual #81                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     144: getstatic     #63                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     147: lload         6\n     149: invokedynamic #89,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     154: invokevirtual #81                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     157: return\n\n  private static void lambda$main$0(java.util.concurrent.CyclicBarrier, int);\n    Code:\n       0: aload_0\n       1: invokevirtual #92                 // Method java/util/concurrent/CyclicBarrier.await:()I\n       4: pop\n       5: iconst_0\n       6: istore_2\n       7: iload_2\n       8: bipush        60\n      10: if_icmpge     57\n      13: iload_1\n      14: bipush        60\n      16: imul\n      17: iload_2\n      18: iadd\n      19: istore_3\n      20: iload_3\n      21: iconst_0\n      22: invokestatic  #95                 // Method idempotentCall:(II)Z\n      25: istore        4\n      27: iload         4\n      29: ifne          39\n      32: iload_3\n      33: iconst_1\n      34: invokestatic  #95                 // Method idempotentCall:(II)Z\n      37: istore        4\n      39: iload         4\n      41: ifne          51\n      44: getstatic     #67                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n      47: invokevirtual #99                 // Method java/util/concurrent/atomic/AtomicInteger.incrementAndGet:()I\n      50: pop\n      51: iinc          2, 1\n      54: goto          7\n      57: goto          70\n      60: astore_2\n      61: new           #104                // class java/lang/RuntimeException\n      64: dup\n      65: aload_2\n      66: invokespecial #106                // Method java/lang/RuntimeException.\"<init>\":(Ljava/lang/Throwable;)V\n      69: athrow\n      70: return\n    Exception table:\n       from    to  target type\n           0    57    60   Class java/lang/Exception\n\n  static {};\n    Code:\n       0: new           #26                 // class java/util/concurrent/ConcurrentHashMap\n       3: dup\n       4: invokespecial #109                // Method java/util/concurrent/ConcurrentHashMap.\"<init>\":()V\n       7: putstatic     #7                  // Field idemDedup:Ljava/util/concurrent/ConcurrentHashMap;\n      10: new           #72                 // class java/util/concurrent/atomic/AtomicInteger\n      13: dup\n      14: invokespecial #110                // Method java/util/concurrent/atomic/AtomicInteger.\"<init>\":()V\n      17: putstatic     #67                 // Field failedCalls:Ljava/util/concurrent/atomic/AtomicInteger;\n      20: return\n}\n"
+  }
+ }
+}
