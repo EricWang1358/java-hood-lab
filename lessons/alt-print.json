@@ -1,0 +1,507 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "alt-print",
+  "course": "模块 8 · 算法与 SQL 手撕",
+  "title": "多线程交替打印：wait 不包在 while 里怎么就乱序了，Condition 怎么精准接力",
+  "lead": "三个线程轮流打印 ABC 一万轮：为什么把 while 换成 if 立马乱套？wait/notifyAll、ReentrantLock+Condition 和 Semaphore 谁代码最短、谁跑得最快？",
+  "minutes": 40,
+  "needs": [
+    "知道 synchronized 和 wait/notifyAll",
+    "用过 ReentrantLock 或 Semaphore"
+  ],
+  "after": [
+    "讲清 wait() 必须包在 while 里防虚假唤醒与竞态唤醒的铁律",
+    "熟练写出 Condition 精准唤醒下一个线程的接力模板",
+    "用 3 个 Semaphore 写出 15 行零出错的面试极简版"
+  ],
+  "terms": {
+    "虚假唤醒": "线程在没有被 notify 的情况下被系统唤醒，或被 notifyAll 唤醒后轮次已被别人抢走。",
+    "notifyAll()": "唤醒所有在锁上等待的线程，没轮到的线程醒来发现条件不满足还得继续睡（惊群）。",
+    "Condition": "ReentrantLock 绑定的等待队列，可以建多个，实现「A 只唤醒 B、B 只唤醒 C」的精准接力。",
+    "Semaphore": "信号量：permits=1 表示有通行证，acquire() 拿走，release() 交给下一棒。"
+  },
+  "experiments": {
+    "altprint": {
+      "runner": "java",
+      "home": "lab.altprint",
+      "variants": [
+        {
+          "id": "IfWaitBug",
+          "label": "if 判条件（经典 bug）",
+          "note": "用 if 而不是 while 检查轮次，醒来不复核直接打，顺序全乱！"
+        },
+        {
+          "id": "WaitNotifyAlt",
+          "label": "synchronized + while + notifyAll",
+          "note": "100% 正确，但每次 notifyAll 会把无关线程也一起叫醒。"
+        },
+        {
+          "id": "ConditionAlt",
+          "label": "ReentrantLock + 3 Condition",
+          "note": "精准点名唤醒下一棒，无无效唤醒。"
+        },
+        {
+          "id": "SemaphoreAlt",
+          "label": "3 个 Semaphore 链式接力",
+          "note": "不用额外 state 变量与锁，面试手撕最简最稳。"
+        }
+      ],
+      "knob": {
+        "label": "交替轮数 rounds",
+        "values": [
+          "1000",
+          "3000",
+          "6000",
+          "10000"
+        ],
+        "default": "6000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "ok",
+        "expectKey": "expected",
+        "label": "输出顺序 100% 正确 (1=正确)"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "多线程交替打印：wait 不包在 while 里怎么就乱序了，Condition 怎么精准接力",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天是 **模块 8（笔试算法与 SQL 手撕）** 的第 #41 课：三个线程轮流打印 ABC 一万轮：为什么把 while 换成 if 立马乱套？wait/notifyAll、ReentrantLock+Condition 和 Semaphore 谁代码最短、谁跑得最快？",
+          "say": "三个线程轮流打印 ABC 一万轮：为什么把 while 换成 if 立马乱套？wait/notifyAll、ReentrantLock+Condition 和 Semaphore 谁代码最短、谁跑得最快？"
+        },
+        {
+          "t": "text",
+          "md": "不死背模板。我们先跑出真实耗时与报错现场，再拆 `javap` 字节码与复杂度曲线，最后带走本专题的高频刷题清单。",
+          "say": "先看现场、再拆底层、最后总结模板与高频题清单。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，确认前置基础",
+      "bridge": "快速过一遍这节课需要的三点前置知识。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "选完直接看解释，确认基础即可进入场景。",
+          "items": [
+            {
+              "have": "知道 synchronized 和 wait/notifyAll",
+              "q": "你已经掌握「知道 synchronized 和 wait/notifyAll」了吗？",
+              "options": [
+                "清楚",
+                "再看一眼提示"
+              ],
+              "answer": 0,
+              "why": "本课会直接用到「知道 synchronized 和 wait/notifyAll」，接下来代码里也会标注解释。"
+            },
+            {
+              "have": "用过 ReentrantLock 或 Semaphore",
+              "q": "你已经掌握「用过 ReentrantLock 或 Semaphore」了吗？",
+              "options": [
+                "清楚",
+                "再看一眼提示"
+              ],
+              "answer": 0,
+              "why": "本课会直接用到「用过 ReentrantLock 或 Semaphore」，接下来代码里也会标注解释。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先放一个日常画面",
+      "bridge": "把算法和数据结构放进生活场景里，后面每行代码都能对上号。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "线程 A",
+              "线程 B",
+              "线程 C"
+            ],
+            "shared": {
+              "name": "传声筒 / 接力棒",
+              "value": "轮流喊 A -> B -> C"
+            }
+          },
+          "story": "三个人闭着眼接力喊数。`notifyAll` 就像吹一声大喇叭把所有人全吵醒，大家自己睁眼看是不是轮到自己；如果只用 `if` 看过一次就闭眼，醒来不重新确认就喊，肯定喊重喊乱；而 `Condition` 和 `Semaphore` 则是拍一下指定下一棒的肩膀。",
+          "say": "先记住这个画面，再对照右边三处关键动作。",
+          "map": [
+            {
+              "scene": "醒来不重新确认直接喊",
+              "on": "actors",
+              "tag": "if 等待 bug",
+              "code": "`if (state % 3 != myId) lock.wait();`",
+              "say": "被误唤醒或被抢先一步后直接往下冲，彻底乱序。"
+            },
+            {
+              "scene": "吹大喇叭全员醒来再复查",
+              "on": "shared",
+              "tag": "while + notifyAll",
+              "code": "`while (state % 3 != myId) lock.wait();`",
+              "say": "醒来再检查一遍条件，不满足继续 wait。"
+            },
+            {
+              "scene": "只拍下一棒的肩膀",
+              "on": "action",
+              "tag": "Condition / Semaphore",
+              "code": "`conds[(myId + 1) % 3].signal();`",
+              "say": "精准唤醒下一棒，零无效上下文切换。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "直觉上能过吗？",
+      "bridge": "平时写 10 个元素的小例子都能过，放到上万数据或多线程下呢？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "三个线程轮流打印 ABC 一万轮：为什么把 while 换成 if 立马乱套？wait/notifyAll、ReentrantLock+Condition 和 Semaphore 谁代码最短、谁跑得最快？",
+          "say": "这就是今天要实测验证的问题。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基准写法与优化写法",
+      "bridge": "先看清最容易踩坑或超时的写法长什么样。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "altprint.IfWaitBug",
+          "say": "这是基准实现 `IfWaitBug`，点击虚线术语可看大白话解释。",
+          "walk": [
+            {
+              "focus": [
+                "main"
+              ],
+              "say": "入口接收命令行参数作为规模或线程数，连续计时并输出校验结果与耗时。",
+              "focusLines": [
+                1,
+                2
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "跑之前，先押一注",
+      "bridge": "基于你的直觉猜一下实测结果，猜错完全正常。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "altprint-guess",
+          "q": "如果把 `WaitNotifyAlt` 里的 `while (state % 3 != myId)` 改成 `if`，再把 `notifyAll()` 保留，会发生什么？",
+          "options": [
+            "只要有锁就没事",
+            "顺序大概率乱掉，甚至数组越界",
+            "只是变慢"
+          ],
+          "answer": 1,
+          "say": "选好你的预测，下一页直接放出 20 次实测结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "20 次实测散点对比",
+      "bridge": "以下是本机 JDK 真实编译运行 20 次的实测记录（实心点表示结果正确，空心点表示出错）。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "altprint",
+          "select": [
+            "IfWaitBug",
+            "SemaphoreAlt"
+          ],
+          "knob": "6000",
+          "show": "dots",
+          "hand": false,
+          "focus": "用 if 而不是 while 检查轮次，醒来不复核直接打，顺序全乱！",
+          "say": "切换上方规模/线程数挡位，对比 `IfWaitBug` 与 `SemaphoreAlt` 的准确率与耗时差异。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：看真实字节码",
+      "bridge": "现象看清了，打开 `javap -c -p` 看底层指令到底在干什么。",
+      "blocks": [
+        {
+          "t": "reveal",
+          "of": "altprint.SemaphoreAlt",
+          "key": "看懂底层指令与复杂度来源",
+          "say": "对比 `IfWaitBug` 与 `SemaphoreAlt` 的核心代码与字节码，找出真正拉开差距的那几行。"
+        },
+        {
+          "t": "inside",
+          "of": "altprint.SemaphoreAlt",
+          "within": "main",
+          "from": 0,
+          "to": 40,
+          "say": "这是真实 `javap -c -p` 反编译出的字节码指令，确认没有魔法，每一步开销都在这里。",
+          "walk": [
+            {
+              "lines": [
+                0,
+                1
+              ],
+              "say": "方法入口先解析参数并初始化计时与数据结构。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "在代码里找关键一笔",
+      "bridge": "考考你：上面那段优化代码里，真正起决定性作用的是哪一处？",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "altprint.SemaphoreAlt",
+          "q": "`SemaphoreAlt` 里没有 `synchronized`，也没有 `state` 共享计数器，它是怎么保证三个线程绝不抢跑的？",
+          "hint": "看初始化时三个信号量的初始许可数。",
+          "answer": "new Semaphore(1), new Semaphore(0), new Semaphore(0)",
+          "found": "只有 0 号信号量初始有 1 张通行证，其余都是 0；0 号干完把证发给 1 号，形成单向死循环接力。",
+          "say": "定位到那一行关键代码。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "4 种写法的实测耗时折线",
+      "bridge": "把 if 判条件（经典 bug）、synchronized + while + notifyAll、ReentrantLock + 3 Condition、3 个 Semaphore 链式接力 放在同一张图上，看规模/线程数拉大后的走势。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "altprint",
+          "say": "横轴是规模/线程数，纵轴是实测耗时；空心点代表该写法出错或超时风险，实心点代表稳定正确。",
+          "walk": [
+            {
+              "focus": "IfWaitBug",
+              "say": "if 判条件（经典 bug）：用 if 而不是 while 检查轮次，醒来不复核直接打，顺序全乱！"
+            },
+            {
+              "focus": "WaitNotifyAlt",
+              "say": "synchronized + while + notifyAll：100% 正确，但每次 notifyAll 会把无关线程也一起叫醒。"
+            },
+            {
+              "focus": "ConditionAlt",
+              "say": "ReentrantLock + 3 Condition：精准点名唤醒下一棒，无无效唤醒。"
+            },
+            {
+              "focus": "SemaphoreAlt",
+              "say": "3 个 Semaphore 链式接力：不用额外 state 变量与锁，面试手撕最简最稳。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "把工具摆在一起比代价",
+      "bridge": "没有银弹，每种写法都有明确适用边界。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "对照每张卡片的适用场景与代价，面试被追问时就能按场景选型。",
+          "options": [
+            {
+              "name": "Semaphore 链式接力",
+              "solves": "固定顺序交替打印（ABC / FooBar / 奇偶）",
+              "cost": "代码最短、零虚假唤醒问题",
+              "when": "笔试手撕、限时面试首选",
+              "say": "Semaphore 链式接力：固定顺序交替打印（ABC / FooBar / 奇偶），代价是代码最短、零虚假唤醒问题。"
+            },
+            {
+              "name": "ReentrantLock + 多 Condition",
+              "solves": "复杂状态流转（生产者消费者 / 多条件唤醒）",
+              "cost": "精准唤醒，可扩展性强",
+              "when": "需要手写阻塞队列或复杂条件时",
+              "say": "ReentrantLock + 多 Condition：复杂状态流转（生产者消费者 / 多条件唤醒），代价是精准唤醒，可扩展性强。"
+            },
+            {
+              "name": "synchronized + while + notifyAll",
+              "solves": "不准用 JUC 工具类的基础题",
+              "cost": "写法经典，但有惊群无效唤醒",
+              "when": "面试官明确要求只用原生关键字时",
+              "say": "synchronized + while + notifyAll：不准用 JUC 工具类的基础题，代价是写法经典，但有惊群无效唤醒。"
+            }
+          ]
+        },
+        {
+          "t": "decide",
+          "q": "多线程手撕题怎么挑同步工具？",
+          "branches": [
+            {
+              "when": "固定顺序接力（A->B->C / 奇偶）",
+              "pick": "Semaphore(1, 0, 0) 或 多 Condition",
+              "eg": "交替打印 ABC、FooBar"
+            },
+            {
+              "when": "要求只用 Object 原生方法",
+              "pick": "synchronized + while + wait/notifyAll",
+              "eg": "奇偶数交替打印"
+            },
+            {
+              "when": "一端放一端取的有界缓冲区",
+              "pick": "ReentrantLock + notFull / notEmpty 双 Condition",
+              "eg": "手写阻塞队列"
+            }
+          ],
+          "say": "顺着这棵决策树，看到题面关键词就能直接落到对应模板。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "练三道真实面试场景",
+      "bridge": "用刚才的决策树，当场给下面三个问题选出最优解法。",
+      "blocks": [
+        {
+          "t": "cases",
+          "tools": [
+            "Semaphore 链式",
+            "while + wait/notifyAll",
+            "双 Condition 阻塞队列"
+          ],
+          "items": [
+            {
+              "text": "面试官要求不用 JUC 包，只用 synchronized 实现两个线程交替打印 1～100。",
+              "answer": 1,
+              "why": "务必用 while 检查奇偶条件，打印完 ++ 并 notifyAll()。"
+            },
+            {
+              "text": "实现一个固定容量的阻塞队列，put 满时阻塞、take 空时阻塞。",
+              "answer": 2,
+              "why": "ReentrantLock 配 notFull 和 notEmpty 两个 Condition，互不惊扰。"
+            },
+            {
+              "text": "10 分钟内快速写出 3 个线程交替打印 ABC 100 遍，越稳越好。",
+              "answer": 0,
+              "why": "3 个 Semaphore(1,0,0) 不需要额外共享变量，几乎不可能写错。"
+            }
+          ],
+          "say": "逐题点选工具，看解析是否和你想的一样。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记下面试官常问的标准叫法",
+      "bridge": "把刚才的实验现象还原成面试高频术语。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "while 防虚假唤醒 & 精准唤醒",
+          "alias": "专题 09 · 高频 9 题核心模型",
+          "oneLine": "`wait()` 必须永远包在 ==while 循环==里；3 个以上线程接力时，用 ==多 Condition 或 Semaphore== 实现点对点精准唤醒。",
+          "asked": [
+            "为什么 wait() 一定要放在 while 里而不是 if 里？",
+            "notify() 和 notifyAll() 的区别，为什么用 notify() 可能死锁？",
+            "三个线程交替打印 ABC 有哪几种写法？"
+          ],
+          "say": "记住这句总结和下面三个高频问法。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "最后核对一道易错题",
+      "bridge": "确认核心坑点真的没踩进去。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "三线程交替打印时，如果用 `synchronized` + `while` + `notify()`（注意不是 notifyAll），可能会发生什么？",
+          "options": [
+            {
+              "text": "性能更好且绝对安全",
+              "ok": false,
+              "why": "同一个锁只有一个等待队列，notify() 随机挑一个唤醒。"
+            },
+            {
+              "text": "可能唤醒了不该执行的线程，那个线程检查 while 后又去睡，导致全员卡死（假死锁）",
+              "ok": true,
+              "why": "所有等待线程都在同一个 Monitor 队列里，notify() 叫错人就会无人再唤醒。"
+            },
+            {
+              "text": "会自动变成精准唤醒",
+              "ok": false,
+              "why": "只有多 Condition 才能精准唤醒。"
+            }
+          ],
+          "say": "选出唯一正确的结论。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口带走",
+      "bridge": "看懂不算会，对着屏幕脱稿讲一遍才算长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清 wait 为什么必须在 while 里、notify 为什么会假死，以及 Condition 与 Semaphore 的优势。",
+          "points": [
+            "while 防止虚假唤醒与抢跑后条件失效",
+            "单个 Monitor 队列用 notify() 可能叫醒错的人导致全员等待假死，必须 notifyAll()",
+            "ReentrantLock 多 Condition 或 Semaphore(1,0,0) 能精准唤醒下一棒"
+          ],
+          "model": "多线程交替打印最经典的坑有两个：第一是把 wait() 写在 if 里而不是 while 里，线程被唤醒后可能出现虚假唤醒或条件已被别的线程改掉，不复查就会乱序；第二是在多个线程共用一把锁时用 notify() 而不是 notifyAll()，因为单队列随机唤醒可能叫醒一个不满足条件的线程，它检查后继续 wait，最终所有线程都在等导致假死。实际写代码我优先用 3 个 Semaphore(1,0,0) 做链式传递，或者用 ReentrantLock 配多个 Condition 精准唤醒下一棒，既没假死风险又减少了无效切换。",
+          "say": "计时两分钟开口讲一遍，再对照参考回答查漏补缺。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张复习卡 & 本专题高频题清单",
+      "bridge": "复习卡 + 专题刷题清单，每天手敲 2～3 题稳步推进。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "为什么 `wait()` 必须写在 `while` 里？",
+              "a": "1) 防操作系统虚假唤醒；2) 防 `notifyAll()` 唤醒多个线程后条件已被先抢到锁的线程改掉。"
+            },
+            {
+              "q": "手写阻塞队列为什么用两个 Condition？",
+              "a": "生产者只唤醒 `notEmpty`（消费者），消费者只唤醒 `notFull`（生产者），避免互相惊扰。"
+            },
+            {
+              "q": "专题 09 必刷 9 题清单",
+              "a": "交替打印 1-100 奇偶、交替打印 ABC、交替打印 FooBar、按序打印、打印零与奇偶数、H2O 生成、手写阻塞队列、哲学家进餐、DCL 单例。"
+            }
+          ],
+          "say": "第三张卡就是本专题的必刷题清单，完整 101 题汇总见仓库 `docs/module8-100-problems.md`。"
+        },
+        {
+          "t": "try",
+          "key": "javac -encoding UTF-8 -d out src/lab/altprint/*.java && java -cp out lab.altprint.SemaphoreAlt 6000",
+          "say": "在本地终端编译运行一遍，亲手改一改参数验证效果。"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1991 @@
+{
+ "id": "stackqueue",
+ "variants": {
+  "WindowScan": {
+   "hash": "e4404d06c6dc327d",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 4
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 4
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 4
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 4
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 5
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 8
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 5
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 4
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 6
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 5
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 5
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 5
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 5
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 6
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 8
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 4
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 6
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 6
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 5
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 6
+     }
+    ],
+    "20000": [
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 11
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 11
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 11
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 11
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 9
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 11
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 12
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 9
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 10
+     }
+    ],
+    "50000": [
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 20
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 20
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 20
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 20
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 20
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 23
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 21
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 20
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 20
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 21
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 21
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 21
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 23
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 21
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 20
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 22
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 19
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 21
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 20
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 21
+     }
+    ],
+    "100000": [
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 36
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 38
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 36
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 37
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 36
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 36
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 37
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 37
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 38
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 38
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 37
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 37
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 38
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 38
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 37
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 37
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 37
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 37
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 40
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 37
+     }
+    ]
+   },
+   "inside": "Compiled from \"WindowScan.java\"\npublic class lab.stackqueue.WindowScan {\n  public lab.stackqueue.WindowScan();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: sipush        500\n      10: istore_2\n      11: iload_1\n      12: newarray       int\n      14: astore_3\n      15: iconst_0\n      16: istore        4\n      18: iload         4\n      20: iload_1\n      21: if_icmpge     43\n      24: aload_3\n      25: iload         4\n      27: iload         4\n      29: bipush        37\n      31: imul\n      32: sipush        10000\n      35: irem\n      36: iastore\n      37: iinc          4, 1\n      40: goto          18\n      43: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      46: lstore        4\n      48: lconst_0\n      49: lstore        6\n      51: iconst_0\n      52: istore        8\n      54: iload         8\n      56: iload_1\n      57: iload_2\n      58: isub\n      59: if_icmpgt     118\n      62: aload_3\n      63: iload         8\n      65: iaload\n      66: istore        9\n      68: iload         8\n      70: iconst_1\n      71: iadd\n      72: istore        10\n      74: iload         10\n      76: iload         8\n      78: iload_2\n      79: iadd\n      80: if_icmpge     104\n      83: aload_3\n      84: iload         10\n      86: iaload\n      87: iload         9\n      89: if_icmple     98\n      92: aload_3\n      93: iload         10\n      95: iaload\n      96: istore        9\n      98: iinc          10, 1\n     101: goto          74\n     104: lload         6\n     106: iload         9\n     108: i2l\n     109: ladd\n     110: lstore        6\n     112: iinc          8, 1\n     115: goto          54\n     118: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     121: lload         4\n     123: lsub\n     124: ldc2_w        #19                 // long 1000000l\n     127: ldiv\n     128: lstore        8\n     130: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     133: iload_1\n     134: iload_2\n     135: isub\n     136: iconst_1\n     137: iadd\n     138: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     143: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     146: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     149: iload_1\n     150: iload_2\n     151: isub\n     152: iconst_1\n     153: iadd\n     154: invokedynamic #35,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     159: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     162: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     165: lload         6\n     167: invokedynamic #36,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     172: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     175: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     178: lload         8\n     180: invokedynamic #39,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     185: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     188: return\n}\n"
+  },
+  "TreeMapWin": {
+   "hash": "f8451595d438f848",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 18
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 13
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 16
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 13
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 18
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 16
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 17
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 14
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 17
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 12
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 12
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 16
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 15
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 16
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 13
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 14
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 16
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 12
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 11
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 15
+     }
+    ],
+    "20000": [
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 21
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 20
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 20
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 24
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 20
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 21
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 22
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 21
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 22
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 22
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 20
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 22
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 18
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 21
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 23
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 21
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 21
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 20
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 21
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 20
+     }
+    ],
+    "50000": [
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 33
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 33
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 30
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 35
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 30
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 36
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 30
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 29
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 36
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 31
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 33
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 33
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 33
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 35
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 29
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 36
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 29
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 30
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 31
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 34
+     }
+    ],
+    "100000": [
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 44
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 42
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 42
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 41
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 42
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 47
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 47
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 47
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 46
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 44
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 44
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 41
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 40
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 42
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 44
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 54
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 54
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 42
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 41
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 45
+     }
+    ]
+   },
+   "inside": "Compiled from \"TreeMapWin.java\"\npublic class lab.stackqueue.TreeMapWin {\n  public lab.stackqueue.TreeMapWin();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: sipush        500\n      10: istore_2\n      11: iload_1\n      12: newarray       int\n      14: astore_3\n      15: iconst_0\n      16: istore        4\n      18: iload         4\n      20: iload_1\n      21: if_icmpge     43\n      24: aload_3\n      25: iload         4\n      27: iload         4\n      29: bipush        37\n      31: imul\n      32: sipush        10000\n      35: irem\n      36: iastore\n      37: iinc          4, 1\n      40: goto          18\n      43: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      46: lstore        4\n      48: new           #19                 // class java/util/TreeMap\n      51: dup\n      52: invokespecial #21                 // Method java/util/TreeMap.\"<init>\":()V\n      55: astore        6\n      57: lconst_0\n      58: lstore        7\n      60: iconst_0\n      61: istore        9\n      63: iconst_0\n      64: istore        10\n      66: iload         10\n      68: iload_1\n      69: if_icmpge     198\n      72: aload         6\n      74: aload_3\n      75: iload         10\n      77: iaload\n      78: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      81: iconst_1\n      82: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      85: invokedynamic #26,  0             // InvokeDynamic #0:apply:()Ljava/util/function/BiFunction;\n      90: invokevirtual #30                 // Method java/util/TreeMap.merge:(Ljava/lang/Object;Ljava/lang/Object;Ljava/util/function/BiFunction;)Ljava/lang/Object;\n      93: pop\n      94: iload         10\n      96: iload_2\n      97: if_icmplt     164\n     100: aload_3\n     101: iload         10\n     103: iload_2\n     104: isub\n     105: iaload\n     106: istore        11\n     108: aload         6\n     110: iload         11\n     112: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     115: invokevirtual #34                 // Method java/util/TreeMap.get:(Ljava/lang/Object;)Ljava/lang/Object;\n     118: checkcast     #8                  // class java/lang/Integer\n     121: invokevirtual #38                 // Method java/lang/Integer.intValue:()I\n     124: istore        12\n     126: iload         12\n     128: iconst_1\n     129: if_icmpne     146\n     132: aload         6\n     134: iload         11\n     136: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     139: invokevirtual #42                 // Method java/util/TreeMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;\n     142: pop\n     143: goto          164\n     146: aload         6\n     148: iload         11\n     150: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     153: iload         12\n     155: iconst_1\n     156: isub\n     157: invokestatic  #22                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     160: invokevirtual #45                 // Method java/util/TreeMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\n     163: pop\n     164: iload         10\n     166: iload_2\n     167: iconst_1\n     168: isub\n     169: if_icmplt     192\n     172: lload         7\n     174: aload         6\n     176: invokevirtual #49                 // Method java/util/TreeMap.lastKey:()Ljava/lang/Object;\n     179: checkcast     #8                  // class java/lang/Integer\n     182: invokevirtual #38                 // Method java/lang/Integer.intValue:()I\n     185: i2l\n     186: ladd\n     187: lstore        7\n     189: iinc          9, 1\n     192: iinc          10, 1\n     195: goto          66\n     198: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     201: lload         4\n     203: lsub\n     204: ldc2_w        #53                 // long 1000000l\n     207: ldiv\n     208: lstore        10\n     210: getstatic     #55                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     213: iload         9\n     215: invokedynamic #59,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     220: invokevirtual #63                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     223: getstatic     #55                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     226: iload_1\n     227: iload_2\n     228: isub\n     229: iconst_1\n     230: iadd\n     231: invokedynamic #69,  0             // InvokeDynamic #2:makeConcatWithConstants:(I)Ljava/lang/String;\n     236: invokevirtual #63                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     239: getstatic     #55                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     242: lload         7\n     244: invokedynamic #70,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     249: invokevirtual #63                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     252: getstatic     #55                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     255: lload         10\n     257: invokedynamic #73,  0             // InvokeDynamic #4:makeConcatWithConstants:(J)Ljava/lang/String;\n     262: invokevirtual #63                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     265: return\n}\n"
+  },
+  "ArrayDequeMono": {
+   "hash": "6bfc1c1efa38140c",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 3
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 3
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 3
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 4
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 3
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 3
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 1
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 2
+     }
+    ],
+    "20000": [
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 6
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 5
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 6
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 5
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 6
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 5
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 8
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 5
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 5
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 6
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 4
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 5
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 5
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 5
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 5
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 7
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 6
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 5
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 7
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 6
+     }
+    ],
+    "50000": [
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 8
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 6
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 8
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 7
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 8
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 14
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 13
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 6
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 7
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 7
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 7
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 6
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 9
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 8
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 8
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 8
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 6
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 9
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 5
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 6
+     }
+    ],
+    "100000": [
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 7
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 9
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 7
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 8
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 8
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 9
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 10
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 10
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 11
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 9
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 7
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 12
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 10
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 9
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 9
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 8
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 6
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 8
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 7
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 8
+     }
+    ]
+   },
+   "inside": "Compiled from \"ArrayDequeMono.java\"\npublic class lab.stackqueue.ArrayDequeMono {\n  public lab.stackqueue.ArrayDequeMono();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: sipush        500\n      10: istore_2\n      11: iload_1\n      12: newarray       int\n      14: astore_3\n      15: iconst_0\n      16: istore        4\n      18: iload         4\n      20: iload_1\n      21: if_icmpge     43\n      24: aload_3\n      25: iload         4\n      27: iload         4\n      29: bipush        37\n      31: imul\n      32: sipush        10000\n      35: irem\n      36: iastore\n      37: iinc          4, 1\n      40: goto          18\n      43: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      46: lstore        4\n      48: new           #19                 // class java/util/ArrayDeque\n      51: dup\n      52: iload_2\n      53: invokespecial #21                 // Method java/util/ArrayDeque.\"<init>\":(I)V\n      56: astore        6\n      58: lconst_0\n      59: lstore        7\n      61: iconst_0\n      62: istore        9\n      64: iconst_0\n      65: istore        10\n      67: iload         10\n      69: iload_1\n      70: if_icmpge     195\n      73: aload         6\n      75: invokeinterface #24,  1           // InterfaceMethod java/util/Deque.isEmpty:()Z\n      80: ifne          116\n      83: aload_3\n      84: aload         6\n      86: invokeinterface #30,  1           // InterfaceMethod java/util/Deque.peekLast:()Ljava/lang/Object;\n      91: checkcast     #8                  // class java/lang/Integer\n      94: invokevirtual #34                 // Method java/lang/Integer.intValue:()I\n      97: iaload\n      98: aload_3\n      99: iload         10\n     101: iaload\n     102: if_icmpgt     116\n     105: aload         6\n     107: invokeinterface #38,  1           // InterfaceMethod java/util/Deque.pollLast:()Ljava/lang/Object;\n     112: pop\n     113: goto          73\n     116: aload         6\n     118: iload         10\n     120: invokestatic  #41                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n     123: invokeinterface #45,  2           // InterfaceMethod java/util/Deque.offerLast:(Ljava/lang/Object;)Z\n     128: pop\n     129: aload         6\n     131: invokeinterface #49,  1           // InterfaceMethod java/util/Deque.peekFirst:()Ljava/lang/Object;\n     136: checkcast     #8                  // class java/lang/Integer\n     139: invokevirtual #34                 // Method java/lang/Integer.intValue:()I\n     142: iload         10\n     144: iload_2\n     145: isub\n     146: if_icmpgt     157\n     149: aload         6\n     151: invokeinterface #52,  1           // InterfaceMethod java/util/Deque.pollFirst:()Ljava/lang/Object;\n     156: pop\n     157: iload         10\n     159: iload_2\n     160: iconst_1\n     161: isub\n     162: if_icmplt     189\n     165: lload         7\n     167: aload_3\n     168: aload         6\n     170: invokeinterface #49,  1           // InterfaceMethod java/util/Deque.peekFirst:()Ljava/lang/Object;\n     175: checkcast     #8                  // class java/lang/Integer\n     178: invokevirtual #34                 // Method java/lang/Integer.intValue:()I\n     181: iaload\n     182: i2l\n     183: ladd\n     184: lstore        7\n     186: iinc          9, 1\n     189: iinc          10, 1\n     192: goto          67\n     195: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     198: lload         4\n     200: lsub\n     201: ldc2_w        #55                 // long 1000000l\n     204: ldiv\n     205: lstore        10\n     207: getstatic     #57                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     210: iload         9\n     212: invokedynamic #61,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     217: invokevirtual #65                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     220: getstatic     #57                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     223: iload_1\n     224: iload_2\n     225: isub\n     226: iconst_1\n     227: iadd\n     228: invokedynamic #71,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     233: invokevirtual #65                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     236: getstatic     #57                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     239: lload         7\n     241: invokedynamic #72,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     246: invokevirtual #65                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     249: getstatic     #57                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     252: lload         10\n     254: invokedynamic #75,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     259: invokevirtual #65                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     262: return\n}\n"
+  },
+  "PrimitiveMono": {
+   "hash": "12abb065a0d9ba69",
+   "repeat": 20,
+   "runs": {
+    "5000": [
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     },
+     {
+      "windows": 4501,
+      "expected": 4501,
+      "checksum": 44953340,
+      "ms": 0
+     }
+    ],
+    "20000": [
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     },
+     {
+      "windows": 19501,
+      "expected": 19501,
+      "checksum": 194763920,
+      "ms": 1
+     }
+    ],
+    "50000": [
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 2
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 3
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 2
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 3
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     },
+     {
+      "windows": 49501,
+      "expected": 49501,
+      "checksum": 494379815,
+      "ms": 1
+     }
+    ],
+    "100000": [
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 2
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 1
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 2
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 1
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 0
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 1
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 1
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 1
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 0
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 0
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 1
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 0
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 0
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 2
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 1
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 1
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 3
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 1
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 1
+     },
+     {
+      "windows": 99501,
+      "expected": 99501,
+      "checksum": 993739640,
+      "ms": 3
+     }
+    ]
+   },
+   "inside": "Compiled from \"PrimitiveMono.java\"\npublic class lab.stackqueue.PrimitiveMono {\n  public lab.stackqueue.PrimitiveMono();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #7                  // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: sipush        500\n      10: istore_2\n      11: iload_1\n      12: newarray       int\n      14: astore_3\n      15: iconst_0\n      16: istore        4\n      18: iload         4\n      20: iload_1\n      21: if_icmpge     43\n      24: aload_3\n      25: iload         4\n      27: iload         4\n      29: bipush        37\n      31: imul\n      32: sipush        10000\n      35: irem\n      36: iastore\n      37: iinc          4, 1\n      40: goto          18\n      43: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n      46: lstore        4\n      48: iload_1\n      49: newarray       int\n      51: astore        6\n      53: iconst_0\n      54: istore        7\n      56: iconst_0\n      57: istore        8\n      59: lconst_0\n      60: lstore        9\n      62: iconst_0\n      63: istore        11\n      65: iconst_0\n      66: istore        12\n      68: iload         12\n      70: iload_1\n      71: if_icmpge     158\n      74: iload         7\n      76: iload         8\n      78: if_icmpge     103\n      81: aload_3\n      82: aload         6\n      84: iload         8\n      86: iconst_1\n      87: isub\n      88: iaload\n      89: iaload\n      90: aload_3\n      91: iload         12\n      93: iaload\n      94: if_icmpgt     103\n      97: iinc          8, -1\n     100: goto          74\n     103: aload         6\n     105: iload         8\n     107: iinc          8, 1\n     110: iload         12\n     112: iastore\n     113: aload         6\n     115: iload         7\n     117: iaload\n     118: iload         12\n     120: iload_2\n     121: isub\n     122: if_icmpgt     128\n     125: iinc          7, 1\n     128: iload         12\n     130: iload_2\n     131: iconst_1\n     132: isub\n     133: if_icmplt     152\n     136: lload         9\n     138: aload_3\n     139: aload         6\n     141: iload         7\n     143: iaload\n     144: iaload\n     145: i2l\n     146: ladd\n     147: lstore        9\n     149: iinc          11, 1\n     152: iinc          12, 1\n     155: goto          68\n     158: invokestatic  #13                 // Method java/lang/System.nanoTime:()J\n     161: lload         4\n     163: lsub\n     164: ldc2_w        #19                 // long 1000000l\n     167: ldiv\n     168: lstore        12\n     170: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     173: iload         11\n     175: invokedynamic #25,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n     180: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     183: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     186: iload_1\n     187: iload_2\n     188: isub\n     189: iconst_1\n     190: iadd\n     191: invokedynamic #35,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n     196: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     199: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     202: lload         9\n     204: invokedynamic #36,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     209: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     212: getstatic     #21                 // Field java/lang/System.out:Ljava/io/PrintStream;\n     215: lload         12\n     217: invokedynamic #39,  0             // InvokeDynamic #3:makeConcatWithConstants:(J)Ljava/lang/String;\n     222: invokevirtual #29                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     225: return\n}\n"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}
