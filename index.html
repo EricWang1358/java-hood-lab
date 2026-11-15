@@ -364,8 +364,8 @@
         零基础向 Java 后端面试交互课件：每一课先用日常场景画清边界，再用 JDK 25 真实跑出事故现场，最后对照 <code>javap</code> 字节码、线程交错泳道和实测耗时折线做出工程权衡。
       </p>
       <div class="stats">
-        <span><strong>162</strong> 节循序渐进实验课</span>
-        <span><strong>648</strong> 份可独立运行的 Java 变体</span>
+        <span><strong>166</strong> 节循序渐进实验课</span>
+        <span><strong>664</strong> 份可独立运行的 Java 变体</span>
         <span><strong>JDK 实测</strong> 数据与字节码/执行计划证据</span>
         <span>键盘 <strong>→ / ←</strong> 逐步学习 · 点击<strong>虚线词</strong>看大白话解释</span>
       </div>
@@ -374,10 +374,10 @@
     <div class="controls">
       <div class="search-row">
         <input id="q" class="search" type="search" placeholder="搜索课号、标题、问题或包名（如：tally、锁、CAS、线程池、TCP、HTTP、SQL、Spring）…" autocomplete="off">
-        <span id="shownCount" class="count-note">显示 162 / 162 课</span>
+        <span id="shownCount" class="count-note">显示 166 / 166 课</span>
       </div>
       <div class="pills" id="pills">
-        <button type="button" class="pill is-on" data-filter="all">全部 (162)</button>
+        <button type="button" class="pill is-on" data-filter="all">全部 (166)</button>
         <button type="button" class="pill" data-filter="ch1">第一章 · 竞态与容器 (7)</button>
         <button type="button" class="pill" data-filter="ch2">第二章 · 锁边界与死锁 (5)</button>
         <button type="button" class="pill" data-filter="ch3">第三章 · CAS 与无锁取舍 (3)</button>
@@ -386,7 +386,7 @@
         <button type="button" class="pill" data-filter="m1ch1">基础 1 · 值传递与精度 (5)</button>
         <button type="button" class="pill" data-filter="m1ch2">基础 2 · 对象与泛型 (5)</button>
         <button type="button" class="pill" data-filter="m1ch3">基础 3 · 异常与反射 (6)</button>
-        <button type="button" class="pill" data-filter="m1ch4">基础 4 · 集合与 Stream (4)</button>
+        <button type="button" class="pill" data-filter="m1ch4">基础 4 · 集合与 Stream (8)</button>
         <button type="button" class="pill" data-filter="m2ch1">JVM 1 · 类加载与栈堆 (4)</button>
         <button type="button" class="pill" data-filter="m2ch2">JVM 2 · 锁升级与 GC (5)</button>
         <button type="button" class="pill" data-filter="m2ch3">JVM 3 · OOM 与排障 (5)</button>
@@ -1059,8 +1059,8 @@
 
       <section class="chapter" data-ch="m1ch4">
         <div class="chapter__head">
-          <h2>模块一 · 第四章：集合底层原理与 Stream 陷阱（M1-17～M1-20）</h2>
-          <p>实测 ArrayList 扩容 vs LinkedList 随机访问、fail-fast 与 removeIf、HashMap 预分配容量与 8/64 红黑树化。</p>
+          <h2>模块一 · 第四章：集合底层原理与 Stream 陷阱（M1-17～M1-24）</h2>
+          <p>实测 ArrayList 扩容、fail-fast、HashMap 预分配与红黑树化、LinkedHashMap LRU、小顶堆 Top-K、Stream 装箱与假 List 视图坑。</p>
         </div>
         <div class="grid">
         <a class="card" href="./pages/col-arraylist-grow.html" data-ch="m1ch4" data-search="m1-17 col-arraylist-grow arraylist 1.5 倍扩容 vs linkedlist：随机访问慢在哪？ 面试都说「linkedlist 适合增删、arraylist 适合查询」，可为什么用 for(i) 调 linkedlist.get(i) 遍历 4 万条数据直接卡成几百毫秒？ lab.arraygrow">
@@ -1106,6 +1106,54 @@
           </div>
           <h3 class="card__title">HashMap 哈希碰撞与红黑树化：为什么 8 和 64 两个阈值缺一不可？</h3>
           <p class="card__lead">故意让 4000 个 Key 的 hashCode 全部撞进同一个桶，为什么 Key 实现 Comparable 时查询快如闪电，没实现 Comparable 时却慢成几十倍？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/col-linkedhashmap-lru.html" data-ch="m1ch4" data-search="m1-21 col-linkedhashmap-lru linkedhashmap 手写 o(1) lru 缓存：accessorder=true 怎么把热点挪到队尾？ 面试手撕高频第一题「o(1) lru 缓存」：用 linkedhashmap 只需重写一个方法 5 行搞定，可为什么忘了传第三个参数 true，热点键竟然被淘汰了？ lab.lhmlru">
+          <div class="card__top">
+            <span class="card__num">#M1-21</span>
+            <span class="card__pkg">lab.lhmlru</span>
+          </div>
+          <h3 class="card__title">LinkedHashMap 手写 O(1) LRU 缓存：accessOrder=true 怎么把热点挪到队尾？</h3>
+          <p class="card__lead">面试手撕高频第一题「O(1) LRU 缓存」：用 LinkedHashMap 只需重写一个方法 5 行搞定，可为什么忘了传第三个参数 true，热点键竟然被淘汰了？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/col-priority-queue.html" data-ch="m1ch4" data-search="m1-22 col-priority-queue priorityqueue 小顶堆 top-k vs 全排序：10 万条数据取前 10 为啥快这么多？ 排行榜只取前 10 名，却把 10 万条数据全量 arrays.sort 或全塞进大顶堆！换成容量固定为 10 的小顶堆，时间与内存分别省下多少？ lab.heaptopk">
+          <div class="card__top">
+            <span class="card__num">#M1-22</span>
+            <span class="card__pkg">lab.heaptopk</span>
+          </div>
+          <h3 class="card__title">PriorityQueue 小顶堆 Top-K vs 全排序：10 万条数据取前 10 为啥快这么多？</h3>
+          <p class="card__lead">排行榜只取前 10 名，却把 10 万条数据全量 Arrays.sort 或全塞进大顶堆！换成容量固定为 10 的小顶堆，时间与内存分别省下多少？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/col-stream-trap.html" data-ch="m1ch4" data-search="m1-23 col-stream-trap stream 装箱开销与 parallelstream 共享池阻塞陷阱 把普通的 for 循环全改成 list.stream().reduce() 甚至 parallelstream()，代码看似高级了，为什么性能反而变慢，甚至把整个微服务的并行任务全卡死？ lab.streamtrap">
+          <div class="card__top">
+            <span class="card__num">#M1-23</span>
+            <span class="card__pkg">lab.streamtrap</span>
+          </div>
+          <h3 class="card__title">Stream 装箱开销与 parallelStream 共享池阻塞陷阱</h3>
+          <p class="card__lead">把普通的 for 循环全改成 list.stream().reduce() 甚至 parallelStream()，代码看似高级了，为什么性能反而变慢，甚至把整个微服务的并行任务全卡死？</p>
+          <div class="card__foot">
+            <span>12 页 · 约 25 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/col-arrays-aslist.html" data-ch="m1ch4" data-search="m1-24 col-arrays-aslist arrays.aslist、list.of 与 sublist：三个假 list 视图的连环坑 用 arrays.aslist 转了个列表，一调 add() 就炸 unsupportedoperationexception；调 set() 居然把原数组也改掉了；更隐蔽的是 sublist 切片竟能导致几百 mb 大列表永不 gc！ lab.aslist">
+          <div class="card__top">
+            <span class="card__num">#M1-24</span>
+            <span class="card__pkg">lab.aslist</span>
+          </div>
+          <h3 class="card__title">Arrays.asList、List.of 与 subList：三个假 List 视图的连环坑</h3>
+          <p class="card__lead">用 Arrays.asList 转了个列表，一调 add() 就炸 UnsupportedOperationException；调 set() 居然把原数组也改掉了；更隐蔽的是 subList 切片竟能导致几百 MB 大列表永不 GC！</p>
           <div class="card__foot">
             <span>12 页 · 约 25 分钟</span>
             <span class="card__go">进入实验 →</span>

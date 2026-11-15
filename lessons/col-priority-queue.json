@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "col-priority-queue",
+  "course": "Java 工程语法与集合",
+  "title": "PriorityQueue 小顶堆 Top-K vs 全排序：10 万条数据取前 10 为啥快这么多？",
+  "lead": "排行榜只取前 10 名，却把 10 万条数据全量 Arrays.sort 或全塞进大顶堆！换成容量固定为 10 的小顶堆，时间与内存分别省下多少？",
+  "minutes": 25,
+  "needs": ["知道堆是一棵完全二叉树（数组存储）", "知道 PriorityQueue 默认是小顶堆"],
+  "after": [
+    "说清 PriorityQueue 底层数组下标关系（parent=(i-1)/2, left=2i+1）与上浮/下沉 O(log K)",
+    "用实测耗时对比全排序 O(N log N)、全量入堆 O(N log N) 与定长小顶堆 O(N log K) 的差距",
+    "掌握「求最大 Top-K 用小顶堆，求最小 Top-K 用大顶堆」的逆向守门员直觉"
+  ],
+  "terms": {
+    "小顶堆求最大 Top-K": "堆里只留目前最大的 K 个数，堆顶是这 K 个里**最小**的（守门员）；新元素只有比堆顶大才能踢掉堆顶上位，最终堆里剩下的就是全局最大的 K 个。",
+    "PriorityQueue": "JDK 优先级队列，底层是自动扩容的 `Object[]` 完全二叉树，默认小顶堆，非线程安全且不允许 `null`。",
+    "原生 int[] 堆": "算法竞赛与极致性能场景直接用 `int[K]` 手写 `siftDown`，彻底消除 `Integer` 装箱与对象头开销。"
+  },
+  "experiments": {
+    "heaptopk": {
+      "runner": "java",
+      "home": "lab.heaptopk",
+      "variants": [
+        { "id": "FullSortTopK", "code": "FullSortTopK.java", "label": "全量排序 Arrays.sort（O(N log N)）", "note": "为了取前 10 名把全部 N 个元素排了一遍，做了大量无用功。" },
+        { "id": "MaxHeapAllElements", "code": "MaxHeapAllElements.java", "label": "全量入大顶堆（O(N log N) + 装箱）", "note": "把全部 N 个元素装箱塞进 PriorityQueue，内存和 GC 压力最大，最慢。" },
+        { "id": "MinHeapSizeK", "code": "MinHeapSizeK.java", "label": "定长 K=10 小顶堆（O(N log K)）", "note": "堆内存永远只有 10 个元素，绝大多数元素只需 O(1) 跟堆顶比一下直接跳过！" },
+        { "id": "PrimitiveMinHeapTopK", "code": "PrimitiveMinHeapTopK.java", "label": "原生 int[10] 小顶堆（零装箱最快）", "note": "O(N log K) 且零装箱分配，速度碾压全量排序与大顶堆。" }
+      ],
+      "knob": { "label": "数据总量 N (Top-10)", "values": ["20000", "50000", "100000", "200000"], "default": "100000" },
+      "repeat": 20,
+      "metric": { "key": "topCount", "expectKey": "expected", "label": "成功取出 Top-K 个数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "PriorityQueue 小顶堆 Top-K",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "求海量数据里的 Top-10（比如热销商品榜、慢 SQL 榜），为什么高手从不用「全排序」也不用「全量入大顶堆」，而是用**容量为 K 的小顶堆**？今天用 20 万条数据实测给你看！",
+          "say": "这也是算法笔试 Top-K 题目的标准最优解之一。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：堆与 PriorityQueue 常识",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先检验堆的基础概念。",
+          "items": [
+            {
+              "have": "守门员原则",
+              "q": "要在 100 万个数里找出**最大的 10 个数**，应该维护一个容量为 10 的什么堆？",
+              "options": ["小顶堆（堆顶是第 10 大的门槛，比它大才配进）", "大顶堆", "无所谓"],
+              "answer": 0,
+              "why": "如果用大顶堆，堆顶是最大的，你根本不知道新来的数比堆里最小的那个大还是小！"
+            },
+            {
+              "have": "默认顺序",
+              "q": "`new PriorityQueue<Integer>()` 默认是小顶堆还是大顶堆？",
+              "options": ["小顶堆（每次 poll() 弹出最小值）", "大顶堆", "先进先出"],
+              "answer": 0,
+              "why": "改成大顶堆需传 `(a, b) -> Integer.compare(b, a)` 或 `Comparator.reverseOrder()`。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：MaxHeapAllElements vs MinHeapSizeK",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "heaptopk",
+          "variants": ["MaxHeapAllElements", "MinHeapSizeK"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：20 万个数取 Top-10，全量入大顶堆 vs 定长小顶堆差多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "heaptopk",
+          "question": "N=200000 取 Top-10 时，为什么 `MinHeapSizeK` 比 `MaxHeapAllElements` 快得多？",
+          "options": ["99.9% 的元素小于堆顶，一次 O(1) peek() 比较直接跳过，且堆大小恒为 10 几乎不触发装箱与扩容", "因为小顶堆不用比较", "因为 Arrays.sort 更慢"],
+          "answer": 0,
+          "why": "全量入堆要分配 20 万个 Integer 并做 20 万次 O(log N) 上浮；定长堆绝大多数时候只做一次整数比较！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种 Top-K 实现耗时实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "heaptopk",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：offer/poll 与自动装箱",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "heaptopk",
+          "variant": "MaxHeapAllElements",
+          "explain": "`MaxHeapAllElements` 循环里每次 `pq.offer(v)` 都调用 `Integer.valueOf(v)` 装箱，并触发数组扩容；而 `PrimitiveMinHeapTopK` 直接在栈/原生 `int[10]` 上做位运算下沉，零 GC 压力。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：定长小顶堆与原生数组堆",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "heaptopk",
+          "variants": ["MinHeapSizeK", "PrimitiveMinHeapTopK"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：2 万 → 20 万耗时扩展曲线",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "heaptopk",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "Top-K 选型总结",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**① 内存放不下海量流式数据：**必须用容量为 K 的小顶堆，空间复杂度仅 **O(K)**；**② 业务对象 Top-K：**`PriorityQueue<>(k)` 先 `peek()` 剪枝再 `offer()`；**③ 并发场景：**改用 `PriorityBlockingQueue`（线程安全阻塞优先队列）。",
+          "say": "记住：PriorityQueue 的 `iterator()` 遍历**不保证有序**，必须逐个 `poll()` 才有序！"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个经典误区。",
+          "items": [
+            {
+              "have": "遍历顺序",
+              "q": "对 `PriorityQueue` 直接用 `for (Integer x : pq)` 遍历打印，输出一定是严格从小到大有序的吗？",
+              "options": ["不一定，数组里只是堆序（父<=子），只有反复 poll() 才严格有序", "一定有序", "逆序"],
+              "answer": 0,
+              "why": "堆只保证堆顶是极值，不保证整张底层数组完全有序。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) PriorityQueue 的底层数据结构与时间复杂度；2) 为什么求最大 Top-K 要用小顶堆而不是大顶堆；3) Top-K 相比全排序在时间和空间上的优势。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "逆向守门员", "v": "求最大 Top-K 用小顶堆，求最小 Top-K 用大顶堆，空间仅 O(K)。" },
+            { "k": "先 peek 剪枝", "v": "堆满 K 个后，新元素 `<= peek()` 直接跳过，省去 `poll/offer` 堆调整。" },
+            { "k": "遍历无序", "v": "`PriorityQueue` 迭代不保证全局有序，必须 `poll()` 依次弹出。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

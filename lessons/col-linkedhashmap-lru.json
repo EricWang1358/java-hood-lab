@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "col-linkedhashmap-lru",
+  "course": "Java 工程语法与集合",
+  "title": "LinkedHashMap 手写 O(1) LRU 缓存：accessOrder=true 怎么把热点挪到队尾？",
+  "lead": "面试手撕高频第一题「O(1) LRU 缓存」：用 LinkedHashMap 只需重写一个方法 5 行搞定，可为什么忘了传第三个参数 true，热点键竟然被淘汰了？",
+  "minutes": 25,
+  "needs": ["知道 HashMap + 双向链表组合实现 LRU", "知道 LinkedHashMap 构造器第三个参数 accessOrder"],
+  "after": [
+    "说清 LinkedHashMap 如何在 HashMap 节点基础上通过 before/after 指针维护双向链表",
+    "区分 accessOrder=false（插入序 FIFO）与 accessOrder=true（访问序 LRU）的差异",
+    "记住 LinkedHashMap 依然非线程安全，并发场景需要加锁或使用 Caffeine"
+  ],
+  "terms": {
+    "accessOrder=true": "开启后，每次 `get()` 或 `put()` 命中已有键时，`afterNodeAccess()` 自动把该节点摘下来挪到双向链表尾部（最新位置），表头永远是最久未使用的冷数据。",
+    "removeEldestEntry": "`LinkedHashMap` 在每次 `put` 结束时回调 `afterNodeInsertion()`，只要 `removeEldestEntry(eldest)` 返回 `true` 就 O(1) 删掉表头最老节点。",
+    "并发改造": "`LinkedHashMap` 的 `get()` 也会修改双向链表指针（第 7 课已测），多线程读写必须加互斥锁或改用 `Caffeine`。"
+  },
+  "experiments": {
+    "lhmlru": {
+      "runner": "java",
+      "home": "lab.lhmlru",
+      "variants": [
+        { "id": "HashMapNoEvictLeak", "code": "HashMapNoEvictLeak.java", "label": "普通 HashMap（无淘汰，内存爆炸）", "note": "写入 N 条后 size=N 远超上限 100，无法淘汰冷数据。" },
+        { "id": "LinkedFifoOrderWrong", "code": "LinkedFifoOrderWrong.java", "label": "accessOrder=false（FIFO 误删热点）", "note": "虽然频繁 get(0)，但链表不刷新顺序，新键一进来就把热点 key=0 淘汰了！" },
+        { "id": "LinkedHashMapLruSafe", "code": "LinkedHashMapLruSafe.java", "label": "accessOrder=true（标准 O(1) LRU）", "note": "get(0) 自动把 key=0 移到队尾，容量严守 100 且热点稳稳保留。" },
+        { "id": "SynchronizedLruCache", "code": "SynchronizedLruCache.java", "label": "synchronizedMap 线程安全包装", "note": "为多线程读写加上互斥锁，兼顾 LRU 语义与并发安全。" }
+      ],
+      "knob": { "label": "热点访问/写入次数 N", "values": ["1000", "5000", "10000", "20000"], "default": "5000" },
+      "repeat": 20,
+      "metric": { "key": "boundedOk", "expectKey": "expected", "label": "容量受控且保住热点 (1=是)" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "LinkedHashMap 手写 O(1) LRU 缓存",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "LeetCode 146「LRU 缓存」面试常考两种写法：手写 `HashMap + 双向链表`，或者直接基于 JDK 的 `LinkedHashMap`。今天实测 `LinkedHashMap` 最容易写错的一个布尔参数：**`accessOrder = true`**！",
+          "say": "顺便接上第 7 课的并发结论：LinkedHashMap 的 `get` 也在写链表！"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：LRU 机制两问",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先测一下对 LinkedHashMap 的熟悉度。",
+          "items": [
+            {
+              "have": "默认顺序",
+              "q": "`new LinkedHashMap<>()` 默认的遍历顺序是什么？",
+              "options": ["插入顺序（accessOrder=false）", "访问顺序（LRU）", "按 Key 自然排序"],
+              "answer": 0,
+              "why": "必须显式调三参构造器 `new LinkedHashMap<>(cap, 0.75f, true)` 才会启用 LRU 访问序。"
+            },
+            {
+              "have": "为何 O(1)",
+              "q": "为什么单靠 `HashMap` 或单靠双向链表都做不到 O(1) LRU，必须两者结合？",
+              "options": ["HashMap 负责 O(1) 定位节点，双向链表负责 O(1) 摘除与尾插", "因为链表不能存对象", "为了省内存"],
+              "answer": 0,
+              "why": "定位靠哈希表，顺序调整和删头节点靠双向链表。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：LinkedFifoOrderWrong vs LinkedHashMapLruSafe",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "lhmlru",
+          "variants": ["LinkedFifoOrderWrong", "LinkedHashMapLruSafe"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：连续 get(0) 五千次后插入第 101 个键，key=0 还在吗？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "lhmlru",
+          "question": "`LinkedFifoOrderWrong` 传入 `accessOrder=false`，连续 `get(0)` 后插入新键 `999999`，`cache.containsKey(0)` 是？",
+          "options": ["false（key=0 作为最早插入的节点被当成最老淘汰了！）", "true", "抛异常"],
+          "answer": 0,
+          "why": "`accessOrder=false` 时 `get()` 根本不会触发 `afterNodeAccess()` 移动节点，纯按插入时间 FIFO 淘汰！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种实现正确性与耗时实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "lhmlru",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：afterNodeAccess 与 removeEldestEntry",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "lhmlru",
+          "variant": "LinkedHashMapLruSafe",
+          "explain": "开启 `accessOrder=true` 后，`LinkedHashMap.get()` 命中节点时会调用 `afterNodeAccess(e)` 改写 `before/after` 指针将其移至链表尾；`put()` 结束时 `afterNodeInsertion` 检查重写的 `removeEldestEntry` 返回 true 即删表头。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：并发场景加锁包装",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "lhmlru",
+          "variants": ["LinkedHashMapLruSafe", "SynchronizedLruCache"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：1 千 → 2 万次访问耗时对比",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "lhmlru",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "本地缓存工程选型",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**① 单线程/面试手撕：**`LinkedHashMap(cap, 0.75f, true)` + 重写 `removeEldestEntry`；**② 生产高并发本地缓存：**直接用 **Caffeine**（W-TinyLFU 淘汰算法，命中率碾压 LRU 且分段环形缓冲无全局锁争用），不要手搓 `synchronizedMap(LinkedHashMap)` 扛高并发。",
+          "say": "能说出 Caffeine 和 W-TinyLFU，面试官直接高看一眼。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个遍历坑。",
+          "items": [
+            {
+              "have": "遍历 CME",
+              "q": "对开启了 `accessOrder=true` 的 `LinkedHashMap` 一边用 `for-each` 遍历 keySet，一边在循环体里调用 `map.get(key)` 会怎样？",
+              "options": ["抛出 ConcurrentModificationException（因为 get 挪动了链表顺序并 modCount++）", "正常执行", "死循环"],
+              "answer": 0,
+              "why": "极其隐蔽的坑：`accessOrder=true` 时连 `get()` 都会 `modCount++`！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) LinkedHashMap 的底层数据结构；2) 如何用它实现 O(1) LRU 缓存（accessOrder=true + removeEldestEntry）；3) 为什么高并发生产环境更推荐 Caffeine 而不是 synchronized LinkedHashMap。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "三参构造", "v": "必须传 `accessOrder=true` 才是 LRU，默认 `false` 只是 FIFO。" },
+            { "k": "双结构合一", "v": "`HashMap` 定位 O(1) + 双向链表维护访问顺序与 O(1) 删头淘汰。" },
+            { "k": "生产用 Caffeine", "v": "`LinkedHashMap` 的 `get()` 会改链表且 `modCount++`，高并发请用 Caffeine。" }
+          ]
+        }
+      ]
+    }
+  ]
+}

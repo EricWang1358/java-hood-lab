@@ -1,0 +1,200 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "col-stream-trap",
+  "course": "Java 工程语法与集合",
+  "title": "Stream 装箱开销与 parallelStream 共享池阻塞陷阱",
+  "lead": "把普通的 for 循环全改成 list.stream().reduce() 甚至 parallelStream()，代码看似高级了，为什么性能反而变慢，甚至把整个微服务的并行任务全卡死？",
+  "minutes": 25,
+  "needs": ["知道 Stream 惰性求值与中间/终端操作", "知道 ForkJoinPool.commonPool()"],
+  "after": [
+    "对比普通 for 循环、装箱 Stream.reduce、原生 IntStream/LongStream 与 parallelStream 的真实耗时",
+    "说清为什么 CPU 密集小任务用 parallelStream 反而可能比单线程慢（线程调度与拆箱开销）",
+    "掌握「IO 阻塞任务严禁使用 parallelStream」的架构红线（会饿死全局 ForkJoinPool.commonPool）"
+  ],
+  "terms": {
+    "Stream 装箱开销": "`List<Integer>.stream().reduce(0, Integer::sum)` 每次累加都要把 `Integer` 拆成 `int` 相加后再装箱成新 `Integer`，制造海量垃圾。",
+    "LongStream / IntStream": "通过 `.mapToLong(Integer::intValue)` 转成原生数值流，消除中间结果的反复装箱拆箱。",
+    "ForkJoinPool.commonPool": "所有 `parallelStream()` 和未传线程池的 `CompletableFuture.supplyAsync()` **共享同一个全局公共池**（默认线程数 = CPU 核数 - 1）；一旦里面跑了慢 SQL 或 HTTP 阻塞调用，全服务并行任务一起卡死！"
+  },
+  "experiments": {
+    "streamtrap": {
+      "runner": "java",
+      "home": "lab.streamtrap",
+      "variants": [
+        { "id": "BoxedStreamReduce", "code": "BoxedStreamReduce.java", "label": "装箱 Stream.reduce（反复拆装箱）", "note": "每次累加都要拆箱相加再装箱成 Integer，耗时显著高于原生循环。" },
+        { "id": "ParallelStreamSharedPool", "code": "ParallelStreamSharedPool.java", "label": "parallelStream（ForkJoinPool 调度）", "note": "数据量不够大时线程切分/合并开销反而抵消并行收益，且占用公共池。" },
+        { "id": "IntStreamPrimitiveSum", "code": "IntStreamPrimitiveSum.java", "label": "mapToLong().sum() 原生数值流", "note": "消除中间装箱对象分配，兼顾函数式可读性与接近循环的性能。" },
+        { "id": "ClassicForLoopSum", "code": "ClassicForLoopSum.java", "label": "经典 for 循环（零流对象分配）", "note": "最朴素的下标循环，JIT 最容易做循环展开与标量优化，通常最快。" }
+      ],
+      "knob": { "label": "集合元素数量 N", "values": ["50000", "200000", "500000", "1000000"], "default": "500000" },
+      "repeat": 20,
+      "metric": { "key": "ok", "expectKey": "expected", "label": "累加校验元素数" },
+      "time": { "key": "ms", "label": "耗时", "unit": "ms" }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "Stream 性能与 parallelStream 陷阱",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "JDK 8 Stream 让集合处理优雅了十倍，但滥用也会带来两个典型坑：**① 数值聚合忘了转 `IntStream/LongStream` 导致疯狂拆装箱；② 盲目加上 `.parallelStream()` 以为能白嫖多线程加速，结果把全局 `ForkJoinPool.commonPool` 堵死！**",
+          "say": "今天用实测数据帮你划清 Stream 的适用边界。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "热身：Stream 核心特性",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "先测两道 Stream 基础题。",
+          "items": [
+            {
+              "have": "惰性求值",
+              "q": "只写 `list.stream().filter(x -> { System.out.println(x); return true; });` 而不加 `.collect()` 等终端操作，控制台会打印吗？",
+              "options": ["不会（中间操作是惰性的，没有终端操作不会触发执行）", "会立刻打印", "编译报错"],
+              "answer": 0,
+              "why": "Stream 只有在遇到终端操作（`collect`/`forEach`/`count`/`sum`）时才真正开始流水线迭代。"
+            },
+            {
+              "have": "公共线程池",
+              "q": "`parallelStream()` 默认使用哪个线程池执行并行任务？",
+              "options": ["全局共享的 ForkJoinPool.commonPool()", "每次新建一个 CachedThreadPool", "调用者主线程独享"],
+              "answer": 0,
+              "why": "整个 JVM 进程共用这一个公共池，因此绝对不能在里面做数据库/RPC 等 IO 阻塞操作！"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "看代码：BoxedStreamReduce vs IntStreamPrimitiveSum",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "streamtrap",
+          "variants": ["BoxedStreamReduce", "IntStreamPrimitiveSum"]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "先猜：100 万个 Integer 求和，装箱 reduce 比原生 for 循环慢多少？",
+      "blocks": [
+        {
+          "t": "predict",
+          "exp": "streamtrap",
+          "question": "N=1000000 时，`BoxedStreamReduce` 相比 `ClassicForLoopSum` 耗时表现如何？",
+          "options": ["慢出数倍（百万次 Integer 装箱分配 + Lambda 分派）", "一样快", "Stream 更快"],
+          "answer": 0,
+          "why": "`reduce(0, Integer::sum)` 的签名是 `BinaryOperator<Integer>`，每一步都要产出新的 `Integer` 对象！"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "跑一跑：4 种求和其他方式耗时实测",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "streamtrap",
+          "kind": "correctness"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开字节码：invokedynamic 与 Stream 流水线",
+      "blocks": [
+        {
+          "t": "inside",
+          "exp": "streamtrap",
+          "variant": "BoxedStreamReduce",
+          "explain": "`BoxedStreamReduce` 不仅构造了 `ReferencePipeline` 节点，Lambda `Integer::sum` 每次都在做 `Integer.intValue -> iadd -> Integer.valueOf` 往返装箱。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "改一处：原生数值流与经典循环",
+      "blocks": [
+        {
+          "t": "code",
+          "exp": "streamtrap",
+          "variants": ["IntStreamPrimitiveSum", "ClassicForLoopSum"]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "怎么选：5 万 → 100 万耗时扩展曲线",
+      "blocks": [
+        {
+          "t": "result",
+          "exp": "streamtrap",
+          "kind": "scaling"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "Stream 使用三条军规",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "**① 数值统计用 `mapToInt/mapToLong`，避开装箱 `reduce`；② 极热点紧凑计算用普通 `for` 循环，业务转换/分组/去重放心用 `Stream`（可读性无敌）；③ 严禁在 `parallelStream()` 里调 DB/HTTP/锁等阻塞操作**，需要并发 IO 请用独立业务线程池 + `CompletableFuture`。",
+          "say": "记住：一个 Stream 只能消费一次，重复使用会报 `stream has already been operated upon or closed`。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "小测：30 秒巩固",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "再查一个 Stream 高频异常。",
+          "items": [
+            {
+              "have": "toMap 重复键",
+              "q": "用 `Collectors.toMap(User::getId, User::getName)` 时，如果列表里有两个相同 `id` 的元素或 `name` 为 `null`，会发生什么？",
+              "options": ["重复 key 抛 IllegalStateException，value 为 null 抛 NullPointerException", "自动覆盖并保留 null", "忽略后一个"],
+              "answer": 0,
+              "why": "线上高频炸弹！`toMap` 必须传第三个合并函数 `(v1, v2) -> v1` 防重复键崩盘。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "开口讲：2 分钟脱稿自述",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "请脱稿向面试官解释：1) Stream 的惰性求值特性；2) 数值聚合为什么要用 IntStream/LongStream；3) 为什么线上生产代码几乎禁止随便用 parallelStream()。",
+          "seconds": 120
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张核心卡片",
+      "blocks": [
+        {
+          "t": "take",
+          "cards": [
+            { "k": "避免装箱", "v": "数值统计用 `mapToInt`/`mapToLong`，别用 `reduce(0, Integer::sum)`。" },
+            { "k": "禁用并行流 IO", "v": "`parallelStream` 共享 `ForkJoinPool.commonPool`，阻塞 IO 会拖垮全服务。" },
+            { "k": "toMap 必传合并", "v": "`Collectors.toMap` 遇到重复 key 直接炸异常，务必加 `(a, b) -> a`。" }
+          ]
+        }
+      ]
+    }
+  ]
+}
