@@ -815,6 +815,135 @@
         </a>
         </div>
       </section>
+
+      <section class="chapter" data-ch="m8">
+        <div class="chapter__head">
+          <h2>模块 8：笔试算法 + SQL 手撕（第 33～42 课 · 10 组专题）</h2>
+          <p>覆盖 101 道高频手撕题：哈希双指针、链表反转判环、单调栈队列、二叉树、二分边界、回溯剪枝、基础 DP、并发 LRU、交替打印与分组排名 SQL。</p>
+        </div>
+        <div class="grid">
+        <a class="card" href="./pages/hash-twopointer.html" data-ch="m8" data-search="33 hash-twopointer 哈希与双指针 两数之和暴力跑了多久 lab.hashtwo">
+          <div class="card__top">
+            <span class="card__num">#33</span>
+            <span class="card__pkg">lab.hashtwo</span>
+          </div>
+          <h3 class="card__title">两数之和暴力跑了多久？哈希与双指针怎么省出 100 倍</h3>
+          <p class="card__lead">同样找两个和为 target 的数，为什么 O(n²) 暴力在 6 万数据下直接慢成幻灯片，而预分配 HashMap 几乎 0 毫秒？</p>
+          <div class="card__foot">
+            <span>16 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/linked-list.html" data-ch="m8" data-search="34 linked-list 链表翻转与环检测 递归长链会爆栈 lab.linkedlist">
+          <div class="card__top">
+            <span class="card__num">#34</span>
+            <span class="card__pkg">lab.linkedlist</span>
+          </div>
+          <h3 class="card__title">链表翻转与环检测：递归长链会爆栈，三指针怎么原地零分配</h3>
+          <p class="card__lead">同样把 10 万个节点的链表倒过来，为什么递归版直接 StackOverflowError，而三指针迭代版只需要 3 个局部引用？</p>
+          <div class="card__foot">
+            <span>16 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/stack-queue.html" data-ch="m8" data-search="35 stack-queue 栈与单调队列 滑动窗口最大值 lab.stackqueue">
+          <div class="card__top">
+            <span class="card__num">#35</span>
+            <span class="card__pkg">lab.stackqueue</span>
+          </div>
+          <h3 class="card__title">栈与单调队列：滑动窗口最大值怎么从 O(nk) 压到均摊 O(n)</h3>
+          <p class="card__lead">窗口每次右移一格，为什么暴力扫和 TreeMap 都输给了看似多了一层 while 的 ArrayDeque 单调队列？</p>
+          <div class="card__foot">
+            <span>16 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/binary-tree.html" data-ch="m8" data-search="36 binary-tree 二叉树递归与层序 偏斜树爆栈 lab.bintree">
+          <div class="card__top">
+            <span class="card__num">#36</span>
+            <span class="card__pkg">lab.bintree</span>
+          </div>
+          <h3 class="card__title">二叉树递归与层序：偏斜树为什么把递归打爆，队列 size 怎么锁死每一层</h3>
+          <p class="card__lead">同样遍历 3 万个节点的二叉树，为什么极端偏斜树下递归直接 StackOverflowError，而显式栈和 Morris 稳如磐石？</p>
+          <div class="card__foot">
+            <span>16 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/binary-search.html" data-ch="m8" data-search="37 binary-search 二分搜索与边界 死循环 溢出 lab.binsearch">
+          <div class="card__top">
+            <span class="card__num">#37</span>
+            <span class="card__pkg">lab.binsearch</span>
+          </div>
+          <h3 class="card__title">二分搜索与边界：为什么总写死循环，(l + r) / 2 怎么就溢出了</h3>
+          <p class="card__lead">一百万数据里找目标左边界，线性扫描要扫几十万次，二分只要 20 步；可为什么只差一个等号就会漏解或死循环？</p>
+          <div class="card__foot">
+            <span>16 页 · 约 35 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/backtrack.html" data-ch="m8" data-search="38 backtrack 回溯排列与组合 撤销 剪枝去重 lab.backtrack">
+          <div class="card__top">
+            <span class="card__num">#38</span>
+            <span class="card__pkg">lab.backtrack</span>
+          </div>
+          <h3 class="card__title">回溯排列与组合：忘掉撤销现场会全串，剪枝去重怎么省出 10 倍时间</h3>
+          <p class="card__lead">同样收集所有子集，为什么每次 new ArrayList 拷贝路径慢得像蜗牛，而忘掉最后一行 remove 会让答案面目全非？</p>
+          <div class="card__foot">
+            <span>16 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/dp-basics.html" data-ch="m8" data-search="39 dp-basics 动态规划与状态压缩 滚动变量 lab.dpbasics">
+          <div class="card__top">
+            <span class="card__num">#39</span>
+            <span class="card__pkg">lab.dpbasics</span>
+          </div>
+          <h3 class="card__title">动态规划与状态压缩：纯递归怎么指数级卡死，滚动变量怎么压到 O(1)</h3>
+          <p class="card__lead">同样算第 40 阶楼梯的方法数，为什么纯递归跑出几百毫秒，而记忆化、DP 数组和滚动变量一万遍都只要一眨眼？</p>
+          <div class="card__foot">
+            <span>16 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/threadsafe-lru.html" data-ch="m8" data-search="40 threadsafe-lru 手写线程安全 LRU 分段锁 lab.tslru">
+          <div class="card__top">
+            <span class="card__num">#40</span>
+            <span class="card__pkg">lab.tslru</span>
+          </div>
+          <h3 class="card__title">手写线程安全 LRU（接第 7 课）：为什么 readLock 照样崩，分段锁怎么提速</h3>
+          <p class="card__lead">接回第 7 课的坑：按访问排序的 LinkedHashMap 连 get() 都在改双向链表；单全局锁和 16 分段锁在 8 线程下差多少？</p>
+          <div class="card__foot">
+            <span>16 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/alt-print.html" data-ch="m8" data-search="41 alt-print 多线程交替打印 wait while Condition Semaphore lab.altprint">
+          <div class="card__top">
+            <span class="card__num">#41</span>
+            <span class="card__pkg">lab.altprint</span>
+          </div>
+          <h3 class="card__title">多线程交替打印：wait 不包在 while 里怎么就乱序了，Condition 怎么精准接力</h3>
+          <p class="card__lead">三个线程轮流打印 ABC 一万轮：为什么把 while 换成 if 立马乱套？Condition 和 Semaphore 谁更稳？</p>
+          <div class="card__foot">
+            <span>16 页 · 约 40 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        <a class="card" href="./pages/sql-ranking.html" data-ch="m8" data-search="42 sql-ranking 高频分组排名 SQL 窗口函数 DENSE_RANK lab.sqlrank">
+          <div class="card__top">
+            <span class="card__num">#42</span>
+            <span class="card__pkg">lab.sqlrank</span>
+          </div>
+          <h3 class="card__title">高频分组排名 SQL 20 题：为什么窗口函数比相关子查询快一个数量级</h3>
+          <p class="card__lead">求「每个部门工资前三高」：老式相关子查询在 3 万行表上跑出数百毫秒，窗口函数为什么只要几毫秒？</p>
+          <div class="card__foot">
+            <span>16 页 · 约 45 分钟</span>
+            <span class="card__go">进入实验 →</span>
+          </div>
+        </a>
+        </div>
+      </section>
     </main>
 
     <div class="empty" id="emptyState" hidden>没有找到匹配的课程，试试换一个关键词或切回「全部」。</div>

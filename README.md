@@ -97,6 +97,23 @@
 | 31 | **换上虚拟线程，共享计数还需要锁吗** | 只把平台线程换成 Thread.ofVirtual()，百万次 count++ 会少掉吗？ | `lab.virtrace` | [网页课件](./pages/virtual-race.html) · [JSON](./lessons/virtual-race.json) · [源码](./src/lab/virtrace/) |
 | 32 | **库与缓存各用原子数组，为啥还会写反？** | 更新主库并同步写投影，两边都换原子数组后还是被慢请求倒盖；全系列收官，怎么彻底对齐？ | `lab.txoutbox` | [网页课件](./pages/tx-outbox.html) · [JSON](./lessons/tx-outbox.json) · [源码](./src/lab/txoutbox/) |
 
+### 模块 8：笔试算法 + SQL 手撕（第 33～42 课 · 10 组专题 · 101 题）
+
+覆盖笔试与一二面高频手撕题：先用实测数据与 `javap` 字节码打破直觉误区，再对照 [101 题高频刷题清单](./docs/module8-100-problems.md) 与 [SQL 20 题可执行脚本](./src/lab/sqlrank/queries.sql) 每日手敲。
+
+| # | 课程标题 | 一句话引子 | 代码包 | 入口 |
+|---|---|---|---|---|
+| 33 | **两数之和暴力跑了多久？哈希与双指针怎么省出 100 倍** | O(n²) 暴力在 6 万数据下直接慢成幻灯片，预分配 HashMap 怎么几乎 0 毫秒？ | `lab.hashtwo` | [网页课件](./pages/hash-twopointer.html) · [JSON](./lessons/hash-twopointer.json) · [源码](./src/lab/hashtwo/) |
+| 34 | **链表翻转与环检测：递归长链会爆栈，三指针怎么原地零分配** | 10 万节点链表递归直接 StackOverflowError，三指针与 dummy 哨兵怎么零分配稳过？ | `lab.linkedlist` | [网页课件](./pages/linked-list.html) · [JSON](./lessons/linked-list.json) · [源码](./src/lab/linkedlist/) |
+| 35 | **栈与单调队列：滑动窗口最大值怎么从 O(nk) 压到均摊 O(n)** | 窗口右移一格，为什么暴力扫和 TreeMap 都输给了 ArrayDeque 单调队列？ | `lab.stackqueue` | [网页课件](./pages/stack-queue.html) · [JSON](./lessons/stack-queue.json) · [源码](./src/lab/stackqueue/) |
+| 36 | **二叉树递归与层序：偏斜树为什么把递归打爆，队列 size 怎么锁死每一层** | 3 万层偏斜树下递归直接爆栈，显式栈与 Morris 怎么稳如磐石？ | `lab.bintree` | [网页课件](./pages/binary-tree.html) · [JSON](./lessons/binary-tree.json) · [源码](./src/lab/bintree/) |
+| 37 | **二分搜索与边界：为什么总写死循环，(l + r) / 2 怎么就溢出了** | 百万数据二分只需 20 步，差一个等号或右移符号怎么就漏解或死循环？ | `lab.binsearch` | [网页课件](./pages/binary-search.html) · [JSON](./lessons/binary-search.json) · [源码](./src/lab/binsearch/) |
+| 38 | **回溯排列与组合：忘掉撤销现场会全串，剪枝去重怎么省出 10 倍时间** | 每次拷贝路径慢如蜗牛，忘掉 remove 会全串，排序同层去重怎么提速？ | `lab.backtrack` | [网页课件](./pages/backtrack.html) · [JSON](./lessons/backtrack.json) · [源码](./src/lab/backtrack/) |
+| 39 | **动态规划与状态压缩：纯递归怎么指数级卡死，滚动变量怎么压到 O(1)** | 第 40 阶楼梯纯递归飙出数百毫秒，记忆化与滚动变量一万遍只要一眨眼？ | `lab.dpbasics` | [网页课件](./pages/dp-basics.html) · [JSON](./lessons/dp-basics.json) · [源码](./src/lab/dpbasics/) |
+| 40 | **手写线程安全 LRU（接第 7 课）：为什么 readLock 照样崩，分段锁怎么提速** | get() 也会改双向链表，加 readLock 照样崩；16 分段锁在 8 线程下怎么拉开差距？ | `lab.tslru` | [网页课件](./pages/threadsafe-lru.html) · [JSON](./lessons/threadsafe-lru.json) · [源码](./src/lab/tslru/) |
+| 41 | **多线程交替打印：wait 不包在 while 里怎么就乱序了，Condition 怎么精准接力** | 三线程交替打印 ABC：while 换成 if 立马乱套，Condition 与 Semaphore 怎么稳控？ | `lab.altprint` | [网页课件](./pages/alt-print.html) · [JSON](./lessons/alt-print.json) · [源码](./src/lab/altprint/) |
+| 42 | **高频分组排名 SQL 20 题：为什么窗口函数比相关子查询快一个数量级** | 部门工资前三高，相关子查询 O(n²) 慢爆，DENSE_RANK 怎么一趟搞定？ | `lab.sqlrank` | [网页课件](./pages/sql-ranking.html) · [JSON](./lessons/sql-ranking.json) · [源码](./src/lab/sqlrank/) |
+
 ## 本地动手运行实验代码
 
 仓库中的所有示例仅使用 JDK 标准库，无任何第三方依赖（第 31 课 `virtual-race` 需 **JDK 21+**，其余课程兼容常见 JDK；全部实验数据实测于 **JDK 25**）。

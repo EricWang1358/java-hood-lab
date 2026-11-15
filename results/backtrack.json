@@ -1,0 +1,1671 @@
+{
+ "id": "backtrack",
+ "variants": {
+  "CopyPathBacktrack": {
+   "hash": "e8e72b783c03cd43",
+   "repeat": 20,
+   "runs": {
+    "8": [
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     }
+    ],
+    "10": [
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 2
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 2
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 2
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 2
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 2
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     }
+    ],
+    "12": [
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 3
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 3
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 3
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 3
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 3
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 3
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 3
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 3
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     }
+    ],
+    "14": [
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 5
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 6
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 7
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 5
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 7
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 5
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 4
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 5
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 5
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 4
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 4
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 5
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 5
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 5
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 3
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 4
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 5
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 6
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 5
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 4
+     }
+    ]
+   },
+   "inside": "Compiled from \"CopyPathBacktrack.java\"\npublic class lab.backtrack.CopyPathBacktrack {\n  static int count;\n\n  public lab.backtrack.CopyPathBacktrack();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void dfs(int[], int, java.util.List<java.lang.Integer>);\n    Code:\n       0: getstatic     #7                  // Field count:I\n       3: iconst_1\n       4: iadd\n       5: putstatic     #7                  // Field count:I\n       8: iload_1\n       9: istore_3\n      10: iload_3\n      11: aload_0\n      12: arraylength\n      13: if_icmpge     74\n      16: iload_3\n      17: iload_1\n      18: if_icmple     35\n      21: aload_0\n      22: iload_3\n      23: iaload\n      24: aload_0\n      25: iload_3\n      26: iconst_1\n      27: isub\n      28: iaload\n      29: if_icmpne     35\n      32: goto          68\n      35: new           #13                 // class java/util/ArrayList\n      38: dup\n      39: aload_2\n      40: invokespecial #15                 // Method java/util/ArrayList.\"<init>\":(Ljava/util/Collection;)V\n      43: astore        4\n      45: aload         4\n      47: aload_0\n      48: iload_3\n      49: iaload\n      50: invokestatic  #18                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      53: invokeinterface #24,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      58: pop\n      59: aload_0\n      60: iload_3\n      61: iconst_1\n      62: iadd\n      63: aload         4\n      65: invokestatic  #30                 // Method dfs:([IILjava/util/List;)V\n      68: iinc          3, 1\n      71: goto          10\n      74: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #34                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     28\n      18: aload_2\n      19: iload_3\n      20: iload_3\n      21: iastore\n      22: iinc          3, 1\n      25: goto          13\n      28: aload_2\n      29: invokestatic  #38                 // Method java/util/Arrays.sort:([I)V\n      32: invokestatic  #44                 // Method java/lang/System.nanoTime:()J\n      35: lstore_3\n      36: iconst_0\n      37: putstatic     #7                  // Field count:I\n      40: aload_2\n      41: iconst_0\n      42: new           #13                 // class java/util/ArrayList\n      45: dup\n      46: invokespecial #50                 // Method java/util/ArrayList.\"<init>\":()V\n      49: invokestatic  #30                 // Method dfs:([IILjava/util/List;)V\n      52: invokestatic  #44                 // Method java/lang/System.nanoTime:()J\n      55: lload_3\n      56: lsub\n      57: ldc2_w        #51                 // long 1000000l\n      60: ldiv\n      61: lstore        5\n      63: getstatic     #53                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      66: getstatic     #7                  // Field count:I\n      69: invokedynamic #57,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      74: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      77: getstatic     #53                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: iconst_1\n      81: iload_1\n      82: ishl\n      83: invokedynamic #67,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      88: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      91: getstatic     #53                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      94: lload         5\n      96: invokedynamic #68,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     101: invokevirtual #61                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     104: return\n\n  static {};\n    Code:\n       0: iconst_0\n       1: putstatic     #7                  // Field count:I\n       4: return\n}\n"
+  },
+  "ForgotUndo": {
+   "hash": "de830d0e01411382",
+   "repeat": 20,
+   "runs": {
+    "8": [
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 36,
+      "expected": 1024,
+      "ms": 0
+     }
+    ],
+    "10": [
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     },
+     {
+      "subsets": 55,
+      "expected": 5120,
+      "ms": 0
+     }
+    ],
+    "12": [
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 1
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 1
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 1
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 1
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 1
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 1
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 1
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 1
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     },
+     {
+      "subsets": 78,
+      "expected": 24576,
+      "ms": 0
+     }
+    ],
+    "14": [
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 3
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 2
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 3
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 2
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 3
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 2
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 1
+     },
+     {
+      "subsets": 105,
+      "expected": 114688,
+      "ms": 3
+     }
+    ]
+   },
+   "inside": "Compiled from \"ForgotUndo.java\"\npublic class lab.backtrack.ForgotUndo {\n  static int validSum;\n\n  public lab.backtrack.ForgotUndo();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void dfs(int[], int, java.util.List<java.lang.Integer>);\n    Code:\n       0: aload_2\n       1: invokeinterface #7,  1            // InterfaceMethod java/util/List.size:()I\n       6: aload_0\n       7: arraylength\n       8: if_icmpgt     24\n      11: getstatic     #13                 // Field validSum:I\n      14: aload_2\n      15: invokeinterface #7,  1            // InterfaceMethod java/util/List.size:()I\n      20: iadd\n      21: putstatic     #13                 // Field validSum:I\n      24: iload_1\n      25: istore_3\n      26: iload_3\n      27: aload_0\n      28: arraylength\n      29: if_icmpge     59\n      32: aload_2\n      33: aload_0\n      34: iload_3\n      35: iaload\n      36: invokestatic  #19                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      39: invokeinterface #25,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      44: pop\n      45: aload_0\n      46: iload_3\n      47: iconst_1\n      48: iadd\n      49: aload_2\n      50: invokestatic  #29                 // Method dfs:([IILjava/util/List;)V\n      53: iinc          3, 1\n      56: goto          26\n      59: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #33                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     28\n      18: aload_2\n      19: iload_3\n      20: iload_3\n      21: iastore\n      22: iinc          3, 1\n      25: goto          13\n      28: invokestatic  #37                 // Method java/lang/System.nanoTime:()J\n      31: lstore_3\n      32: iconst_0\n      33: putstatic     #13                 // Field validSum:I\n      36: aload_2\n      37: iconst_0\n      38: new           #43                 // class java/util/ArrayList\n      41: dup\n      42: invokespecial #45                 // Method java/util/ArrayList.\"<init>\":()V\n      45: invokestatic  #29                 // Method dfs:([IILjava/util/List;)V\n      48: iload_1\n      49: iconst_1\n      50: iload_1\n      51: iconst_1\n      52: isub\n      53: ishl\n      54: imul\n      55: istore        5\n      57: invokestatic  #37                 // Method java/lang/System.nanoTime:()J\n      60: lload_3\n      61: lsub\n      62: ldc2_w        #46                 // long 1000000l\n      65: ldiv\n      66: lstore        6\n      68: getstatic     #48                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      71: getstatic     #13                 // Field validSum:I\n      74: invokedynamic #52,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      79: invokevirtual #56                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      82: getstatic     #48                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      85: iload         5\n      87: invokedynamic #62,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      92: invokevirtual #56                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      95: getstatic     #48                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      98: lload         6\n     100: invokedynamic #63,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     105: invokevirtual #56                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     108: return\n\n  static {};\n    Code:\n       0: iconst_0\n       1: putstatic     #13                 // Field validSum:I\n       4: return\n}\n"
+  },
+  "NoPruneDup": {
+   "hash": "4d73cc36b5a898db",
+   "repeat": 20,
+   "runs": {
+    "8": [
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 2
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 1
+     }
+    ],
+    "10": [
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 4
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 4
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 2
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 4
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 5
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 4
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 3
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 4
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 4
+     }
+    ],
+    "12": [
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 7
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 9
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 8
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 7
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 7
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 7
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 6
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 7
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 7
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 5
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 6
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 6
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 7
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 7
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 5
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 7
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 4
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 8
+     }
+    ],
+    "14": [
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 13
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 11
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 9
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 8
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 10
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 9
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 11
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 9
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 9
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 9
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 14
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 12
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 12
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 11
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 9
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 12
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 10
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 10
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 9
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 13
+     }
+    ]
+   },
+   "inside": "Compiled from \"NoPruneDup.java\"\npublic class lab.backtrack.NoPruneDup {\n  static java.util.Set<java.util.List<java.lang.Integer>> seen;\n\n  public lab.backtrack.NoPruneDup();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void dfs(int[], int, java.util.List<java.lang.Integer>);\n    Code:\n       0: getstatic     #7                  // Field seen:Ljava/util/Set;\n       3: new           #13                 // class java/util/ArrayList\n       6: dup\n       7: aload_2\n       8: invokespecial #15                 // Method java/util/ArrayList.\"<init>\":(Ljava/util/Collection;)V\n      11: invokeinterface #18,  2           // InterfaceMethod java/util/Set.add:(Ljava/lang/Object;)Z\n      16: pop\n      17: iload_1\n      18: istore_3\n      19: iload_3\n      20: aload_0\n      21: arraylength\n      22: if_icmpge     67\n      25: aload_2\n      26: aload_0\n      27: iload_3\n      28: iaload\n      29: invokestatic  #24                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      32: invokeinterface #30,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      37: pop\n      38: aload_0\n      39: iload_3\n      40: iconst_1\n      41: iadd\n      42: aload_2\n      43: invokestatic  #33                 // Method dfs:([IILjava/util/List;)V\n      46: aload_2\n      47: aload_2\n      48: invokeinterface #37,  1           // InterfaceMethod java/util/List.size:()I\n      53: iconst_1\n      54: isub\n      55: invokeinterface #41,  2           // InterfaceMethod java/util/List.remove:(I)Ljava/lang/Object;\n      60: pop\n      61: iinc          3, 1\n      64: goto          19\n      67: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #45                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     28\n      18: aload_2\n      19: iload_3\n      20: iload_3\n      21: iastore\n      22: iinc          3, 1\n      25: goto          13\n      28: invokestatic  #49                 // Method java/lang/System.nanoTime:()J\n      31: lstore_3\n      32: getstatic     #7                  // Field seen:Ljava/util/Set;\n      35: invokeinterface #55,  1           // InterfaceMethod java/util/Set.clear:()V\n      40: aload_2\n      41: iconst_0\n      42: new           #13                 // class java/util/ArrayList\n      45: dup\n      46: invokespecial #58                 // Method java/util/ArrayList.\"<init>\":()V\n      49: invokestatic  #33                 // Method dfs:([IILjava/util/List;)V\n      52: invokestatic  #49                 // Method java/lang/System.nanoTime:()J\n      55: lload_3\n      56: lsub\n      57: ldc2_w        #59                 // long 1000000l\n      60: ldiv\n      61: lstore        5\n      63: getstatic     #61                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      66: getstatic     #7                  // Field seen:Ljava/util/Set;\n      69: invokeinterface #65,  1           // InterfaceMethod java/util/Set.size:()I\n      74: invokedynamic #66,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      79: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      82: getstatic     #61                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      85: iconst_1\n      86: iload_1\n      87: ishl\n      88: invokedynamic #76,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      93: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      96: getstatic     #61                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      99: lload         5\n     101: invokedynamic #77,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     106: invokevirtual #70                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     109: return\n\n  static {};\n    Code:\n       0: new           #80                 // class java/util/HashSet\n       3: dup\n       4: invokespecial #82                 // Method java/util/HashSet.\"<init>\":()V\n       7: putstatic     #7                  // Field seen:Ljava/util/Set;\n      10: return\n}\n"
+  },
+  "SortedPruned": {
+   "hash": "ad026f31b5ed9031",
+   "repeat": 20,
+   "runs": {
+    "8": [
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     },
+     {
+      "subsets": 256,
+      "expected": 256,
+      "ms": 0
+     }
+    ],
+    "10": [
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 0
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     },
+     {
+      "subsets": 1024,
+      "expected": 1024,
+      "ms": 1
+     }
+    ],
+    "12": [
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 3
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 1
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 1
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 1
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 1
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     },
+     {
+      "subsets": 4096,
+      "expected": 4096,
+      "ms": 2
+     }
+    ],
+    "14": [
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 2
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 2
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 1
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 1
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 1
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 2
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 1
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 3
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 3
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 3
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 1
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 3
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 4
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 3
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 2
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 4
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 2
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 2
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 4
+     },
+     {
+      "subsets": 16384,
+      "expected": 16384,
+      "ms": 3
+     }
+    ]
+   },
+   "inside": "Compiled from \"SortedPruned.java\"\npublic class lab.backtrack.SortedPruned {\n  static int count;\n\n  public lab.backtrack.SortedPruned();\n    Code:\n       0: aload_0\n       1: invokespecial #1                  // Method java/lang/Object.\"<init>\":()V\n       4: return\n\n  static void dfs(int[], int, java.util.List<java.lang.Integer>);\n    Code:\n       0: getstatic     #7                  // Field count:I\n       3: iconst_1\n       4: iadd\n       5: putstatic     #7                  // Field count:I\n       8: iload_1\n       9: istore_3\n      10: iload_3\n      11: aload_0\n      12: arraylength\n      13: if_icmpge     77\n      16: iload_3\n      17: iload_1\n      18: if_icmple     35\n      21: aload_0\n      22: iload_3\n      23: iaload\n      24: aload_0\n      25: iload_3\n      26: iconst_1\n      27: isub\n      28: iaload\n      29: if_icmpne     35\n      32: goto          71\n      35: aload_2\n      36: aload_0\n      37: iload_3\n      38: iaload\n      39: invokestatic  #13                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;\n      42: invokeinterface #19,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z\n      47: pop\n      48: aload_0\n      49: iload_3\n      50: iconst_1\n      51: iadd\n      52: aload_2\n      53: invokestatic  #25                 // Method dfs:([IILjava/util/List;)V\n      56: aload_2\n      57: aload_2\n      58: invokeinterface #29,  1           // InterfaceMethod java/util/List.size:()I\n      63: iconst_1\n      64: isub\n      65: invokeinterface #33,  2           // InterfaceMethod java/util/List.remove:(I)Ljava/lang/Object;\n      70: pop\n      71: iinc          3, 1\n      74: goto          10\n      77: return\n\n  public static void main(java.lang.String[]);\n    Code:\n       0: aload_0\n       1: iconst_0\n       2: aaload\n       3: invokestatic  #37                 // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I\n       6: istore_1\n       7: iload_1\n       8: newarray       int\n      10: astore_2\n      11: iconst_0\n      12: istore_3\n      13: iload_3\n      14: iload_1\n      15: if_icmpge     28\n      18: aload_2\n      19: iload_3\n      20: iload_3\n      21: iastore\n      22: iinc          3, 1\n      25: goto          13\n      28: aload_2\n      29: invokestatic  #41                 // Method java/util/Arrays.sort:([I)V\n      32: invokestatic  #47                 // Method java/lang/System.nanoTime:()J\n      35: lstore_3\n      36: iconst_0\n      37: putstatic     #7                  // Field count:I\n      40: aload_2\n      41: iconst_0\n      42: new           #53                 // class java/util/ArrayList\n      45: dup\n      46: invokespecial #55                 // Method java/util/ArrayList.\"<init>\":()V\n      49: invokestatic  #25                 // Method dfs:([IILjava/util/List;)V\n      52: invokestatic  #47                 // Method java/lang/System.nanoTime:()J\n      55: lload_3\n      56: lsub\n      57: ldc2_w        #56                 // long 1000000l\n      60: ldiv\n      61: lstore        5\n      63: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      66: getstatic     #7                  // Field count:I\n      69: invokedynamic #62,  0             // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n      74: invokevirtual #66                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      77: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      80: iconst_1\n      81: iload_1\n      82: ishl\n      83: invokedynamic #72,  0             // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;\n      88: invokevirtual #66                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n      91: getstatic     #58                 // Field java/lang/System.out:Ljava/io/PrintStream;\n      94: lload         5\n      96: invokedynamic #73,  0             // InvokeDynamic #2:makeConcatWithConstants:(J)Ljava/lang/String;\n     101: invokevirtual #66                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V\n     104: return\n\n  static {};\n    Code:\n       0: iconst_0\n       1: putstatic     #7                  // Field count:I\n       4: return\n}\n"
+  }
+ },
+ "env": {
+  "runtime": "JDK 17.0.21",
+  "cores": 2,
+  "os": "linux 6.12.105+",
+  "date": "2026-11-15"
+ }
+}

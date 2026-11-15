@@ -1,0 +1,506 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "binary-tree",
+  "course": "模块 8 · 算法与 SQL 手撕",
+  "title": "二叉树递归与层序：偏斜树为什么把递归打爆，队列 size 怎么锁死每一层",
+  "lead": "同样遍历 3 万个节点的二叉树，为什么极端偏斜树下递归直接 StackOverflowError，而显式栈和 Morris 稳如磐石？",
+  "minutes": 40,
+  "needs": [
+    "知道二叉树节点有 left 和 right",
+    "分得清前序、中序、后序的根位置"
+  ],
+  "after": [
+    "分清 JVM 虚拟机栈（递归）与堆内存（ArrayDeque 显式栈）的容量差异",
+    "写出按层分批的 BFS 层序模板（锁死 int size = queue.size()）",
+    "掌握最近公共祖先（LCA）等后序分治套路"
+  ],
+  "terms": {
+    "偏斜树": "所有节点都只有右孩子（或左孩子）的退化二叉树，深度等于节点数 n。",
+    "虚拟机栈": "线程私有的内存区域，每次方法调用压入一个栈帧，默认通常仅约 1MB。",
+    "层序遍历 (BFS)": "用队列按层从上到下遍历，每层开始前记录当前队列长度 size。",
+    "Morris 遍历": "利用叶子节点空闲的 right 指针临时指向后继，做到 O(1) 额外空间遍历。"
+  },
+  "experiments": {
+    "bintree": {
+      "runner": "java",
+      "home": "lab.bintree",
+      "variants": [
+        {
+          "id": "RecursiveDfs",
+          "label": "递归 DFS",
+          "note": "偏斜深度上万时直接 StackOverflowError。"
+        },
+        {
+          "id": "StackIterDfs",
+          "label": "ArrayDeque 显式栈 DFS",
+          "note": "栈节点存在堆内存里，轻松扛住数百万深度。"
+        },
+        {
+          "id": "BfsLevel",
+          "label": "队列层序遍历 BFS",
+          "note": "按层推进，锁死 size 分层输出。"
+        },
+        {
+          "id": "MorrisTraversal",
+          "label": "Morris O(1) 空间遍历",
+          "note": "零栈零队列，靠临时线索指针走完全树。"
+        }
+      ],
+      "knob": {
+        "label": "树节点数 n (偏斜树)",
+        "values": [
+          "2000",
+          "8000",
+          "15000",
+          "30000"
+        ],
+        "default": "15000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "visited",
+        "expectKey": "expected",
+        "label": "遍历到的节点数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "二叉树递归与层序：偏斜树为什么把递归打爆，队列 size 怎么锁死每一层",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天是 **模块 8（笔试算法与 SQL 手撕）** 的第 #36 课：同样遍历 3 万个节点的二叉树，为什么极端偏斜树下递归直接 StackOverflowError，而显式栈和 Morris 稳如磐石？",
+          "say": "同样遍历 3 万个节点的二叉树，为什么极端偏斜树下递归直接 StackOverflowError，而显式栈和 Morris 稳如磐石？"
+        },
+        {
+          "t": "text",
+          "md": "不死背模板。我们先跑出真实耗时与报错现场，再拆 `javap` 字节码与复杂度曲线，最后带走本专题的高频刷题清单。",
+          "say": "先看现场、再拆底层、最后总结模板与高频题清单。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，确认前置基础",
+      "bridge": "快速过一遍这节课需要的三点前置知识。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "选完直接看解释，确认基础即可进入场景。",
+          "items": [
+            {
+              "have": "知道二叉树节点有 left 和 right",
+              "q": "你已经掌握「知道二叉树节点有 left 和 right」了吗？",
+              "options": [
+                "清楚",
+                "再看一眼提示"
+              ],
+              "answer": 0,
+              "why": "本课会直接用到「知道二叉树节点有 left 和 right」，接下来代码里也会标注解释。"
+            },
+            {
+              "have": "分得清前序、中序、后序的根位置",
+              "q": "你已经掌握「分得清前序、中序、后序的根位置」了吗？",
+              "options": [
+                "清楚",
+                "再看一眼提示"
+              ],
+              "answer": 0,
+              "why": "本课会直接用到「分得清前序、中序、后序的根位置」，接下来代码里也会标注解释。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先放一个日常画面",
+      "bridge": "把算法和数据结构放进生活场景里，后面每行代码都能对上号。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "递归小纸条（虚拟机栈）",
+              "显式大箱子（堆内存）"
+            ],
+            "shared": {
+              "name": "3 万层歪脖子树",
+              "value": "深度 = 30000"
+            }
+          },
+          "story": "要探查一棵 **3 万层**深的歪脖子树。递归每下一层就在狭小的口袋（虚拟机栈）里塞一张纸条，塞到 1 万多张口袋就炸了；显式栈把纸条放进宽敞的仓库（堆内存），3 万层轻轻松松。",
+          "say": "先记住这个画面，再对照右边三处关键动作。",
+          "map": [
+            {
+              "scene": "每下一层往小口袋塞纸条",
+              "on": "actors",
+              "tag": "递归栈帧",
+              "code": "`countNodes(root.right)`",
+              "say": "线程栈默认大小有限，极深递归必炸。"
+            },
+            {
+              "scene": "改用仓库里的大箱子记待办",
+              "on": "actors",
+              "tag": "堆上 ArrayDeque",
+              "code": "`Deque<TreeNode> stack = new ArrayDeque<>();`",
+              "say": "堆内存比线程栈大得多，不会爆栈。"
+            },
+            {
+              "scene": "每层进门先数清这层有几个人",
+              "on": "action",
+              "tag": "锁死当层 size",
+              "code": "`int size = queue.size();`",
+              "say": "循环过程中 queue 会不断塞入下一层节点，不先锁死 size 就会把两层混在一起。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "直觉上能过吗？",
+      "bridge": "平时写 10 个元素的小例子都能过，放到上万数据或多线程下呢？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "同样遍历 3 万个节点的二叉树，为什么极端偏斜树下递归直接 StackOverflowError，而显式栈和 Morris 稳如磐石？",
+          "say": "这就是今天要实测验证的问题。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基准写法与优化写法",
+      "bridge": "先看清最容易踩坑或超时的写法长什么样。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "bintree.RecursiveDfs",
+          "say": "这是基准实现 `RecursiveDfs`，点击虚线术语可看大白话解释。",
+          "walk": [
+            {
+              "focus": [
+                "main"
+              ],
+              "say": "入口接收命令行参数作为规模或线程数，连续计时并输出校验结果与耗时。",
+              "focusLines": [
+                1,
+                2
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "跑之前，先押一注",
+      "bridge": "基于你的直觉猜一下实测结果，猜错完全正常。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "bintree-guess",
+          "q": "面对一棵 30000 个节点的纯右斜树，`RecursiveDfs` 和 `StackIterDfs` 谁会先出事？",
+          "options": [
+            "都不会出事",
+            "RecursiveDfs 会抛出 StackOverflowError",
+            "StackIterDfs 会内存溢出"
+          ],
+          "answer": 1,
+          "say": "选好你的预测，下一页直接放出 20 次实测结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "20 次实测散点对比",
+      "bridge": "以下是本机 JDK 真实编译运行 20 次的实测记录（实心点表示结果正确，空心点表示出错）。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "bintree",
+          "select": [
+            "RecursiveDfs",
+            "MorrisTraversal"
+          ],
+          "knob": "15000",
+          "show": "dots",
+          "hand": false,
+          "focus": "偏斜深度上万时直接 StackOverflowError。",
+          "say": "切换上方规模/线程数挡位，对比 `RecursiveDfs` 与 `MorrisTraversal` 的准确率与耗时差异。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：看真实字节码",
+      "bridge": "现象看清了，打开 `javap -c -p` 看底层指令到底在干什么。",
+      "blocks": [
+        {
+          "t": "reveal",
+          "of": "bintree.MorrisTraversal",
+          "key": "看懂底层指令与复杂度来源",
+          "say": "对比 `RecursiveDfs` 与 `MorrisTraversal` 的核心代码与字节码，找出真正拉开差距的那几行。"
+        },
+        {
+          "t": "inside",
+          "of": "bintree.MorrisTraversal",
+          "within": "main",
+          "from": 0,
+          "to": 40,
+          "say": "这是真实 `javap -c -p` 反编译出的字节码指令，确认没有魔法，每一步开销都在这里。",
+          "walk": [
+            {
+              "lines": [
+                0,
+                1
+              ],
+              "say": "方法入口先解析参数并初始化计时与数据结构。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "在代码里找关键一笔",
+      "bridge": "考考你：上面那段优化代码里，真正起决定性作用的是哪一处？",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "bintree.BfsLevel",
+          "q": "层序遍历时，为什么不能直接写 `for (int i = 0; i < queue.size(); i++)`？",
+          "hint": "循环体里正在往 queue 里 offer 左右孩子。",
+          "answer": "int size = queue.size();",
+          "found": "循环体里每 poll 一个节点就会 offer 它的孩子，导致 `queue.size()` 动态变大，必须提前锁死 `int size = queue.size()`。",
+          "say": "定位到那一行关键代码。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "4 种写法的实测耗时折线",
+      "bridge": "把 递归 DFS、ArrayDeque 显式栈 DFS、队列层序遍历 BFS、Morris O(1) 空间遍历 放在同一张图上，看规模/线程数拉大后的走势。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "bintree",
+          "say": "横轴是规模/线程数，纵轴是实测耗时；空心点代表该写法出错或超时风险，实心点代表稳定正确。",
+          "walk": [
+            {
+              "focus": "RecursiveDfs",
+              "say": "递归 DFS：偏斜深度上万时直接 StackOverflowError。"
+            },
+            {
+              "focus": "StackIterDfs",
+              "say": "ArrayDeque 显式栈 DFS：栈节点存在堆内存里，轻松扛住数百万深度。"
+            },
+            {
+              "focus": "BfsLevel",
+              "say": "队列层序遍历 BFS：按层推进，锁死 size 分层输出。"
+            },
+            {
+              "focus": "MorrisTraversal",
+              "say": "Morris O(1) 空间遍历：零栈零队列，靠临时线索指针走完全树。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "把工具摆在一起比代价",
+      "bridge": "没有银弹，每种写法都有明确适用边界。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "对照每张卡片的适用场景与代价，面试被追问时就能按场景选型。",
+          "options": [
+            {
+              "name": "递归 DFS（前/中/后序）",
+              "solves": "绝大多数普通二叉树分治题（LCA、最大路径和）",
+              "cost": "代码最短，但深度受限于线程栈",
+              "when": "树高可控时面试手撕首选",
+              "say": "递归 DFS（前/中/后序）：绝大多数普通二叉树分治题（LCA、最大路径和），代价是代码最短，但深度受限于线程栈。"
+            },
+            {
+              "name": "ArrayDeque 显式栈 DFS",
+              "solves": "超深树、中序迭代模板",
+              "cost": "O(h) 堆空间，不爆虚拟机栈",
+              "when": "面试追问「不用递归怎么写」时",
+              "say": "ArrayDeque 显式栈 DFS：超深树、中序迭代模板，代价是O(h) 堆空间，不爆虚拟机栈。"
+            },
+            {
+              "name": "BFS 层序队列",
+              "solves": "按层输出、最小深度、右视图",
+              "cost": "O(w) 队列空间",
+              "when": "题目出现「逐层」「最近」「视图」字眼",
+              "say": "BFS 层序队列：按层输出、最小深度、右视图，代价是O(w) 队列空间。"
+            }
+          ]
+        },
+        {
+          "t": "decide",
+          "q": "二叉树题怎么快速定方向？",
+          "branches": [
+            {
+              "when": "按层处理 / 找最短层数 / 右视图",
+              "pick": "BFS 队列 + 锁死 size",
+              "eg": "层序遍历、锯齿形层序"
+            },
+            {
+              "when": "需要左右子树汇报结果再汇总",
+              "pick": "后序递归（自底向上）",
+              "eg": "最近公共祖先、最大深度、最大路径和"
+            },
+            {
+              "when": "BST 搜索树有序性",
+              "pick": "中序遍历（严格递增）",
+              "eg": "验证二叉搜索树、第 K 小元素"
+            }
+          ],
+          "say": "顺着这棵决策树，看到题面关键词就能直接落到对应模板。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "练三道真实面试场景",
+      "bridge": "用刚才的决策树，当场给下面三个问题选出最优解法。",
+      "blocks": [
+        {
+          "t": "cases",
+          "tools": [
+            "后序分治递归",
+            "中序迭代 / 递归",
+            "BFS 层序队列"
+          ],
+          "items": [
+            {
+              "text": "求二叉树中两个指定节点的最近公共祖先（LCA）。",
+              "answer": 0,
+              "why": "后序遍历先查左右子树，若左右各找到一个，当前节点就是 LCA。"
+            },
+            {
+              "text": "判断一棵二叉树是不是有效的二叉搜索树（BST）。",
+              "answer": 1,
+              "why": "BST 的中序遍历序列必须严格递增，记录 prev 对比即可。"
+            },
+            {
+              "text": "返回二叉树每一层的节点值列表，以及每层最右侧节点。",
+              "answer": 2,
+              "why": "BFS 锁死每层 size，遍历到 i == size - 1 就是右视图节点。"
+            }
+          ],
+          "say": "逐题点选工具，看解析是否和你想的一样。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记下面试官常问的标准叫法",
+      "bridge": "把刚才的实验现象还原成面试高频术语。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "分治后序 & 层序分批",
+          "alias": "专题 04 · 高频 9 题核心模型",
+          "oneLine": "二叉树 80% 难题靠 ==后序自底向上汇总==（如 LCA、路径和）；层序遍历靠 ==锁死 size== 切分每一层；超深树用显式栈把压力从虚拟机栈挪到堆。",
+          "asked": [
+            "最近公共祖先怎么写？",
+            "为什么递归太深会 StackOverflowError？",
+            "中序遍历非递归怎么写？"
+          ],
+          "say": "记住这句总结和下面三个高频问法。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "最后核对一道易错题",
+      "bridge": "确认核心坑点真的没踩进去。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "求「二叉树中的最大路径和」时，递归函数向上层返回的是什么？",
+          "options": [
+            {
+              "text": "经过当前节点、同时连接左右两边的整条路径和",
+              "ok": false,
+              "why": "路径不能分叉，如果同时连了左右两边，就不能再往父节点延伸了。"
+            },
+            {
+              "text": "当前节点能向父节点提供的单边最大贡献值（左或右选更大的一条）",
+              "ok": true,
+              "why": "在当前节点处用 left + val + right 更新全局最大值，但向上只返回 val + max(left, right)。"
+            },
+            {
+              "text": "整棵树所有正数节点之和",
+              "ok": false,
+              "why": "必须是连续路径。"
+            }
+          ],
+          "say": "选出唯一正确的结论。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口带走",
+      "bridge": "看懂不算会，对着屏幕脱稿讲一遍才算长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清二叉树递归与显式栈的内存区别、BFS 为什么锁死 size，以及后序分治（如 LCA）的思路。",
+          "points": [
+            "递归占线程虚拟机栈，偏斜树上万层会 StackOverflowError；显式栈在堆上",
+            "BFS 每层前必须 int size = queue.size()，否则会混层",
+            "后序遍历适合需要左右子树结果再决策的题（如 LCA、最大路径和）"
+          ],
+          "model": "二叉树遍历的递归版把状态压在线程的虚拟机栈里，遇到上万层的偏斜树会直接 StackOverflowError；改成 ArrayDeque 显式栈就把节点存在堆内存里，不会爆栈。写 BFS 层序遍历时，每层开始前必须先用 int size = queue.size() 锁死本层节点数，否则入队的下一层节点会搅乱边界。做二叉树难题时，只要父节点需要左右子树的返回值来做决定（比如最近公共祖先 LCA、最大路径和），基本都是后序遍历模板。",
+          "say": "计时两分钟开口讲一遍，再对照参考回答查漏补缺。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张复习卡 & 本专题高频题清单",
+      "bridge": "复习卡 + 专题刷题清单，每天手敲 2～3 题稳步推进。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "BFS 层序遍历最常犯的 bug 是什么？",
+              "a": "在 `for` 条件里直接写 `i < queue.size()`，导致本层与下一层混在一起。"
+            },
+            {
+              "q": "BST（二叉搜索树）的核心性质是什么？",
+              "a": "中序遍历结果严格单调递增。"
+            },
+            {
+              "q": "专题 04 必刷 9 题清单",
+              "a": "前中后序遍历、层序遍历、最大深度、翻转二叉树、对称二叉树、最近公共祖先、验证 BST、前序中序构造树、最大路径和。"
+            }
+          ],
+          "say": "第三张卡就是本专题的必刷题清单，完整 101 题汇总见仓库 `docs/module8-100-problems.md`。"
+        },
+        {
+          "t": "try",
+          "key": "javac -encoding UTF-8 -d out src/lab/bintree/*.java && java -cp out lab.bintree.MorrisTraversal 15000",
+          "say": "在本地终端编译运行一遍，亲手改一改参数验证效果。"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,507 @@
+{
+  "format": "studyhub-lesson/1",
+  "template": "experiment",
+  "id": "stack-queue",
+  "course": "模块 8 · 算法与 SQL 手撕",
+  "title": "栈与单调队列：滑动窗口最大值怎么从 O(nk) 压到均摊 O(n)",
+  "lead": "窗口每次右移一格，为什么暴力扫和 TreeMap 都输给了看似多了一层 while 的 ArrayDeque 单调队列？",
+  "minutes": 40,
+  "needs": [
+    "知道队列先进先出、栈后进先出",
+    "知道双端队列 Deque 两头都能进出"
+  ],
+  "after": [
+    "讲清为什么单调队列里有 while 循环，总时间复杂度却还是 O(n)",
+    "说出面试为什么一律用 ArrayDeque 代替老旧的 Stack 类",
+    "拿下单调栈（每日温度/柱状图）与单调队列（滑窗最值）两大模板"
+  ],
+  "terms": {
+    "ArrayDeque": "基于循环数组的双端队列，无锁、无扩容搬家浪费，Java 官方推荐替代 Stack。",
+    "单调队列": "队列里只保留「有资格成为当前或未来窗口最大值」的下标，从头到尾严格递减。",
+    "均摊 O(n)": "虽然单次循环里有 while 弹出，但每个元素最多进队 1 次、出队 1 次，总操作 ≤ 2n。",
+    "单调栈": "找每个元素左侧/右侧第一个更大（或更小）元素的利器。"
+  },
+  "experiments": {
+    "stackqueue": {
+      "runner": "java",
+      "home": "lab.stackqueue",
+      "variants": [
+        {
+          "id": "WindowScan",
+          "label": "窗口内暴力扫 O(nk)",
+          "note": "每个窗口重新遍历 500 个数找最大。"
+        },
+        {
+          "id": "TreeMapWin",
+          "label": "红黑树 TreeMap O(n log k)",
+          "note": "每次滑窗做一次增删与 lastKey() 查询。"
+        },
+        {
+          "id": "ArrayDequeMono",
+          "label": "ArrayDeque 单调队列",
+          "note": "均摊 O(n)：队尾踢掉比自己小的，队头踢掉过期下标。"
+        },
+        {
+          "id": "PrimitiveMono",
+          "label": "int[] 原生数组单调队列",
+          "note": "零装箱 O(n)：连 Integer 对象分配都省掉。"
+        }
+      ],
+      "knob": {
+        "label": "数组长度 n (k=500)",
+        "values": [
+          "5000",
+          "20000",
+          "50000",
+          "100000"
+        ],
+        "default": "50000"
+      },
+      "repeat": 20,
+      "metric": {
+        "key": "windows",
+        "expectKey": "expected",
+        "label": "输出窗口数"
+      },
+      "time": {
+        "key": "ms",
+        "label": "耗时",
+        "unit": "ms"
+      }
+    }
+  },
+  "slides": [
+    {
+      "beat": "open",
+      "title": "栈与单调队列：滑动窗口最大值怎么从 O(nk) 压到均摊 O(n)",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "今天是 **模块 8（笔试算法与 SQL 手撕）** 的第 #35 课：窗口每次右移一格，为什么暴力扫和 TreeMap 都输给了看似多了一层 while 的 ArrayDeque 单调队列？",
+          "say": "窗口每次右移一格，为什么暴力扫和 TreeMap 都输给了看似多了一层 while 的 ArrayDeque 单调队列？"
+        },
+        {
+          "t": "text",
+          "md": "不死背模板。我们先跑出真实耗时与报错现场，再拆 `javap` 字节码与复杂度曲线，最后带走本专题的高频刷题清单。",
+          "say": "先看现场、再拆底层、最后总结模板与高频题清单。"
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "开始前，确认前置基础",
+      "bridge": "快速过一遍这节课需要的三点前置知识。",
+      "blocks": [
+        {
+          "t": "recall",
+          "say": "选完直接看解释，确认基础即可进入场景。",
+          "items": [
+            {
+              "have": "知道队列先进先出、栈后进先出",
+              "q": "你已经掌握「知道队列先进先出、栈后进先出」了吗？",
+              "options": [
+                "清楚",
+                "再看一眼提示"
+              ],
+              "answer": 0,
+              "why": "本课会直接用到「知道队列先进先出、栈后进先出」，接下来代码里也会标注解释。"
+            },
+            {
+              "have": "知道双端队列 Deque 两头都能进出",
+              "q": "你已经掌握「知道双端队列 Deque 两头都能进出」了吗？",
+              "options": [
+                "清楚",
+                "再看一眼提示"
+              ],
+              "answer": 0,
+              "why": "本课会直接用到「知道双端队列 Deque 两头都能进出」，接下来代码里也会标注解释。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "open",
+      "title": "先放一个日常画面",
+      "bridge": "把算法和数据结构放进生活场景里，后面每行代码都能对上号。",
+      "blocks": [
+        {
+          "t": "scene",
+          "picture": {
+            "kind": "share",
+            "actors": [
+              "新来的大个子",
+              "队尾矮个子"
+            ],
+            "shared": {
+              "name": "候选人队伍",
+              "value": "单调递减队列"
+            }
+          },
+          "story": "选窗口里最高的人。一个**新来的大个子**进队时，只要排在队尾的人比他矮、又比他老（更早过期），那些矮个子这辈子都不可能当选了——直接请出队伍。",
+          "say": "先记住这个画面，再对照右边三处关键动作。",
+          "map": [
+            {
+              "scene": "队尾比我矮的直接淘汰",
+              "on": "actors",
+              "tag": "维护单调性",
+              "code": "`while (nums[q.peekLast()] <= nums[i]) q.pollLast();`",
+              "say": "又矮又早过期，留着纯属占位置。"
+            },
+            {
+              "scene": "队头年龄超期离开",
+              "on": "shared",
+              "tag": "淘汰滑出窗口的下标",
+              "code": "`if (q.peekFirst() <= i - k) q.pollFirst();`",
+              "say": "队列里存的是下标而不是值，才能判断它有没有滑出窗口。"
+            },
+            {
+              "scene": "老大永远站在队头",
+              "on": "action",
+              "tag": "O(1) 取最大值",
+              "code": "`nums[q.peekFirst()]`",
+              "say": "不用再扫一遍，队头就是当前窗口最大值。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "hook",
+      "title": "直觉上能过吗？",
+      "bridge": "平时写 10 个元素的小例子都能过，放到上万数据或多线程下呢？",
+      "blocks": [
+        {
+          "t": "text",
+          "md": "窗口每次右移一格，为什么暴力扫和 TreeMap 都输给了看似多了一层 while 的 ArrayDeque 单调队列？",
+          "say": "这就是今天要实测验证的问题。"
+        }
+      ]
+    },
+    {
+      "beat": "code",
+      "title": "先看基准写法与优化写法",
+      "bridge": "先看清最容易踩坑或超时的写法长什么样。",
+      "blocks": [
+        {
+          "t": "code",
+          "of": "stackqueue.WindowScan",
+          "say": "这是基准实现 `WindowScan`，点击虚线术语可看大白话解释。",
+          "walk": [
+            {
+              "focus": [
+                "main"
+              ],
+              "say": "入口接收命令行参数作为规模或线程数，连续计时并输出校验结果与耗时。",
+              "focusLines": [
+                1,
+                2
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "predict",
+      "title": "跑之前，先押一注",
+      "bridge": "基于你的直觉猜一下实测结果，猜错完全正常。",
+      "blocks": [
+        {
+          "t": "predict",
+          "id": "stackqueue-guess",
+          "q": "10 万长度数组、窗口 k=500，单调队列里的 `while` 循环总共会执行多少次 `pollLast()`？",
+          "options": [
+            "最多 n * k = 5000 万次",
+            "最多不超过 n = 10 万次",
+            "每次都会把队列清空"
+          ],
+          "answer": 1,
+          "say": "选好你的预测，下一页直接放出 20 次实测结果。"
+        }
+      ]
+    },
+    {
+      "beat": "run",
+      "title": "20 次实测散点对比",
+      "bridge": "以下是本机 JDK 真实编译运行 20 次的实测记录（实心点表示结果正确，空心点表示出错）。",
+      "blocks": [
+        {
+          "t": "experiment",
+          "lab": "stackqueue",
+          "select": [
+            "WindowScan",
+            "PrimitiveMono"
+          ],
+          "knob": "50000",
+          "show": "dots",
+          "hand": false,
+          "focus": "每个窗口重新遍历 500 个数找最大。",
+          "say": "切换上方规模/线程数挡位，对比 `WindowScan` 与 `PrimitiveMono` 的准确率与耗时差异。"
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "掀开机盖：看真实字节码",
+      "bridge": "现象看清了，打开 `javap -c -p` 看底层指令到底在干什么。",
+      "blocks": [
+        {
+          "t": "reveal",
+          "of": "stackqueue.PrimitiveMono",
+          "key": "看懂底层指令与复杂度来源",
+          "say": "对比 `WindowScan` 与 `PrimitiveMono` 的核心代码与字节码，找出真正拉开差距的那几行。"
+        },
+        {
+          "t": "inside",
+          "of": "stackqueue.PrimitiveMono",
+          "within": "main",
+          "from": 0,
+          "to": 40,
+          "say": "这是真实 `javap -c -p` 反编译出的字节码指令，确认没有魔法，每一步开销都在这里。",
+          "walk": [
+            {
+              "lines": [
+                0,
+                1
+              ],
+              "say": "方法入口先解析参数并初始化计时与数据结构。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "why",
+      "title": "在代码里找关键一笔",
+      "bridge": "考考你：上面那段优化代码里，真正起决定性作用的是哪一处？",
+      "blocks": [
+        {
+          "t": "spot",
+          "of": "stackqueue.ArrayDequeMono",
+          "q": "为什么 `ArrayDeque` 里存的是下标 `i`，而不是直接存数值 `nums[i]`？",
+          "hint": "看看怎么判断队头元素是不是已经滑出当前窗口了。",
+          "answer": "if (q.peekFirst() <= i - k) q.pollFirst();",
+          "found": "存下标既能通过 `nums[idx]` 拿到值，又能通过 `idx <= i - k` 精准判断它是否已滑出窗口左侧。",
+          "say": "定位到那一行关键代码。"
+        }
+      ]
+    },
+    {
+      "beat": "fix",
+      "title": "4 种写法的实测耗时折线",
+      "bridge": "把 窗口内暴力扫 O(nk)、红黑树 TreeMap O(n log k)、ArrayDeque 单调队列、int[] 原生数组单调队列 放在同一张图上，看规模/线程数拉大后的走势。",
+      "blocks": [
+        {
+          "t": "chart",
+          "of": "stackqueue",
+          "say": "横轴是规模/线程数，纵轴是实测耗时；空心点代表该写法出错或超时风险，实心点代表稳定正确。",
+          "walk": [
+            {
+              "focus": "WindowScan",
+              "say": "窗口内暴力扫 O(nk)：每个窗口重新遍历 500 个数找最大。"
+            },
+            {
+              "focus": "TreeMapWin",
+              "say": "红黑树 TreeMap O(n log k)：每次滑窗做一次增删与 lastKey() 查询。"
+            },
+            {
+              "focus": "ArrayDequeMono",
+              "say": "ArrayDeque 单调队列：均摊 O(n)：队尾踢掉比自己小的，队头踢掉过期下标。"
+            },
+            {
+              "focus": "PrimitiveMono",
+              "say": "int[] 原生数组单调队列：零装箱 O(n)：连 Integer 对象分配都省掉。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "把工具摆在一起比代价",
+      "bridge": "没有银弹，每种写法都有明确适用边界。",
+      "blocks": [
+        {
+          "t": "choose",
+          "say": "对照每张卡片的适用场景与代价，面试被追问时就能按场景选型。",
+          "options": [
+            {
+              "name": "ArrayDeque 单调队列",
+              "solves": "滑动窗口最大值/最小值",
+              "cost": "均摊 O(n)，代码简洁",
+              "when": "所有固定/动态窗口最值题",
+              "say": "ArrayDeque 单调队列：滑动窗口最大值/最小值，代价是均摊 O(n)，代码简洁。"
+            },
+            {
+              "name": "int[] 数组模拟队列",
+              "solves": "极致性能场景",
+              "cost": "均摊 O(n) 且零 Integer 装箱",
+              "when": "笔试卡常或高频调用内核",
+              "say": "int[] 数组模拟队列：极致性能场景，代价是均摊 O(n) 且零 Integer 装箱。"
+            },
+            {
+              "name": "TreeMap",
+              "solves": "需要窗口内第 K 大 / 动态中位数",
+              "cost": "O(n log k)",
+              "when": "不只求最值、还要任意名次时",
+              "say": "TreeMap：需要窗口内第 K 大 / 动态中位数，代价是O(n log k)。"
+            }
+          ]
+        },
+        {
+          "t": "decide",
+          "q": "看到「求左右第一个更大/更小」还是「求窗口最值」？",
+          "branches": [
+            {
+              "when": "每个元素找右边/左边第一个更大或更小",
+              "pick": "单调栈 (ArrayDeque)",
+              "eg": "每日温度、柱状图最大矩形、接雨水"
+            },
+            {
+              "when": "滑动窗口内的最大/最小值",
+              "pick": "单调队列 (ArrayDeque)",
+              "eg": "滑动窗口最大值"
+            },
+            {
+              "when": "括号匹配 / 表达式求值 / 最小栈",
+              "pick": "普通栈 (ArrayDeque)",
+              "eg": "有效的括号、逆波兰表达式"
+            }
+          ],
+          "say": "顺着这棵决策树，看到题面关键词就能直接落到对应模板。"
+        }
+      ]
+    },
+    {
+      "beat": "choose",
+      "title": "练三道真实面试场景",
+      "bridge": "用刚才的决策树，当场给下面三个问题选出最优解法。",
+      "blocks": [
+        {
+          "t": "cases",
+          "tools": [
+            "单调栈",
+            "单调队列",
+            "普通栈 / 双栈"
+          ],
+          "items": [
+            {
+              "text": "给定每日气温数组，求每天要等几天才会有更高温度。",
+              "answer": 0,
+              "why": "找右侧第一个更大元素，用单调递减栈存下标。"
+            },
+            {
+              "text": "长度 10 万的数组上，实时输出每个长为 k 的滑动窗口里的最大值。",
+              "answer": 1,
+              "why": "单调递减队列存下标，均摊 O(n) 出结果。"
+            },
+            {
+              "text": "仅用两个栈实现一个支持 push、pop、peek 的队列。",
+              "answer": 2,
+              "why": "输入栈进、输出栈为空时一次性倒腾过去，均摊 O(1)。"
+            }
+          ],
+          "say": "逐题点选工具，看解析是否和你想的一样。"
+        }
+      ]
+    },
+    {
+      "beat": "name",
+      "title": "记下面试官常问的标准叫法",
+      "bridge": "把刚才的实验现象还原成面试高频术语。",
+      "blocks": [
+        {
+          "t": "name",
+          "term": "均摊 O(n) 单调栈 / 单调队列",
+          "alias": "专题 03 · 高频 9 题核心模型",
+          "oneLine": "单调队列用 ==队尾去劣、队头去过期== 把滑窗最值压成均摊 O(n)；Java 里一律用 `ArrayDeque` 取代继承自 `Vector` 的老旧 `Stack`。",
+          "asked": [
+            "为什么单调队列有 while 还是 O(n)？",
+            "Stack 和 ArrayDeque 有什么区别？",
+            "柱状图最大矩形怎么用单调栈？"
+          ],
+          "say": "记住这句总结和下面三个高频问法。"
+        }
+      ]
+    },
+    {
+      "beat": "check",
+      "title": "最后核对一道易错题",
+      "bridge": "确认核心坑点真的没踩进去。",
+      "blocks": [
+        {
+          "t": "quiz",
+          "q": "Java 面试写栈时，为什么推荐 `Deque<Integer> st = new ArrayDeque<>()` 而不是 `new Stack<>()`？",
+          "options": [
+            {
+              "text": "Stack 是接口不能 new",
+              "ok": false,
+              "why": "Stack 是类，Deque 才是接口。"
+            },
+            {
+              "text": "Stack 继承了带 synchronized 的 Vector，单线程白付锁开销且设计过时",
+              "ok": true,
+              "why": "ArrayDeque 无锁、内存连续、缓存友好，速度明显快于 Stack。"
+            },
+            {
+              "text": "ArrayDeque 可以存 null 元素",
+              "ok": false,
+              "why": "恰恰相反，ArrayDeque 不允许存 null。"
+            }
+          ],
+          "say": "选出唯一正确的结论。"
+        }
+      ]
+    },
+    {
+      "beat": "say",
+      "title": "2 分钟开口带走",
+      "bridge": "看懂不算会，对着屏幕脱稿讲一遍才算长在脑子里。",
+      "blocks": [
+        {
+          "t": "say",
+          "prompt": "讲清滑动窗口最大值单调队列的原理、为什么均摊 O(n)，以及单调栈和 ArrayDeque 的选型。",
+          "points": [
+            "队列存下标，保证对应值严格递减",
+            "入队前踢掉队尾 <= 当前值的元素，再踢掉 <= i-k 的过期队头",
+            "每个元素最多进出各一次，均摊 O(n)",
+            "用 ArrayDeque 替代带锁的 Stack"
+          ],
+          "model": "滑动窗口最大值如果每次扫 k 个元素是 O(nk)，用 TreeMap 是 O(n log k)。最优解是单调递减队列：用 ArrayDeque 存下标，新元素入队前先把队尾所有小于等于它的下标踢掉，因为那些元素既矮又早过期，不可能成为最大值；再检查队头是否 <= i-k 滑出窗口。每个元素最多入队出队各一次，所以均摊复杂度严格是 O(n)。Java 里我统一用 ArrayDeque 当栈和队列，避免老旧 Stack 继承 Vector 带来的同步锁开销。",
+          "say": "计时两分钟开口讲一遍，再对照参考回答查漏补缺。"
+        }
+      ]
+    },
+    {
+      "beat": "take",
+      "title": "带走 3 张复习卡 & 本专题高频题清单",
+      "bridge": "复习卡 + 专题刷题清单，每天手敲 2～3 题稳步推进。",
+      "blocks": [
+        {
+          "t": "cards",
+          "items": [
+            {
+              "q": "单调队列为什么必须存下标？",
+              "a": "既能通过 `nums[idx]` 比大小，又能用 `idx <= i - k` 判断队头是否已滑出窗口。"
+            },
+            {
+              "q": "单调栈适合什么题？",
+              "a": "寻找每个元素左边/右边第一个更大或更小元素（每日温度、柱状图最大矩形）。"
+            },
+            {
+              "q": "专题 03 必刷 9 题清单",
+              "a": "有效括号、最小栈、双栈实现队列、每日温度、柱状图最大矩形、滑动窗口最大值、逆波兰求值、基本计算器 II、接雨水。"
+            }
+          ],
+          "say": "第三张卡就是本专题的必刷题清单，完整 101 题汇总见仓库 `docs/module8-100-problems.md`。"
+        },
+        {
+          "t": "try",
+          "key": "javac -encoding UTF-8 -d out src/lab/stackqueue/*.java && java -cp out lab.stackqueue.PrimitiveMono 50000",
+          "say": "在本地终端编译运行一遍，亲手改一改参数验证效果。"
+        }
+      ]
+    }
+  ]
+}
