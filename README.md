@@ -6,8 +6,9 @@
 
 学习时请先看下面的[课程顺序](#课程顺序)，了解全系列 32 节的主题和前置顺序，再从第 1 节（[`pages/counter-race.html`](pages/counter-race.html)）开始按顺序学习。
 
-- **在线打开（GitHub Pages）**：[https://ericwang1358.github.io/java-hood-lab/](https://ericwang1358.github.io/java-hood-lab/)
-- **本地离线学习**：克隆或下载本仓库后，直接双击打开 [`index.html`](index.html) 或 [`pages/`](pages/) 下对应一节的 `.html` 文件即可浏览，不依赖外部网络资源。
+- **本地电脑学习（推荐，支持随手记疑问并自动落盘）**：双击 [`start-study.cmd`](start-study.cmd)（或在根目录运行 `node study.mjs`），会在本地打开 `http://127.0.0.1:8310/`（[`index.html`](index.html)）。看课时点击右上角「**疑问**」（或按 `Q` / 划选文字点「`＋ 记疑问`」），问题与当前页码/台词会自动写入 [`feedback/questions.json`](feedback/questions.json) 与 [`feedback/questions.md`](feedback/questions.md)；读完一批课后可直接让 AI 按该清单优化对应章节或新增补充实验课。
+- **在线打开（GitHub Pages）**：[https://ericwang1358.github.io/java-hood-lab/](https://ericwang1358.github.io/java-hood-lab/)（首次使用需在 GitHub 仓库 `Settings` → `Pages` 中选择 `main` 分支 `/ (root)` 启用）
+- **纯静态离线打开**：也可直接双击打开 [`index.html`](index.html) 或 [`pages/`](pages/) 下对应一节的 `.html` 文件浏览，不依赖外部网络资源（静态模式下可绑定本地 `questions.json` 或一键导出）。
 - **课堂操作**：点击「下一步」或按 `→` / `空格` 推进讲解，按 `←` 回退；点击带虚线下划线的术语可以弹出解释；右上角可切换亮/暗配色与课堂笔记。
 
 ## 每节的设计闭环
@@ -21,13 +22,17 @@
 
 ```text
 .
-├── index.html   # 170 节实验课总导航入口页（支持搜索、分章筛选与亮暗主题）
-├── pages/       # 170 份单文件交互式课件网页（双击即开，零外链依赖）
-├── lessons/     # 170 份课程结构与讲解数据（JSON）
-├── src/         # 可独立编译运行的 Java 对照源码与 SQL 实验脚本
-├── results/     # 实验台在本机实测沉淀的运行数据与 javap 输出记录（JSON）
-├── projects/    # 模块 7 实战项目工程目录
-└── docs/        # 模块 8 101 道高频笔试算法与 SQL 手撕刷题清单
+├── index.html       # 170 节实验课总导航入口页（支持搜索、分章筛选、亮暗主题与全局疑问看板）
+├── start-study.cmd  # Windows 一键启动本地伴读服务入口（双击打开学习）
+├── study.mjs        # 零依赖本地伴读服务与疑问落盘同步脚本
+├── study-notes.js   # 页内记疑问、划词提问与首页疑问看板共用脚本
+├── feedback/        # 持久化保存的学习疑问清单（questions.json 与可读版 questions.md）
+├── pages/           # 170 份单文件交互式课件网页（双击即开，零外链依赖）
+├── lessons/         # 170 份课程结构与讲解数据（JSON）
+├── src/             # 可独立编译运行的 Java 对照源码与 SQL 实验脚本
+├── results/         # 实验台在本机实测沉淀的运行数据与 javap 输出记录（JSON）
+├── projects/        # 模块 7 实战项目工程目录
+└── docs/            # 模块 8 101 道高频笔试算法与 SQL 手撕刷题清单
 ```
 
 ## 课程顺序
